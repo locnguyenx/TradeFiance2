@@ -114,3 +114,30 @@ Executes strict conversion parsing ensuring data fields properly mutate out of s
 * **Option Designation Dynamic Filtering:** Natively executes logic detecting variable states automatically replacing Tag references systematically ensuring Bank profiles natively switch format outputs directly into `59A` tags versus explicit Name/Address arrays targeting standard `59` definitions cleanly based entirely upon UI variables mapped seamlessly.
 * **Tolerance Reformat Matrix (`Tag 39A`):** Aggregates numeric variables concatenating internal decimal definitions into valid text strings definitively executing combinations generating valid target formats specifically structured as `Positive/Negative` string logic natively.
 * **Native Chunked Array Formatting (`Tag 45A/46A`):** The logic loops over `Description of Goods` string payload variables securely invoking chunk array division logic strictly capping line limitations at max `65 characters` wrapping dynamically ensuring final MT block execution perfectly bounds structure inherently protecting external systems correctly.
+
+---
+
+## 5. DEDICATED FRONTEND SPA APPLICATION DESIGN (UI WIREFRAMES)
+The Next.js/React frontend inherently separates cognitive workflow processing from the Moqui Backend. The following translates the UI wireframes directly into architectural frontend specifications.
+
+### 5.1 Common & Master Data Component Architectures
+- **The Global Checker Queue:** 
+  - *Pattern:* High-Density Data Grid utilizing Quick Filters.
+  - *Architecture:* Queries endpoints consolidating `Shadow Records` natively. Interaction does not invoke hard page navigation; instead, row clicks trigger Full-Screen Overlays (Modals) caching context locally enabling Checkers to rapidly approve limits securely without losing dashboard state.
+- **Party & KYC Directory:**
+  - *Pattern:* Master-Detail Split View.
+  - *Architecture:* Dedicated API hooks fetching Moqui `TradeParty` states dynamically displaying explicit KYC validity Boolean Badges alongside tabular Data matrices isolating Sanctions log payloads inside dedicated component tabs.
+- **Credit Limits Analytics Dashboard:**
+  - *Pattern:* Live Exposure Graphic Indicators.
+  - *Architecture:* Real-time REST polling of `LimitServices`, utilizing component charts mapping explicit bounds rendering Contingent (Blue) vs Reserved/Earmarked (Orange) structures.
+
+### 5.2 Import LC Specialized Views
+- **LC Issuance (MT700 Data Entry):**
+  - *Pattern:* Horizontal Client-Side Stepper.
+  - *Architecture:* Divides 40+ SWIFT input fields across 5 isolated React contexts minimizing memory usage and user input fatigue. Dynamically re-renders downstream tabs (e.g., hiding Usance inputs if "Sight" is selected in Step 2) exclusively on the client without invoking server loads. Local validation constraints check API limit bounds synchronously before enabling Step 5 "Submission" triggers.
+- **Document Examination Workspace:**
+  - *Pattern:* 50/50 Vertical Split-Pane.
+  - *Architecture:* Solves the UCP 600 comparison problem natively. Left pane holds a read-only payload wrapper representing the `ImportLetterOfCredit`. Right pane caches a writable `TradeDocumentPresentation` form grid actively mapping standard ISBP codes into drop-downs locally, allowing Operations to evaluate complex presentations concurrently without toggling browser tabs.
+- **Checker Authorization Dashboard:**
+  - *Pattern:* Distinct visual comparison overlay.
+  - *Architecture:* During Amendment evaluations, the component parses the incoming `TradeInstrumentAmendment` (Delta JSON log) against the existing base, actively highlighting differences mathematically directly in the DOM (striking through old limits, highlighting new amounts in green) maximizing Four-Eyes verification speed securely.
