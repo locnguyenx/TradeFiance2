@@ -1,5 +1,8 @@
-# Technical UI Wireframes & Logic
-**Module:** Common & Import LC
+# UI Wireframes & Logic Specification (BRD)
+**Project Name:** Digital Trade Finance Platform
+**Module:** Cross-cutting (Common & Import LC)
+**Document Version:** 1.2 (Formalized)
+**Date:** April 21, 2026
 
 ---
 
@@ -15,7 +18,7 @@ Here are the UI wireframe requirements for the Common Module, seamlessly integra
 
 ***
 
-### 1. Updated Left Navigation Menu (Global Shell Integration)
+## REQ-UI-CMN-01: Updated Left Navigation Menu
 To accommodate the Common Module, the persistent navigation menu expands as follows:
 
 * **Dashboard** (User's daily workspace)
@@ -35,7 +38,7 @@ To accommodate the Common Module, the persistent navigation menu expands as foll
 
 ---
 
-### 2. Wireframe: Global Checker Queue ("My Approvals")
+## REQ-UI-CMN-02: Global Checker Queue
 **Purpose:** A unified inbox for Checkers. Instead of hunting through different product modules, Checkers come here to see every transaction requiring their specific authority tier.
 **Layout Pattern:** High-Density Data Grid with Quick Filters.
 
@@ -55,7 +58,7 @@ To accommodate the Common Module, the persistent navigation menu expands as foll
 
 ---
 
-### 3. Wireframe: Party & KYC Directory (Mantle `Party` Facade)
+## REQ-UI-CMN-03: Party & KYC Directory
 **Purpose:** Centralized management of all Applicants, Beneficiaries, and Correspondent Banks to ensure clean data for SWIFT messaging and compliance screening.
 **Layout Pattern:** Master-Detail View.
 
@@ -70,7 +73,7 @@ To accommodate the Common Module, the persistent navigation menu expands as foll
 
 ---
 
-### 4. Wireframe: Credit Facility & Limit Dashboard (Mantle `FinancialAccount` Facade)
+## REQ-UI-CMN-04: Credit Facility & Limit Dashboard
 **Purpose:** For Credit Risk Officers and Trade Operations to monitor the bank's exposure to specific customers in real-time.
 **Layout Pattern:** Analytics Dashboard with Drill-Down capabilities.
 
@@ -90,7 +93,7 @@ To accommodate the Common Module, the persistent navigation menu expands as foll
 
 ---
 
-### 5. Wireframe: Tariff & Fee Configuration
+## REQ-UI-CMN-05: Tariff & Fee Configuration
 **Purpose:** Allows business administrators to update trade finance fee structures without requiring code changes or database scripts.
 **Layout Pattern:** Matrix / Rules Grid.
 
@@ -110,7 +113,7 @@ Here is the UI wireframe specification for the Import LC Module.
 
 ***
 
-### 1. Global UI Shell (Persistent Elements)
+## REQ-UI-IMP-01: Global UI Shell (Persistent Elements)
 These elements must be visible on every screen to maintain system context.
 
 * **Top Navigation Bar:**
@@ -125,7 +128,7 @@ These elements must be visible on every screen to maintain system context.
 
 ---
 
-### 2. Wireframe: Import LC Dashboard (The Workspace)
+## REQ-UI-IMP-02: Import LC Dashboard
 **Purpose:** The landing page for operations staff to see their daily actionable items.
 
 * **Top Area: KPI "Widget" Cards**
@@ -139,7 +142,7 @@ These elements must be visible on every screen to maintain system context.
 
 ---
 
-### 3. Wireframe: LC Issuance Data Entry Form (The Maker View)
+## REQ-UI-IMP-03: LC Issuance Data Entry Form
 **Purpose:** Capturing the MT 700 data. Because there are over 40 fields, a single long-scrolling page will cause user fatigue and errors.
 **Layout Pattern:** Horizontal Stepper or Accordion Tabs.
 
@@ -165,7 +168,7 @@ These elements must be visible on every screen to maintain system context.
 
 ---
 
-### 4. Wireframe: Document Examination (The Split-Screen View)
+## REQ-UI-IMP-04: Document Examination (Split-Screen)
 **Purpose:** Allowing operations to check presented documents against the original LC terms without constantly switching tabs.
 **Layout Pattern:** 50/50 Vertical Split-Pane.
 
@@ -182,7 +185,7 @@ These elements must be visible on every screen to maintain system context.
 
 ---
 
-### 5. Wireframe: The Checker Authorization Screen
+## REQ-UI-IMP-05: Checker Authorization Screen
 **Purpose:** Designed for speed, risk assessment, and the "Four-Eyes Principle."
 
 * **Top Action Bar (Highly Visible):**
