@@ -1,0 +1,64 @@
+{
+  "errors": [
+    {
+      "error": "Cannot find class for type: id",
+      "meaning": "Moqui XML services don't support abstract Moqui types (id, currency-amount, text-short, number-decimal, date-time) in parameter definitions.",
+      "fix": "Use Java/Groovy types instead: String, BigDecimal, Timestamp. Example: <parameter name='lcId' type='String'/> instead of type='id'."
+    },
+    {
+      "error": "User must be logged in to call service",
+      "meaning": "Service requires authentication but test has disabled authz or user is not logged in.",
+      "fix": "Add authenticate='false' to the service definition in XML, or call ec.artifactExecution.disableAuthz() before the service call in tests."
+    },
+    {
+      "error": "The content of elements must consist of well-formed character data or markup",
+      "meaning": "XML parsing error. Caused by special characters in comments (e.g., ±) or unclosed tags.",
+      "fix": "Remove special Unicode characters from comments. Use ASCII alternatives like '+/-' instead of '±'. Check for duplicate </script> tags."
+    },
+    {
+      "error": "No signature of method: multiply for class: java.math.BigDecimal",
+      "meaning": "BigDecimal operations in XML script blocks need explicit type conversion.",
+      "fix": "Use explicit Groovy: new BigDecimal(amount.toString()).multiply(exchangeRate) instead of amount * exchangeRate."
+    },
+    {
+      "error": "No signature of method: sourceCurrencyUomId for class",
+      "meaning": "Groovy EL operator 'not in' is not supported in Moqui XML.",
+      "fix": "Use explicit conditions: <if condition='sourceCurrencyUomId != \"USD\" &amp;&amp; sourceCurrencyUomId != \"EUR\"'> instead of 'not in [...]'."
+    },
+    {
+      "error": "No service with name add#CollectionEntry",
+      "meaning": "Short service names don't resolve reliably. Need full service path.",
+      "fix": "Use full path: moqui.trade.finance.ProvisionCollectionServices.add#CollectionEntry instead of just add#CollectionEntry."
+    },
+    {
+      "error": "Service returns empty map [:]",
+      "meaning": "Service failed silently. Check for validation errors in service or XML parsing errors.",
+      "fix": "Enable debug logging. Check ec.message.errors for validation failures. Reload database to reload service definitions."
+    },
+    {
+      "error": "Status not changing despite successful service response",
+      "meaning": "Using generic update#EntityName for status changes bypasses StatusFlow validation when entity status field is not named 'statusId'. The Moqui EntityAutoServiceRunner only validates transitions for fields named 'statusId'.",
+      "fix": "Create dedicated transition services (verb='transition' noun='XxxStatus') that explicitly validate against StatusFlowTransition. See moqui-service-patterns.md Section 5 for pattern."
+    },
+    {
+      "error": "AuthenticationRequiredException in tests even after loginUser()",
+      "meaning": "ec.artifactExecution.disableAuthz() disables entity authorization but NOT service authentication. Tests need to enable authz via ec.artifactExecution.enableAuthz() before calling services with authenticate='true'.",
+      "fix": "In test setup(), call ec.artifactExecution.enableAuthz() to re-enable authz after setup. Keep disableAuthz() only for data setup operations that need it."
+    },
+    {
+      "error": "Error creating Enumeration [enumId:RqtLcIssuance]: record specified does not exist [23506]",
+      "meaning": "Missing parent record. The EnumerationType 'RequestType' doesn't exist in the database when loading data that depends on it.",
+      "fix": "Run '<Project Root>/gradlew reloadSave' before tests to load all seed data including dependencies from mantle-udm. The data loader loads seed data in order."
+    },
+    {
+      "error": "No signature of method: delete for class: org.moqui.impl.entity.EntityFacadeImpl",
+      "meaning": "Wrong API for deleting entity. Trying ec.entity.delete(value) instead of value.delete().",
+      "fix": "Use EntityValue.delete() method: lock.delete() instead of ec.entity.delete(lock)."
+    },
+    {
+      "error": "Unexpected input in entity-find with if conditions inside econditions",
+      "meaning": "Complex conditional logic inside <econditions> doesn't compile properly in Moqui services.",
+      "fix": "Use Groovy script block with explicit condition building: ec.entity.find().where(conditions).list() instead of XML conditional elements."
+    }
+  ]
+}

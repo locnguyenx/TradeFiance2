@@ -1,0 +1,60 @@
+# Serena Project Configuration
+# This file is automatically managed by Serena
+
+# the name by which the project can be referenced within Serena
+project_name: "moqui-opencode"
+
+# absolute path to the project directory
+path: "/Users/me/myprojects/moqui-opencode"
+
+# list of languages for which language servers are started
+# For Moqui (Java/Groovy project), we need java, groovy, typescript (for JavaScript), and yaml (for XML-like files)
+languages: ["java", "groovy", "typescript", "yaml"]
+
+# the encoding used by text files in the project
+encoding: "utf-8"
+
+# line ending convention to use when writing source files.
+line_ending: native
+
+# The language backend to use for this project.
+language_backend: LSP
+
+# whether to use project's .gitignore files to ignore files
+ignore_all_files_in_gitignore: true
+
+# list of additional paths to ignore in this project.
+ignored_paths:
+  - ".git"
+  - "build"
+  - "node_modules"
+  - ".gradle"
+
+# whether the project is in read-only mode
+read_only: false
+
+# list of tool names to exclude.
+excluded_tools: []
+
+# list of tools to include that would otherwise be disabled.
+included_optional_tools: []
+
+# fixed set of tools to use as the base tool set.
+fixed_tools: []
+
+# list of mode names to that are always to be included in the set of active modes
+base_modes:
+
+# list of mode names that are to be activated by default.
+default_modes:
+  - interactive
+  - editing
+
+# initial prompt for the project.
+initial_prompt: ""
+
+# time budget (seconds) per tool call for the retrieval of additional symbol information
+symbol_info_budget: 10
+
+# list of regex patterns which, when matched, mark a memory entry as read‑only.
+read_only_memory_patterns: []

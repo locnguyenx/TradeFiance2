@@ -2,14 +2,16 @@
 # gradle/build files
 build
 .gradle
-/framework/dependencies
 
 # build generated files
 /moqui*.war
 /Save*.zip
 
+# ignore moqui framework
+/framework
 # runtime directory (separate repository so ignore directory entirely)
 /runtime
+!runtime/component/TradeFinance/**
 /execwartmp
 /docker/runtime
 /docker/db
