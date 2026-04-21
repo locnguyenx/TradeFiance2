@@ -48,7 +48,7 @@
     {
       "error": "Error creating Enumeration [enumId:RqtLcIssuance]: record specified does not exist [23506]",
       "meaning": "Missing parent record. The EnumerationType 'RequestType' doesn't exist in the database when loading data that depends on it.",
-      "fix": "Run '<Project Root>/gradlew reloadSave' before tests to load all seed data including dependencies from mantle-udm. The data loader loads seed data in order."
+      "fix": "Run './gradlew reloadSave' before tests to load all seed data including dependencies from mantle-udm. The data loader loads seed data in order."
     },
     {
       "error": "No signature of method: delete for class: org.moqui.impl.entity.EntityFacadeImpl",

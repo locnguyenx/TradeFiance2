@@ -7,52 +7,52 @@ description: Use when executing Moqui Spock tests, parsing the generated HTML/XM
 
 ### Full Build
 ```bash
-<Project Root>/gradlew build
+./gradlew build
 ```
 
 ### Clean & Reload Data (when entity/data files change)
 ```bash
-<Project Root>/gradlew cleanDb loadSave
+./gradlew cleanDb loadSave
 ```
 
 ### Full Clean Rebuild
 ```bash
-<Project Root>/gradlew cleanAll loadSave
+./gradlew cleanAll loadSave
 ```
 
 ### Run Tests (ALWAYS use reloadSave first)
 ```bash
-JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-21.jdk/Contents/Home <Project Root>/gradlew reloadSave :runtime:component:TradeFinance:test
+JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-21.jdk/Contents/Home ./gradlew reloadSave :runtime:component:TradeFinance:test
 ```
 
 ### Run Single Test Spec
 ```bash
-<Project Root>/gradlew reloadSave :runtime:component:TradeFinance:test --tests moqui.trade.finance.TradeFinanceScreensSpec
+./gradlew reloadSave :runtime:component:TradeFinance:test --tests moqui.trade.finance.TradeFinanceScreensSpec
 ```
 
 ### Run Specific Test Method
 ```bash
-<Project Root>/gradlew reloadSave :runtime:component:TradeFinance:test --tests "moqui.trade.finance.TradeFinanceServicesSpec#testCreateTrade"
+./gradlew reloadSave :runtime:component:TradeFinance:test --tests "moqui.trade.finance.TradeFinanceServicesSpec#testCreateTrade"
 ```
 
 ### Run All Tests for a Specific Feature Area
 ```bash
-<Project Root>/gradlew reloadSave :runtime:component:TradeFinance:test --tests "*LcProvision*"
+./gradlew reloadSave :runtime:component:TradeFinance:test --tests "*LcProvision*"
 ```
 
 ### Continuous Test Watching (during development)
 ```bash
-<Project Root>/gradlew reloadSave --continuous :runtime:component:TradeFinance:test
+./gradlew reloadSave --continuous :runtime:component:TradeFinance:test
 ```
 
 ### Generate Test Reports
 ```bash
-<Project Root>/gradlew reloadSave :runtime:component:TradeFinance:test --info
+./gradlew reloadSave :runtime:component:TradeFinance:test --info
 ```
 
 ### Run Only Unit Tests (excluding integration tests)
 ```bash
-<Project Root>/gradlew reloadSave :runtime:component:TradeFinance:test --tests "*Spec" --exclude-test "*Integration*"
+./gradlew reloadSave :runtime:component:TradeFinance:test --tests "*Spec" --exclude-test "*Integration*"
 ```
 
 > [!CAUTION]
@@ -63,10 +63,10 @@ JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-21.jdk/Contents/Home <Project R
 > [!IMPORTANT]
 > **NEVER** run `java -jar moqui.war` for data loading
 
-All data loading and test execution must use `<Project Root>/gradlew` only.
+All data loading and test execution must use `./gradlew` only.
 
 ### 1. Environment Verification
-- **Read the Law:** Open and read `.agents/knowledge/moqui-testing.md` to refresh your memory on the exact `<Project Root>/gradlew` execution mandates (specifically the `reloadSave` rule).
+- **Read the Law:** Open and read `.agents/knowledge/moqui-testing.md` to refresh your memory on the exact `./gradlew` execution mandates (specifically the `reloadSave` rule).
 - **Verify Path:** Ensure you are targeting the correct component for testing (e.g., `TradeFinance`).
 
 ### 2. Execution

@@ -20,55 +20,12 @@ Refer to requirements in the main business requirements document.
 Refer to file ./MT/MT700.md for details
 
 ## 3. UI/UX Requirements
-- **Grouped Layout**: The detail screen MUST group fields into General, Parties, Shipment, and Docs/Payment blocks.
-- **Visual Status Tracking**: Key statuses MUST be displayed using high-visibility colored chips ("Premium Status Chips") in the detail header.
-- **Reusable UI Components**: Core actions (e.g., LC Creation, Amendment Initiation) MUST use standardized, reusable dialog templates to ensure a consistent user experience across different entry points.
-- **Hierarchical Navigation**: The system MUST follow a `Find (List) -> Detail (Standardized Tabs)` navigation pattern.
-- **Cross-Module Linkage**: When viewing linked entities (e.g., LC from an Amendment), the target entity MUST be displayed in a **Read-Only** mode to prevent accidental data corruption.
-- **Data Integrity**: Fields with invalid characters must be flagged immediately upon submission.
-- **Activity Log**: Immutable history of all status changes and internal comments.
-
+Follow requirements in `brd_common.md`
 ## 4. User Roles & Permissions
-Define who will use the system and what business actions they are allowed to perform.
-
-| User Role | Description | Permitted Actions |
-| :--- | :--- | :--- |
-| **Applicant** | Corporate Customer | Create Draft, View Own LCs, Submit Application |
-| **Branch Operator** | Bank Front-Office Staff| Create Draft, View Own LCs, Submit Application |
-| **Branch Supervisor** | Bank Front-Office Manager| View All LCs, Review, Reject |
-| **Trade Operator** | Bank Back-Office Staff| View All LCs, Review, Reject, Issue |
-| **Trade Supervisor** | Bank Back-Office Manager| View All LCs, Review, Approve, Reject |
-| **Trade Auditor** | Risk/Compliance | View All LCs, View History (Read-Only) |
+Follow requirements in `brd_common.md`
 
 ## 5. Business Lifecycle (State Machine)
-### 5.1 Transaction Workflow Requirements
-
-Define the statuses a record (transaction) goes through from creation to closure.
-
-The system MUST support the following Transaction lifecycle states:
-    - Draft
-    - Pending Review
-    - Pending Processing
-    - Returned
-    - Pending Approval
-    - Approved
-    - Rejected
-    - Cancelled
-
-
-**The state flow:**
-
-| Current Status | User Action / Trigger | Next Status | Business Condition |
-| :--- | :--- | :--- | :--- |
-| `Draft` | Applicant or Branch Operator clicks "Submit for Review" | `Pending Review` | All mandatory application fields must be complete. |
-| `Pending Review`| Branch Supervisor clicks "Submit for Processing" | `Pending Processing` | Requires Branch Supervisor authority. |
-| `Pending Processing`| Trade Operator clicks "Submit for Approval" | `Pending Approval` | Requires Trade Operator authority. |
-| `Pending Approval`| Trade Supervisor clicks "Approve" | `Approved` | Requires Trade Supervisor authority. |
-| `Pending Review`/`Pending Approval`/`Pending Processing`  | Authorized user clicks "Reject" | `Rejected` | User must provide a rejection reason. |
-| `Pending Review`/`Pending Approval`/`Pending Processing`  | Authorized user clicks "Return" | `Returned` | User must provide a returnning reason. |
-
-
-### 5.2 LC Status Requirements
+### 5.1 LC Status Requirements
 * The system MUST support the following LC lifecycle states:
     - Draft
     - Applied

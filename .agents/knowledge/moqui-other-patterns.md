@@ -138,7 +138,7 @@ Tabs persist after changing `subscreen-panel` type
 
 ### Fix
 ```bash
-<Project Root>/gradlew cleanAll
+./gradlew cleanAll
 # Browser: Cmd+Shift+R
 ```
 

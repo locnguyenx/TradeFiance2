@@ -7,23 +7,23 @@
 ### Always Use reloadSave (MANDATORY)
 ```bash
 # Before EVERY test run
-<Project Root>/gradlew reloadSave :runtime:component:TradeFinance:test
+./gradlew reloadSave :runtime:component:TradeFinance:test
 
 # For specific test
-<Project Root>/gradlew reloadSave :runtime:component:TradeFinance:test --tests moqui.trade.finance.TradeFinanceScreensSpec
+./gradlew reloadSave :runtime:component:TradeFinance:test --tests moqui.trade.finance.TradeFinanceScreensSpec
 ```
 
 ### Reset Patterns
 
 #### Data Issue
 ```bash
-<Project Root>/gradlew cleanDb loadSave
+./gradlew cleanDb loadSave
 ```
 
 #### System Hang / Corruption
 ```bash
-<Project Root>/gradlew cleanAll
-<Project Root>/gradlew loadSave
+./gradlew cleanAll
+./gradlew loadSave
 ```
 
 ## 2. Spock Test Structure
@@ -256,12 +256,12 @@ def "should show all fields"() {
 
 ### NoClassDefFoundError
 ```bash
-<Project Root>/gradlew cleanAll loadSave
+./gradlew cleanAll loadSave
 ```
 
 ### Data Integrity Violation
 ```bash
-<Project Root>/gradlew cleanDb loadSave
+./gradlew cleanDb loadSave
 ```
 
 ### Sequence Collision

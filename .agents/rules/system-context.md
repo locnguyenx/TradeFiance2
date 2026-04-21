@@ -1,11 +1,10 @@
 # System Context & Constraints
 
 ## Overview
-This project is to build a TradeFinance system
+This project is to build a TradeFinance application using Moqui Framework
 
 ## Project dir
-- **Project Root:** `~/myprojects/moqui-trade/`
-- **Working Component (TradeFinance component):**: `<Project Root>/runtime/component/TradeFinance/`
+- **Working Component (TradeFinance component):**: `runtime/component/TradeFinance/`
 
 ## SCOPE LOCKDOWN (CRITICAL)
 You are allowed to edit files only in the `TradeFinance` component.
@@ -13,16 +12,25 @@ You are allowed to edit files only in the `TradeFinance` component.
 
 **Exception**:
 - Use gradle tasks for database operations
+- Directories used by the Agents: `.agents`,`.opencode`, `.serena`, `.journal`
 
 **Git Boundary**: All commits must target only the TradeFinance component directory.
 
 ## GIT WORKFLOW
 
 ### Pre-commit Checks
-- Run `<Project Root>/gradlew test` for affected components
+- Run `./gradlew test` for affected components
 - Validate XML files with xmllint
 - Check for TODO/FIXME comments that should be addressed
 - Verify no debug logging statements remain in production code
+
+### Git commands
+```bash
+# cd to runtime/component/TradeFinance if not in that
+cd <Project Root>/runtime/component/TradeFinance
+# run required git command, i.e
+git status
+```
 
 # TradeFinance Architecture Guide
 
@@ -52,7 +60,7 @@ This document provides essential information for developing, testing, and troubl
 
 ## 2. Project Structure
 
-### Root Project (`~/myprojects/moqui-trade/`)
+### Root Project (`.`)
 
 ```
 root/
@@ -65,6 +73,7 @@ root/
 │   │   ├── SimpleScreens   # UI framework
 │   │   └── TradeFinance    # THIS COMPONENT
 ```
+TradeFinance application is a component of Moqui System, placed inside `runtime/component/`
 
 ### TradeFinance Component
 
@@ -213,7 +222,7 @@ ec.service.sync().name("Cbs${cbsImpl}#${action}").call([...])
 ### Run Tests
 
 ```bash
-cd /Users/me/myprojects/moqui-trade
+# in Project Root
 ./gradlew test
 ```
 

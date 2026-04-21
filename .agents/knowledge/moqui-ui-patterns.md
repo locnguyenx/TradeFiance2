@@ -257,7 +257,7 @@ xmllint --noout runtime/component/TradeFinance/screen/.../Screen.xml
 ## 8. Stale UI Cache Fix
 
 ```bash
-<Project Root>/gradlew cleanAll
+./gradlew cleanAll
 # Browser: Cmd+Shift+R (hard refresh)
 ```
 

@@ -21,7 +21,7 @@ Guide completion of development work by presenting clear options and handling ch
 
 ```bash
 # Run backend tests
-<Project Root>/gradlew test
+./gradlew test
 
 # Run frontend tests (from frontend directory)
 cd frontend && npm run test:coverage
