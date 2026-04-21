@@ -2,186 +2,209 @@
 
 **Project Name:** Digital Trade Finance Platform
 **Module:** Common Trade Finance (Cross-Functional Core)
-**Document Version:** 2.1 (Full Detail Integration)
+**Document Version:** 2.2 (Full Detail Integration)
 **Date:** April 21, 2026
 
----
-
 ## 1. Document Control & Scope
-The Common Module serves as the foundational layer for all Trade Finance (TF) transactions. Rather than duplicating logic across Import LCs, Export LCs, and Collections, this module centralizes the core business entities, validation rules, user authority workflows, fee engines, and product matrix that apply universally to every trade instrument.
+The Common Module serves as the foundational layer for all Trade Finance (TF) transactions. Rather than duplicating logic across Import LCs, Export LCs, and Collections, this module centralizes the core business entities, validation rules, currency precision, calendars, and processing flows that apply universally to every trade instrument.
 
----
-
-## 2. Core Master Data Entities
-The following core domain entities represent data structures that MUST be supported universally.
+## 2. Domain Business Entities & Key Attributes
+These are the core business data structures that the system must capture and maintain. 
 
 ### REQ-COM-ENT-01: Trade Instrument (Base Transaction)
-All transaction records MUST inherit the following properties:
-- `Transaction Reference Number`: Unique, system-generated identifier (e.g., TF-IMP-2026-0001).
-- `Product Type`: Specific product category mapping to the Product Matrix.
-- `Transaction Currency`: 3-letter ISO code.
-- `Transaction Amount`: Total monetary value in the transaction currency.
-- `Base Equivalent Amount`: Transaction value converted to local operating currency for limit tracking.
-- `Issue Date`: Business date the transaction is initiated.
-- `Expiry/Maturity Date`: Date the instrument ceases to be valid or payment is due.
-- `Lifecycle Status`: Current business state (Draft, Pending Approval, Active, Hold, Closed).
+This entity represents the common data shared across all TF products.
+* **Transaction Reference Number:** A unique, system-generated, human-readable identifier (e.g., TF-IMP-2026-0001).
+* **Product Type:** The specific product category (e.g., Import LC, Export Collection).
+* **Transaction Currency:** The three-letter ISO currency code of the instrument.
+* **Transaction Amount:** The total monetary value of the instrument.
+* **Base Equivalent Amount:** The value of the transaction converted to the bank's local operating currency for limit and reporting purposes.
+* **Issue Date:** The business date the transaction is formally initiated.
+* **Expiry/Maturity Date:** The date the instrument ceases to be valid or the date payment is due.
+* **Lifecycle Status:** The current business state (e.g., *Draft, Pending Approval, Active, Hold, Closed*).
 
-### REQ-COM-ENT-02: Trade Party Directory
-All involved parties (Applicants, Beneficiaries, Issuing Banks) MUST exist and be validated against this directory.
-- `Party ID`: Unique identifier for the customer or bank.
-- `Legal Name & Registered Address`: Used for SWIFT messaging.
-- `Role in Transaction`: Applicant, Beneficiary, etc.
-- `KYC Status`: Active, Expired, Pending.
-- `Sanctions Status`: Clear, Suspended, Blocked.
-- `Country of Risk`: Primary jurisdiction for country-limit exposures.
+### REQ-COM-ENT-02: Trade Party (Customer & Bank Directory)
+All entities involved in a transaction must be recorded and validated against this directory.
+* **Party ID:** Unique identifier for the customer, correspondent bank, or corporate entity.
+* **Legal Name & Registered Address:** The official legal details used for SWIFT messaging and document generation.
+* **Role in Transaction:** The specific capacity of the party for a given transaction (e.g., Applicant, Beneficiary, Issuing Bank, Drawee).
+* **KYC Status:** Indicator of whether the party's Know Your Customer vetting is *Active, Expired*, or *Pending*.
+* **Sanctions Status:** Indicator of the party's screening results (*Clear, Suspended, Blocked*).
+* **Country of Risk:** The primary jurisdiction of the party, used for country-limit exposure tracking.
 
 ### REQ-COM-ENT-03: Customer Facility (Credit Limits)
-- `Facility ID`: Identifier for the approved credit line.
-- `Total Approved Limit`: Maximum risk exposure allowed.
-- `Utilized Amount`: Value currently locked by active TF transactions.
-- `Available Earmark`: Remaining balance available.
-- `Facility Expiry Date`: Date the credit line must be renewed.
+Required to ensure the bank does not take on unsecured risk beyond approved boundaries.
+* **Facility ID:** Identifier for the approved credit line.
+* **Total Approved Limit:** The maximum risk exposure allowed for this customer.
+* **Utilized Amount:** The total value currently locked by active TF transactions.
+* **Available Earmark:** The remaining balance available for new transactions.
+* **Facility Expiry Date:** The date the credit line must be renewed.
 
----
+## 3. Standardized Processing Flow
+### REQ-COM-WF-01: Processing Flow Steps
+Every trade finance transaction, regardless of the specific product, must progress through this standardized operational workflow.
+1. **Initiation (Data Capture):** An operations user or a customer (via an external portal) inputs the transaction details. The record remains in a *Draft* state.
+2. **Pre-Processing Validations:** The system automatically checks business rules (KYC, Limit, Data Completeness). If validations fail, the user is prompted to correct the errors.
+3. **Authorization (Maker/Checker):** Once submitted by the initiator (Maker), the transaction enters a *Pending Approval* state. It is routed to an authorized supervisor (Checker).
+4. **Execution:** Upon Checker approval, the system commits the transaction, updates the facility limits, and generates any required outward SWIFT messages or physical cover letters. The state shifts to *Active* or *Issued*.
+5. **Lifecycle Events:** The system logs subsequent events tied to the parent instrument, such as Amendments, Document Presentations, or Tracers.
+6. **Settlement & Closure:** Funds are moved, final accounting entries are generated, and the transaction state is moved to *Closed*.
 
-## 3. Standard Processing Workflow
-
-### REQ-COM-WF-01: Universal States
-All transactions MUST progress through this operational flow:
-1. **Initiation (Data Capture):** Entry by operations or via portal. Status = *Draft*.
-2. **Pre-Processing Validations:** Core check of KYC, Limits, Completeness. 
-3. **Authorization:** Submitted by Maker. Status = *Pending Approval*. Routed to Checker.
-4. **Execution:** Checker approves. Limits updated. Status = *Active / Issued*.
-5. **Lifecycle Events:** Subsequent amendments or presentations.
-6. **Settlement & Closure:** Funds move, accounting entries pass. Status = *Closed*.
-
----
-
-## 4. Currency, FX & Accounting
-
+## 4. Currency, FX Rules & SLA Calendars (New)
 ### REQ-COM-FX-01: Currency Precision
-The system MUST respect ISO-standard decimal precision uniformly globally (e.g., USD = 2 decimals, JPY = 0 decimals).
+The system MUST respect ISO-standard decimal precision uniformly (e.g., USD = 2 decimals, JPY = 0 decimals) for all fields, limits, and settlement calculations.
 
-### REQ-COM-FX-02: Dual-Rate Framework
-To resolve the conflict between predictable limits and market risk, a dual integration is required:
-- **Facility Blocking (Static Board Rate):** Facility Limit (`Base Equivalent Amount`) consumption MUST be calculated using a static "Daily Board Rate" updated strictly once daily. This prevents intraday Maker/Checker approvals from failing purely due to live FX volatility.
-- **Settlement (Live Treasury Rate):** Actual accounting transfers (MT202/MT103) where money moves MUST fetch and lock a Live FX rate from the Treasury API to prevent spot FX reporting risk.
+### REQ-COM-FX-02: Dual-Rate FX Integrations
+The system MUST implement a dual-rate integration model to balance execution speed and financial risk:
+* **Facility Blocking (Daily Board Rate):** For all limit availability and credit calculations, the system MUST utilize a "Daily Board Rate" synchronized once at End-Of-Day. This stabilizes checking workflows by ensuring pending requests don't randomly fail due to intraday FX swings.
+* **Physical Settlement (Live Rate):** For actual accounting settlement (MT202/103 remittance), the system MUST require an active Live FX Treasury API call to guarantee the bank bears zero live market exposure on the cash movement.
 
----
+### REQ-COM-SLA-01: Universal Banking Calendar
+All duration calculations (e.g., the UCP 600 maximum 5-banking-day document checking window) MUST be evaluated systematically against a Single Global Head-Office Calendar, neutralizing differences in international regional holidays. Weekends and global bank holidays are systematically skipped.
 
-## 5. Maker / Checker Authorization Matrix
+### REQ-COM-SLA-02: Overdue Enforcement
+If a presentation remains unchecked after 3 banking days, a warning flag MUST be elevated. On the 5th day, the item MUST become a critical blocking exception.
 
-### REQ-COM-AUTH-01: Segregation of Duties
-The system MUST definitively prevent the same individual from acting as both Maker and Checker on a single lifecycle event. The system MUST hide the authorization capabilities from the user who originally submitted the draft.
+## 5. Required Notifications
+### REQ-COM-NOT-01: SLA and Threshold Alerts
+The system MUST generate automated email alerts routed to the respective group inbox when:
+- An SLA timer breaches Day 3.
+- An Applicant facility limit reaches 95% utilization.
 
-### REQ-COM-AUTH-02: Authority Tiers & Limits
-Pending Approval transactions MUST map to the appropriate Checker tier based on the `Base Equivalent Amount`:
-- **Tier 1:** Up to $100,000 USD (Routine items).
-- **Tier 2:** Up to $1,000,000 USD (Standard commercial).
-- **Tier 3:** Up to $5,000,000 USD (High-value).
-- **Tier 4:** Above $5,000,000 USD (Exceptional value).
+### REQ-COM-NOT-02: Compliance & Risk Holds
+If any transaction triggers a Sanctions block or KYC expiration during submission, the system MUST immediately send a prioritized alert to the designated Compliance Review queue/inbox.
 
-### REQ-COM-AUTH-03: Joint Approval & Delegation
-- **Joint Approval:** Tier 4 limits MUST require routing to *two distinct* Tier 4 Checkers for joint approval.
-- **Downward Delegation Block:** A Tier 1 Checker MUST NOT be permitted to authorize a Tier 2+ transaction. System must display "Insufficient Authority".
+## 6. Cross-Functional Validation Rules
+These rules are mandatory and act as system "hard-stops" preventing a transaction from moving forward if violated.
 
-### REQ-COM-AUTH-04: Amendment Authorization Behavior
-- **Financial Amendments:** If an amendment logically increases liability (amount up, expiry extended), the Tier required MUST be selected based on the *new total liability amount*, not just the amended delta.
-- **Non-Financial Amendments:** Text changes, condition additions, or port updates default safely to a Tier 1 requirement regardless of total transaction value.
+### REQ-COM-VAL-01: Risk & Compliance Rules
+* **KYC Validation:** The system must restrict the execution of any transaction if the primary customer (Applicant or Principal) has an "Expired" KYC status.
+* **Sanctions Hold:** If any Trade Party, Vessel Name, or Port entered into the transaction matches a restricted entity on a global watch list, the transaction must immediately shift to a *Hold* status and route to the Compliance department. It cannot be authorized by standard operations staff.
+* **Limit Availability:** The system must block the issuance of any funded or unfunded instrument if the *Base Equivalent Amount* exceeds the *Available Earmark* on the customer's facility.
 
-### REQ-COM-AUTH-05: User Authority Profile Structure
-The system MUST support an identity structure including:
-- `User ID` & `Branch Access` (restrict views to specific physical branches).
-- `Functional Roles` (e.g., Create LC, Discrepancy Edit).
-- `Maker/Checker Flag` (Maker Only, Checker Only, Dual).
-- `Delegation Tier` (1 through 4) and `Custom Limit` (specific numeric override).
+### REQ-COM-VAL-02: Operational & Security Rules
+* **Four-Eyes Principle (Segregation of Duties):** The user who initiates or modifies a transaction (Maker) cannot be the same user who approves it (Checker). The system must enforce this strictly at the user-identity level.
+* **Approval Authority Limits:** A Checker can only approve transactions up to their assigned monetary authority tier. Transactions exceeding this tier must be automatically routed to higher management or a credit committee.
+* **Historical Immutability:** Once a transaction reaches an *Active/Issued* state, none of its core attributes can be changed or deleted. Any modification must be processed as a formal "Amendment" event, which creates a new version record while preserving the original.
 
----
+### REQ-COM-VAL-03: Business Logic Rules
+* **Date Sequence Logic:** The Expiry Date must always be strictly greater than or equal to the Issue Date. 
+* **Back-Valuation Restriction:** Users cannot set an Issue Date in the past without special administrative overrides.
+* **Currency Verification:** Transactions can only be processed using active, bank-approved ISO currencies.
 
-## 6. Risk, Compliance & Governance
+## 7. Maker/Checker Authorization Matrix & Authority Tiers
 
-### REQ-COM-RSK-01: KYC Validation
-Transactions MUST NOT proceed beyond Draft if the primary Applicant's KYC status is `Expired`.
+### REQ-COM-AUTH-01: Delegated Authority Tiers
+Checkers are assigned to specific Delegated Authority Tiers based on Base Equivalent Amount.
 
-### REQ-COM-RSK-02: Sanctions Hold (Pre-processing)
-If any Trade Party, Vessel, or Port matches a restricted entity on a global watch list during submission, the system MUST immediately shift the transaction to `Compliance Hold`. It cannot be authorized by standard operations and MUST route to a designated Compliance Officer.
+| Tier Level | Typical Business Role | Maximum Approval Limit (Base Equivalent) | Routing Logic |
+| :--- | :--- | :--- | :--- |
+| **Tier 1** | Senior Trade Operations Officer | Up to 100,000 USD | Routine, low-value transactions. |
+| **Tier 2** | Trade Finance Team Lead | Up to 1,000,000 USD | Standard commercial transactions. |
+| **Tier 3** | Head of Trade Operations | Up to 5,000,000 USD | High-value, complex transactions. |
+| **Tier 4** | Credit Risk Committee / Board | Above 5,000,000 USD | Exceptional value; requires specialized executive routing. |
 
-### REQ-COM-RSK-03: System Date Logic
-- **Date Sequence:** Expiry Date MUST be $\ge$ Issue Date.
-- **Back-Valuation:** The system MUST strictly restrict users from setting an `Issue Date` in the past.
+### REQ-COM-AUTH-02: The Authorization Matrix & Workflows
+When a Maker submits a transaction, the system must use the transaction's Base Equivalent Amount to route it to the appropriate Checker queue.
+* **Single-Tier Approval:** For Tiers 1 through 3, only one Checker from the appropriate (or higher) tier is required to approve the transaction. 
+* **Joint Approval (Dual-Checker):** For Tier 4 transactions, the system must enforce a "Joint Approval" workflow. After the Maker submits the transaction, it requires approval from **two distinct** Tier 4 Checkers before execution.
+* **Downward Delegation Restriction:** A Tier 1 user cannot approve a transaction requiring Tier 2 authority. The system must hard-stop the approval attempt and display an "Insufficient Authority" notice.
 
-### REQ-COM-RSK-04: Historical Immutability 
-Once a transaction is Active/Issued, core domain attributes CANNOT be silently changed, backdated, or deleted. Any modification MUST be logged as a formal "Amendment", creating a persistent version history.
+### REQ-COM-AUTH-03: Special Authorization Scenarios
+* **A. Financial Amendments:** When a Maker processes an amendment that increases the financial value of an existing instrument, the authorization tier is determined by the **new total liability**, not just the delta.
+* **B. Non-Financial Amendments:** Amendments that do not impact the credit limit or transaction value default to a Tier 1 authorization requirement.
+* **C. Parallel Compliance Approvals:** Financial authority tiers are superseded by Compliance rules. If a transaction triggers a "Sanctions Hold" or an "AML Anomaly" during system validation, the standard Maker/Checker flow is suspended. It must be routed to a dedicated Compliance Officer role. The Compliance Officer must officially release the hold (with mandatory audit comments) before the standard operational Checker can finalize the financial approval.
 
----
+## 8. Other Core Master Data & Administrative Processes
 
-## 7. Audit Logging & Non-Repudiation
+### REQ-COM-MAS-01: Fee & Charge Configuration & Calculation
 
-### REQ-COM-AUD-01: The Audit Payload
-Every state mutation MUST systematically write an immutable record containing:
-1. `Timestamp`: System millisecond.
-2. `User ID`: Authenticated user or SYSTEM.
-3. `IP Address`: Originating network location.
-4. `Transaction Ref`: Associated instrument.
-5. `Action Performed`: e.g., Submit, Authorize, Reject.
-6. `Field Changed`: Data updated.
-7. `Old Value` & `New Value`.
-8. `Justification`: Free text (mandatory for overrides/rejections).
+**Business Process Workflow:**
+1. **Rule Definition (Maker):** An administrator creates or updates a fee rule.
+2. **Approval (Checker):** A senior manager reviews and approves the new pricing rule.
+3. **Execution (System Calculation):** During a transaction, the system identifies required fee types.
+4. **Exception Pricing:** The system checks if the specific Applicant has a negotiated "Customer Exception Rate". If yes, it overrides the standard tariff.
+5. **Collection:** The system calculates the final fee and prepares accounting entries.
 
-### REQ-COM-AUD-02: Immutability Constraint
-The audit log MUST be strictly append-only at the database layer. Application-level deletes or updates are absolutely forbidden.
+**Inputs Capture (Data Dictionary - Tariff Matrix):**
+| Field Name | Req/Opt | Data Type | Description |
+| :--- | :--- | :--- | :--- |
+| `Fee Event Trigger` | Req | Enum | e.g., LC Issuance, Amendment, Discrepancy, Payment. |
+| `Calculation Type` | Req | Enum | Values: Flat Rate, Percentage, Tiered. |
+| `Base Rate / Amount`| Req | Decimal | The standard price or percentage. |
+| `Minimum Charge` | Opt | Decimal | Minimum floor for percentage fees. |
+| `Maximum Charge` | Opt | Decimal | Maximum ceiling. |
+| `Frequency / Period`| Cond | Enum | Values: One-Off, Per Month, Per Quarter. |
+| `Effective Date` | Req | Date | Date the new pricing takes effect. Cannot backdate. |
+| `Customer Tier` | Opt | String | Override for specific customer segments (e.g., VIP Corporate). |
 
----
+**Display / Computed Data:**
+* `Time Units (Quarters)`: Used for LC issuance: (LC Expiry Date - Issue Date) / 90 days, rounded up to the next whole quarter.
+* `Calculated Base Fee`: `LC Amount` × `Base Rate %` × `Time Units`.
+* `Final Applied Fee`: `Calculated Base Fee`, enforced against `Minimum Charge` and `Maximum Charge`.
 
-## 8. Calendars, SLAs & Notifications
+### REQ-COM-MAS-02: User Authority Tiers & Access Management
 
-### REQ-COM-SLA-01: Global Banking Calendar
-To resolve timezone and regional discrepancies, all formal UCP 600 timers (e.g., the 5-day examination rule) MUST be exclusively calculated against a Single Global Head-Office Holiday Calendar (weekends and global holidays are skipped).
+**Inputs Capture (Data Dictionary - User Profile):**
+| Field Name | Req/Opt | Data Type | Description |
+| :--- | :--- | :--- | :--- |
+| `User ID` | Req | String | Unique system identifier, usually linked to Active Directory. |
+| `Functional Roles` | Req | Array | The specific modules/actions the user can access. |
+| `Maker/Checker Flag`| Req | Enum | Values: Maker Only, Checker Only, Dual. |
+| `Delegation Tier` | Cond | Enum | Values: Tier 1, Tier 2, Tier 3, Tier 4. |
+| `Custom Limit` | Opt | Decimal | A specific override limit in the bank's base currency. |
+| `Branch Access` | Req | Array | Restricts users to only view/process transactions for specific branches. |
 
-### REQ-COM-SLA-02: Document Presentation Timers
-Upon logging Document Lodgement:
-- **Day 3 Warning:** System generates an SLA Warning in the Checker Dashboard.
-- **Day 5 Escalation:** System elevates the presentation to a critical blocker exception.
+**Specific Validation Rules:**
+* **Self-Approval Block:** Hard-coded system logic: If `Transaction.CreatedBy == CurrentUser`, hide the `[Authorize]` button, regardless of the user's Tier limit.
+* **Suspended Accounts:** If a user is on leave or suspended, the system must immediately remove them from the routing matrix so items do not get stuck in their queue.
 
-### REQ-COM-NOT-01: Event Notifications
-The system MUST generate automated email alerts via an integration service when:
-- SLA timers breach Day 3.
-- Combined Applicant facility utilization reaches $\ge$ 95%.
-- A transaction enters `Compliance Hold` (alerting the Risk/Compliance group).
+### REQ-COM-MAS-03: Audit Logs & Non-Repudiation
 
----
+**System-Generated Inputs (Audit Payload):**
+| Field Name | Data Type | Description & System Rules |
+| :--- | :--- | :--- |
+| `Timestamp` | DateTime | Captured at exact millisecond of commit. System time, non-editable. |
+| `User ID` | String | The ID of the authenticated user performing the action. |
+| `IP Address` | String | The network location from which the request originated. |
+| `Transaction Ref` | String | The business reference number. |
+| `Action Performed` | Enum | e.g., Submit for Approval, Authorize, Reject. |
+| `Field Changed` | String | Name of the specific data field modified. |
+| `Old Value` | String | The data state before the action. |
+| `New Value` | String | The data state after the action. |
+| `Justification` | Text | Free-text reason (Mandatory for Rejections/Overrides). |
 
-## 9. Fee & Tariff Configuration Engine
+**Specific Validation & Generation Rules:**
+* **Immutability (Append-Only):** No user or admin should have permissions to delete/update a row in the audit log.
+* **Session Tracking:** If processed by an automated system agent, User ID must clearly reflect "SYSTEM".
+* **Report Generation:** System MUST support `Transaction History Report` (UI view) and `Compliance Extract` (cryptographically signed CSV/PDF export).
 
-### REQ-COM-FEE-01: Dynamic Tariff Matrix
-Administrators MUST be able to define fee logic mapping without development code changes. The configuration MUST support:
-- `Fee Event Trigger`: Issuance, Amendment, Payment.
-- `Calculation Type`: Flat Rate, Percentage, Tiered.
-- `Base Rate / Amount` & `Min/Max Constraints`.
-- `Time Period`: One-off, Per Month, Per Quarter.
-- `Customer Tier Override`: Apply exceptions for VIP clients.
+## 9. Product Configuration (The Catalog Approach)
 
-### REQ-COM-FEE-02: Workflow Approvals for Pricing
-Any creation or modification to the Tariff Matrix MUST traverse a Maker/Checker `Pending Approval` flow. Pricing updates carry significant risk and cannot be applied unilaterally by an admin.
+### REQ-COM-PRD-01: Product Configuration Matrix
+This matrix sits within the Common Module (`TradeProduct` entity). Business Administrators configure these parameters to define a specific product (e.g., "Islamic Usance Import LC").
 
----
+| Configuration Flag / Field | Data Type | Description & System Rules |
+| :--- | :--- | :--- |
+| `ProductID` | String | Unique Identifier (e.g., `IMP_LC_RED_CLAUSE`). |
+| `Product Name` | String | Commercial name displayed to users. |
+| `Is Active` | Boolean | Controls if the product is available for new issuances. |
+| `Product Type` | Enum | `LC Import`, `LC Export`, `Collection Import`, `Collection Export` |
+| `Allowed Tenor` | Enum | Limits the payment terms: `Sight Only`, `Usance Only`, or `Mixed`. |
+| `Max Tolerance Limit` | Integer | Hard ceiling on the tolerance percentage (e.g., 10%). |
+| `Allow Revolving` | Boolean | If True, enables UI fields for automatic reinstatements. |
+| `Allow Advance Payment`| Boolean | Enables "Red/Green Clause" logic, allowing Beneficiary to draw funds before shipment. |
+| `Is Standby (SBLC)` | Boolean | Flags the product as a Guarantee. Alters SLA and presentation rules. |
+| `Is Transferable` | Boolean | Dictates if the LC can be reassigned to a second beneficiary. |
+| `Accounting Framework`| Enum | Values: `Conventional` or `Islamic`. Dictates underlying GL posting rules (Interest vs. Profit Rate). |
+| `Mandatory Cash Margin`| Integer | Specifies a minimum % of cash collateral required at issuance, bypassing standard facilities. |
+| `Document Exam SLA Days`| Integer | Overrides the standard 5-day UCP 600 rule (e.g., SBLCs might require 1-day). |
+| `Default SWIFT Format`| Enum | Forces the output message type (e.g., MT 700 for LC, MT 760 for Standbys). |
 
-## 10. Product Configuration Matrix (The Catalog)
-Instead of rigidly hardcoding business logic into code, specific instruments (e.g., Islamic LC, Standby LC, Red Clause, Sight LC) MUST be driven by a Parameterized Catalog managed by business admins.
-
-### REQ-COM-PRD-01: Product Matrix Fields
-The internal `TradeProduct` mapping entity MUST support the following toggles/rules:
-- `ProductID` & `Product Name`.
-- `Allowed Tenor`: Sight Only, Usance Only, Mixed.
-- `Max Tolerance Limit`: Hard ceiling % allowed during entry.
-- `Allow Revolving`: Enables automated reinstatement schedules.
-- `Allow Advance Payment`: Bypasses strict presentation rules for Red/Green clause LCs.
-- `Is Standby (SBLC)`: Alters SLA constraints and UCP presentation logic (defaults output to MT760).
-- `Accounting Framework`: Defaults to Conventional (Interest) or Islamic Trade (Profit Rate GL routing).
-- `Mandatory Cash Margin`: Forces 100% cash deposit blocking ignoring standard limit facilities.
-
-### REQ-COM-PRD-02: Cross-Functional Impact
-When a Maker selects a `ProductID` during Application Capture, the system MUST dynamically override default behavior (e.g., hiding Usance inputs for Sight LCs, forcing 100% cash margins before authorization, mapping the correct Swift message format).
-
----
-*End of Document*
+### REQ-COM-PRD-02: Impact on Core Business Processes
+When a Maker selects a specific `ProductID`, the system reads the matrix and dynamically alters processes:
+* **Dynamic UI Rendering:** Adapts entry screen instantly (e.g., hiding "Usance Days" if `Sight Only`).
+* **Pre-Processing Validations:** Forces exact checks (e.g., blocking Checker if `Mandatory Cash Margin` is not fully held).
+* **Message Generation:** Formats SWIFT dynamically (e.g., MT760 instead of MT700 for `Is Standby = True`).
+* **SLA Countdown Timer:** Uses the overridden `Document Exam SLA Days` for alerts and blocks.
+* **Advance Drawings:** Allows clean presentations against simple receipts if `Allow Advance Payment = True`, bypassing standard shipping document requirements.
+* **Accounting/Settlement:** Reinstates Revolving LCs automatically upon settlement if `Allow Revolving = True`. Posts to Islamic GLs if `Accounting Framework = Islamic`.
