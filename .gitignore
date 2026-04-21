@@ -78,4 +78,6 @@ ehthumbs.db
 Desktop.ini
 
 # Linux auto files
-*~
+
+# Worktrees
+.worktrees/
