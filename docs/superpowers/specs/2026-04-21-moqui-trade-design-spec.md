@@ -12,18 +12,24 @@ This specification bridges our Business Requirements (BRDs) and Behavior-Driven 
 
 As per Moqui patterns, static lifecycle configurations leverage `moqui.basic.StatusItem` and cacheable queries.
 
-### 2.1 Trade Instrument Lifecycle (`StatusFlow`)
-The global state flow defining exactly where an instrument sits operationally.
-* **TfDraft:** Initiated but incomplete.
-* **TfPendingAppr:** Awaiting authorization (Tier checks apply).
-* **TfIssued:** Active formal liability.
-* **TfDocsReceived:** Presentation active, examination SLA running.
-* **TfDiscrepant:** Operational pause requiring waivers.
-* **TfAccepted:** Clean presentation, maturity calculation active.
-* **TfSettled:** Final Nostro offset completed.
-* **TfClosed:** Extinguished completely.
+### 2.1 Standardized Processing Flow (`StatusFlow` : Transaction State)
+The system-level workflow managing data-entry and Maker/Checker authorizations (Common Module).
+* **TxDraft:** Initiated but incomplete data entry.
+* **TxPendingApproval:** Submitted, locked for maker, awaiting Checker.
+* **TxAuthorized:** Officially approved.
+* **TxRejected:** Checker returns to Maker for correction.
+* **TxClosed:** Terminal system state.
 
-### 2.2 Trade Product Configuration Matrix (`Enumeration` cacheable)
+### 2.2 LC Lifecycle States (`StatusFlow` : Domain Business State)
+The business-level domain state of the Letter of Credit itself (Import LC Module).
+* **LcIssued:** Active formal liability towards Beneficiary.
+* **LcDocsReceived:** Presentation active, examination timer running.
+* **LcDiscrepant:** Operational pause requiring waivers.
+* **LcAccepted:** Clean presentation, payment maturity calculation active.
+* **LcSettled:** Final financial obligations cleared.
+* **LcCancelled:** Instrument expired or mutually cancelled without full drawing.
+
+### 2.3 Trade Product Configuration Matrix (`Enumeration` cacheable)
 Configuration identifiers mapped from the Common Module, representing product templates.
 * **PrdSightLc:** Sight Letter of Credit Template
 * **PrdUsanceLc:** Usance Letter of Credit Template
@@ -38,7 +44,8 @@ Configuration identifiers mapped from the Common Module, representing product te
 #### `TradeInstrument` (Master Record)
 * `instrumentId` (`id`, **PK**, `primary-key-sequence="true"`)
 * `transactionRef` (`text-short`) [Required: System-generated format e.g. TF-IMP-001]
-* `lifecycleStatusId` (`id`) [Relation -> `StatusItem`]
+* `transactionStatusId` (`id`) [Relation -> `StatusItem` : System Workflow Status]
+* `businessStateId` (`id`) [Relation -> `StatusItem` : Domain Product Status]
 * `productEnumId` (`id`) [Relation -> `Enumeration`]
 * `baseEquivalentAmount` (`number-decimal`) [Calculated via FX rules]
 * `issueDate` (`date`), `expiryDate` (`date`)
@@ -56,7 +63,7 @@ To support Maker/Checker authorization correctly on post-issuance updates withou
 #### `TradeInstrumentAmendment` (Shadow)
 * `amendmentId` (`id`, **PK**, `primary-key-sequence="true"`)
 * `instrumentId` (`id`) [Relation -> `TradeInstrument`]
-* `lifecycleStatusId` (`id`) [Draft / PendingAppr / Applied / Rejected]
+* `transactionStatusId` (`id`) [Draft / PendingApproval / Applied / Rejected]
 * `amountDeltaNew` (`number-decimal`) [Proposed Financial shift]
 * `expiryDateNew` (`date`) [Proposed Expiry shift]
 * `isBeneficiaryConsentRequired` (`text-indicator`) [Y/N]
