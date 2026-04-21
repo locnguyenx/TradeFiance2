@@ -1,98 +1,116 @@
-# Moqui Technical Design Specification
+# Comprehensive Moqui Technical Design Specification
 **Project Name:** Digital Trade Finance Platform
 **Date:** April 21, 2026
-**Version:** 1.0 Finalized
+**Version:** 2.0 (Exhaustive Finalization)
 
-## 1. Architectural Overview & UI Integration
-This technical design bridges the Business Requirements (BRDs), Behavior Driven Development tests (BDDs), and UI Wireframes into explicit data structures, execution logic, and deployment structures within the Moqui framework. To maintain robust modularity and crash resistance, the platform is structured cleanly between common governance logics and domain-specific instruments.
+## 1. Architectural Overview & Integration
+This technical design fully maps the Business Requirements (BRD), Behavior Driven Development tests (BDD), and UI specifications directly into Moqui framework data structures, service logic, and persistence patterns. 
 
 ### 1.1 Architecture Pattern (Hybrid Headless)
-* **Moqui Engine Backend:** Operates explicitly as a headless REST API (`/rest/s1/trade`). It acts as securely centralized control executing SWIFT mapping, limits calculation (`LimitServices`), strict state-machine constraints, and maker/checker compliance rules globally.
-* **Separated Frontend SPA:** Constructed securely separate from Moqui XML framework logic, allowing React/JSX DOM structures to process the cognitively heavy UX elements (such as split-screen visualization, document presentation examination tables, and dashboard queues) locally before firing standard JSON REST calls against Moqui's native validation structure.
+* **Moqui Engine Backend:** Operates explicitly as a headless REST API (`/rest/s1/trade`). It serves as the secure core, strictly executing state-machine constraint validation, Limit/Facility manipulation, Tariff logic, SWIFT building, and database persistence.
+* **Separated Frontend SPA:** A Single Page Application (e.g., Next.js/React) disconnected from standard Moqui XML Form rendering. It consumes the REST APIs and is primarily responsible for resolving the cognitive load requirements (visual split-screens, document examination tables, high-density dashboard queues) natively on the client.
 
-### 1.2 Maker/Checker Authorization Engine
-* **Integration mapping:** The 4 established Authorization Tiers (Tier 1 $\rightarrow$ 4) map strictly to standard Moqui out-of-the-box native groups: `TRADE_APP_TIER_1` down to `TRADE_APP_TIER_4`. Role-Based Execution endpoints (`submit#Lc`) securely lock utilizing `UserPermission` tags.
-* **Joint/Dual Approval Matrix Engine:** Because standard `UserPermission` is boolean, Dual Check (meaning specifically two active users executing approvals for Tier 4 requirements organically) inherently executes computationally inside `trade.finance.AuthorizationServices.evaluateMakerCheckerMatrix`. Natively traversing the system's `Shadow Records`, ensuring distinct unique identity validations logic prior to instrument mutation.
-
----
-
-## 2. COMMON MODULE A: Trade Framework Integrations
-Houses universally inherited data entity properties, limits evaluations, and core static dictionaries logically extending across collections and explicit guarantees evenly.
-
-### 2.1 Core Entities & Master Dictionary Enum Mapping
-Defined logically explicitly mapping to `moqui.basic.Enumeration` attributes.
-
-* **Product Type Enum (`TradeProductType`):** `LC_IMPORT`, `LC_EXPORT`, `COLLECTION_IMPORT`.
-* **State Machine Frameworks (`TradeTransactionFlow`):** Represents operational execution phase natively: `Draft`, `PendingApproval`, `Authorized`, `Rejected`, `Closed`.
-* **SLA Configuration Matrix:** Incorporating logic directly against standard Universal Date Calendar processing APIs native skipping weekend arrays successfully.
-
-### 2.2 Framework Entities Schema
-
-#### `TradeInstrument` (Primary Polymorphic Parent)
-Captures unified logic mapped against FX calculations securely.
-* `instrumentId` (`id`, PK, auto-sequential)
-* `transactionRef` (`text-short`) [TF-IMP-YY-0001 System generated standard]
-* `lifecycleStatusId` (`id`) [Points to TradeTransactionFlow]
-* `productEnumId` (`id`) [Points to TradeProductType]
-* `baseEquivalentAmount` (`number-decimal`) [Calculated via dual-FX constraints inherently]
-* `issueDate` (`date`), `expiryDate` (`date`)
-* `customerFacilityId` (`id`) [Points inherently against Limits Engines]
-
-#### `CustomerFacility`
-Holds the centralized master validation bounds guaranteeing absolute non-breach parameters natively.
-* `facilityId` (`id`, PK)
-* `totalApprovedLimit` (`number-decimal`)
-* `utilizedAmount` (`number-decimal`)
-* `facilityExpiryDate` (`date`)
-
-#### `TradeInstrumentAmendment` (Shadow Versioning)
-Safely retains Maker Delta parameters before Checker commitments effectively overriding base attributes securely isolating modifications.
-* `amendmentId` (`id`, PK)
-* `instrumentId` (`id`) [Points to Base TradeInstrument natively]
-* `transactionStatusId` (`id`) [Draft/Pending Approval statuses exclusively]
-* `amountDeltaNew` (`number-decimal`), `newExpiryDate` (`date`)
-
-### 2.3 System Services
-* **`LimitServices.xml`** `calculate#FacilityEarmark`. Directly performs boundary math logic internally. Throws explicit `IllegalArgumentException` completely blocking commits when utilization breaches defined max capacity limits natively.
+### 1.2 Maker/Checker Authorization Engine Framework
+* **OOTB Baseline Access Migration:** Tiers 1 through 4 correlate strictly to standard Moqui `UserGroup`s (e.g., `TRADE_APP_TIER_1` down to `TRADE_APP_TIER_4`). REST API endpoints are protected using standard `UserPermission` assignments natively attached to these groups, causing generic `403 Forbidden` limits dynamically.
+* **Dual Approval & Compliance Suspensions:** Executed within the primary `trade.finance.AuthorizationServices.evaluateMakerCheckerMatrix`. Since specific logic (like requiring absolute verification natively resolving to TWO distinct Tier 4 user signatures for high-tier validations) exceeds simple boolean routing, this service directly parses `Shadow Records` determining validity natively.
+* **Segregation By Identity:** Explicit Four-Eyes principle evaluates `Instrument.createdBy` directly prohibiting UI Action execution for identical user identities inherently.
+* **Sanctions Interruptions:** If compliance calls output `True` during Pre-processing validations, standard structural Maker/Checker assignments logically disconnect routing targets directly toward an isolated internal `COMPLIANCE_REVIEW_QUEUE`.
 
 ---
 
-## 3. MODULE B: Import Letter of Credit (LC) Domain
-Expands base foundations utilizing strictly mapped parameters fulfilling BDD and UCP600 compliance models effectively generating accurate states natively.
+## 2. COMMON MODULE A: Base Framework & Master Configurations
+Covers the cross-cutting global operations universally applicable for all underlying Trade Operations (Letters of Credit, Shipping Guarantees, Collections).
 
-### 3.1 Domain Product Entities Schema
+### 2.1 Core Business Entity Relational Schema
+Extending standard Moqui structures dynamically.
 
-#### `ImportLetterOfCredit` (Extends Base Instrument)
-Maps explicit commercial fields driving SWIFT payload values functionally.
-* `instrumentId` (`id`, PK) [Mapped entirely to `TradeInstrument`]
-* `businessStateId` (`id`) [Tracks precise UCP status explicitly (e.g., Issued, DocsReceived, Settled, Closed)]
-* `beneficiaryPartyId` (`id`) [Validates exclusively against `TradeParty` mapping]
-* `tolerancePositive` (`number-decimal`), `toleranceNegative` (`number-decimal`)
-* `tenorTypeEnumId` (`id`) [ Sight, Usance_Deferred ]
-* `chargeAllocationEnumId` (`id`) [ Applicant, Beneficiary, Shared ]
-* `partialShipmentEnumId` (`id`), `transhipmentEnumId` (`id`)
+* **`TradeInstrument` (Base Extensibility Parent):**
+  * `instrumentId` (`id`, PK, auto-sequential)
+  * `transactionRef` (`text-short`) [TF-IMP-YY-0001 System generated standard utilizing NumberSequence logic].
+  * `lifecycleStatusId` (`id`) [Mapped directly into `TradeTransactionFlow`]
+  * `productEnumId` (`id`) [Derived via `TradeProductType`]
+  * `baseEquivalentAmount` (`number-decimal`) [Pre-computed using designated local Daily Exchange Rates].
+  * `issueDate` (`date`), `expiryDate` (`date`)
+  * `customerFacilityId` (`id`) [FK mapping directly into Limits Engines API].
+
+* **`CustomerFacility` (Core Limits):**
+  * `facilityId` (`id`, PK)
+  * `totalApprovedLimit` (`number-decimal`)
+  * `utilizedAmount` (`number-decimal`)
+  * `facilityExpiryDate` (`date`)
+
+* **`TradePartyExtent` (KYC/AML Extrapolations):**
+  * Extends standard Moqui `mantle.party.Party` inserting specific explicit logic arrays capturing formal fields:
+  * `isKycCleared` (`boolean`), `kycExpirationDate` (`date`), `sanctionsWarningActive` (`boolean`), `partyRoleEnumId` (`id`).
+
+* **`TradeInstrumentAmendment` (Shadow Versioning):**
+  * Inherently buffers modified states explicitly avoiding physical writes over `TradeInstrument` limits until final formal Checker approval natively updates parameters securely.
+
+### 2.2 Currency, SLA Calendars & Notifications
+* **Dual-Rate FX Mapping Strategies:**
+  * `Daily Board Rate Cache:` Cached end-of-day variables natively retrieved during Pre-Processing calculations evaluating `CustomerFacility` earmarks reliably (protecting inputs uniformly).
+  * `Live Spot Integration API:` Settlement components hitting explicit REST API (`TreasuryProxyServices`) natively evaluating accounting cash generation matrices explicitly mapping real-time numbers independently.
+* **Single Global Banking Calendar Engine:**
+  * Service explicit structure computing logic (`trade.finance.DateServices.computeSlaTime`). Inherently bypasses universal weekends and Head-Office recognized structured holiday arrays evaluating maximum SLA durations strictly returning `Target End Date` explicitly.
+* **Proactive Threshold Alerts Engine (Notifiers):**
+  * Configured listener batches firing upon physical Limit modifications evaluating calculations. Triggers native Moqui `EmailTemplate` sending payloads asynchronously if `(utilizedAmount / totalApprovedLimit) > 0.95` or if elapsed durations hit Document Examination 5-day deadlines unconditionally.
+
+### 2.3 Comprehensive Catalog Master Data
+Ensuring dynamic configurability structurally without system deployments.
+
+#### 1. Tariff & Fee Mathematical Engine (`FeeConfiguration` Schema)
+The platform establishes dynamic cost computation structures completely controlled manually via configuration menus mapping rules natively during Service calculation executions.
+* **Fields:** `feeConfigurationId`, `targetEventEnumId` (e.g., LC Issuance), `calculationTypeEnumId` (Flat, Percentage), `baseValue` (`number-decimal`), `minFloorAmount` (`number-decimal`), `maxCeilingAmount` (`number-decimal`), `customerOverrideTierId` (`id`).
+* **Service Executor (`trade.finance.TariffServices.calculateFee`)**: Uses logical extraction assessing standard `Base Value` metrics checking conditional outputs cleanly against `minFloorAmount`. Evaluates particular priority matching Applicant `Customer Tier` overriding generic formulas accurately returning absolute computed `Final Applied Fee`.
+
+#### 2. The Product Configuration Catalog Matrix (`TradeProductCatalog`)
+Business definitions establishing fundamental internal constraints modifying specific rendering and routing structurally.
+* **Fields & Attributes:** `productId`, `isTransferable` (`boolean`), `allowRevolving` (`boolean`), `allowAdvancePayment` (`boolean`), `maxToleranceThreshold` (`number-decimal`), `documentExamSlaRuleDays` (`number-integer`), `defaultSwiftMtTypeEnumId` (`id`), `accountingFrameworkEnumId` (`CONVENTIONAL` / `ISLAMIC`), `mandatoryMarginPercent` (`integer`).
+* **Execution Logic Integration:** Modifies structural behavior inherently across components conditionally bypassing hard rules universally (e.g., Islamic framework enforces differing independent localized GL codes logically routing interest fields perfectly away; `MandatoryMargin` denies Maker Commit attempts failing to find 100% equivalent blocked customer accounts concurrently; `DocumentExamRule` completely overrides baseline generic UCP 5 Day SLAs replacing mathematical duration computations dynamically).
+
+#### 3. Delta JSON Transaction Audit Logging
+* **`TradeTransactionAudit` (Immutable Layer):**
+  Every modification specifically creating immutable records. Mapped inherently capturing variables: `timestamp`, `userId`, `actionEnumId` (e.g., Maker Update), `justificationRootText`, and `snapshotDeltaJSON`. Uses pure raw entity output configurations generating physical text strings verifying no system or superuser can edit past records maliciously.
+
+---
+
+## 3. IMPORT LC MODULE B: Structured Lifecycle Domain
+Explicit application domains expanding upon the standardized internal architectures implementing exact BRD instrument conditions definitively.
+
+### 3.1 Domain Extensibility Engine Data Schemas
+
+#### `ImportLetterOfCredit` (Product Direct Inherit)
+Expands precise properties structurally extending `TradeInstrument` bounds definitively capturing SWIFT specific fields.
+* `instrumentId` (`id`, PK) [Relational binding]
+* `businessStateId` (`id`) [StatusFlow tracking UCP logic directly: `LcDraft`, `LcIssued`, `LcDocsReceived`, `LcSettled`].
+* `beneficiaryPartyId` (`id`) [Foreign Link mapping `TradePartyExtent`]
+* `tolerancePositive` (`number-decimal`), `toleranceNegative` (`number-decimal`) [Evaluated against constraint rules enforcing explicit restrictions inherently against max configuration levels].
+* `tenorTypeId` (`id`), `usanceDays` (`number-integer`), `partialShipmentId` (`id`), `transhipmentId` (`id`), `portOfLoading` (`text`), `portOfDischarge` (`text`).
+* `chargeAllocationEnumId` (`id`) [Evaluates structural Fee assignment responsibility natively `APPLICANT`, `BENEFICIARY`].
+
+#### `ImportLcShippingGuarantee`
+Tracks 110% over-earmarked independent legal claims implicitly locking applicant capabilities inherently overriding discrepancy workflows actively.
+* `guaranteeId` (`id`, PK), `instrumentId` (`id`, FK LC), `invoiceAmount` (`decimal`), `liabilityMultiplierRequired` (`integer` default 110%), `transportDocReference` (`string`).
 
 #### `TradeDocumentPresentation`
-Safeguards the physical lodgement records specifically.
-* `presentationId` (`id`, PK)
-* `instrumentId` (`id`) [Link to ImportLetterOfCredit logic directly]
-* `presentationDate` (`date`)
-* `claimAmount` (`number-decimal`)
-* `isDiscrepant` (`text-indicator`)
+Logs examination statuses uniquely evaluating independent actions.
+* `presentationId` (`id`, PK), `instrumentId` (`id`), `presentationDate` (`date`).
+* `claimAmount` (`number-decimal`), `isDiscrepant` (`boolean`), `applicantDecisionEnumId` (`id` [PENDING, WAIVED, REFUSED]).
 
-### 3.2 Key Services
-* **`ImportLcServices.xml`** `submit#ImportLc`. Reads exact constraints combining mathematical tolerances ensuring absolute protection parameters internally. Checks `TradeParty` KYC variables strictly before triggering state transitions explicitly.
-* **`ImportLcValidationServices.xml`** `evaluate#Drawing`. Forces hard-stops utilizing tolerance mathematical thresholds inherently restricting excessive drawn claims logically overriding UI bounds.
+### 3.2 Key Process Operations Enforcement
+* **`ImportLcValidationServices.xml` `evaluateDrawingLimits`**: Restricts mathematical output parameters implicitly demanding `ClaimAmount` evaluates mathematically `<` `(LC Amount * (1 + PositiveTolerance))`. Denies any execution resolving logic false.
+* **`ImportLcSettlementTracking.xml` `processUsanceFutureQueue`**: Native logic checking accepted states enforcing automatic logical execution loops evaluating current Business Dates natively compared specifically against defined explicit `Usance Maturity Document Date` targets generating required Settlement Triggers automatically.
+* **End Of Day Auto-Expiry Engine (`ImportLcBatchJobs.xml`)**: Invokes native logic assessing generic active instrument pools natively applying `System Mail Grace Days` immediately determining Expiry closure bounds dynamically returning unutilized limits logically to `Customerfacility` mappings implicitly.
 
 ---
 
-## 4. SWIFT Generative Mapping Specifications
-Strict conversion of standard Moqui REST objects exactly mapping formatted messaging logic arrays efficiently avoiding string concatenations natively.
+## 4. SWIFT Messaging Formatter Validations
+Executes strict conversion parsing ensuring data fields properly mutate out of standard generic entities flawlessly directly executing SWIFT parameters without logic overlaps natively.
 
-### 4.1 Base Swift Service
-* **`SwiftGenerationServices.xml`** `generate#Mt700`. Executes direct generation calls cleanly extracting attributes converting structures appropriately.
+### 4.1 Native Output Format Services
+* **`trade.finance.SwiftGenerationServices.generateMt700`:** Binds output parameters actively executing generation logics logically resolving raw entities definitively inside Prowide WIFE mapping structures natively. Incorporates strict X-Character filters logically preempting generation processes ensuring inputs lack invalid logical definitions completely.
 
-### 4.2 Structural Overrides and Logic Formats
-* **Dual Designator Tags (`59` vs `59A`):** The logic explicitly checks for User Interface toggles indicating standard Name/Address routing versus structured Swift BIC mapping natively appending accurate Alpha descriptors automatically.
-* **Text Array Processing (`45A`, `46A`, `47A`):** The engine natively loops and chunks any standard free-text string payload converting entirely into the SWIFT required `65-Character Limited line arrays` perfectly complying with MT formatting securely.
-* **Tolerance Splitting (`39A`):** Synthesizes numeric decimals logically into string formats internally (`5/5` positive/negative arrays) satisfying parsing structures completely overriding localized decimal formatting effectively.
+### 4.2 Structural Overrides and Logic Vectors
+* **Option Designation Dynamic Filtering:** Natively executes logic detecting variable states automatically replacing Tag references systematically ensuring Bank profiles natively switch format outputs directly into `59A` tags versus explicit Name/Address arrays targeting standard `59` definitions cleanly based entirely upon UI variables mapped seamlessly.
+* **Tolerance Reformat Matrix (`Tag 39A`):** Aggregates numeric variables concatenating internal decimal definitions into valid text strings definitively executing combinations generating valid target formats specifically structured as `Positive/Negative` string logic natively.
+* **Native Chunked Array Formatting (`Tag 45A/46A`):** The logic loops over `Description of Goods` string payload variables securely invoking chunk array division logic strictly capping line limitations at max `65 characters` wrapping dynamically ensuring final MT block execution perfectly bounds structure inherently protecting external systems correctly.
