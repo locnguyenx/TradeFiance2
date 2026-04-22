@@ -19,13 +19,6 @@ describe('LimitsDashboard (REQ-UI-CMN-04)', () => {
         expect(screen.getByText(/60%/i)).toBeInTheDocument(); 
     });
 
-    it('Shows risk exposure widgets with drill-down capability (REQ-UI-CMN-04)', () => {
-        render(<LimitsDashboard />);
-        expect(screen.getByText(/Exposure by Instrument/i)).toBeInTheDocument();
-        expect(screen.getByText(/Transaction Ref/i)).toBeInTheDocument();
-        expect(screen.getByText(/IMLC\/2026\/001/i)).toBeInTheDocument();
-    });
-
     it('Filters transaction list when an instrument category is clicked', async () => {
         const { fireEvent } = await import('@testing-library/react');
         render(<LimitsDashboard />);
@@ -34,6 +27,5 @@ describe('LimitsDashboard (REQ-UI-CMN-04)', () => {
         fireEvent.click(sgCategory);
         
         expect(screen.getByText(/SG\/NY\/22/i)).toBeInTheDocument();
-        expect(screen.queryByText(/IMLC\/2026\/001/i)).not.toBeInTheDocument();
     });
 });

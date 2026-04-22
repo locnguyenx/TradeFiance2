@@ -126,6 +126,12 @@ export const ImportLcDashboard: React.FC = () => {
                                                         <button className="menu-item" onClick={() => window.location.href=`/import-lc/presentations?id=${lc.instrumentId}`}>
                                                             Present Documents
                                                         </button>
+                                                        <button className="menu-item" onClick={() => window.location.href=`/import-lc/settlement?id=${lc.instrumentId}`}>
+                                                            Initiate Settlement
+                                                        </button>
+                                                        <button className="menu-item" onClick={() => window.location.href=`/import-lc/shipping-guarantees?id=${lc.instrumentId}`}>
+                                                            Shipping Guarantee
+                                                        </button>
                                                         <button className="menu-item" onClick={() => window.location.href=`/import-lc/cancellations?id=${lc.instrumentId}`}>
                                                             Request Cancellation
                                                         </button>

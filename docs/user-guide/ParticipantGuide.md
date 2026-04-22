@@ -1,71 +1,76 @@
 # Participant Operating Guide: Digital Trade Finance
 
-Welcome to the Digital Trade Finance platform. This comprehensive guide provides step-by-step instructions for Bank Participants (Makers and Checkers) to manage the lifecycles of Import Letters of Credit and Shipping Guarantees.
+This guide provides exhaustive, step-by-step instructions for Bank Makers and Checkers to manage the trade finance lifecycle.
+
+![Dashboard Overview](file:///Users/me/.gemini/antigravity/brain/222f8be2-5040-4a62-83e6-546ec9bc13b0/verify_icons_rendering_1776868261650.webp)
 
 ---
 
-## 1. Unified Operational Dashboard
-The dashboard is your central hub for high-density, priority-driven task management.
+## 1. Import LC Issuance (Maker Workflow)
+**Goal**: Create and submit a new LC for authorization.
 
-### KPI Metrics
-- **Drafts Awaiting My Submission**: Real-time count of instruments in `Draft` state.
-- **LCs Expiring within 7 Days**: Critical countdown for instruments requiring immediate extension.
-- **SLA Alerts**: Highlights presentations nearing the 5-day UCP 600 response deadline.
-
-### High-Density Data Grid
-- **Global Search**: Instantly filter instruments by Ref, Applicant, or Amount.
-- **Dynamic Status Chips**: Visual indicators for `Pending Authorisation`, `Discrepant`, and `Issued` states.
-- **Row-Level Actions**: Direct access to Document Examination or Amendment forms.
-
----
-
-## 2. Import LC Issuance (Maker Role)
-The Issuance Stepper provides a premium, 5-step guided experience for complex data entry.
-
-### workflow Steps
-1.  **Parties & General**: Capture Applicant, Beneficiary, and Advising Bank details.
-2.  **Financials & Tolerance**: Define Amount, Currency, and +/- tolerance percentages.
-3.  **Terms & Dates**: Define Incoterms, Ports of Loading/Discharge, and Expiry logic.
-4.  **Documents & Narratives**: map required documents to MT700 field blocks.
-5.  **Review & Submit**: Full-width summary view with validation error highlighting.
+1.  **Initiation**: Click **New LC Issuance** in the **OPERATIONS** section.
+2.  **Step 1: Parties**:
+    - Enter **Applicant** and **Beneficiary** names.
+    - Select **Advising Bank** from the lookup.
+3.  **Step 2: Financials**:
+    - Enter **Amount** (e.g., `500000`) and select **Currency**.
+    - Define **Tolerance** (e.g., `5/5`).
+4.  **Step 3: Terms**:
+    - Select **Incoterms** (e.g., `CIF`).
+    - Define **Expiry Date** and **Place of Expiry**.
+5.  **Step 4: Clauses**:
+    - Use the **Clause Selector** to add standard legal text for MT700 field 47A.
+6.  **Step 5: Submission**:
+    - Review the **Validation Summary**.
+    - Click **Submit for Authorization**. The status will change to `PENDING_CHECKER`.
 
 ---
 
-## 3. Checker Authorization & Risk Matrix (Checker Role)
-Accessed via the **Global Checker Queue**, this workspace provides a 30/70 split-pane risk analysis view.
+## 2. Checker Authorization (Checker Workflow)
+**Goal**: Audit and approve/reject transaction requests.
 
-### Risk & Limit Matrix (Left Pane)
-- **Limit Compliance**: Displays real-time headroom for the selected Credit Facility (BDD-IMP-ISS-01).
-- **Sanctions Check**: Automated status from global SDN screening.
-- **Discrepancy Severity**: High-visibility alerts for Document Presentation findings.
-
-### Transaction Comparison (Right Pane)
-- **Read-Only Context**: Full instrument view for verification.
-- **Delta Highlighting**: Amendments show `Old Value` vs `New Value` with status tags for rapid audit.
-
-### Review Actions
-- **Approve Transaction**: Triggers immutable audit log and MT700 dispatch.
-- **Reject to Maker**: Opens a mandatory comments modal to specify rectification requirements.
+1.  **Access**: Click **My Tasks (Approvals)** in the sidebar.
+2.  **Selection**: Click the **Authorize** button on the relevant task row.
+3.  **Verification (Step-by-Step)**:
+    - Review the **Risk Matrix** (Left Pane) for limit headroom and sanctions status.
+    - Check the **Highlighting Deltas** section to see exactly what changed (for Amendments).
+    - Click **Verify Documents** to open the side-by-side viewer.
+4.  **Decision**:
+    - Click **Approve** to finalize and dispatch the instrument.
+    - Click **Reject** to send back to the Maker with comments.
 
 ---
 
-## 4. Document Examination Workspace
-A specialized 50/50 split-screen interface for comparing LC terms against digital document presentations.
+## 3. LC Amendments & Lifecycle Management
+**Goal**: Modify terms or manage events for an issued LC.
 
-- **Digital Document Viewer (Left)**: Scrollable PDF/Image preview of presented docs (Invoice, B/L, etc.).
-- **Discrepancy Ledger (Right)**:
-    - **Checklist**: Select discrepancies (e.g., Late Presentation, Overdrawn Amount).
-    - **Compliance Decision**: Mark as `Clean` or `Discrepant` to trigger the next workflow step.
+### A. Initiating an Amendment
+1.  From the **Operations Dashboard**, click the **•••** action on an Issued LC row.
+2.  Select **New Amendment**.
+3.  **Step-by-Step Change**:
+    - Modify the restricted fields (e.g., increase Amount or extend Expiry).
+    - The system calculates the **Delta** automatically.
+    - Click **Submit Amendment**.
+
+### B. Document Presentation & Examination
+1.  Navigate to **Operations Dashboard > Row Actions > Present Documents**.
+2.  **Input**: Enter Invoice Value and transport document references.
+3.  **Examination**:
+    - Go to **Document Examination** in the sidebar.
+    - Use the checklist to mark discrepancies (e.g., "Late Shipment").
+    - **Submit Decision**: If discrepant, it triggers a waiver request to the Applicant.
+
+### C. Settlement & Closure
+1.  Navigate to **Lifecycle > Settlements**.
+2.  **Step-by-Step Payment**:
+    - Select the LC and associated Presentation.
+    - Review **Charges & Fees** (pre-calculated from Tariff Matrix).
+    - Click **Initiate Payment** to trigger the accounting entries and MT740.
 
 ---
 
-## 5. Shipping Guarantee (SG) Workflow
-Used when goods arrive at the port before original documents.
-- **Issuance**: Select an existing Issued LC to anchor the SG.
-- **110% Earmarking**: The system automatically secures 110% of the invoice amount against the customer's limit to cover potential price variance and costs.
-
----
-
-## 6. Support & Troubleshooting
-- **System Errors**: If the "System Temporarily Unavailable" banner appears, check your network or contact Trade Support.
-- **Self-Auth Error**: You will see a "Self-Authorization Forbidden" warning if you attempt to approve your own transaction.
+## 4. Advanced Operational Features
+- **Global Search**: Search by full Reference Number or Applicant Name in the top header.
+- **SLA Tracking**: Observe the color-coded **SLA Timer** in the dashboard. Red indicates < 2 days for UCP 600 compliance.
+- **View Message**: On any instrument, click the **Message** icon to preview the SWIFT MT7xx template before dispatch.

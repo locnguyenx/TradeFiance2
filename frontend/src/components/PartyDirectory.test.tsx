@@ -5,21 +5,23 @@ import { PartyDirectory } from './PartyDirectory';
 // UI Traceability: REQ-UI-CMN-03
 
 describe('PartyDirectory (REQ-UI-CMN-03)', () => {
-    it('Displays a searchable list of parties with role and KYC status', () => {
+    it('Displays a searchable list of parties with KYC and AML status', () => {
         render(<PartyDirectory />);
-        expect(screen.getByPlaceholderText(/Search Parties/i)).toBeInTheDocument();
-        expect(screen.getByText(/Party List/i)).toBeInTheDocument();
-        // Check for specific columns/data points in the list
-        expect(screen.getByText(/Legal Name/i)).toBeInTheDocument();
-        expect(screen.getByText(/Role/i)).toBeInTheDocument();
-        expect(screen.getByText(/KYC Status/i)).toBeInTheDocument();
+        expect(screen.getByPlaceholderText(/Search by Name or ID/i)).toBeInTheDocument();
+        expect(screen.getByText(/Party Directory/i)).toBeInTheDocument();
+        expect(screen.getByText(/Party Name/i)).toBeInTheDocument();
+        // Use getAllByText for labels that appear multiple times or be more specific
+        expect(screen.getAllByText(/KYC/i).length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/AML/i).length).toBeGreaterThan(0);
     });
 
-    it('Provides a tabbed interface for detailed vetting (REQ-UI-CMN-03)', () => {
+    it('Provides a 5-tab interface for detailed vetting', () => {
         render(<PartyDirectory />);
-        expect(screen.getByRole('tab', { name: /KYC & Compliance/i })).toBeInTheDocument();
-        expect(screen.getByRole('tab', { name: /Credit Facilities/i })).toBeInTheDocument();
-        expect(screen.getByRole('tab', { name: /Trade History/i })).toBeInTheDocument();
+        expect(screen.getByText('Kyc')).toBeInTheDocument();
+        expect(screen.getByText('Compliance')).toBeInTheDocument();
+        expect(screen.getByText('Roles')).toBeInTheDocument();
+        expect(screen.getByText('Credit')).toBeInTheDocument();
+        expect(screen.getByText('History')).toBeInTheDocument();
     });
 
     it('Switches content when different tabs are clicked', () => {
@@ -27,11 +29,18 @@ describe('PartyDirectory (REQ-UI-CMN-03)', () => {
         render(<PartyDirectory />);
         
         // Initial state
-        expect(screen.getByText(/AML Status/i)).toBeInTheDocument();
+        expect(screen.getByText(/KYC & Vetting Details/i)).toBeInTheDocument();
         
+        // Switch to Compliance
+        fireEvent.click(screen.getByText('Compliance'));
+        expect(screen.getByText(/Compliance Narrative & Flags/i)).toBeInTheDocument();
+        
+        // Switch to Roles
+        fireEvent.click(screen.getByText('Roles'));
+        expect(screen.getByText(/Authorized Capacity/i)).toBeInTheDocument();
+
         // Switch to Credit
-        fireEvent.click(screen.getByRole('tab', { name: /Credit Facilities/i }));
-        expect(screen.getByText('Approved Global Limit')).toBeInTheDocument();
-        expect(screen.queryByText(/AML Status/i)).not.toBeInTheDocument();
+        fireEvent.click(screen.getByText('Credit'));
+        expect(screen.getByText(/Allocated Facilities/i)).toBeInTheDocument();
     });
 });

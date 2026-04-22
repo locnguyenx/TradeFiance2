@@ -4,15 +4,15 @@ import { SettlementInitiation } from './SettlementInitiation';
 // ABOUTME: Test suite for LC Settlement Initiation mapping to REQ-IMP-PRC-04.
 // UI Traceability: REQ-UI-IMP-08 (Settlement Initiation)
 
-describe('SettlementInitiation (REQ-IMP-PRC-04)', () => {
-    it('Requires debit account and value date for payment', () => {
+describe('SettlementInitiation (BDD-IMP-FLOW-07,08 / BDD-IMP-VAL-01)', () => {
+    it('BDD-IMP-FLOW-07: Requires debit account and value date for payment', () => {
         render(<SettlementInitiation instrumentId="IMLC/2026/001" />);
         
         expect(screen.getByLabelText(/Applicant Debit Account/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/Value Date/i)).toBeInTheDocument();
     });
 
-    it('Calculates settlement breakdown (Principal, Interest, Charges)', () => {
+    it('BDD-IMP-VAL-01 & BDD-IMP-FLOW-07: Calculates settlement breakdown (Principal, Interest, Charges)', () => {
         render(<SettlementInitiation instrumentId="IMLC/2026/001" />);
         
         fireEvent.change(screen.getByLabelText(/Principal Amount/i), { target: { value: '100000' } });
@@ -21,7 +21,7 @@ describe('SettlementInitiation (REQ-IMP-PRC-04)', () => {
         expect(screen.getByText(/\$?\s*100,150/i)).toBeInTheDocument();
     });
 
-    it('Validates funds availability before submission', async () => {
+    it('BDD-IMP-FLOW-08: Validates funds availability before final submission', async () => {
         render(<SettlementInitiation instrumentId="IMLC/2026/001" />);
         
         // Select an account first

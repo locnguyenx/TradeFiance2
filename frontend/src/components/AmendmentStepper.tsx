@@ -123,7 +123,7 @@ export const AmendmentStepper: React.FC<AmendmentStepperProps> = ({ lcId }) => {
                         <div className="swift-block" data-testid="swift-block">
                             <pre>
 {`:20: ${originalLc.id.trim()}
-:32B: ${originalLc.currency}${Math.abs(parseFloat(delta.amountAdjustment))}
+:32B: ${originalLc.currency}${delta.amountAdjustment}
 :77A: AMENDMENT TO LC
 ${delta.newExpiryDate ? `:31E: ${delta.newExpiryDate}` : ''}`}
                             </pre>

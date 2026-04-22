@@ -24,7 +24,7 @@ const mockParties: Party[] = [
 export const PartyDirectory: React.FC = () => {
     const [selectedParty, setSelectedParty] = useState<Party>(mockParties[0]);
     const [searchTerm, setSearchTerm] = useState('');
-    const [activeTab, setActiveTab] = useState<'kyc' | 'credit' | 'history'>('kyc');
+    const [activeTab, setActiveTab] = useState<'kyc' | 'credit' | 'history' | 'roles' | 'compliance'>('kyc');
 
     const filteredParties = mockParties.filter(p => 
         p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -33,12 +33,12 @@ export const PartyDirectory: React.FC = () => {
 
     return (
         <div className="directory-container premium-card">
-            <aside className="party-sidebar">
+            <aside className="party-sidebar" style={{ width: '380px' }}>
                 <header className="sidebar-header">
-                    <h2>Party List</h2>
+                    <h2>Party Directory</h2>
                     <input 
                         type="text" 
-                        placeholder="Search Parties..." 
+                        placeholder="Search by Name or ID..." 
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="search-input"
@@ -48,9 +48,9 @@ export const PartyDirectory: React.FC = () => {
                     <table className="list-table">
                         <thead>
                             <tr>
-                                <th>Legal Name</th>
-                                <th>Role</th>
-                                <th>KYC Status</th>
+                                <th>Party Name</th>
+                                <th>KYC</th>
+                                <th>AML</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -60,11 +60,15 @@ export const PartyDirectory: React.FC = () => {
                                     className={selectedParty?.id === p.id ? 'selected' : ''}
                                     onClick={() => setSelectedParty(p)}
                                 >
-                                    <td className="party-name">{p.name}</td>
-                                    <td><span className="role-chip">{p.role}</span></td>
+                                    <td className="party-name">
+                                        <div>{p.name}</div>
+                                        <span className="party-id-small">{p.id}</span>
+                                    </td>
                                     <td>
-                                        <span className={`status-dot ${p.kycStatus}`}></span>
-                                        {p.kycStatus}
+                                        <span className={`status-tag ${p.kycStatus}`}>{p.kycStatus}</span>
+                                    </td>
+                                    <td>
+                                        <span className={`aml-tag ${p.amlStatus}`}>{p.amlStatus}</span>
                                     </td>
                                 </tr>
                             ))}
@@ -76,53 +80,81 @@ export const PartyDirectory: React.FC = () => {
             <main className="party-main-content">
                 <header className="details-header">
                     <div className="header-meta">
+                        <div className="badge-row">
+                            <span className="category-badge">CORPORATE ENTITY</span>
+                            <span className="risk-level">RISK: {selectedParty?.riskRating}</span>
+                        </div>
                         <h1>{selectedParty?.name}</h1>
-                        <span className="party-id">ID: {selectedParty?.id}</span>
+                        <span className="party-id-large">Identification: {selectedParty?.id}</span>
                     </div>
                     <div className="tab-nav" role="tablist">
-                        <button 
-                            className={`tab-btn ${activeTab === 'kyc' ? 'active' : ''}`}
-                            role="tab"
-                            onClick={() => setActiveTab('kyc')}
-                            aria-selected={activeTab === 'kyc'}
-                        >
-                            KYC & Compliance
-                        </button>
-                        <button 
-                            className={`tab-btn ${activeTab === 'credit' ? 'active' : ''}`}
-                            role="tab"
-                            onClick={() => setActiveTab('credit')}
-                            aria-selected={activeTab === 'credit'}
-                        >
-                            Credit Facilities
-                        </button>
-                        <button 
-                            className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`}
-                            role="tab"
-                            onClick={() => setActiveTab('history')}
-                            aria-selected={activeTab === 'history'}
-                        >
-                            Trade History
-                        </button>
+                        {['kyc', 'compliance', 'roles', 'credit', 'history'].map((tab) => (
+                            <button 
+                                key={tab}
+                                className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
+                                onClick={() => setActiveTab(tab as any)}
+                            >
+                                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                            </button>
+                        ))}
                     </div>
                 </header>
 
                 <div className="details-view">
                     {activeTab === 'kyc' && (
                         <div className="details-grid">
-                            <section className="kyc-section premium-card">
+                            <section className="info-card">
                                 <h3>KYC & Vetting Details</h3>
-                                <div className="property">
-                                    <span className="property-label">AML Status</span>
-                                    <span className={`status-badge ${selectedParty?.amlStatus}`}>{selectedParty?.amlStatus}</span>
+                                <div className="data-row">
+                                    <span className="label">Verification Date</span>
+                                    <span className="value">{selectedParty?.lastVerification}</span>
                                 </div>
-                                <div className="property">
-                                    <span className="property-label">Risk Rating</span>
-                                    <span className={`risk-${selectedParty?.riskRating}`}>{selectedParty?.riskRating}</span>
+                                <div className="data-row">
+                                    <span className="label">Renewal Due</span>
+                                    <span className="value text-warning">2027-01-15</span>
                                 </div>
-                                <div className="property">
-                                    <span className="property-label">Last Verification</span>
-                                    <span>{selectedParty?.lastVerification}</span>
+                                <div className="data-row">
+                                    <span className="label">Ultimate Beneficial Owner</span>
+                                    <span className="value">John Doe (Validated)</span>
+                                </div>
+                            </section>
+                        </div>
+                    )}
+
+                    {activeTab === 'compliance' && (
+                        <div className="details-grid">
+                            <section className="info-card">
+                                <h3>Compliance Narrative & Flags</h3>
+                                <div className="narrative">
+                                    No adverse media found. Sanctions screening clear as of 2026-04-22.
+                                    Entity has been active in Trade Finance for 5+ years without incident.
+                                </div>
+                                <div className="flag-list">
+                                    <div className="flag-item green">UN Sanctions: CLEAR</div>
+                                    <div className="flag-item green">OFAC List: CLEAR</div>
+                                    <div className="flag-item yellow">PEP Connect: TRACE (Non-Controlling)</div>
+                                </div>
+                            </section>
+                        </div>
+                    )}
+
+                    {activeTab === 'roles' && (
+                        <div className="details-grid">
+                            <section className="info-card">
+                                <h3>Authorized Capacity</h3>
+                                <div className="role-grid">
+                                    <div className="role-box">
+                                        <div className="role-title">Applicant</div>
+                                        <div className="role-stat">ACTIVE</div>
+                                    </div>
+                                    <div className="role-box inactive">
+                                        <div className="role-title">Beneficiary</div>
+                                        <div className="role-stat">PENDING</div>
+                                    </div>
+                                    <div className="role-box">
+                                        <div className="role-title">Payer</div>
+                                        <div className="role-stat">ACTIVE</div>
+                                    </div>
                                 </div>
                             </section>
                         </div>
@@ -130,30 +162,26 @@ export const PartyDirectory: React.FC = () => {
 
                     {activeTab === 'credit' && (
                         <div className="details-grid">
-                            <section className="limits-section premium-card">
-                                <h3>Approved Global Limits</h3>
-                                <div className="property">
-                                    <span className="property-label">Approved Global Limit</span>
-                                    <span className="font-bold">$5,000,000.00</span>
-                                </div>
+                            <section className="info-card">
+                                <h3>Allocated Facilities</h3>
                                 <div className="facility-item">
-                                    <div className="facility-ref">FAC-IMP-1002 (Import LC)</div>
-                                    <div className="facility-amount">$2,000,000</div>
-                                </div>
-                                <div className="facility-item">
-                                    <div className="facility-ref">FAC-EXP-404 (Export LC)</div>
-                                    <div className="facility-amount">$500,000</div>
+                                    <div className="fac-header">
+                                        <span className="fac-name">Import LC Line</span>
+                                        <span className="fac-amount">$5,000,000</span>
+                                    </div>
+                                    <div className="fac-progress">
+                                        <div className="bar" style={{ width: '65%' }}></div>
+                                    </div>
+                                    <div className="fac-meta">Utilization: 65% ($3,250,000)</div>
                                 </div>
                             </section>
                         </div>
                     )}
 
                     {activeTab === 'history' && (
-                        <div className="details-grid">
-                            <section className="history-section premium-card">
-                                <h3>Recent Trade Activity</h3>
-                                <div className="empty-state">No history recorded for 2026.</div>
-                            </section>
+                        <div className="empty-history">
+                            <div className="icon">📂</div>
+                            <p>No transactions found for the selected period.</p>
                         </div>
                     )}
                 </div>

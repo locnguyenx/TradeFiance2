@@ -1,12 +1,19 @@
+'use client';
 import React, { useState, useEffect } from 'react';
 import { tradeApi } from '../api/tradeApi';
 
 // ABOUTME: SystemAdminSettings component provides configuration panels for user authorities, system audits, and product matrices.
 // ABOUTME: Centralizes key governance settings for the Trade Finance platform.
 
-export const SystemAdminSettings: React.FC = () => {
+interface AdminSettingsProps {
+    activePanel?: 'authority' | 'audit' | 'product';
+}
+
+export const SystemAdminSettings: React.FC<AdminSettingsProps> = ({ activePanel }) => {
     const [auditLogs, setAuditLogs] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    
+    const showAll = !activePanel;
 
     useEffect(() => {
         const loadAudit = async () => {
@@ -30,111 +37,117 @@ export const SystemAdminSettings: React.FC = () => {
 
     return (
         <div className="system-admin-container">
-            <section className="admin-panel premium-card">
-                <header className="panel-header">
-                    <h2>User Authority Management</h2>
-                    <button className="primary-btn">Add New Tier</button>
-                </header>
-                <div className="table-wrapper">
-                    <table className="admin-table">
-                        <thead>
-                            <tr>
-                                <th>Authority Tier</th>
-                                <th>Description</th>
-                                <th>Limit Threshold</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Tier 1 - Maker</td>
-                                <td>Standard operational data entry</td>
-                                <td>N/A</td>
-                                <td><button className="edit-btn">Edit</button></td>
-                            </tr>
-                            <tr>
-                                <td>Tier 2 - Checker</td>
-                                <td>Basic authorization authorization</td>
-                                <td>USD 500,000</td>
-                                <td><button className="edit-btn">Edit</button></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-
-            <section className="admin-panel premium-card">
-                <header className="panel-header">
-                    <h2>System Audit Logs (Delta JSON)</h2>
-                    <div className="filter-group">
-                        <input type="text" placeholder="Filter by User or Transaction..." className="admin-input" />
-                    </div>
-                </header>
-                <div className="table-wrapper">
-                    <table className="admin-table">
-                        <thead>
-                            <tr>
-                                <th>Timestamp</th>
-                                <th>User ID</th>
-                                <th>Action</th>
-                                <th>Delta Payload</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {loading ? (
-                                <tr><td colSpan={4}>Loading logs...</td></tr>
-                            ) : auditLogs.length === 0 ? (
+            {(showAll || activePanel === 'authority') && (
+                <section className="admin-panel premium-card">
+                    <header className="panel-header">
+                        <h2>User Authority Management</h2>
+                        <button className="primary-btn">Add New Tier</button>
+                    </header>
+                    <div className="table-wrapper">
+                        <table className="admin-table">
+                            <thead>
                                 <tr>
-                                    <td>2026-04-22 10:45:12</td>
-                                    <td>JSMITH_OPS</td>
-                                    <td>UPDATE_LC</td>
-                                    <td className="font-mono">{"{ \"amount\": 500000 }"}</td>
+                                    <th>Authority Tier</th>
+                                    <th>Description</th>
+                                    <th>Limit Threshold</th>
+                                    <th>Actions</th>
                                 </tr>
-                            ) : auditLogs.map(log => (
-                                <tr key={log.auditLogId}>
-                                    <td>{new Date(log.timestamp).toLocaleString()}</td>
-                                    <td>{log.changedByUserId}</td>
-                                    <td>{log.actionName}</td>
-                                    <td className="font-mono">{log.deltaJson}</td>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Tier 1 - Maker</td>
+                                    <td>Standard operational data entry</td>
+                                    <td>N/A</td>
+                                    <td><button className="edit-btn">Edit</button></td>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </section>
+                                <tr>
+                                    <td>Tier 2 - Checker</td>
+                                    <td>Basic authorization authorization</td>
+                                    <td>USD 500,000</td>
+                                    <td><button className="edit-btn">Edit</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            )}
 
-            <section className="admin-panel premium-card">
-                <header className="panel-header">
-                    <h2>Trade Product Configuration Matrix</h2>
-                </header>
-                <form className="config-form" onSubmit={(e) => {
-                    e.preventDefault();
-                    const formData = new FormData(e.currentTarget);
-                    handleConfigSave('LC_PRODUCT_CONFIG', JSON.stringify({
-                        allowRevolving: formData.get('allowRevolving') === 'on',
-                        mandatoryMargin: formData.get('mandatoryMargin') === 'on',
-                        transferable: formData.get('transferable') === 'on'
-                    }));
-                }}>
-                    <div className="form-grid">
-                        <div className="form-field">
-                            <input type="checkbox" id="allowRevolving" name="allowRevolving" defaultChecked />
-                            <label htmlFor="allowRevolving">Allow Revolving LCs</label>
+            {(showAll || activePanel === 'audit') && (
+                <section className="admin-panel premium-card">
+                    <header className="panel-header">
+                        <h2>System Audit Logs (Delta JSON)</h2>
+                        <div className="filter-group">
+                            <input type="text" placeholder="Filter by User or Transaction..." className="admin-input" />
                         </div>
-                        <div className="form-field">
-                            <input type="checkbox" id="mandatoryMargin" name="mandatoryMargin" defaultChecked />
-                            <label htmlFor="mandatoryMargin">Mandatory Margin</label>
-                        </div>
-                        <div className="form-field">
-                            <input type="checkbox" id="transferable" name="transferable" />
-                            <label htmlFor="transferable">Allow Transferable LCs</label>
-                        </div>
+                    </header>
+                    <div className="table-wrapper">
+                        <table className="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>User ID</th>
+                                    <th>Action</th>
+                                    <th>Delta Payload</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {loading ? (
+                                    <tr><td colSpan={4}>Loading logs...</td></tr>
+                                ) : auditLogs.length === 0 ? (
+                                    <tr>
+                                        <td>2026-04-22 10:45:12</td>
+                                        <td>JSMITH_OPS</td>
+                                        <td>UPDATE_LC</td>
+                                        <td className="font-mono">{"{ \"amount\": 500000 }"}</td>
+                                    </tr>
+                                ) : auditLogs.map(log => (
+                                    <tr key={log.auditLogId}>
+                                        <td>{new Date(log.timestamp).toLocaleString()}</td>
+                                        <td>{log.changedByUserId}</td>
+                                        <td>{log.actionName}</td>
+                                        <td className="font-mono">{log.deltaJson}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
-                    <div className="form-actions">
-                        <button type="submit" className="primary-btn">Save Configuration</button>
-                    </div>
-                </form>
-            </section>
+                </section>
+            )}
+
+            {(showAll || activePanel === 'product') && (
+                <section className="admin-panel premium-card">
+                    <header className="panel-header">
+                        <h2>Trade Product Configuration Matrix</h2>
+                    </header>
+                    <form className="config-form" onSubmit={(e) => {
+                        e.preventDefault();
+                        const formData = new FormData(e.currentTarget);
+                        handleConfigSave('LC_PRODUCT_CONFIG', JSON.stringify({
+                            allowRevolving: formData.get('allowRevolving') === 'on',
+                            mandatoryMargin: formData.get('mandatoryMargin') === 'on',
+                            transferable: formData.get('transferable') === 'on'
+                        }));
+                    }}>
+                        <div className="form-grid">
+                            <div className="form-field">
+                                <input type="checkbox" id="allowRevolving" name="allowRevolving" defaultChecked />
+                                <label htmlFor="allowRevolving">Allow Revolving LCs</label>
+                            </div>
+                            <div className="form-field">
+                                <input type="checkbox" id="mandatoryMargin" name="mandatoryMargin" defaultChecked />
+                                <label htmlFor="mandatoryMargin">Mandatory Margin</label>
+                            </div>
+                            <div className="form-field">
+                                <input type="checkbox" id="transferable" name="transferable" />
+                                <label htmlFor="transferable">Allow Transferable LCs</label>
+                            </div>
+                        </div>
+                        <div className="form-actions">
+                            <button type="submit" className="primary-btn">Save Configuration</button>
+                        </div>
+                    </form>
+                </section>
+            )}
 
             <style jsx>{`
                 .system-admin-container { display: flex; flex-direction: column; gap: 2rem; padding: 1rem; }

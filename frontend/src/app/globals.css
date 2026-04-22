@@ -74,6 +74,15 @@ body {
   color: white;
 }
 
+.left-menu li.active {
+  background: var(--nav-active-bg) !important;
+  color: var(--nav-active-text) !important;
+}
+
+.left-menu li.active a {
+  color: white !important;
+}
+
 .main-wrapper {
   flex: 1;
   display: flex;

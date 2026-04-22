@@ -116,23 +116,32 @@ export const LimitsDashboard: React.FC = () => {
                     </div>
 
                     <div className="drill-down-table">
-                        <h4>{selectedInstrument || 'All'} Exposure Transactions</h4>
+                        <div className="table-header">
+                            <h4>{selectedInstrument || 'All'} Utilization Breakdown</h4>
+                            <div className="table-actions">
+                                <button className="export-btn">Export CSV</button>
+                            </div>
+                        </div>
                         <table className="admin-table">
                             <thead>
                                 <tr>
                                     <th>Transaction Ref</th>
-                                    <th>Type</th>
-                                    <th>Amount</th>
-                                    <th>Date</th>
+                                    <th>Party</th>
+                                    <th>Exposure Type</th>
+                                    <th>EAD (Exposure at Default)</th>
+                                    <th>Expiry</th>
+                                    <th>Tenor</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {filteredTransactions.map(t => (
                                     <tr key={t.ref}>
-                                        <td className="font-bold">{t.ref}</td>
+                                        <td className="font-bold underline cursor-pointer">{t.ref}</td>
+                                        <td>Global Corp</td>
                                         <td>{t.type}</td>
                                         <td>$ {t.amount.toLocaleString()}</td>
                                         <td>{t.date}</td>
+                                        <td>90 Days</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -140,6 +149,21 @@ export const LimitsDashboard: React.FC = () => {
                     </div>
                 </section>
             </div>
+
+            <section className="risk-metrics-section">
+                <div className="metric-card premium-card">
+                    <h5>Weighted Average Tenor</h5>
+                    <div className="metric-val">112 Days</div>
+                </div>
+                <div className="metric-card premium-card">
+                    <h5>Concentration: Top 5 Parties</h5>
+                    <div className="metric-val">42.5%</div>
+                </div>
+                <div className="metric-card premium-card">
+                    <h5>Sector Exposure: Tech</h5>
+                    <div className="metric-val">15.0%</div>
+                </div>
+            </section>
 
             <style jsx>{`
                 .limits-container { padding: 2rem; display: flex; flex-direction: column; gap: 2rem; }
@@ -186,12 +210,19 @@ export const LimitsDashboard: React.FC = () => {
                 .inst-bar { height: 8px; border-radius: 4px; }
 
                 .drill-down-table { border-top: 1px solid #f1f5f9; padding-top: 2rem; }
-                .drill-down-table h4 { margin-top: 0; font-size: 0.875rem; color: #64748b; text-transform: uppercase; margin-bottom: 1rem; }
+                .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+                .drill-down-table h4 { margin: 0; font-size: 0.875rem; color: #64748b; text-transform: uppercase; }
+                .export-btn { font-size: 0.75rem; font-weight: 700; color: #2563eb; background: none; border: 1px solid #dbeafe; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; }
                 
                 .admin-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
                 .admin-table th { text-align: left; padding: 0.75rem; color: #64748b; font-weight: 700; border-bottom: 2px solid #f1f5f9; }
                 .admin-table td { padding: 0.75rem; border-bottom: 1px solid #f1f5f9; color: #334155; }
                 .font-bold { font-weight: 700; color: #2563eb; }
+
+                .risk-metrics-section { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+                .metric-card { padding: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem; }
+                .metric-card h5 { margin: 0; font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
+                .metric-val { font-size: 1.25rem; font-weight: 800; color: #1e293b; }
 
                 .premium-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
                 .highlight { border-top: 4px solid #10b981; }

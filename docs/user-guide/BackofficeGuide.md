@@ -1,51 +1,68 @@
-# Backoffice & System Admin Guide: Digital Trade Finance
+# Backoffice & System Admin Manual: Digital Trade Finance
 
-This guide is intended for Administrative and Backoffice users responsible for system configuration, user management, and audit integrity.
+This guide provides exhaustive, step-by-step instructions for Administrative and Backoffice users. The platform uses a "Four-Eyes" principle ensuring no single user can complete a sensitive operation.
 
----
-
-## 1. Access Credentials (Development/UAT)
-
-| Role | Username | Password | Purpose |
-|------|----------|----------|---------|
-| **Maker** | `trade.maker` | `trade123` | Transaction Issuance |
-| **Checker** | `trade.checker` | `trade123` | Transaction Authorization |
-| **Backoffice** | `trade.backoffice` | `trade123` | Facility Management |
-| **System Admin** | `trade.admin` | `trade123` | User/Audit Management |
+![Navigation Overview](file:///Users/me/.gemini/antigravity/brain/222f8be2-5040-4a62-83e6-546ec9bc13b0/modern_flat_light_trade_navigation_mockup_v2_1776866522690.png)
 
 ---
 
-Backoffice users manage the core ecosystem through the **Master Data** module.
+## 1. Party & KYC Management
+**Goal**: Onboard a new corporate entity or verify compliance status.
 
-### Party & KYC Directory
-- **KYC Status Monitoring**: Track compliance tiers and AML clearance for all parties.
-- **Role Assignment**: Define parties as Applicants, Beneficiaries, or Advising Banks.
-
-### Credit Facilities Workspace
-- **Limit Configuration**: Define `totalApprovedLimit` and monitoring thresholds.
-- **Exposure Dashboard**: Access real-time visualization of `utilizedAmount` (Firm vs Contingent) across the bank's trade portfolio.
-
-### Tariff & Fee Mapping
-- **MT610 SWIFT Mapping**: Align system charge codes with international SWIFT standards.
-- **Pricing Matrix**: Configure multi-tier fee structures with automated approval workflows.
+1.  **Initiation**: Click **Party Directory** in the **MASTER DATA** section of the sidebar.
+2.  **Selection**: Use the search bar in the left pane to find the entity by Name or Legal ID (e.g., `P001`). Click the row to load details.
+3.  **KYC Verification (Step-by-Step)**:
+    - Click the **KYC** tab in the main workspace.
+    - Review **Ultimate Beneficial Owner (UBO)** details.
+    - Check the **Verification Date**. If expired (red dot), click the **Renew Record** action (to be implemented).
+4.  **Compliance Audit**:
+    - Switch to the **Compliance** tab.
+    - Review the **Narrative** for adverse media flags.
+    - Verify that **UN Sanctions** and **OFAC** status are marked as `CLEAR`.
+5.  **Role Assignment**:
+    - Click the **Roles** tab.
+    - Verify the entity is authorized as an `Applicant` or `Beneficiary`. Active roles are highlighted in green.
 
 ---
 
-## 3. System Administration
+## 2. Credit Facility Monitoring
+**Goal**: Review bank-wide exposure and drill down into specific utilization.
 
-### User & Security Management
-System Admins manage the Four-Eyes principle enforcement:
-- Assigning users to `TRADE_MAKER`, `TRADE_CHECKER`, or `TRADE_BACKOFFICE` groups.
-- Monitoring for "Self-Authorization" attempts in security logs.
+1.  **Access**: Click **Credit Facilities** in the sidebar.
+2.  **Overview Analysis**:
+    - Review the **Total Exposure** cards at the top. Note the **Available Headroom** (highlighted in Green).
+3.  **Drill-Down Utilization (Step-by-Step)**:
+    - In the **Exposure by Instrument** section (Right Pane), click on a specific segment (e.g., **Import LC**).
+    - The **Utilization Breakdown** table will refresh below.
+    - Review the **EAD (Exposure at Default)** for each transaction.
+    - Click any **Transaction Ref** (underlined) to pull up the full instrument audit log.
+4.  **Risk Metrics**:
+    - Scroll to the bottom to view **Weighted Average Tenor** and **Concentration Metrics** for the selected segment.
 
-### Audit Trail Review
-The platform maintains an immutable audit trail for every state change:
-- **Location**: `moqui.trade.instrument.TradeTransactionAudit` entity.
-- **Traceability**: Every record captures `userId`, `actionEnumId` (e.g., `MAKER_COMMIT`, `CHECKER_APPROVE`), and the `auditTimestamp`.
-- **Purpose**: Ensuring compliance with international trade regulations and internal bank policies.
+---
 
-### Technical Health
-System Admins access the standard Moqui toolset (`/vroot/tools`) for:
-- Cache management.
-- Service job scheduling (e.g., for end-of-day batch limit resets).
-- Entity data exports for regulatory reporting.
+## 3. System Administration & Audit
+**Goal**: Enforce security policies and audit system activity.
+
+### A. Managing Authority Tiers
+1.  Navigate to **Administration > Authority Tiers**.
+2.  Review the **Approval Matrices**.
+3.  **Action**: Verify that `TRADE_CHECKER` users have sufficient limits for the current transaction volume.
+
+### B. Analyzing Audit Logs
+1.  Navigate to **Administration > System Audit Logs**.
+2.  **Step-by-Step Audit**:
+    - Use the search bar to filter by **User ID** or **Transaction Ref**.
+    - Observe the `MAKER_COMMIT` vs `CHECKER_APPROVE` events.
+    - Click **View Delta** to see the exact fields changed during an amendment.
+
+### C. Product Configuration
+1.  Navigate to **Master Data > Product Config**.
+2.  Review standard **Incoterms** and **Document Checklist** templates.
+3.  **Action**: Update mandatory document requirements for specific LC types if regulatory policies change.
+
+---
+
+## 4. Advanced Features
+- **Send Message**: From any Party detail view, click **Communicate** to trigger an internal SWIFT-formatted message.
+- **Print Template**: Use the **Print** icon on any Facility view to generate a PDF snapshot of current utilization for management reporting.
