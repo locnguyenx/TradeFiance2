@@ -1,0 +1,23 @@
+apply plugin: 'groovy'
+
+// ABOUTME: build.gradle for TradeFinance component to enable automated Spock testing.
+
+repositories {
+    flatDir name: 'localLib', dirs: project.parent.project(':framework').projectDir.absolutePath + '/lib'
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation project(':framework')
+    testImplementation platform('org.spockframework:spock-bom:2.4-groovy-5.0')
+    testImplementation 'org.spockframework:spock-core'
+}
+
+test {
+    useJUnitPlatform()
+    testLogging { events "passed", "skipped", "failed" }
+    
+    systemProperty 'moqui.runtime', projectDir.parentFile.parentFile.absolutePath
+    systemProperty 'moqui.conf', 'conf/MoquiDevConf.xml'
+    systemProperty 'moqui.init.static', 'true'
+}

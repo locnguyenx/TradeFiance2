@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ABOUTME: TradeCommonEntities defines shared instruments and credit facility structures for all trade modules. -->
+<entities xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/entity-definition-3.0.xsd">
+
+    <entity entity-name="TradeInstrument" package="moqui.trade.instrument">
+        <field name="instrumentId" type="id" is-pk="true"/>
+        <field name="transactionRef" type="text-short"/>
+        <field name="lifecycleStatusId" type="id"/>
+        <field name="productEnumId" type="id"/>
+        <field name="baseEquivalentAmount" type="number-decimal"/>
+        <field name="issueDate" type="date"/>
+        <field name="expiryDate" type="date"/>
+        <field name="customerFacilityId" type="id"/>
+    </entity>
+
+    <entity entity-name="CustomerFacility" package="moqui.trade.instrument">
+        <field name="facilityId" type="id" is-pk="true"/>
+        <field name="totalApprovedLimit" type="number-decimal"/>
+        <field name="utilizedAmount" type="number-decimal"/>
+        <field name="facilityExpiryDate" type="date"/>
+    </entity>
+
+    <entity entity-name="TradeTransactionAudit" package="moqui.trade.instrument">
+        <field name="instrumentId" type="id" is-pk="true"/>
+        <field name="auditId" type="id" is-pk="true"/>
+        <field name="timestamp" type="date-time" default="ec.user.nowTimestamp"/>
+        <field name="userId" type="id"/>
+        <field name="actionEnumId" type="id"/>
+        <field name="justificationRootText" type="text-long"/>
+        <field name="snapshotDeltaJSON" type="text-very-long"/>
+    </entity>
+</entities>

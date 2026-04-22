@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ABOUTME: LimitServices handles credit facility earmarking and utilization calculations. -->
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.0.xsd">
+
+    <service verb="calculate" noun="Earmark">
+        <in-parameters>
+            <parameter name="facilityId" required="true"/>
+            <parameter name="amount" type="BigDecimal" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="isAllowed" type="Boolean"/>
+        </out-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.instrument.CustomerFacility" value-field="facility">
+                <field-map field-name="facilityId"/>
+            </entity-find-one>
+            
+            <if condition="!facility"><return error="true" message="Facility ${facilityId} not found"/></if>
+            
+            <set field="available" from="facility.totalApprovedLimit - (facility.utilizedAmount ?: 0)"/>
+            <set field="isAllowed" from="amount \u003c= available"/>
+            
+            <if condition="!isAllowed">
+                <message error="true">Insufficient limit. Available: ${available}, Requested: ${amount}</message>
+                <return error="true"/>
+            </if>
+        </actions>
+    </service>
+</services>

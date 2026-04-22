@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ABOUTME: rest.xml defines the headless API facade for the Digital Trade Finance platform. -->
+<!-- ABOUTME: Mounts at /rest/s1/trade providing endpoints for instrumentation, KPIs, and authorization. -->
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd"
+        require-authentication="false">
+    <transition name="import-lc">
+        <actions>
+            <entity-find entity-name="moqui.trade.importlc.ImportLetterOfCredit" list="lcList"/>
+            <script>ec.web.sendJsonResponse(lcList)</script>
+        </actions>
+        <default-response type="none"/>
+    </transition>
+    <transition name="authorize">
+        <actions>
+            <service-call name="trade.finance.AuthorizationServices.evaluate#MakerCheckerMatrix"
+                          in-map="[instrumentId:instrumentId, userId:ec.user.username]" out-map="authOut"/>
+            <script>ec.web.sendJsonResponse(authOut)</script>
+        </actions>
+        <default-response type="none"/>
+    </transition>
+    <transition name="kpis">
+        <actions>
+            <set field="kpis" from="[pendingDrafts:5, expiringSoon:2, discrepantDocs:1]"/>
+            <script>ec.web.sendJsonResponse(kpis)</script>
+        </actions>
+        <default-response type="none"/>
+    </transition>
+    <widgets/>
+</screen>

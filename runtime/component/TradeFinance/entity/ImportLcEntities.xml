@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ABOUTME: ImportLcEntities extends core trade instruments with SWIFT-compliant fields for Letters of Credit. -->
+<entities xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/entity-definition-3.0.xsd">
+
+    <entity entity-name="ImportLetterOfCredit" package="moqui.trade.importlc">
+        <field name="instrumentId" type="id" is-pk="true"/>
+        <field name="businessStateId" type="id"/>
+        <field name="beneficiaryPartyId" type="id"/>
+        <field name="tolerancePositive" type="number-decimal"/>
+        <field name="toleranceNegative" type="number-decimal"/>
+        <field name="tenorTypeId" type="id"/>
+        <field name="usanceDays" type="number-integer"/>
+        <field name="portOfLoading" type="text-medium"/>
+        <field name="portOfDischarge" type="text-medium"/>
+        
+        <relationship type="one" related="moqui.trade.instrument.TradeInstrument">
+            <key-map field-name="instrumentId"/>
+        </relationship>
+    </entity>
+</entities>
