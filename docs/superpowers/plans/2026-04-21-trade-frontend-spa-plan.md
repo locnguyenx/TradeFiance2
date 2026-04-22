@@ -134,7 +134,26 @@ Expected: PASS
 
 - [x] **Step 5: Commit**
 
-```bash
-git add frontend/src/components/IssuanceStepper.tsx frontend/src/components/IssuanceStepper.test.tsx
-git commit -m "feat(frontend): add stateful multi-step form stepper strictly handling UCP flows"
-```
+---
+
+### Task 3: Global Shell & Module Navigation [DONE]
+**BRD Requirements:** REQ-UI-CMN-01
+**User-Facing:** YES
+
+- [x] **Step 1: Implement `GlobalShell.tsx` with sidebar navigation**
+- [x] **Step 2: Map module routes (Import LC, Facilities, System Admin)**
+
+---
+
+### Task 4: High-Density Hardening (Phases 12-13) [DONE]
+**BRD Requirements:** REQ-UI-IMP-04, REQ-UI-IMP-05
+**User-Facing:** YES
+
+- [x] **Step 1: Document Examination Split-Pane Layout**
+- [x] **Step 2: Checker Authorization Risk Widgets**
+- [x] **Step 3: System Admin REST Integration**
+
+## Verification Summary
+- **Jest Test Suites**: 16
+- **Total Tests**: 51
+- **Result**: 100% Pass

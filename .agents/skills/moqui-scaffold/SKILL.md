@@ -1,5 +1,7 @@
-# Skill: moqui-scaffold
-**Description**: Scaffolds a new Moqui UI module or screen (Parent, Find, and Detail screens).
+---
+name: moqui-scaffold
+description: Used in screen development, scaffolds a new Moqui UI module or screen.
+---
 
 ## Execution Steps
 Use your native file-writing capabilities to generate three XML files in the target directory. Replace `[Name]` with the requested entity name (PascalCase) and `[name]` with the camelCase version.

@@ -18,4 +18,71 @@
             <key-map field-name="instrumentId"/>
         </relationship>
     </entity>
+
+    <entity entity-name="SwiftMessage" package="moqui.trade.importlc">
+        <field name="swiftMessageId" type="id" is-pk="true"/>
+        <field name="instrumentId" type="id"/>
+        <field name="messageType" type="text-short"/> <!-- e.g., MT700 -->
+        <field name="messageContent" type="text-very-long"/>
+        <field name="generatedDate" type="date-time" default="ec.user.nowTimestamp"/>
+        
+        <relationship type="one" related="moqui.trade.instrument.TradeInstrument">
+            <key-map field-name="instrumentId"/>
+        </relationship>
+    </entity>
+
+    <entity entity-name="ImportLcShippingGuarantee" package="moqui.trade.importlc">
+        <field name="guaranteeId" type="id" is-pk="true"/>
+        <field name="instrumentId" type="id"/>
+        <field name="invoiceAmount" type="number-decimal"/>
+        <field name="liabilityMultiplierRequired" type="number-integer" default="110"/> <!-- 110% per BRD -->
+        <field name="transportDocReference" type="text-medium"/>
+        
+        <relationship type="one" related="moqui.trade.importlc.ImportLetterOfCredit">
+            <key-map field-name="instrumentId"/>
+        </relationship>
+    </entity>
+
+    <entity entity-name="TradeDocumentPresentation" package="moqui.trade.importlc">
+        <field name="presentationId" type="id" is-pk="true"/>
+        <field name="instrumentId" type="id"/>
+        <field name="presentationDate" type="date" default="ec.user.nowTimestamp"/>
+        <field name="claimAmount" type="number-decimal"/>
+        <field name="isDiscrepant" type="text-indicator"/>
+        <field name="applicantDecisionEnumId" type="id"/> <!-- PENDING, WAIVED, REFUSED -->
+        
+        <relationship type="one" related="moqui.trade.importlc.ImportLetterOfCredit">
+            <key-map field-name="instrumentId"/>
+        </relationship>
+    </entity>
+
+    <entity entity-name="TradeDocumentPresentationItem" package="moqui.trade.importlc">
+        <field name="presentationId" type="id" is-pk="true"/>
+        <field name="documentTypeEnumId" type="id" is-pk="true"/>
+        <field name="originalsCount" type="number-integer"/>
+        <field name="copiesCount" type="number-integer"/>
+        
+        <relationship type="one" related="moqui.trade.importlc.TradeDocumentPresentation">
+            <key-map field-name="presentationId"/>
+        </relationship>
+    </entity>
+
+    <entity entity-name="ImportLcAmendment" package="moqui.trade.importlc">
+        <field name="amendmentId" type="id" is-pk="true"/>
+        <field name="instrumentId" type="id"/>
+        <field name="amendmentDate" type="date" default="ec.user.nowTimestamp"/>
+        <field name="amountAdjustment" type="number-decimal" default="0"/>
+        <field name="newExpiryDate" type="date"/>
+        <field name="amendmentNarrative" type="text-very-long"/>
+        <field name="isFinancial" type="text-indicator"/>
+        <field name="beneficiaryConsentStatusId" type="id"/> <!-- PENDING, ACCEPTED, REJECTED -->
+        
+        <relationship type="one" related="moqui.trade.importlc.ImportLetterOfCredit">
+            <key-map field-name="instrumentId"/>
+        </relationship>
+    </entity>
+
+    <entity entity-name="DummyTestEntity" package="moqui.trade.importlc">
+        <field name="dummyId" type="id" is-pk="true"/>
+    </entity>
 </entities>

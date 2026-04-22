@@ -1,5 +1,7 @@
-# Skill: moqui-service-validator
-**Description**: Used in screen development, diagnostics.Acts as a strict XML linter, XSD boundary checker, and syntax cache updater.
+---
+name: moqui-service-validator
+description: Used in service development, diagnostics service issue.
+---
 
 ## Execution Steps
 1. **XSD Validation:** Validate XML tag against xsd file `service-definition-3.xsd`, `xml-actions-3.xsd`, `service-eca-3.xsd` in `/framework/xsd/` dir. If the tag is absent, flag it as an illegal hallucination.

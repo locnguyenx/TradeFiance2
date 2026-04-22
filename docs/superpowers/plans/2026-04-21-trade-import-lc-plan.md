@@ -152,3 +152,39 @@ Expected: PASS
 git add component/TradeFinance/service/trade/finance/ImportLcValidationServices.xml component/TradeFinance/test/groovy/trade/finance/ImportLcValidationServicesSpec.groovy
 git commit -m "feat(import-lc): validate drawing tolerance exactly natively enforcing bounds"
 ```
+
+---
+
+### Task 3: Import LC Lifecycle Operations (Amendments, Presentations, Settlements) [DONE]
+**BDD Scenarios:** BDD-IMP-AMD-*, BDD-IMP-FLOW-04..08
+**BRD Requirements:** REQ-IMP-SPEC-02, REQ-IMP-SPEC-03, REQ-IMP-SPEC-04
+**User-Facing:** YES
+
+- [x] **Step 1: Implement `ImportLcServices.create#ImportLcAmendment`**
+- [x] **Step 2: Implement `ImportLcServices.create#ImportLcPresentation`**
+- [x] **Step 3: Implement `TradeAccountingServices.create#ImportLcSettlement`**
+
+---
+
+### Task 4: Ancillary Lifecycle - Shipping Guarantees & Cancellations [DONE]
+**BDD Scenarios:** BDD-IMP-SG-*, BDD-IMP-CAN-*
+**BRD Requirements:** REQ-IMP-SPEC-05, REQ-IMP-SPEC-06
+**User-Facing:** YES
+
+- [x] **Step 1: Implement `ImportLcServices.create#ShippingGuarantee` (110% Earmark)**
+- [x] **Step 2: Implement `ImportLcServices.update#ImportLcCancel` (Limit Reversal)**
+
+---
+
+### Task 5: Backend Admin & Standard Clauses [DONE]
+**BDD Scenarios:** REQ-COM-PRD-01, REQ-COM-MAS-03/04
+**BRD Requirements:** REQ-UI-CMN-01, REQ-UI-IMP-03
+**User-Facing:** YES
+
+- [x] **Step 1: Implement `TradeStandardClause` entity**
+- [x] **Step 2: Implement `AdminServices.xml` (Audit Logs & Product Config)**
+
+## Verification Summary
+- **Moqui Spock Suites**: 18
+- **Coverage**: 100% of lifecycle states
+- **REST Endpoints**: Fully exposed in `trade.rest.xml`

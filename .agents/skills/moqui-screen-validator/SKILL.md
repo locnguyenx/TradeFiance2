@@ -1,5 +1,7 @@
-# Skill: moqui-screen-validator
-**Description**: Used in screen design, diagnostics. Acts as a strict XML linter, XSD boundary checker, and syntax cache updater.
+---
+name: moqui-screen-validator
+description: Used in screen design, diagnostics screen issue. 
+---
 
 ## Execution Steps
 1. **Knowledge Retrieval:** Read the syntax dictionary at `.agents/knowledge/moqui_syntax_ref.md`.

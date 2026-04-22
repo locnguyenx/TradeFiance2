@@ -1,5 +1,7 @@
-# Skill: moqui-diagnostics
-**Description**: Diagnoses Moqui stack traces, rendering errors, and validation failures using a self-learning loop. Use this WHENEVER an error occurs or a bug is reported.
+---
+name: moqui-diagnostics
+description: Used in diagnostics Moqui error stack traces, rendering errors, and validation failures.
+---
 
 ## Execution Steps
 

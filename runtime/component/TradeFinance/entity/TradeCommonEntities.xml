@@ -30,4 +30,27 @@
         <field name="justificationRootText" type="text-long"/>
         <field name="snapshotDeltaJSON" type="text-very-long"/>
     </entity>
+
+    <entity entity-name="TradeStandardClause" package="trade.common">
+        <field name="clauseId" type="id" is-pk="true"/>
+        <field name="clauseTypeEnumId" type="id"/>
+        <field name="clauseName" type="text-medium"/>
+        <field name="clauseText" type="text-very-long"/>
+    </entity>
+
+    <entity entity-name="TradeConfig" package="trade.common">
+        <field name="configId" type="id" is-pk="true"/>
+        <field name="configKey" type="text-medium"/>
+        <field name="configValue" type="text-medium"/>
+        <field name="description" type="text-medium"/>
+    </entity>
+
+    <entity entity-name="TradeAuditLog" package="trade.common">
+        <field name="auditLogId" type="id" is-pk="true"/>
+        <field name="changedByUserId" type="id"/>
+        <field name="timestamp" type="date-time" default-field-direct="true"/>
+        <field name="actionName" type="text-medium"/>
+        <field name="deltaJson" type="text-very-long"/>
+        <field name="transactionRef" type="text-medium"/>
+    </entity>
 </entities>
