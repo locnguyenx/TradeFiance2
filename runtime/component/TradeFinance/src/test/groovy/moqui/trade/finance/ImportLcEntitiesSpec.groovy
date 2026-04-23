@@ -250,4 +250,108 @@ class ImportLcEntitiesSpec extends Specification {
         ec.entity.find("moqui.trade.instrument.TradeInstrument")
             .condition("instrumentId", "LC-SG-TEST").deleteAll()
     }
+
+    def "ImportLcAmendment persists amendmentNumber, newTolerance, chargeAllocationEnumId"() {
+        setup:
+        ec.entity.makeValue("moqui.trade.instrument.TradeInstrument")
+                .setAll([instrumentId: "LC-AMEND-EXT", transactionRef: "TF-LC-AM-EXT"]).create()
+        ec.entity.makeValue("moqui.trade.importlc.ImportLetterOfCredit")
+                .setAll([instrumentId: "LC-AMEND-EXT", businessStateId: "LC_ISSUED"]).create()
+
+        when:
+        ec.service.sync().name("create#moqui.trade.importlc.ImportLcAmendment").parameters([
+            amendmentId: "AMEND_EXT_01",
+            instrumentId: "LC-AMEND-EXT",
+            amendmentNumber: 2,
+            newTolerance: 5.0,
+            chargeAllocationEnumId: "SHA"
+        ]).call()
+        def am = ec.entity.find("moqui.trade.importlc.ImportLcAmendment")
+                .condition("amendmentId", "AMEND_EXT_01").one()
+
+        then:
+        am != null
+        am.amendmentNumber == 2
+        am.newTolerance == 5.0
+        am.chargeAllocationEnumId == "SHA"
+
+        cleanup:
+        ec.entity.find("moqui.trade.importlc.ImportLcAmendment")
+            .condition("amendmentId", "AMEND_EXT_01").deleteAll()
+        ec.entity.find("moqui.trade.importlc.ImportLetterOfCredit")
+            .condition("instrumentId", "LC-AMEND-EXT").deleteAll()
+        ec.entity.find("moqui.trade.instrument.TradeInstrument")
+            .condition("instrumentId", "LC-AMEND-EXT").deleteAll()
+    }
+
+    def "TradeDocumentPresentation persists presentingBankBic, presentingBankRef, claimCurrency, regulatoryDeadline"() {
+        setup:
+        ec.entity.makeValue("moqui.trade.instrument.TradeInstrument")
+                .setAll([instrumentId: "LC-PRES-EXT", transactionRef: "TF-LC-PR-EXT"]).create()
+        ec.entity.makeValue("moqui.trade.importlc.ImportLetterOfCredit")
+                .setAll([instrumentId: "LC-PRES-EXT", businessStateId: "LC_ISSUED"]).create()
+
+        when:
+        ec.service.sync().name("create#moqui.trade.importlc.TradeDocumentPresentation").parameters([
+            presentationId: "PRES_EXT_01",
+            instrumentId: "LC-PRES-EXT",
+            presentingBankBic: "DEUTDEFF",
+            presentingBankRef: "BANKREF123",
+            claimCurrency: "USD",
+            regulatoryDeadline: "2026-06-30",
+            claimAmount: 50000
+        ]).call()
+        def pr = ec.entity.find("moqui.trade.importlc.TradeDocumentPresentation")
+                .condition("presentationId", "PRES_EXT_01").one()
+
+        then:
+        pr != null
+        pr.presentingBankBic == "DEUTDEFF"
+        pr.presentingBankRef == "BANKREF123"
+        pr.claimCurrency == "USD"
+        pr.regulatoryDeadline == java.sql.Date.valueOf("2026-06-30")
+
+        cleanup:
+        ec.entity.find("moqui.trade.importlc.TradeDocumentPresentation")
+            .condition("presentationId", "PRES_EXT_01").deleteAll()
+        ec.entity.find("moqui.trade.importlc.ImportLetterOfCredit")
+            .condition("instrumentId", "LC-PRES-EXT").deleteAll()
+        ec.entity.find("moqui.trade.instrument.TradeInstrument")
+            .condition("instrumentId", "LC-PRES-EXT").deleteAll()
+    }
+
+    def "ImportLcShippingGuarantee persists sgStatusId, waiverLockFlag, redemptionDate, issuanceFee"() {
+        setup:
+        ec.entity.makeValue("moqui.trade.instrument.TradeInstrument")
+                .setAll([instrumentId: "LC-SG-EXT", transactionRef: "TF-LC-SG-EXT"]).create()
+        ec.entity.makeValue("moqui.trade.importlc.ImportLetterOfCredit")
+                .setAll([instrumentId: "LC-SG-EXT", businessStateId: "LC_ISSUED"]).create()
+
+        when:
+        ec.service.sync().name("create#moqui.trade.importlc.ImportLcShippingGuarantee").parameters([
+            guaranteeId: "SG_EXT_01",
+            instrumentId: "LC-SG-EXT",
+            sgStatusId: "SG_ISSUED",
+            waiverLockFlag: "Y",
+            redemptionDate: "2026-07-15",
+            issuanceFee: 150.00
+        ]).call()
+        def sg = ec.entity.find("moqui.trade.importlc.ImportLcShippingGuarantee")
+                .condition("guaranteeId", "SG_EXT_01").one()
+
+        then:
+        sg != null
+        sg.sgStatusId == "SG_ISSUED"
+        sg.waiverLockFlag == "Y"
+        sg.redemptionDate == java.sql.Date.valueOf("2026-07-15")
+        sg.issuanceFee == 150.00
+
+        cleanup:
+        ec.entity.find("moqui.trade.importlc.ImportLcShippingGuarantee")
+            .condition("guaranteeId", "SG_EXT_01").deleteAll()
+        ec.entity.find("moqui.trade.importlc.ImportLetterOfCredit")
+            .condition("instrumentId", "LC-SG-EXT").deleteAll()
+        ec.entity.find("moqui.trade.instrument.TradeInstrument")
+            .condition("instrumentId", "LC-SG-EXT").deleteAll()
+    }
 }
