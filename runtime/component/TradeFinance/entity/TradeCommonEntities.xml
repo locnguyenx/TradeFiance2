@@ -33,8 +33,10 @@
 
     <entity entity-name="CustomerFacility" package="moqui.trade.instrument">
         <field name="facilityId" type="id" is-pk="true"/>
+        <field name="ownerPartyId" type="id"/>
         <field name="totalApprovedLimit" type="number-decimal"/>
         <field name="utilizedAmount" type="number-decimal"/>
+        <field name="currencyUomId" type="id"/>
         <field name="facilityExpiryDate" type="date"/>
     </entity>
 

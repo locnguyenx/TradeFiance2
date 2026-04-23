@@ -102,4 +102,28 @@ class TradeCommonEntitiesSpec extends Specification {
         ec.entity.find("moqui.trade.instrument.TradeParty")
             .condition("partyId", "PARTY_TEST").deleteAll()
     }
+
+    def "CustomerFacility persists owner and currency fields"() {
+        when:
+        ec.service.sync().name("create#moqui.trade.instrument.CustomerFacility").parameters([
+            facilityId: "FAC_TEST_001",
+            ownerPartyId: "ACME_CORP_001",
+            totalApprovedLimit: 1000000,
+            utilizedAmount: 0,
+            currencyUomId: "USD",
+            facilityExpiryDate: "2027-12-31"
+        ]).call()
+        def fac = ec.entity.find("moqui.trade.instrument.CustomerFacility")
+                .condition("facilityId", "FAC_TEST_001").one()
+
+        then:
+        fac != null
+        fac.ownerPartyId == "ACME_CORP_001"
+        fac.currencyUomId == "USD"
+        fac.totalApprovedLimit == 1000000
+
+        cleanup:
+        ec.entity.find("moqui.trade.instrument.CustomerFacility")
+            .condition("facilityId", "FAC_TEST_001").deleteAll()
+    }
 }
