@@ -126,4 +126,32 @@ class TradeCommonEntitiesSpec extends Specification {
         ec.entity.find("moqui.trade.instrument.CustomerFacility")
             .condition("facilityId", "FAC_TEST_001").deleteAll()
     }
+
+    def "TradeTransactionAudit persists additional tracking fields"() {
+        when:
+        ec.service.sync().name("create#moqui.trade.instrument.TradeTransactionAudit").parameters([
+            instrumentId: "AUDIT-TEST",
+            auditId: "1",
+            userId: "USER_001",
+            actionEnumId: "UPDATE",
+            requestIpAddress: "192.168.1.1",
+            changedFieldName: "amount",
+            oldValue: "400000",
+            newValue: "500000",
+            justificationRootText: "Increased amount per request"
+        ]).call()
+        def audit = ec.entity.find("moqui.trade.instrument.TradeTransactionAudit")
+                .condition("instrumentId", "AUDIT-TEST").one()
+
+        then:
+        audit != null
+        audit.requestIpAddress == "192.168.1.1"
+        audit.changedFieldName == "amount"
+        audit.oldValue == "400000"
+        audit.newValue == "500000"
+
+        cleanup:
+        ec.entity.find("moqui.trade.instrument.TradeTransactionAudit")
+            .condition("instrumentId", "AUDIT-TEST").deleteAll()
+    }
 }
