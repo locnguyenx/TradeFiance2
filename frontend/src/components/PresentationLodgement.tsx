@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { tradeApi } from '../api/tradeApi';
 
 // ABOUTME: Document Presentation Lodgement implementing REQ-IMP-PRC-03.
 // ABOUTME: Captures claims, document matrices, and tracks UCP 600 5-day examination SLA.
@@ -24,6 +25,9 @@ export const PresentationLodgement: React.FC<PresentationLodgementProps> = ({ in
 
     const [deadline, setDeadline] = useState('');
 
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+
     useEffect(() => {
         if (formData.presentationDate) {
             const date = new Date(formData.presentationDate);
@@ -32,6 +36,27 @@ export const PresentationLodgement: React.FC<PresentationLodgementProps> = ({ in
             setDeadline(date.toISOString().split('T')[0]);
         }
     }, [formData.presentationDate]);
+
+    const handleLogPresentation = async () => {
+        setError('');
+        setLoading(true);
+        try {
+            const result = await tradeApi.createLcPresentation(instrumentId, {
+                ...formData,
+                claimAmount: parseFloat(formData.claimAmount) || 0
+            });
+            if (result.errors || result.error) {
+                setError(result.errors?.[0] || result.error || 'Failed to log presentation');
+            } else {
+                // Success logic (e.g. redirect or notification)
+                alert('Presentation logged successfully');
+            }
+        } catch (e: any) {
+            setError(e.message || 'An unexpected error occurred');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const totalDocs = docs.filter(d => parseInt(d.originals) > 0 || parseInt(d.copies) > 0).length;
 
@@ -47,12 +72,13 @@ export const PresentationLodgement: React.FC<PresentationLodgementProps> = ({ in
                     <p className="subtitle">Instrument: {instrumentId}</p>
                 </div>
                 <div className="sla-badge">
-                    <span className="label">Examination Deadline (UCP 600)</span>
+                    <span className="label">Estimated Examination Deadline (UCP 600)</span>
                     <span className="value text-warning">{deadline}</span>
                 </div>
             </header>
 
             <main className="content-grid">
+                {error && <div className="error-banner mb-2">{error}</div>}
                 <section className="header-fields">
                     <div className="field-group">
                         <label htmlFor="presentationDate">Presentation Date</label>
@@ -119,8 +145,10 @@ export const PresentationLodgement: React.FC<PresentationLodgementProps> = ({ in
             </main>
 
             <footer className="footer-actions">
-                <button className="secondary-btn">Cancel</button>
-                <button className="primary-btn">Log Presentation</button>
+                <button className="secondary-btn" disabled={loading}>Cancel</button>
+                <button className="primary-btn" onClick={handleLogPresentation} disabled={loading}>
+                    {loading ? 'Logging...' : 'Log Presentation'}
+                </button>
             </footer>
 
             <style jsx>{`
@@ -132,6 +160,9 @@ export const PresentationLodgement: React.FC<PresentationLodgementProps> = ({ in
                 .sla-badge .label { display: block; font-size: 0.75rem; color: #92400e; font-weight: 600; }
                 .sla-badge .value { font-size: 1rem; font-weight: 700; }
                 
+                .error-banner { padding: 1rem; background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; border-radius: 6px; font-size: 0.875rem; font-weight: 600; }
+                .mb-2 { margin-bottom: 1.5rem; }
+
                 .content-grid { display: grid; gap: 2.5rem; }
                 .header-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
                 .field-group { display: flex; flex-direction: column; gap: 0.5rem; }

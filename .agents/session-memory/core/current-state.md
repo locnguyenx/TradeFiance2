@@ -1,19 +1,19 @@
 # Session Memory - Current State
 
 **Project:** Digital Trade Finance Platform
-**Last Update:** 2026-04-22
-**Journal:** [.journal/2026-04-22_rest_api_hardening.md](file:///Users/me/myprojects/moqui-trade/.journal/2026-04-22_rest_api_hardening.md)
+**Last Update:** 2026-04-23
+**Journal:** [.journal/2026-04-23_frontend_sync_and_seed_data.md](file:///Users/me/myprojects/moqui-trade/.journal/2026-04-23_frontend_sync_and_seed_data.md)
 
 ## Session Status: ACTIVE
 
 ## Context: Backend API Hardening (Phase 7)
 
 ### What Was Done
-Hardened the REST API layer and verified with HTTP-level contract tests:
-1. **REST API Facade**: Refactored `trade.rest.xml` to use declarative service mappings, ensuring compatibility with Mantle patterns.
-2. **Service Hardening**: Updated `ImportLcServices.xml` and `AuthorizationServices.xml` with explicit out-parameters and robust audit sequencing.
-3. **HTTP-Level Testing**: Implemented `RestApiEndpointsSpec.groovy` using `ScreenTest` to verify `kpis`, `create-lc`, and `authorize` endpoints.
-4. **Resolved NPEs**: Fixed framework-level `NullPointerException` during REST error rendering by improving parameter validation and defaulting.
+Synchronized the Frontend with Backend hardening and prepared Master Data:
+1. **Frontend Sync**: Handled Drawing Tolerance and KYC errors in `PresentationLodgement` and `IssuanceStepper`.
+2. **API Extension**: Added `createLcPresentation` and `createLcAmendment` endpoints to `tradeApi.ts`.
+3. **Master Data Seed**: Created `TradeFinanceMasterData.xml` with comprehensive Parties and Facilities.
+4. **UI Stability**: Fixed `GlobalShell.tsx` regressions to pass 100% of frontend tests (121/121).
 
 ### Test Results
 Backend REST API is now 100% VERIFIED:

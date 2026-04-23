@@ -153,17 +153,19 @@ These elements must be visible on every screen to maintain system context.
         * *Beneficiary Field:* Multi-line text area (4x35 chars max).
         ...
 * **Step 2: Main LC Information**
-    * **Financials & Dates**
-        * *Amount & Currency:* Dropdown for ISO currency, numeric input for amount.
-        * *Tolerance:* Two small numeric inputs for `+ %` and `- %`.
-        * *Dates:* Date-pickers for `Issue Date` and `Expiry Date`. System throws an inline warning if Expiry is in the past.
-    * **Terms & Shipping**
-        * *Radio Buttons:* Partial Shipments (`Allowed`/`Not Allowed`), Transhipment (`Allowed`/`Not Allowed`).
-        * *Ports:* Text inputs for Port of Loading / Discharge.
-    * **Narratives (The heavy text)**
-        * *Layout:* Large, expandable text areas for `Description of Goods`, `Documents Required`, and `Additional Conditions`.
-        * *Feature:* A "Standard Clauses" button next to each text area allowing users to insert pre-approved legal text blocks.
-    * ...
+    * **Main Input Area:**
+        * **Financials & Dates**
+            * *Amount & Currency:* Dropdown for ISO currency, numeric input for amount.
+            * *Tolerance:* Two small numeric inputs for `+ %` and `- %`.
+            * *Dates:* Date-pickers for `Issue Date` and `Expiry Date`. System throws an inline warning if Expiry is in the past.
+        * **Terms & Shipping**
+            * *Radio Buttons:* Partial Shipments (`Allowed`/`Not Allowed`), Transhipment (`Allowed`/`Not Allowed`).
+            * *Ports:* Text inputs for Port of Loading / Discharge.
+        * **Narratives (The heavy text)**
+            * *Layout:* Large, expandable text areas for `Description of Goods`, `Documents Required`, and `Additional Conditions`.
+            * *Feature:* A "Standard Clauses" button next to each text area allowing users to insert pre-approved legal text blocks.
+        * ...
+    * **Right Navigation:** List of Sections of the Inputs (e.g., `Financials & Dates`, `Terms & Shipping`, `Narratives`,...). Clicking on each section will scroll to the corresponding input area. This is a common UI pattern for long forms (in every step).
 * **Step 3: Margin & Charges**
     * **Margin**
         * *Margin Type:* [Cash] / [Lombard] / [None]

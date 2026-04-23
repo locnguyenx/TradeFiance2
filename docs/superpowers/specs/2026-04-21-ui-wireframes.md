@@ -1,14 +1,13 @@
 # UI Wireframes & Logic Specification (BRD)
 **Project Name:** Digital Trade Finance Platform
 **Module:** Cross-cutting (Common & Import LC)
-**Document Version:** 1.2 (Formalized)
-**Date:** April 21, 2026
-
----
-
-Transitioning from business requirements to user interface (UI) design in Trade Finance requires a specific focus on **cognitive load reduction**. Trade operations involve massive amounts of text, strict validation rules, and high financial risk. 
-
-To build this in Moqui, your XML screens (whether rendering standard HTML or a modern frontend like Vue/React) should utilize specific enterprise UX patterns: split-screens for document checking, stepper components for heavy data entry, and distinct visual modes for Makers vs. Checkers.
+**Document Version:** 1.3 (Refined)
+**Date:** April 23, 2026
+**Change Log:**
+v1.3: add/modify following sections
+- REQ-UI-IMP-03: LC Issuance Data Entry Form - Added "Right Navigation" section for long forms. Rework steps.
+- REQ-UI-CMN-06: Product Configuration -> new section
+- Add "Notes for the UI wireframe document" section" at the end of the document.
 
 ---
 
@@ -18,7 +17,9 @@ Here are the UI wireframe requirements for the Common Module, seamlessly integra
 
 ***
 
-## REQ-UI-CMN-01: Updated Left Navigation Menu
+## Common Module UI Wireframes
+
+### REQ-UI-CMN-01: Updated Left Navigation Menu
 To accommodate the Common Module, the persistent navigation menu expands as follows:
 
 * **Dashboard** (User's daily workspace)
@@ -38,7 +39,7 @@ To accommodate the Common Module, the persistent navigation menu expands as foll
 
 ---
 
-## REQ-UI-CMN-02: Global Checker Queue
+### REQ-UI-CMN-02: Global Checker Queue
 **Purpose:** A unified inbox for Checkers. Instead of hunting through different product modules, Checkers come here to see every transaction requiring their specific authority tier.
 **Layout Pattern:** High-Density Data Grid with Quick Filters.
 
@@ -58,7 +59,7 @@ To accommodate the Common Module, the persistent navigation menu expands as foll
 
 ---
 
-## REQ-UI-CMN-03: Party & KYC Directory
+### REQ-UI-CMN-03: Party & KYC Directory
 **Purpose:** Centralized management of all Applicants, Beneficiaries, and Correspondent Banks to ensure clean data for SWIFT messaging and compliance screening.
 **Layout Pattern:** Master-Detail View.
 
@@ -73,7 +74,7 @@ To accommodate the Common Module, the persistent navigation menu expands as foll
 
 ---
 
-## REQ-UI-CMN-04: Credit Facility & Limit Dashboard
+### REQ-UI-CMN-04: Credit Facility & Limit Dashboard
 **Purpose:** For Credit Risk Officers and Trade Operations to monitor the bank's exposure to specific customers in real-time.
 **Layout Pattern:** Analytics Dashboard with Drill-Down capabilities.
 
@@ -93,7 +94,7 @@ To accommodate the Common Module, the persistent navigation menu expands as foll
 
 ---
 
-## REQ-UI-CMN-05: Tariff & Fee Configuration
+### REQ-UI-CMN-05: Tariff & Fee Configuration
 **Purpose:** Allows business administrators to update trade finance fee structures without requiring code changes or database scripts.
 **Layout Pattern:** Matrix / Rules Grid.
 
@@ -107,13 +108,22 @@ To accommodate the Common Module, the persistent navigation menu expands as foll
         * A table allowing admins to set overrides for specific Customer Tiers (e.g., VIP Corporate gets 0.100%) or specific LC Amount thresholds (e.g., LCs over $1M get a flat rate).
     * **Action Bar:** **[Save Draft]** / **[Publish New Tariff]** (Requires Maker/Checker approval to alter the bank's fee income rules).
 
+---
+
+### REQ-UI-CMN-06: Product Configuration    
+**Purpose:** Allows business administrators to define trade finance product configurations.
+**Layout Pattern:** Matrix / Settings Grid.
+
+* **Left Navigation:** List of Product Types (e.g., `Conventional Sight Import LC`,`Usance Import LC`,...).
+* **Main Configuration Area (Example: Conventional Sight Import LC):**
+    * **Product Configuration Settings:** refer to "REQ-COM-PRD-01: Product Configuration Matrix" in the brd.
+    * **Action Bar:** **[Save Draft]** / **[Publish New Product]** (Requires Maker/Checker approval to alter the bank's fee income rules).
+
 ***
 
-Here is the UI wireframe specification for the Import LC Module.
+## Import LC module UI Wireframes
 
-***
-
-## REQ-UI-IMP-01: Global UI Shell (Persistent Elements)
+### REQ-UI-IMP-01: Global UI Shell (Persistent Elements)
 These elements must be visible on every screen to maintain system context.
 
 * **Top Navigation Bar:**
@@ -128,7 +138,7 @@ These elements must be visible on every screen to maintain system context.
 
 ---
 
-## REQ-UI-IMP-02: Import LC Dashboard
+### REQ-UI-IMP-02: Import LC Dashboard
 **Purpose:** The landing page for operations staff to see their daily actionable items.
 
 * **Top Area: KPI "Widget" Cards**
@@ -142,33 +152,57 @@ These elements must be visible on every screen to maintain system context.
 
 ---
 
-## REQ-UI-IMP-03: LC Issuance Data Entry Form
+### REQ-UI-IMP-03: LC Issuance Data Entry Form
 **Purpose:** Capturing the MT 700 data. Because there are over 40 fields, a single long-scrolling page will cause user fatigue and errors.
 **Layout Pattern:** Horizontal Stepper or Accordion Tabs.
 
 * **Header Banner (Sticky):**
     * Displays `Draft Reference`, `Status: DRAFT`, and a dynamic `Calculated Base Equivalent Amount` that updates as the user enters the LC amount.
-* **Step 1: Parties & Limits**
-    * *Applicant Field:* Auto-complete search. Once selected, a read-only widget appears showing their `Available Facility Limit` and `KYC Status`.
-    * *Beneficiary Field:* Multi-line text area (4x35 chars max).
-* **Step 2: Financials & Dates**
-    * *Amount & Currency:* Dropdown for ISO currency, numeric input for amount.
-    * *Tolerance:* Two small numeric inputs for `+ %` and `- %`.
-    * *Dates:* Date-pickers for `Issue Date` and `Expiry Date`. System throws an inline warning if Expiry is in the past.
-* **Step 3: Terms & Shipping**
-    * *Radio Buttons:* Partial Shipments (`Allowed`/`Not Allowed`), Transhipment (`Allowed`/`Not Allowed`).
-    * *Ports:* Text inputs for Port of Loading / Discharge.
-* **Step 4: Narratives (The heavy text)**
-    * *Layout:* Large, expandable text areas for `Description of Goods`, `Documents Required`, and `Additional Conditions`.
-    * *Feature:* A "Standard Clauses" button next to each text area allowing users to insert pre-approved legal text blocks.
-* **Step 5: Review & Submit**
+* **Step 1: Basic Information**
+    * **LC Info**
+        * *LC Type:* [Import LC] / [Export LC] / [Collections]
+        * *LC Number:* [Auto-generated]
+        * *LC Reference:* [Auto-generated]
+        * *LC Status:* [Draft] / [Pending Approval] / [Issued] / [Docs Received] / [Discrepant] / [Settled] / [Closed] No input. System automactically updates the status based on the actions taken by the user.
+        * *LC Product:* [Dropdown: Sight LC, Usance LC, Standby LC, Revolving LC]
+    * **Parties**
+        * *Applicant Field:* Auto-complete search. Once selected, a read-only widget appears showing their `Available Facility Limit` and `KYC Status`.
+        * *Beneficiary Field:* Multi-line text area (4x35 chars max).
+        ...
+* **Step 2: Main LC Information**
+    * **Main Input Area:**
+        * **Financials & Dates**
+            * *Amount & Currency:* Dropdown for ISO currency, numeric input for amount.
+            * *Tolerance:* Two small numeric inputs for `+ %` and `- %`.
+            * *Dates:* Date-pickers for `Issue Date` and `Expiry Date`. System throws an inline warning if Expiry is in the past.
+        * **Terms & Shipping**
+            * *Radio Buttons:* Partial Shipments (`Allowed`/`Not Allowed`), Transhipment (`Allowed`/`Not Allowed`).
+            * *Ports:* Text inputs for Port of Loading / Discharge.
+        * **Narratives (The heavy text)**
+            * *Layout:* Large, expandable text areas for `Description of Goods`, `Documents Required`, and `Additional Conditions`.
+            * *Feature:* A "Standard Clauses" button next to each text area allowing users to insert pre-approved legal text blocks.
+        * ...
+    * **Right Navigation:** List of Sections of the Inputs (e.g., `Financials & Dates`, `Terms & Shipping`, `Narratives`,...). Clicking on each section will scroll to the corresponding input area. This is a common UI pattern for long forms (in every step).
+* **Step 3: Margin & Charges**
+    * **Margin**
+        * *Margin Type:* [Cash] / [Lombard] / [None]
+        * *Margin Percentage:* [100%] (Auto-calculated based on LC Product & LC risk profile)
+        * *Margin Amount:* (Auto-calculated based on LC Product & LC risk profile)
+        * *Debit Account:* [Account Number] (Auto-calculated based on LC risk profile)
+    * **Charges**
+        * *Charge Type:* [Issuance Commission] / [Amendment Fee] / [Discrepancy Fee] / [SWIFT Cable Charge]
+        * *Charge Rate:* [0.125 %] (Depend on Charge Type & Charge Configuration)
+        * *Charge Amount:* (Auto-calculated based on Charge Type & Charge Configuration)
+        * *Debit Account:* [Account Number] (Auto-calculated based on LC risk profile)
+* **Step 4: Review & Submit**
     * A read-only summary of all entered data.
     * A "System Validations" panel showing green checkmarks for Limit Check, Sanctions Check, and KYC Check.
     * Primary Action Button: **[Submit for Approval]**.
 
+
 ---
 
-## REQ-UI-IMP-04: Document Examination (Split-Screen)
+### REQ-UI-IMP-04: Document Examination (Split-Screen)
 **Purpose:** Allowing operations to check presented documents against the original LC terms without constantly switching tabs.
 **Layout Pattern:** 50/50 Vertical Split-Pane.
 
@@ -185,7 +219,7 @@ These elements must be visible on every screen to maintain system context.
 
 ---
 
-## REQ-UI-IMP-05: Checker Authorization Screen
+### REQ-UI-IMP-05: Checker Authorization Screen
 **Purpose:** Designed for speed, risk assessment, and the "Four-Eyes Principle."
 
 * **Top Action Bar (Highly Visible):**
@@ -201,4 +235,7 @@ These elements must be visible on every screen to maintain system context.
     * If the Checker clicks **[REJECT TO MAKER]**, a modal window forces them to type a `Rejection Reason` before the system routes it back to the *Draft* state.
 ***
 
-With the UI wireframes for both the Import LC module and the overarching Common Module mapped out, we have a highly detailed blueprint for the primary phase of this system. 
+## **NOTES FOR THE UI WIREFRAME DOCUMENT:**
+
+1. This document is a wireframe, not a final design.
+2. The UI wireframes of each module are for illustration of the UI patterns for key features, not a complete UI design, thus the wireframe may not cover all fields required for a function. The completed requirement and function list are described in the BRDs. REMEMBER this point when implement the UI.

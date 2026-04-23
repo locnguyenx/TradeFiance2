@@ -102,7 +102,7 @@ export const tradeApi = {
     return res.json();
   },
 
-  async createLc(data: any): Promise<{ instrumentId: string }> {
+  async createLc(data: any): Promise<{ instrumentId: string; errors?: string[]; error?: string }> {
     const res = await this._fetch(`${API_BASE}/import-lc`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -132,6 +132,24 @@ export const tradeApi = {
     const res = await this._fetch(`${API_BASE}/audit-logs${query}`);
     const json = await res.json();
     return json.auditLogList || [];
+  },
+
+  async createLcPresentation(instrumentId: string, data: any): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/import-lc/${instrumentId}/presentation`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+
+  async createLcAmendment(instrumentId: string, data: any): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/import-lc/${instrumentId}/amendment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
   },
 
   async updateProductConfig(key: string, value: string): Promise<any> {

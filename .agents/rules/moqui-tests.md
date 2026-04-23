@@ -1,6 +1,5 @@
 ---
-paths:
-  - "src/test/**/*.groovy"
+trigger: always_on
 ---
 
 # Moqui Testing Constraints
@@ -13,8 +12,6 @@ paths:
 * Before writing or modifying any test assertions, UI screen tests, or mock data setups, you MUST read the exact testing patterns and traps defined in `.agents/knowledge/moqui-testing.md`.
 * Pay special attention to the rules regarding **Type Coercion Traps**, **Resilient Assertions** (avoiding exact size checks), and **Sequence Collisions** documented in that file.
 
-## Test Specification Sync
-* After writing or modifying any test, Update the Test Specification document for working module (i.e Import LC)  in the component's `docs/tcd` directory.
 
 ---
 
@@ -28,13 +25,4 @@ src/test/groovy/
     ├── TradeFinanceScreensSpec.groovy    # Screen tests
     ├── TradeFinanceLifecycleSpec.groovy # Status transitions
     └── ...
-```
-
-## Running Tests
-Run test in **Project Root** `../../`
-```bash
-# at Project Root
-./gradlew test
-# Or specific component
-./gradlew :runtime:component:TradeFinance:test
 ```

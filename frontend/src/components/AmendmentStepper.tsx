@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { tradeApi } from '../api/tradeApi';
 
 // ABOUTME: LC Amendment Stepper implementing REQ-IMP-PRC-02.
 // ABOUTME: Allows makers to capture "Delta" changes to active LCs and preview SWIFT MT 707.
@@ -35,10 +36,42 @@ export const AmendmentStepper: React.FC<AmendmentStepperProps> = ({ lcId }) => {
         beneficiary: 'Global Export Ltd',
     };
 
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [status, setStatus] = useState<'IDLE' | 'SUBMITTED'>('IDLE');
+
     const newTotalLiability = originalLc.amount + (parseFloat(delta.amountAdjustment) || 0);
 
-    const handleNext = () => setStepIndex(prev => Math.min(prev + 1, 4));
-    const handleBack = () => setStepIndex(prev => Math.max(prev - 1, 0));
+    const handleNext = () => {
+        setError('');
+        setStepIndex(prev => Math.min(prev + 1, 4));
+    }
+    const handleBack = () => {
+        setError('');
+        setStepIndex(prev => Math.max(prev - 1, 0));
+    }
+
+    const handleSubmit = async () => {
+        setError('');
+        setLoading(true);
+        try {
+            const result = await tradeApi.createLcAmendment(lcId, {
+                ...delta,
+                amountAdjustment: parseFloat(delta.amountAdjustment) || 0,
+                instrumentId: lcId
+            });
+            if (result.errors || result.error) {
+                setError(result.errors?.[0] || result.error || 'Failed to submit amendment');
+            } else {
+                setStatus('SUBMITTED');
+                alert('Amendment submitted successfully');
+            }
+        } catch (e: any) {
+            setError(e.message || 'An unexpected error occurred');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="stepper-container premium-card">
@@ -57,6 +90,7 @@ export const AmendmentStepper: React.FC<AmendmentStepperProps> = ({ lcId }) => {
             </div>
 
             <main className="stepper-content">
+                {error && <div className="error-banner mb-2">{error}</div>}
                 {stepIndex === 0 && (
                     <section className="context-section">
                         <h3>Current LC Context</h3>
@@ -162,7 +196,14 @@ ${delta.newExpiryDate ? `:31E: ${delta.newExpiryDate}` : ''}`}
                     {stepIndex < 4 ? (
                         <button data-testid="next-button" className="primary-btn" onClick={handleNext}>Next</button>
                     ) : (
-                        <button data-testid="submit-button" className="primary-btn">Submit Amendment</button>
+                        <button 
+                            data-testid="submit-button" 
+                            className="primary-btn" 
+                            onClick={handleSubmit}
+                            disabled={loading || status === 'SUBMITTED'}
+                        >
+                            {loading ? 'Submitting...' : 'Submit Amendment'}
+                        </button>
                     )}
                 </div>
             </footer>
@@ -188,6 +229,9 @@ ${delta.newExpiryDate ? `:31E: ${delta.newExpiryDate}` : ''}`}
 
                 .swift-block { background: #0f172a; color: #10b981; padding: 1.5rem; border-radius: 8px; font-family: monospace; font-size: 0.875rem; margin-top: 1rem; }
                 
+                .error-banner { padding: 1rem; background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; border-radius: 6px; font-size: 0.875rem; font-weight: 600; margin-bottom: 1.5rem; }
+                .mb-2 { margin-bottom: 1.5rem; }
+
                 .stepper-footer { display: flex; justify-content: space-between; margin-top: 3rem; border-top: 1px solid #f1f5f9; padding-top: 2rem; }
                 .primary-btn { background: #2563eb; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; font-weight: 600; cursor: pointer; }
                 .secondary-btn { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; padding: 0.75rem 1.5rem; border-radius: 6px; font-weight: 600; cursor: pointer; }

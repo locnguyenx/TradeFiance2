@@ -181,7 +181,7 @@ When a Maker submits a transaction, the system must use the transaction's Base E
 ## 9. Product Configuration (The Catalog Approach)
 
 ### REQ-COM-PRD-01: Product Configuration Matrix
-This matrix sits within the Common Module (`TradeProduct` entity). Business Administrators configure these parameters to define a specific product (e.g., "Islamic Usance Import LC").
+This matrix sits within the Common Module (`TradeProduct` entity). Business Administrators configure these parameters to define a specific product (e.g., "Conventional Sight Import LC").
 
 | Configuration Flag / Field | Data Type | Description & System Rules |
 | :--- | :--- | :--- |

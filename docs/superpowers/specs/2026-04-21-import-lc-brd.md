@@ -618,7 +618,11 @@ Generating a SWIFT MT700 (Issue of a Documentary Credit) requires transforming t
 
 SWIFT has strict constraints regarding character limits, specific allowed character sets (the SWIFT "X" character set), and line breaks. 
 
-Here is the step-by-step technical and data-mapping process to gather data from the system entities and generate a compliant MT700 message.
+Followings are the step-by-step technical and data-mapping process to gather data from the system entities and generate a compliant MT700 message (see `MT-message/MT700-generation.md` for more details).
+
+**NOTES:**
+- Recommendation: We should implement the data formatting, validation, constraint in domain entity and data capturing for early prevention of SWIFT data/format violation. The checking at SWIFT generation stage is still needed. But by do checking during data capturing we bring better user experience and operations.
+- The entity and field names used in `Data Extraction Logic` column is just for reference, you must user the exact names implemented in the system.
 
 ---
 

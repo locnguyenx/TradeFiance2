@@ -124,7 +124,7 @@ Only pause to ask for confirmation when:
 | `.agents/rules/moqui-entities.md` | Entity constraints |
 | `.agents/rules/moqui-services.md` | Service constraints |
 | `.agents/rules/moqui-screens.md` | UI constraints |
-| `.agents/rules/moqui-tests.md` | Testing rules |
+| `.agents/rules/testing-debugging.md` | Testing, Issue tracking & Debugging Rules |
 
 ### Knowledge Base
 

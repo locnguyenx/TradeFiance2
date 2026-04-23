@@ -82,7 +82,7 @@ export const GlobalShell: React.FC<{ children: ReactNode }> = ({ children }) => 
                     <div style={{ background: 'var(--nav-active-bg)', padding: '6px', borderRadius: '6px', display: 'flex' }}>
                         <Globe size={20} color="white" />
                     </div>
-                    <span style={{ fontSize: '1.1rem', letterSpacing: '0.05em' }}>TRADE FINANCE</span>
+                    <span style={{ fontSize: '1.1rem', letterSpacing: '0.05em' }}>TRADEFINANCE</span>
                 </div>
                 
                 <nav className="sidebar-nav">
@@ -102,6 +102,14 @@ export const GlobalShell: React.FC<{ children: ReactNode }> = ({ children }) => 
                         </div>
                     ))}
                 </nav>
+
+                <div className="sidebar-footer" style={{ marginTop: 'auto', padding: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div className="user-avatar" style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--nav-active-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700 }}>LN</div>
+                    <div className="user-info">
+                        <div className="user-name" style={{ fontSize: '0.875rem', fontWeight: 600 }}>Loc Nguyen</div>
+                        <div className="user-role" style={{ fontSize: '0.7rem', opacity: 0.7 }}>Trade Officer</div>
+                    </div>
+                </div>
             </aside>
 
             <div className="main-wrapper">

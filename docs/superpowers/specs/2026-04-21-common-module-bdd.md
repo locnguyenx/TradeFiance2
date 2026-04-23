@@ -1,8 +1,8 @@
 # Behavior-Driven Development (BDD) Specification
 **Project Name:** Digital Trade Finance Platform
 **Module:** Common Module (Foundation, Maker/Checker, Facilities)
-**Document Version:** 2.0 (Exhaustive Traceability)
-**Date:** April 21, 2026
+**Document Version:** 3.0 (Aligned with Design Spec v3.0)
+**Date:** April 23, 2026
 
 ---
 
@@ -10,12 +10,13 @@
 
 | Requirement Map (BRD ID) | Scenario ID | Title | Type |
 |---|---|---|---|
-| REQ-COM-ENT-01 | BDD-CMN-ENT-01 | Trade Inst. Base Attributes Enforcement | Happy Path |
+| REQ-COM-ENT-01 | BDD-CMN-ENT-01 | Trade Transaction Base Attributes and Maker Tracking | Happy Path |
+| REQ-COM-ENT-01 | BDD-CMN-ENT-01B | Transaction Version Increment on Authorization | Happy Path |
 | REQ-COM-ENT-02 | BDD-CMN-ENT-02 | Valid Party KYC Acceptance | Happy Path |
 | REQ-COM-ENT-02 | BDD-CMN-ENT-03 | Expired Party KYC Rejection | Edge Case |
 | REQ-COM-ENT-03 | BDD-CMN-ENT-04 | Facility Limit Availability Earmark | Happy Path |
 | REQ-COM-ENT-03 | BDD-CMN-ENT-05 | Expired Facility Block | Edge Case |
-| REQ-COM-WF-01 | BDD-CMN-WF-01 | Processing Flow Execution to Pending | Happy Path |
+| REQ-COM-WF-01 | BDD-CMN-WF-01 | Processing Flow: Draft to Submitted with Dual-Status | Happy Path |
 | REQ-COM-FX-01 | BDD-CMN-FX-01 | Precision: Zero Decimal JPY Format | Edge Case |
 | REQ-COM-FX-01 | BDD-CMN-FX-02 | Precision: 2 Decimals USD Format | Happy Path |
 | REQ-COM-FX-02 | BDD-CMN-FX-03 | Daily Board Rate for Limit Consumption | Happy Path |
@@ -28,10 +29,12 @@
 | REQ-COM-VAL-02 | BDD-CMN-VAL-02 | Segregation of Duties Active Prevention | Edge Case |
 | REQ-COM-VAL-02 | BDD-CMN-VAL-03 | Immutability Rule Prevents Active Record Mod | Edge Case |
 | REQ-COM-VAL-03 | BDD-CMN-VAL-04 | Logic Guard: Expiry prior to Issue Date | Edge Case |
+| REQ-COM-VAL-03 | BDD-CMN-VAL-05 | SWIFT Data Capture Validation (Layer 1) | Edge Case |
 | REQ-COM-AUTH-01 | BDD-CMN-AUTH-01 | Tier Enforcement Calculation by Equivalent Amount | Happy Path |
 | REQ-COM-AUTH-02 | BDD-CMN-AUTH-02 | Tier 4 Dual Checker Enforcement | Edge Case |
 | REQ-COM-AUTH-03 | BDD-CMN-AUTH-03 | Amendment Total Liability Route Determination | Happy Path |
 | REQ-COM-AUTH-03 | BDD-CMN-AUTH-04 | Compliance Route overrides Financial Route | Edge Case |
+| REQ-COM-AUTH-01 | BDD-CMN-AUTH-05 | Priority Queue Ordering by Transaction Priority | Happy Path |
 | REQ-COM-MAS-01 | BDD-CMN-MAS-01 | Tariff Matrix Evaluates Priority Overrides | Happy Path |
 | REQ-COM-MAS-01 | BDD-CMN-MAS-02 | Tariff Matrix Evaluates Minimum Floor Fee | Edge Case |
 | REQ-COM-MAS-02 | BDD-CMN-MAS-03 | Suspended Account Active Exclusion | Edge Case |
@@ -54,16 +57,38 @@
 
 ### Feature: Standard Master Data Entities & Constraints
 
-#### Scenario BDD-CMN-ENT-01: Trade Inst. Base Attributes Enforcement
+#### Scenario BDD-CMN-ENT-01: Trade Transaction Base Attributes and Maker Tracking
 **Requirement ID:** REQ-COM-ENT-01
 **Type:** Happy Path
 
-* **Given** a new core trade instrument is initialized by the generic controller
-* **When** a save request is broadcast across the module
-* **Then** the common framework strictly forces the payload to contain basic attributes:
-  | Required Field | Acceptable Initial Value |
-  | Transaction Reference Number | Not Null (Auto-Pattern Generated) |
-  | Lifecycle Status | Draft |
+* **Given** a new trade transaction is initialized by the Maker
+* **When** the service `create#ImportLetterOfCredit` executes
+* **Then** the `TradeInstrument` record is created with transaction management fields populated:
+  | Field | Expected Value |
+  | `transactionRef` | Not Null (auto-generated `TF-IMP-YY-NNNN`) |
+  | `lifecycleStatusId` | `INST_PRE_ISSUE` |
+  | `transactionStatusId` | `TRANS_DRAFT` |
+  | `makerUserId` | Current authenticated user ID |
+  | `makerTimestamp` | Current system timestamp |
+  | `versionNumber` | `1` |
+  | `transactionDate` | Current business date |
+  | `checkerUserId` | Null |
+  | `checkerTimestamp` | Null |
+
+#### Scenario BDD-CMN-ENT-01B: Transaction Version Increment on Authorization
+**Requirement ID:** REQ-COM-ENT-01
+**Type:** Happy Path
+
+* **Given** a `TradeInstrument` with `versionNumber = 1` and `transactionStatusId = TRANS_SUBMITTED`
+* **When** a Checker authorizes the transaction via `authorize#Instrument`
+* **Then** the transaction management fields are updated:
+  | Field | Expected Value |
+  | `checkerUserId` | The Checker's authenticated user ID |
+  | `checkerTimestamp` | Current system timestamp |
+  | `transactionStatusId` | `TRANS_APPROVED` |
+  | `versionNumber` | Unchanged (`1`) |
+* **And** when a subsequent Amendment is authorized against this LC
+* **Then** the `versionNumber` increments to `2`
 
 #### Scenario BDD-CMN-ENT-02: Valid Party KYC Acceptance
 **Requirement ID:** REQ-COM-ENT-02
@@ -80,7 +105,7 @@
 **Requirement ID:** REQ-COM-ENT-02
 **Type:** Edge Case
 
-* **Given** a `TradeParty` Directory query against Appliant "Bad Corp"
+* **Given** a `TradeParty` Directory query against Applicant "Bad Corp"
 * **And** the Party's KYC Expiry Date is "2026-01-01" (in the past)
 * **When** a user actively attempts to associate this party to a target transaction
 * **Then** the transaction enforces the Directory constraints natively:
@@ -92,7 +117,7 @@
 **Requirement ID:** REQ-COM-ENT-03
 **Type:** Happy Path
 
-* **Given** a `Customer Facility` entity designated "FAC-ACME-001"
+* **Given** a `CustomerFacility` entity designated "FAC-ACME-001"
 * **And** the recorded stats evaluate to:
   | Field | Value |
   | Total Approved Limit | 5,000,000 USD |
@@ -107,7 +132,7 @@
 **Requirement ID:** REQ-COM-ENT-03
 **Type:** Edge Case
 
-* **Given** a `Customer Facility` entity designated "FAC-OLD-001"
+* **Given** a `CustomerFacility` entity designated "FAC-OLD-001"
 * **And** the Facility Expiry Date is recorded as "2023-12-01"
 * **When** an application requests an earmark confirmation, regardless of Available Balance
 * **Then** the Facility Manager rejects the request:
@@ -119,16 +144,19 @@
 
 ### Feature: Standard Processing Flows and Timings
 
-#### Scenario BDD-CMN-WF-01: Processing Flow Execution to Pending
+#### Scenario BDD-CMN-WF-01: Processing Flow: Draft to Submitted with Dual-Status
 **Requirement ID:** REQ-COM-WF-01
 **Type:** Happy Path
 
-* **Given** a transaction strictly residing in the `Draft` initiation phase
+* **Given** a transaction with `transactionStatusId = TRANS_DRAFT` and `lifecycleStatusId = INST_PRE_ISSUE`
 * **And** all pre-processing Validations have sequentially evaluated to True
-* **When** the human Maker explicitly activates the execution transition via the UI
-* **Then** the base model dictates the standardized queue routing:
-  | Post Requirement State | Value |
-  | Global State Label | Pending Approval |
+* **When** the Maker explicitly activates submission via `submit#ForApproval`
+* **Then** the dual-status model updates independently:
+  | Status Dimension | Before | After |
+  | `transactionStatusId` (processing) | `TRANS_DRAFT` | `TRANS_SUBMITTED` |
+  | `lifecycleStatusId` (system) | `INST_PRE_ISSUE` | `INST_PENDING_APPROVAL` |
+  | `makerTimestamp` | Updated to current timestamp |
+* **And** the `ImportLetterOfCredit.businessStateId` remains `LC_DRAFT` (unaffected by submission — only authorization changes business state)
 
 #### Scenario BDD-CMN-FX-01: Precision: Zero Decimal JPY Format
 **Requirement ID:** REQ-COM-FX-01
@@ -222,7 +250,8 @@
 * **When** the validation gateway invokes instantaneous sanctions analysis and returns `Hit`
 * **Then** standard execution routes are replaced immediately:
   | Event Hook Route | Outcome Target |
-  | Primary Action Flow | Suspended Operations Queue |
+  | `lifecycleStatusId` | `INST_HOLD` |
+  | `transactionStatusId` | Unchanged (remains current processing state) |
   | Compliance Queue Alert | Dispatched True |
 
 #### Scenario BDD-CMN-VAL-01: Hard Stop on Limit Breach
@@ -241,19 +270,19 @@
 **Requirement ID:** REQ-COM-VAL-02
 **Type:** Edge Case
 
-* **Given** a specific authentication user `USER_MAKER_XX` was logged as the `CreatedBy` author of `TF-IMP-001`
+* **Given** a specific authenticated user `USER_MAKER_XX` was logged as the `makerUserId` of `TradeInstrument` for transaction `TF-IMP-001`
 * **When** identical authenticated subject `USER_MAKER_XX` subsequently opens the Authorization view for `TF-IMP-001`
 * **Then** the visual context disables manual progress vectors entirely to enforce Four-Eyes:
   | Target UI Logic Vector | Security Outcome Applied |
-  | Authorization Interface Buttons | Read-only | disabled |
+  | Authorization Interface Buttons | Read-only / disabled |
   | Endpoint Direct Auth Call Payload | Refused via Auth Middleware |
 
 #### Scenario BDD-CMN-VAL-03: Immutability Rule Prevents Active Record Mod
 **Requirement ID:** REQ-COM-VAL-02
 **Type:** Edge Case
 
-* **Given** an Instrument evaluates internally as maintaining the `Active/Issued` terminal state status
-* **When** a user agent initiates a raw `PUT` standard core document update targeting an essential financial parameter
+* **Given** an `ImportLetterOfCredit` evaluates `businessStateId = LC_ISSUED`
+* **When** a user agent initiates a raw `PUT` standard core document update targeting a financial parameter (e.g., `effectiveAmount`)
 * **Then** the system natively intercepts the action and demands an explicit event payload:
   | Update Evaluation Route | Exception Status |
   | Modification Method Evaluated | Bypassed. Formal Amendment Process Requested. |
@@ -268,6 +297,19 @@
   | Logical Comparison Target | Resolution |
   | Expiry Date < Issue Date? | True (Throws Business Rules Array Exception) |
 
+#### Scenario BDD-CMN-VAL-05: SWIFT Data Capture Validation (Layer 1) [NEW]
+**Requirement ID:** REQ-COM-VAL-03
+**Type:** Edge Case
+
+* **Given** a Maker enters Description of Goods text containing the character `@` at position 142
+* **When** the Maker saves the draft via `create#ImportLetterOfCredit` or `update#ImportLetterOfCredit`
+* **Then** Layer 1 validation service `validate#SwiftFields` rejects with a field-specific error:
+  | Validation Check | Result |
+  | Field | `goodsDescription` |
+  | Error Message | "Description of Goods contains invalid SWIFT character '@' at position 142" |
+  | Transaction Saved | No — blocked before persistence |
+* **And** the same validation catches `transactionRef` exceeding 16 characters or containing `//`
+
 ---
 
 ### Feature: Maker/Checker Framework Execution
@@ -280,33 +322,46 @@
 * **When** the queue determines proper visibility logic
 * **Then** the system enforces visibility solely to mapped Tier 1 Officers or strictly higher.
   | Required Matrix Limit Mapping | Condition Passed |
-  | Tier 1 Limit Map ($1M) | Valid |
+  | Tier 1 Limit Map ($100K) | Valid |
 
 #### Scenario BDD-CMN-AUTH-02: Tier 4 Dual Checker Enforcement
 **Requirement ID:** REQ-COM-AUTH-02
 **Type:** Edge Case
 
-* **Given** the `Base Equivalent Amount` for an instrument computes structurally at `8,000,000 USD` (mapped Tier 4 equivalent)
+* **Given** the `TradeInstrument.baseEquivalentAmount` computes at `8,000,000 USD` (mapped Tier 4 equivalent)
 * **When** the Maker pushes to the Authorization gateway and one Tier 4 member executes `Approve`
-* **Then** the workflow strictly remains suspended at `Pending Approval`
-* **And** the logic dictates waiting for exactly ONE MORE unassociated unique Tier 4 authenticated command before evaluating state closure.
+* **Then** the workflow transitions to `INST_PARTIAL_APPROVAL` (not `INST_AUTHORIZED`)
+* **And** a `TradeApprovalRecord` is created with `approvalSequence = 1`
+* **And** the transaction reappears in the Checker queue for a second distinct Tier 4 user
+* **And** the second Checker must be different from both the Maker (`makerUserId`) and the first Checker
+* **And** only after the second approval does `lifecycleStatusId` transition to `INST_AUTHORIZED`
 
 #### Scenario BDD-CMN-AUTH-03: Amendment Total Liability Route Determination
 **Requirement ID:** REQ-COM-AUTH-03
 **Type:** Happy Path
 
-* **Given** a transaction originally valued mathematically at `900,000 USD`
-* **And** an Amendment subsequently increases this liability technically by only `150,000 USD`
+* **Given** an `ImportLetterOfCredit` with `effectiveAmount = 900,000 USD`
+* **And** an Amendment increases the `effectiveAmount` by `150,000 USD` (new total: `1,050,000 USD`)
 * **When** the system recalculates the limit bounds against the Maker-Checker matrix tier framework
-* **Then** it specifically ignores the isolated $150k delta and forces the transaction into the `1.05M USD` mapping route (thereby requiring Tier 3 instead of standard Tier 1 routing).
+* **Then** it uses the **new `effectiveAmount` (1,050,000 USD)** for tier routing — not the isolated $150k delta
+* **And** this routes to Tier 3 (>$1M) instead of Tier 1
 
 #### Scenario BDD-CMN-AUTH-04: Compliance Route overrides Financial Route
 **Requirement ID:** REQ-COM-AUTH-03
 **Type:** Edge Case
 
-* **Given** an instrument has triggered a secondary physical Sanctions Warning during Maker save evaluation
-* **When** the Checker matrix executes its conditional path checks
-* **Then** the logic physically bypasses the Financial Queue until the specific `Compliance Review Matrix` asserts explicitly `False` to Warning Flags.
+* **Given** an instrument has triggered `check#Sanctions` returning `isHit = true`
+* **And** `lifecycleStatusId` has been set to `INST_HOLD`
+* **When** the Checker matrix evaluates conditional checks
+* **Then** standard Financial Queue authorization is blocked until `release#ComplianceHold` is invoked by a `TRADE_COMPLIANCE_OFFICER`
+
+#### Scenario BDD-CMN-AUTH-05: Priority Queue Ordering by Transaction Priority [NEW]
+**Requirement ID:** REQ-COM-AUTH-01
+**Type:** Happy Path
+
+* **Given** two transactions in the Checker queue: TX-A with `priorityEnumId = NORMAL` and TX-B with `priorityEnumId = URGENT`
+* **When** the Checker queue list is rendered
+* **Then** TX-B appears above TX-A regardless of submission timestamp
 
 ---
 
@@ -326,7 +381,7 @@
 **Type:** Edge Case
 
 * **Given** the applied fee computes arithmetically via the rate formulas to entirely equal `$15 USD`
-* **And** the Tariff properties rigidly state a Minimum Charge absolute value equivalent to `$50 USD`
+* **And** the `FeeConfiguration.minFloorAmount` rigidly states a Minimum Charge equivalent to `$50 USD`
 * **When** the fee collector executes the final summation
 * **Then** the output natively substitutes the minimum equivalent to eliminate undersized processing fees:
   | Target Value Applied Against Ledgers | 
@@ -336,8 +391,8 @@
 **Requirement ID:** REQ-COM-MAS-02
 **Type:** Edge Case
 
-* **Given** a user agent identity natively exists inside a Tier 3 authorization matrix
-* **When** an HR automation explicitly updates the user identity mapping flag `Suspended` to `True`
+* **Given** a user agent identity natively exists inside a Tier 3 authorization matrix in `UserAuthorityProfile`
+* **When** an HR automation explicitly updates `UserAuthorityProfile.isSuspended` to `Y`
 * **Then** global lists explicitly eliminate user visibility from Maker queues and authorization assignments to preempt workflow stalls.
 
 #### Scenario BDD-CMN-MAS-04: Mandatory Transaction Delta JSON Audit Log
@@ -346,11 +401,13 @@
 
 * **Given** a save request commits a state-modifying delta against the physical DB
 * **When** the save commit formally finalizes inside the application structure layer
-* **Then** an explicit Append-Only execution logs a mapped audit wrapper natively guaranteeing:
+* **Then** an explicit Append-Only `TradeTransactionAudit` record logs:
   | Target Audit Key Attributes | Existence |
-  | Before Entity Raw Snapshot | Checked |
-  | After Entity Raw Snapshot | Checked |
-  | User/Time Identity Matrix | Checked |
+  | `snapshotDeltaJSON` (Before/After) | Checked |
+  | `userId` | Checked |
+  | `timestamp` | Checked |
+  | `ipAddress` | Checked |
+  | `fieldChanged` | Checked |
 
 ---
 
@@ -360,7 +417,7 @@
 **Requirement ID:** REQ-COM-PRD-01
 **Type:** Happy Path
 
-* **Given** an administrator effectively configured `"SBLC_COMM"` `Is Active` property fully to `False`
+* **Given** an administrator effectively configured `"SBLC_COMM"` `isActive` property to `N` in `TradeProductCatalog`
 * **When** a user hits the New Application rendering sequence view
 * **Then** the component completely ignores rendering the target definition options over dropdown inputs:
   | Application Value | Evaluates Missing |
@@ -369,31 +426,31 @@
 **Requirement ID:** REQ-COM-PRD-01
 **Type:** Edge Case
 
-* **Given** a Product definition maps its `Allowed Tenor` exclusively to exactly `Sight Only`
-* **When** an application input passes a parameter payload asserting `Tenor: Usance`
-* **Then** the core logic throws a validation assertion denying progress against the matrix definitions natively.
+* **Given** a `TradeProductCatalog` entry maps `allowedTenorEnumId` exclusively to `SIGHT_ONLY`
+* **When** an application input passes a parameter payload asserting `tenorTypeId: USANCE`
+* **Then** the core logic throws a validation assertion denying progress against the product configuration.
 
 #### Scenario BDD-CMN-PRD-03: Configuration: Tolerance Limit Ceiling Check
 **Requirement ID:** REQ-COM-PRD-01
 **Type:** Edge Case
 
-* **Given** a Product specifies `Max Tolerance Limit` explicitly to equivalent `10%`
-* **When** the user explicitly attempts to input a positive value equivalent to `25%` tolerance
-* **Then** the system automatically generates an explicit UI exception denying values exceeding the product limit matrix configuration natively.
+* **Given** a `TradeProductCatalog` specifies `maxToleranceLimit` explicitly to `10`
+* **When** the user explicitly attempts to input a positive tolerance value of `25%`
+* **Then** the system automatically generates an explicit UI exception denying values exceeding the product limit matrix configuration.
 
 #### Scenario BDD-CMN-PRD-04: Configuration: Display Revolving Fields Rule
 **Requirement ID:** REQ-COM-PRD-01
 **Type:** Happy Path
 
-* **Given** a Product specifies `Allow Revolving` unequivocally as `True`
-* **When** the framework generates the application entry DOM tree structures natively
-* **Then** the module injects logical form objects supporting subsequent "Reinstatement parameters" directly to the client screen output dynamically.
+* **Given** a `TradeProductCatalog` specifies `allowRevolving = Y`
+* **When** the framework generates the application entry screen
+* **Then** the module injects form objects supporting "Reinstatement parameters" directly to the client screen output dynamically.
 
 #### Scenario BDD-CMN-PRD-05: Configuration: Advance Payment Doc Avoidance
 **Requirement ID:** REQ-COM-PRD-01
 **Type:** Happy Path
 
-* **Given** the matrix records `Allow Advance Payment` logically evaluated as `True` (typically Red Clause LCs)
+* **Given** the `TradeProductCatalog` records `allowAdvancePayment = Y` (typically Red Clause LCs)
 * **When** the Beneficiary invokes a pre-shipment documentation presentation against the system workflow 
 * **Then** the logic evaluator bypasses typical standard UCP transportation document validations natively to accept a simple receipt input matrix automatically.
 
@@ -401,7 +458,7 @@
 **Requirement ID:** REQ-COM-PRD-01
 **Type:** Happy Path
 
-* **Given** the component evaluates `Is Standby` flag to effectively Equal `True`
+* **Given** the `TradeProductCatalog` evaluates `isStandby = Y`
 * **When** the core evaluates normal presentation behaviors and standard 5-day checks 
 * **Then** the system natively switches workflow tracks utilizing local Guarantee processing mechanics to handle non-performance behaviors effectively.
 
@@ -409,7 +466,7 @@
 **Requirement ID:** REQ-COM-PRD-01
 **Type:** Happy Path
 
-* **Given** the application targets a product mapping asserting `Is Transferable` unequivocally as `True`
+* **Given** a `TradeProductCatalog` maps `isTransferable = Y`
 * **When** the user actively parses the data 
 * **Then** the application triggers the inclusion of a specific "Transfer Instructions" tab inherently visible across Maker interface vectors.
 
@@ -417,7 +474,7 @@
 **Requirement ID:** REQ-COM-PRD-01
 **Type:** Happy Path
 
-* **Given** the configuration parameter establishes `Accounting Framework` strictly to `Islamic`
+* **Given** the `TradeProductCatalog.accountingFrameworkEnumId` is set to `ISLAMIC`
 * **When** the backend prepares physical accounting vouchers effectively for fee allocations
 * **Then** the system forcibly routes computations relying on "Profit Rates" bypassing "Interest Rates" entirely mapping to distinct Islamic GL arrays securely.
 
@@ -425,7 +482,7 @@
 **Requirement ID:** REQ-COM-PRD-01
 **Type:** Edge Case
 
-* **Given** the matrix component requires a `Mandatory Cash Margin` equivalent precisely to `100%`
+* **Given** the `TradeProductCatalog.mandatoryMarginPercent` is set to `100`
 * **When** the Maker pushes submission mechanics towards the system
 * **Then** the framework absolutely denies validation assertions if evaluating standard unsecured credit facilities, natively forcing identical 100% equivalent holds over local user deposits inherently.
 
@@ -433,14 +490,14 @@
 **Requirement ID:** REQ-COM-PRD-01
 **Type:** Happy Path
 
-* **Given** the matrix flag configures `Document Exam SLA Days` to exactly `2` distinct days instead of global standard 5
+* **Given** the `TradeProductCatalog.documentExamSlaDays` is configured to `2` instead of global standard 5
 * **When** a document logs to the system successfully  
-* **Then** the background timer establishes the hard escalation limit logically calculated entirely around the `2` custom specific mapped property days dynamically.
+* **Then** the background timer establishes the hard escalation limit calculated around the `2` custom mapped property days dynamically.
 
 #### Scenario BDD-CMN-PRD-11: Configuration: Default SWIFT Base MT Generation
 **Requirement ID:** REQ-COM-PRD-01
 **Type:** Happy Path
 
-* **Given** the component flags `Default SWIFT Format` precisely equivalent to literal String `MT760`
-* **When** the standard process triggers the authorization routines effectively dispatching automated message frameworks
-* **Then** the engine automatically routes the payload data against the mapped MT760 standard definitions completely ignoring default MT700 structures intrinsically.
+* **Given** the `TradeProductCatalog.defaultSwiftFormatEnumId` is set to `MT760`
+* **When** the standard process triggers the authorization routines dispatching automated message frameworks
+* **Then** the engine automatically routes the payload data against the MT760 standard definitions completely ignoring default MT700 structures.

@@ -15,6 +15,7 @@ build
 !/runtime/conf/*
 !/runtime/component/TradeFinance
 !/runtime/component/TradeFinance/**
+/runtime/component/TradeFinance/build
 /execwartmp
 /docker/runtime
 /docker/db
