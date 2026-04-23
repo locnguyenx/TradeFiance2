@@ -75,5 +75,10 @@
         <field name="partyName" type="text-medium"/>
         <field name="kycStatus" type="text-short"/> <!-- Active, Expired -->
         <field name="kycExpiryDate" type="date"/>
+        <field name="sanctionsStatus" type="id"/>
+        <field name="countryOfRisk" type="text-short"/>
+        <field name="swiftBic" type="text-short"/>
+        <field name="registeredAddress" type="text-medium"/>
+        <field name="partyRoleEnumId" type="id"/>
     </entity>
 </entities>

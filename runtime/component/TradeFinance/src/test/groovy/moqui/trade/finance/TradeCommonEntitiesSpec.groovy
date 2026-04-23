@@ -73,4 +73,33 @@ class TradeCommonEntitiesSpec extends Specification {
         ec.entity.find("moqui.trade.instrument.TradeInstrument")
             .condition("instrumentId", "TF-MGMT-TEST").deleteAll()
     }
+
+    def "TradeParty persists compliance and SWIFT fields"() {
+        when:
+        ec.service.sync().name("create#moqui.trade.instrument.TradeParty").parameters([
+            partyId: "PARTY_TEST",
+            partyName: "Test Party Ltd",
+            kycStatus: "Active",
+            kycExpiryDate: "2027-01-01",
+            sanctionsStatus: "CLEAR",
+            countryOfRisk: "SGP",
+            swiftBic: "TESTSGSGXXX",
+            registeredAddress: "123 Marina Bay, Singapore",
+            partyRoleEnumId: "APPLICANT"
+        ]).call()
+        def party = ec.entity.find("moqui.trade.instrument.TradeParty")
+                .condition("partyId", "PARTY_TEST").one()
+
+        then:
+        party != null
+        party.sanctionsStatus == "CLEAR"
+        party.swiftBic == "TESTSGSGXXX"
+        party.countryOfRisk == "SGP"
+        party.registeredAddress == "123 Marina Bay, Singapore"
+        party.partyRoleEnumId == "APPLICANT"
+
+        cleanup:
+        ec.entity.find("moqui.trade.instrument.TradeParty")
+            .condition("partyId", "PARTY_TEST").deleteAll()
+    }
 }
