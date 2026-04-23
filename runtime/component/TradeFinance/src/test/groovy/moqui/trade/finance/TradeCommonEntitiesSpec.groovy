@@ -31,4 +31,46 @@ class TradeCommonEntitiesSpec extends Specification {
         ec.entity.find("moqui.trade.instrument.TradeInstrument")
             .condition("instrumentId", "RESTORE-1").deleteAll()
     }
+    def "TradeInstrument persists transaction management fields"() {
+        when:
+        ec.service.sync().name("create#moqui.trade.instrument.TradeInstrument").parameters([
+            instrumentId: "TF-MGMT-TEST",
+            transactionRef: "TF-IMP-26-TEST",
+            lifecycleStatusId: "INST_PRE_ISSUE",
+            transactionStatusId: "TRANS_DRAFT",
+            transactionDate: ec.user.nowTimestamp,
+            transactionTypeEnumId: "NEW_ISSUANCE",
+            makerUserId: ec.user.userId,
+            makerTimestamp: ec.user.nowTimestamp,
+            versionNumber: 1,
+            priorityEnumId: "NORMAL",
+            productEnumId: "IMP_LC",
+            amount: 100000,
+            currencyUomId: "USD",
+            outstandingAmount: 100000,
+            applicantPartyId: "ACME_CORP_001",
+            beneficiaryPartyId: "BENEFICIARY_001",
+            issueDate: "2026-06-01",
+            expiryDate: "2026-12-31"
+        ]).call()
+        def instruments = ec.entity.find("moqui.trade.instrument.TradeInstrument")
+                .condition("instrumentId", "TF-MGMT-TEST").list()
+        def inst = instruments[0]
+
+        then:
+        inst != null
+        inst.transactionStatusId == "TRANS_DRAFT"
+        inst.transactionTypeEnumId == "NEW_ISSUANCE"
+        inst.makerUserId == ec.user.userId
+        inst.makerTimestamp != null
+        inst.versionNumber == 1
+        inst.priorityEnumId == "NORMAL"
+        inst.checkerUserId == null
+        inst.checkerTimestamp == null
+        inst.rejectionReason == null
+
+        cleanup:
+        ec.entity.find("moqui.trade.instrument.TradeInstrument")
+            .condition("instrumentId", "TF-MGMT-TEST").deleteAll()
+    }
 }

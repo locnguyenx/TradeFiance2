@@ -9,6 +9,7 @@
         <field name="lifecycleStatusId" type="id"/>
         <field name="productEnumId" type="id"/>
         <field name="amount" type="number-decimal"/>
+        <field name="currencyUomId" type="id"/>
         <field name="outstandingAmount" type="number-decimal"/>
         <field name="baseEquivalentAmount" type="number-decimal"/>
         <field name="applicantPartyId" type="id"/>
@@ -16,6 +17,18 @@
         <field name="issueDate" type="date"/>
         <field name="expiryDate" type="date"/>
         <field name="customerFacilityId" type="id"/>
+        <!-- Transaction Management Fields -->
+        <field name="transactionDate" type="date"/>
+        <field name="transactionTypeEnumId" type="id"/>
+        <field name="transactionStatusId" type="id"/>
+        <field name="makerUserId" type="id"/>
+        <field name="makerTimestamp" type="date-time"/>
+        <field name="checkerUserId" type="id"/>
+        <field name="checkerTimestamp" type="date-time"/>
+        <field name="rejectionReason" type="text-long"/>
+        <field name="versionNumber" type="number-integer"/>
+        <field name="lastUpdateTimestamp" type="date-time"/>
+        <field name="priorityEnumId" type="id"/>
     </entity>
 
     <entity entity-name="CustomerFacility" package="moqui.trade.instrument">
