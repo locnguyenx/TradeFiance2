@@ -13,7 +13,30 @@
         <field name="usanceDays" type="number-integer"/>
         <field name="portOfLoading" type="text-medium"/>
         <field name="portOfDischarge" type="text-medium"/>
+        <field name="expiryPlace" type="text-medium"/>
+        <field name="goodsDescription" type="text-very-long"/>
+        <field name="documentsRequired" type="text-very-long"/>
+        <field name="additionalConditions" type="text-very-long"/>
         
+        <!-- New Specification Fields -->
+        <field name="chargeAllocationEnumId" type="id"/>
+        <field name="partialShipmentEnumId" type="id"/>
+        <field name="transhipmentEnumId" type="id"/>
+        <field name="latestShipmentDate" type="date"/>
+        <field name="confirmationEnumId" type="id"/>
+        <field name="lcTypeEnumId" type="id"/>
+        <field name="productCatalogId" type="id"/>
+        
+        <!-- Effective Values (Snapshot vs Last Effective Pattern) -->
+        <field name="effectiveAmount" type="number-decimal"/>
+        <field name="effectiveCurrencyUomId" type="id"/>
+        <field name="effectiveExpiryDate" type="date"/>
+        <field name="effectiveTolerancePositive" type="number-decimal"/>
+        <field name="effectiveToleranceNegative" type="number-decimal"/>
+        <field name="effectiveOutstandingAmount" type="number-decimal"/>
+        <field name="cumulativeDrawnAmount" type="number-decimal" default="0"/>
+        <field name="totalAmendmentCount" type="number-integer" default="0"/>
+
         <relationship type="one" related="moqui.trade.instrument.TradeInstrument">
             <key-map field-name="instrumentId"/>
         </relationship>

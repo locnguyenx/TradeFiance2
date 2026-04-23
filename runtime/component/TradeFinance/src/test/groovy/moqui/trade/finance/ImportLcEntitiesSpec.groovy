@@ -38,4 +38,46 @@ class ImportLcEntitiesSpec extends Specification {
         ec.entity.find("moqui.trade.importlc.ImportLetterOfCredit").condition("instrumentId", "LC-ENT-1").deleteAll()
         ec.entity.find("moqui.trade.instrument.TradeInstrument").condition("instrumentId", "LC-ENT-1").deleteAll()
     }
+
+    def "ImportLetterOfCredit persists effective and new fields"() {
+        setup:
+        ec.entity.makeValue("moqui.trade.instrument.TradeInstrument")
+                .setAll([instrumentId: "LC-MGMT-TEST", transactionRef: "TF-IMP-TEST-01"]).create()
+
+        when:
+        ec.service.sync().name("create#moqui.trade.importlc.ImportLetterOfCredit").parameters([
+            instrumentId: "LC-MGMT-TEST",
+            businessStateId: "LC_DRAFT",
+            effectiveAmount: 500000,
+            effectiveCurrencyUomId: "USD",
+            effectiveExpiryDate: "2026-12-31",
+            effectiveOutstandingAmount: 500000,
+            cumulativeDrawnAmount: 0,
+            totalAmendmentCount: 0,
+            chargeAllocationEnumId: "SHA",
+            partialShipmentEnumId: "ALLOWED",
+            transhipmentEnumId: "NOT_ALLOWED",
+            latestShipmentDate: "2026-12-15",
+            confirmationEnumId: "CONFIRMED",
+            lcTypeEnumId: "IRREVOCABLE",
+            productCatalogId: "IMP_LC_STD"
+        ]).call()
+        def lc = ec.entity.find("moqui.trade.importlc.ImportLetterOfCredit")
+                .condition("instrumentId", "LC-MGMT-TEST").one()
+
+        then:
+        lc != null
+        lc.effectiveAmount == 500000
+        lc.effectiveOutstandingAmount == 500000
+        lc.cumulativeDrawnAmount == 0
+        lc.totalAmendmentCount == 0
+        lc.chargeAllocationEnumId == "SHA"
+        lc.latestShipmentDate == java.sql.Date.valueOf("2026-12-15")
+
+        cleanup:
+        ec.entity.find("moqui.trade.importlc.ImportLetterOfCredit")
+            .condition("instrumentId", "LC-MGMT-TEST").deleteAll()
+        ec.entity.find("moqui.trade.instrument.TradeInstrument")
+            .condition("instrumentId", "LC-MGMT-TEST").deleteAll()
+    }
 }
