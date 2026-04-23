@@ -1,6 +1,6 @@
 :root {
-  --primary-blue: #2563eb;
-  --secondary-blue: #1d4ed8;
+  --primary-blue: #5373fb;
+  --secondary-blue: #052fd3;
   --bg-slate: #f8fafc;
   --card-bg: #ffffff;
   --glass-border: rgba(255, 255, 255, 0.2);
@@ -11,12 +11,13 @@
   --urgent: #ef4444;
   --sidebar-width: 260px;
 
-  /* Modern Flat Premium Tokens */
+  /* Modern Blue Premium Tokens */
   --app-bg: #f8fafc;
-  --nav-bg: #f8fafc;
-  --nav-active-bg: #10b981;
+  --nav-bg: #031e88;
+  --nav-active-bg: #5373fb;
   --nav-active-text: #ffffff;
   --border-main: #e2e8f0;
+  --nav-border: #8da2fc;
   --radius-card: 12px;
   --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
 }
@@ -40,25 +41,27 @@ body {
 
 .left-menu {
   width: var(--sidebar-width);
-  background: #0f172a;
-  color: #94a3b8;
+  background: var(--nav-bg);
+  color: #ffffff;
   padding: 2rem 1.5rem;
   height: 100vh;
   position: sticky;
   top: 0;
   overflow-y: auto;
   flex-shrink: 0;
+  border-right: 1px solid var(--nav-border);
 }
 
 .left-menu ul { list-style: none; }
 
 .left-menu .nav-header {
-  color: #475569;
+  color: var(--nav-border);
   text-transform: uppercase;
   font-size: 0.75rem;
   font-weight: 700;
   margin: 1.5rem 0 0.5rem;
   letter-spacing: 0.05em;
+  opacity: 0.8;
 }
 
 .left-menu li:not(.nav-header) {
@@ -70,7 +73,7 @@ body {
 }
 
 .left-menu li:not(.nav-header):hover {
-  background: #1e293b;
+  background: rgba(255, 255, 255, 0.1);
   color: white;
 }
 

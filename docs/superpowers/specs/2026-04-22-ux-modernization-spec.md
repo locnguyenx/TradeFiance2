@@ -14,7 +14,7 @@ The goal is to modernize the Trade Finance platform's UX/UI, transitioning from 
 |---|---|---|
 | REQ-UI-MOD-01 | Implement Clean Slate 50 Sidebar with 1px border-right separator. | P0 |
 | REQ-UI-MOD-02 | Map all modules (Trade, Audit, Facilities, Admin) with sharp 1.5px stroke icons. | P0 |
-| REQ-UI-MOD-03 | Active menu item MUST have a flat Emerald (#10b981) background with white text. | P0 |
+| REQ-UI-MOD-03 | Active menu item MUST have a flat Soft blue (#5373fb) background with white text. | P0 |
 | REQ-UI-MOD-04 | Standardize Card surfaces with 12px border-radius and shadow-sm. | P1 |
 | REQ-UI-MOD-05 | Implement smooth transitions (150ms) for hover and active states. | P1 |
 
@@ -26,15 +26,15 @@ The goal is to modernize the Trade Finance platform's UX/UI, transitioning from 
 **REQ-UI-MOD-01, REQ-UI-MOD-02**
 - **Given** I am logged into the Trade Finance platform
 - **When** I view the global navigation menu
-- **Then** I should see a solid sidebar with background hex `#f8fafc`
+- **Then** I should see a solid sidebar with background hex #031e88 (Dark blue)
 - **And** I should see specific icons for "Trade Lifecycle", "Facilities", and "Administration"
-- **And** there should be a `border-right` of 1px with color `#e2e8f0`
+- **And** there should be a `border-right` of 1px with color #8da2fc
 
 ## Scenario 2: Active Navigation State
 **REQ-UI-MOD-03**
 - **Given** I am on the "Facilities" dashboard
 - **When** I look at the sidebar
-- **Then** the "Facilities" menu item should have a background color of `#10b981` (Solid Emerald)
+- **Then** the "Facilities" menu item should have a background color of #5373fb (Soft blue)
 - **And** the text color should be `#ffffff`
 - **And** there should be NO outer glow or gradient effects
 

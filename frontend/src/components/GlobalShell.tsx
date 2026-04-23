@@ -19,7 +19,8 @@ import {
     Settings2, 
     ShieldCheck, 
     History,
-    Globe
+    Globe,
+    Ship
 } from 'lucide-react';
 
 // ABOUTME: Modernized Global application shell implementing REQ-UI-MOD-01.
@@ -77,8 +78,11 @@ export const GlobalShell: React.FC<{ children: ReactNode }> = ({ children }) => 
     return (
         <div className="global-shell">
             <aside className="left-menu">
-                <div className="sidebar-brand" style={{ padding: '0 0 2rem 0', color: 'white', fontWeight: 800 }}>
-                    TRADEFINANCE
+                <div className="sidebar-brand" style={{ padding: '0 0 2rem 0', color: 'white', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ background: 'var(--nav-active-bg)', padding: '6px', borderRadius: '6px', display: 'flex' }}>
+                        <Globe size={20} color="white" />
+                    </div>
+                    <span style={{ fontSize: '1.1rem', letterSpacing: '0.05em' }}>TRADE FINANCE</span>
                 </div>
                 
                 <nav className="sidebar-nav">
