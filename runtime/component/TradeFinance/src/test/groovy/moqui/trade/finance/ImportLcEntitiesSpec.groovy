@@ -80,4 +80,82 @@ class ImportLcEntitiesSpec extends Specification {
         ec.entity.find("moqui.trade.instrument.TradeInstrument")
             .condition("instrumentId", "LC-MGMT-TEST").deleteAll()
     }
+
+    def "PresentationDiscrepancy persists correctly"() {
+        setup:
+        ec.entity.makeValue("moqui.trade.instrument.TradeInstrument")
+                .setAll([instrumentId: "LC-MGMT-TEST", transactionRef: "TF-IMP-TEST-01"]).create()
+        ec.entity.makeValue("moqui.trade.importlc.ImportLetterOfCredit")
+                .setAll([instrumentId: "LC-MGMT-TEST", businessStateId: "LC_DRAFT"]).create()
+        ec.entity.makeValue("moqui.trade.importlc.TradeDocumentPresentation")
+                .setAll([presentationId: "PRES_TEST_01", instrumentId: "LC-MGMT-TEST", claimAmount: 1000]).create()
+
+        when:
+        ec.service.sync().name("create#moqui.trade.importlc.PresentationDiscrepancy").parameters([
+            discrepancyId: "DISC_TEST_01",
+            presentationId: "PRES_TEST_01",
+            discrepancyCode: "DOC_MISSING",
+            discrepancyDescription: "Bill of Lading missing original #3",
+            isWaived: "N"
+        ]).call()
+        def disc = ec.entity.find("moqui.trade.importlc.PresentationDiscrepancy")
+                .condition("discrepancyId", "DISC_TEST_01").one()
+
+        then:
+        disc != null
+        disc.discrepancyCode == "DOC_MISSING"
+        disc.isWaived == "N"
+
+        cleanup:
+        ec.entity.find("moqui.trade.importlc.PresentationDiscrepancy")
+            .condition("discrepancyId", "DISC_TEST_01").deleteAll()
+        ec.entity.find("moqui.trade.importlc.TradeDocumentPresentation")
+            .condition("presentationId", "PRES_TEST_01").deleteAll()
+        ec.entity.find("moqui.trade.importlc.ImportLetterOfCredit")
+            .condition("instrumentId", "LC-MGMT-TEST").deleteAll()
+        ec.entity.find("moqui.trade.instrument.TradeInstrument")
+            .condition("instrumentId", "LC-MGMT-TEST").deleteAll()
+    }
+
+    def "ImportLcSettlement persists correctly"() {
+        setup:
+        ec.entity.makeValue("moqui.trade.instrument.TradeInstrument")
+                .setAll([instrumentId: "LC-MGMT-TEST", transactionRef: "TF-IMP-TEST-01"]).create()
+        ec.entity.makeValue("moqui.trade.importlc.ImportLetterOfCredit")
+                .setAll([instrumentId: "LC-MGMT-TEST", businessStateId: "LC_DRAFT"]).create()
+        ec.entity.makeValue("moqui.trade.importlc.TradeDocumentPresentation")
+                .setAll([presentationId: "PRES_TEST_01", instrumentId: "LC-MGMT-TEST", claimAmount: 1000]).create()
+
+        when:
+        def result = ec.service.sync().name("create#moqui.trade.importlc.ImportLcSettlement").parameters([
+            settlementId: "SETTLE_TEST_01",
+            presentationId: "PRES_TEST_01",
+            instrumentId: "LC-MGMT-TEST",
+            settlementAmount: 250000.0G,
+            settlementDate: ec.user.nowTimestamp,
+            settlementTypeEnumId: "SIGHT_PAYMENT",
+            isPartialDraw: "Y"
+        ]).call()
+        if (ec.message.hasError()) {
+            System.err.println("DEBUG ERRORS: " + ec.message.getErrorsString())
+        }
+        def settle = ec.entity.find("moqui.trade.importlc.ImportLcSettlement")
+                .condition("settlementId", "SETTLE_TEST_01").one()
+
+        then:
+        !ec.message.hasError()
+        settle != null
+        (settle.settlementAmount as BigDecimal) == 250000.0G
+        settle.isPartialDraw == "Y"
+
+        cleanup:
+        ec.entity.find("moqui.trade.importlc.ImportLcSettlement")
+            .condition("settlementId", "SETTLE_TEST_01").deleteAll()
+        ec.entity.find("moqui.trade.importlc.TradeDocumentPresentation")
+            .condition("presentationId", "PRES_TEST_01").deleteAll()
+        ec.entity.find("moqui.trade.importlc.ImportLetterOfCredit")
+            .condition("instrumentId", "LC-MGMT-TEST").deleteAll()
+        ec.entity.find("moqui.trade.instrument.TradeInstrument")
+            .condition("instrumentId", "LC-MGMT-TEST").deleteAll()
+    }
 }

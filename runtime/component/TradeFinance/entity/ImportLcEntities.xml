@@ -105,6 +105,37 @@
         </relationship>
     </entity>
 
+    <entity entity-name="PresentationDiscrepancy" package="moqui.trade.importlc">
+        <field name="discrepancyId" type="id" is-pk="true"/>
+        <field name="presentationId" type="id"/>
+        <field name="discrepancyCode" type="text-short"/>
+        <field name="discrepancyDescription" type="text-medium"/>
+        <field name="isWaived" type="text-indicator" default="'N'"/>
+        <field name="waivedByUserId" type="id"/>
+        <field name="waivedTimestamp" type="date-time"/>
+        
+        <relationship type="one" related="moqui.trade.importlc.TradeDocumentPresentation">
+            <key-map field-name="presentationId"/>
+        </relationship>
+    </entity>
+
+    <entity entity-name="ImportLcSettlement" package="moqui.trade.importlc">
+        <field name="settlementId" type="id" is-pk="true"/>
+        <field name="presentationId" type="id"/>
+        <field name="instrumentId" type="id"/>
+        <field name="settlementAmount" type="number-decimal"/>
+        <field name="settlementDate" type="date-time" default="ec.user.nowTimestamp"/>
+        <field name="settlementTypeEnumId" type="id"/>
+        <field name="isPartialDraw" type="text-indicator" default="'Y'"/>
+        
+        <relationship type="one" related="moqui.trade.importlc.TradeDocumentPresentation">
+            <key-map field-name="presentationId"/>
+        </relationship>
+        <relationship type="one" related="moqui.trade.importlc.ImportLetterOfCredit">
+            <key-map field-name="instrumentId"/>
+        </relationship>
+    </entity>
+
     <entity entity-name="DummyTestEntity" package="moqui.trade.importlc">
         <field name="dummyId" type="id" is-pk="true"/>
     </entity>
