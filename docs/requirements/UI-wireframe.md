@@ -4,6 +4,8 @@ To build this in Moqui, your XML screens (whether rendering standard HTML or a m
 
 ---
 
+## Common Module UI
+
 The Common Module UI is the central nervous system of your Trade Finance platform. Because it handles the overarching governance—credit limits, KYC/AML, and cross-product authorizations—its screens must be designed for **high-level visibility and exception management**.
 
 Here are the UI wireframe requirements for the Common Module, seamlessly integrating with the global shell we defined earlier.
@@ -101,9 +103,8 @@ To accommodate the Common Module, the persistent navigation menu expands as foll
 
 ***
 
+## Import LC Module UI
 Here is the UI wireframe specification for the Import LC Module.
-
-***
 
 ### 1. Global UI Shell (Persistent Elements)
 These elements must be visible on every screen to maintain system context.
@@ -140,20 +141,41 @@ These elements must be visible on every screen to maintain system context.
 
 * **Header Banner (Sticky):**
     * Displays `Draft Reference`, `Status: DRAFT`, and a dynamic `Calculated Base Equivalent Amount` that updates as the user enters the LC amount.
-* **Step 1: Parties & Limits**
-    * *Applicant Field:* Auto-complete search. Once selected, a read-only widget appears showing their `Available Facility Limit` and `KYC Status`.
-    * *Beneficiary Field:* Multi-line text area (4x35 chars max).
-* **Step 2: Financials & Dates**
-    * *Amount & Currency:* Dropdown for ISO currency, numeric input for amount.
-    * *Tolerance:* Two small numeric inputs for `+ %` and `- %`.
-    * *Dates:* Date-pickers for `Issue Date` and `Expiry Date`. System throws an inline warning if Expiry is in the past.
-* **Step 3: Terms & Shipping**
-    * *Radio Buttons:* Partial Shipments (`Allowed`/`Not Allowed`), Transhipment (`Allowed`/`Not Allowed`).
-    * *Ports:* Text inputs for Port of Loading / Discharge.
-* **Step 4: Narratives (The heavy text)**
-    * *Layout:* Large, expandable text areas for `Description of Goods`, `Documents Required`, and `Additional Conditions`.
-    * *Feature:* A "Standard Clauses" button next to each text area allowing users to insert pre-approved legal text blocks.
-* **Step 5: Review & Submit**
+* **Step 1: Basic Information**
+    * **LC Info**
+        * *LC Type:* [Import LC] / [Export LC] / [Collections]
+        * *LC Number:* [Auto-generated]
+        * *LC Reference:* [Auto-generated]
+        * *LC Status:* [Draft] / [Pending Approval] / [Issued] / [Docs Received] / [Discrepant] / [Settled] / [Closed] No input. System automactically updates the status based on the actions taken by the user.
+        * *LC Product:* [Dropdown: Sight LC, Usance LC, Standby LC, Revolving LC]
+    * **Parties**
+        * *Applicant Field:* Auto-complete search. Once selected, a read-only widget appears showing their `Available Facility Limit` and `KYC Status`.
+        * *Beneficiary Field:* Multi-line text area (4x35 chars max).
+        ...
+* **Step 2: Main LC Information**
+    * **Financials & Dates**
+        * *Amount & Currency:* Dropdown for ISO currency, numeric input for amount.
+        * *Tolerance:* Two small numeric inputs for `+ %` and `- %`.
+        * *Dates:* Date-pickers for `Issue Date` and `Expiry Date`. System throws an inline warning if Expiry is in the past.
+    * **Terms & Shipping**
+        * *Radio Buttons:* Partial Shipments (`Allowed`/`Not Allowed`), Transhipment (`Allowed`/`Not Allowed`).
+        * *Ports:* Text inputs for Port of Loading / Discharge.
+    * **Narratives (The heavy text)**
+        * *Layout:* Large, expandable text areas for `Description of Goods`, `Documents Required`, and `Additional Conditions`.
+        * *Feature:* A "Standard Clauses" button next to each text area allowing users to insert pre-approved legal text blocks.
+    * ...
+* **Step 3: Margin & Charges**
+    * **Margin**
+        * *Margin Type:* [Cash] / [Lombard] / [None]
+        * *Margin Percentage:* [100%] (Auto-calculated based on LC Product & LC risk profile)
+        * *Margin Amount:* (Auto-calculated based on LC Product & LC risk profile)
+        * *Debit Account:* [Account Number] (Auto-calculated based on LC risk profile)
+    * **Charges**
+        * *Charge Type:* [Issuance Commission] / [Amendment Fee] / [Discrepancy Fee] / [SWIFT Cable Charge]
+        * *Charge Rate:* [0.125 %] (Depend on Charge Type & Charge Configuration)
+        * *Charge Amount:* (Auto-calculated based on Charge Type & Charge Configuration)
+        * *Debit Account:* [Account Number] (Auto-calculated based on LC risk profile)
+* **Step 4: Review & Submit**
     * A read-only summary of all entered data.
     * A "System Validations" panel showing green checkmarks for Limit Check, Sanctions Check, and KYC Check.
     * Primary Action Button: **[Submit for Approval]**.
@@ -193,4 +215,7 @@ These elements must be visible on every screen to maintain system context.
     * If the Checker clicks **[REJECT TO MAKER]**, a modal window forces them to type a `Rejection Reason` before the system routes it back to the *Draft* state.
 ***
 
-With the UI wireframes for both the Import LC module and the overarching Common Module mapped out, we have a highly detailed blueprint for the primary phase of this system. 
+## **NOTES FOR THE UI WIREFRAME DOCUMENT:**
+
+1. This document is a wireframe, not a final design.
+2. The UI wireframes of each module are for illustration of the UI patterns for key features, not a complete UI design, thus the wireframe may not cover all fields required for a function. The completed requirement and function list are described in the BRDs. REMEMBER this point when implement the UI.

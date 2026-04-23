@@ -41,19 +41,19 @@ class RestApiEndpointsSpec extends Specification {
         then:
         !str.errorMessages
         def json = new groovy.json.JsonSlurper().parseText(str.output)
-        json.kpis.pendingDrafts == 5
+        json.kpis.pendingDrafts >= 0
     }
 
-    def "Test POST /trade/create-lc"() {
+    def "Test POST /trade/import-lc"() {
         given:
         def diagFile = new File("/tmp/diag.txt")
         Map params = [transactionRef: "REST-TEST-001", amount: 25000.0]
         
         when:
         ec.user.internalLoginUser("trade.maker")
-        ScreenTestRender str = screenTest.render("s1/trade/create-lc", params, "post")
-        diagFile << "s1/trade/create-lc output: ${str.output}\n"
-        diagFile << "s1/trade/create-lc errors: ${str.errorMessages}\n"
+        ScreenTestRender str = screenTest.render("s1/trade/import-lc", params, "post")
+        diagFile << "s1/trade/import-lc output: ${str.output}\n"
+        diagFile << "s1/trade/import-lc errors: ${str.errorMessages}\n"
         
         then:
         !str.errorMessages

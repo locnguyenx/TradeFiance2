@@ -11,6 +11,7 @@ class TradeCommonEntitiesSpec extends Specification {
     
     def setup() {
         ec = Moqui.getExecutionContext()
+        ec.artifactExecution.disableAuthz()
     }
     
     def cleanup() {

@@ -11,6 +11,8 @@ class ImportLcValidationServicesSpec extends Specification {
     
     def setup() {
         ec = Moqui.getExecutionContext()
+        ec.user.internalLoginUser("trade.maker")
+        ec.artifactExecution.disableAuthz()
     }
     
     def cleanup() {
@@ -20,18 +22,18 @@ class ImportLcValidationServicesSpec extends Specification {
     def "Test evaluate#Drawing enforces tolerance"() {
         setup:
         ec.entity.makeValue("moqui.trade.instrument.TradeInstrument")
-            .setAll([instrumentId:"LC-1", baseEquivalentAmount: 1000.0]).create()
+            .setAll([instrumentId:"LC-1", amount: 1000.0, baseEquivalentAmount: 1000.0]).create()
         ec.entity.makeValue("moqui.trade.importlc.ImportLetterOfCredit")
             .setAll([instrumentId:"LC-1", tolerancePositive: 0.10]).create()
             
         when: "Drawing within tolerance"
-        def result = ec.service.call("trade.finance.ImportLcValidationServices.evaluate#Drawing", [instrumentId:"LC-1", claimAmount: 1100.0])
+        def result = ec.service.sync().name("ImportLcValidationServices.evaluate#Drawing").parameters([instrumentId:"LC-1", claimAmount: 1100.0]).call()
         
         then:
         !ec.message.hasError()
         
         when: "Drawing above tolerance"
-        ec.service.call("trade.finance.ImportLcValidationServices.evaluate#Drawing", [instrumentId:"LC-1", claimAmount: 1200.0])
+        ec.service.sync().name("ImportLcValidationServices.evaluate#Drawing").parameters([instrumentId:"LC-1", claimAmount: 1200.0]).call()
         
         then:
         ec.message.hasError()

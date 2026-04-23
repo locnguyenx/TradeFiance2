@@ -8,7 +8,11 @@
         <field name="transactionRef" type="text-short"/>
         <field name="lifecycleStatusId" type="id"/>
         <field name="productEnumId" type="id"/>
+        <field name="amount" type="number-decimal"/>
+        <field name="outstandingAmount" type="number-decimal"/>
         <field name="baseEquivalentAmount" type="number-decimal"/>
+        <field name="applicantPartyId" type="id"/>
+        <field name="beneficiaryPartyId" type="id"/>
         <field name="issueDate" type="date"/>
         <field name="expiryDate" type="date"/>
         <field name="customerFacilityId" type="id"/>
@@ -52,5 +56,11 @@
         <field name="actionName" type="text-medium"/>
         <field name="deltaJson" type="text-very-long"/>
         <field name="transactionRef" type="text-medium"/>
+    </entity>
+    <entity entity-name="TradeParty" package="moqui.trade.instrument">
+        <field name="partyId" type="id" is-pk="true"/>
+        <field name="partyName" type="text-medium"/>
+        <field name="kycStatus" type="text-short"/> <!-- Active, Expired -->
+        <field name="kycExpiryDate" type="date"/>
     </entity>
 </entities>

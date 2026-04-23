@@ -11,6 +11,8 @@ class ImportLcEntitiesSpec extends Specification {
     
     def setup() {
         ec = Moqui.getExecutionContext()
+        ec.user.internalLoginUser("trade.maker")
+        ec.artifactExecution.disableAuthz()
     }
     
     def cleanup() {

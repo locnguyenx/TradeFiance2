@@ -11,6 +11,8 @@ class LimitServicesSpec extends Specification {
     
     def setup() {
         ec = Moqui.getExecutionContext()
+        ec.user.internalLoginUser("trade.maker")
+        ec.artifactExecution.disableAuthz()
     }
     
     def cleanup() {
@@ -23,7 +25,7 @@ class LimitServicesSpec extends Specification {
             .setAll([facilityId:"FAC-1", totalApprovedLimit: 1000.0, utilizedAmount: 0.0]).create()
             
         then:
-        ec.service.call("trade.finance.LimitServices.calculate#Earmark", [facilityId:"FAC-1", amount: 500.0]).isAllowed == true
+        ec.service.sync().name("LimitServices.calculate#Earmark").parameters([facilityId:"FAC-1", amount: 500.0]).call().isAllowed == true
         
         cleanup:
         ec.entity.find("moqui.trade.instrument.CustomerFacility").condition("facilityId", "FAC-1").deleteAll()
