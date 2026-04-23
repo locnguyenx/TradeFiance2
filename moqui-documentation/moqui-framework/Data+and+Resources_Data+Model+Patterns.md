@@ -1,38 +1,3 @@
-# Data and Resources Data Model Patterns
-
-##### Wiki Spaces
-    
-        
-            [__ Mantle Business Artifacts](https://moqui.org/m/docs/mantle)    
-    
-    
-            [__ Moqui Applications](https://moqui.org/m/docs/apps)    
-    
-    
-            [__ Moqui Community](https://moqui.org/m/docs/moqui)    
-    
-    
-            [__ Moqui Framework](https://moqui.org/m/docs/framework)    
-    
-
-    
-    
-    
-
-##### Page Tree
-            [Moqui Framework](https://moqui.org/m/docs/framework)
-    
-    
-
-    
-
- 
-            [All Pages](https://moqui.org/m/alldocs/framework)
-    
-        
-    
-    
-
 # Data Model Patterns
 
 There are various useful data model patterns that Moqui Framework has conventions and functionality to help support. These data model patterns are also used extensively in the Moqui and Mantle data models.

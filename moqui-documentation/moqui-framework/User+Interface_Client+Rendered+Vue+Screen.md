@@ -1,38 +1,3 @@
-# User Interface Client Rendered Vue Screen
-
-##### Wiki Spaces
-    
-        
-            [__ Mantle Business Artifacts](https://moqui.org/m/docs/mantle)    
-    
-    
-            [__ Moqui Applications](https://moqui.org/m/docs/apps)    
-    
-    
-            [__ Moqui Community](https://moqui.org/m/docs/moqui)    
-    
-    
-            [__ Moqui Framework](https://moqui.org/m/docs/framework)    
-    
-
-    
-    
-    
-
-##### Page Tree
-            [Moqui Framework](https://moqui.org/m/docs/framework)
-    
-    
-
-    
-
- 
-            [All Pages](https://moqui.org/m/alldocs/framework)
-    
-        
-    
-    
-
 # Client Rendered Vue Screen
 
 In the **vuet** render mode (under **/vapps** in the OOTB applications) XML Screens normally use a hybrid of client and server rendering. Screens can also be build that are 100% client rendered with a Vue JS component (**.js** file) and an embedded or separate Vue template (**.vuet** file).

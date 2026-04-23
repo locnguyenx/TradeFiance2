@@ -1,38 +1,3 @@
-# User Interface Notification and WebSocket
-
-##### Wiki Spaces
-    
-        
-            [__ Mantle Business Artifacts](https://moqui.org/m/docs/mantle)    
-    
-    
-            [__ Moqui Applications](https://moqui.org/m/docs/apps)    
-    
-    
-            [__ Moqui Community](https://moqui.org/m/docs/moqui)    
-    
-    
-            [__ Moqui Framework](https://moqui.org/m/docs/framework)    
-    
-
-    
-    
-    
-
-##### Page Tree
-            [Moqui Framework](https://moqui.org/m/docs/framework)
-    
-    
-
-    
-
- 
-            [All Pages](https://moqui.org/m/alldocs/framework)
-    
-        
-    
-    
-
 # Notification and WebSocket
 
 The Notification functionality in Moqui Framework is a user and topic based publish/subscribe tool that can be used to push notifications to server code by direct topic subscription or client applications by WebSocket. Other interfaces for client applications could be built for anything you'd like but the current OOTB implementation for this is WebSocket based and meant for notifications, screen pops, etc in web-based client applications.

@@ -1,38 +1,3 @@
-# Logic and Services Service Jobs
-
-##### Wiki Spaces
-    
-        
-            [__ Mantle Business Artifacts](https://moqui.org/m/docs/mantle)    
-    
-    
-            [__ Moqui Applications](https://moqui.org/m/docs/apps)    
-    
-    
-            [__ Moqui Community](https://moqui.org/m/docs/moqui)    
-    
-    
-            [__ Moqui Framework](https://moqui.org/m/docs/framework)    
-    
-
-    
-    
-    
-
-##### Page Tree
-            [Moqui Framework](https://moqui.org/m/docs/framework)
-    
-    
-
-    
-
- 
-            [All Pages](https://moqui.org/m/alldocs/framework)
-    
-        
-    
-    
-
 # Service Jobs
 
 Moqui provide support to configure ad-hoc (explicitly executed) or schedule jobs using `moqui.service.job.ServiceJob` and `moqui.service.job.ServiceJobParameter` entities.

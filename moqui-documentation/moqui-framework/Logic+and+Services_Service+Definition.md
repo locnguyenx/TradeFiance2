@@ -1,38 +1,3 @@
-# Logic and Services Service Definition
-
-##### Wiki Spaces
-    
-        
-            [__ Mantle Business Artifacts](https://moqui.org/m/docs/mantle)    
-    
-    
-            [__ Moqui Applications](https://moqui.org/m/docs/apps)    
-    
-    
-            [__ Moqui Community](https://moqui.org/m/docs/moqui)    
-    
-    
-            [__ Moqui Framework](https://moqui.org/m/docs/framework)    
-    
-
-    
-    
-    
-
-##### Page Tree
-            [Moqui Framework](https://moqui.org/m/docs/framework)
-    
-    
-
-    
-
- 
-            [All Pages](https://moqui.org/m/alldocs/framework)
-    
-        
-    
-    
-
 # Service Definition
 
 With Moqui Framework the main unit of logic is the service. This is a service-oriented architecture with services used as internal, granular units of logic as well as external, coarse aggregations of logic. Moqui services are:

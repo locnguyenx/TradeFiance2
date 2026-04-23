@@ -7,6 +7,7 @@
         <field name="instrumentId" type="id" is-pk="true"/>
         <field name="transactionRef" type="text-short"/>
         <field name="lifecycleStatusId" type="id"/>
+        <field name="instrumentTypeEnumId" type="id"/>
         <field name="productEnumId" type="id"/>
         <field name="amount" type="number-decimal"/>
         <field name="currencyUomId" type="id"/>
@@ -54,21 +55,21 @@
         <field name="snapshotDeltaJSON" type="text-very-long"/>
     </entity>
 
-    <entity entity-name="TradeStandardClause" package="trade.common">
+    <entity entity-name="TradeStandardClause" package="moqui.trade.common">
         <field name="clauseId" type="id" is-pk="true"/>
         <field name="clauseTypeEnumId" type="id"/>
         <field name="clauseName" type="text-medium"/>
         <field name="clauseText" type="text-very-long"/>
     </entity>
 
-    <entity entity-name="TradeConfig" package="trade.common">
+    <entity entity-name="TradeConfig" package="moqui.trade.common">
         <field name="configId" type="id" is-pk="true"/>
         <field name="configKey" type="text-medium"/>
         <field name="configValue" type="text-medium"/>
         <field name="description" type="text-medium"/>
     </entity>
 
-    <entity entity-name="TradeAuditLog" package="trade.common">
+    <entity entity-name="TradeAuditLog" package="moqui.trade.common">
         <field name="auditLogId" type="id" is-pk="true"/>
         <field name="changedByUserId" type="id"/>
         <field name="timestamp" type="date-time" default-field-direct="true"/>
@@ -125,5 +126,17 @@
         <field name="maxApprovalAmount" type="number-decimal"/>
         <field name="currencyUomId" type="id"/>
         <field name="isSuspended" type="text-indicator" default="'N'"/>
+    </entity>
+
+    <entity entity-name="TradeApprovalRecord" package="moqui.trade.instrument">
+        <field name="approvalRecordId" type="id" is-pk="true"/>
+        <field name="instrumentId" type="id"/>
+        <field name="approverUserId" type="id"/>
+        <field name="approvalTimestamp" type="date-time" default="ec.user.nowTimestamp"/>
+        <field name="approvalComments" type="text-long"/>
+        <field name="versionSnapshot" type="number-integer"/>
+        <relationship type="one" related="moqui.trade.instrument.TradeInstrument" title="Instrument">
+            <key-map field-name="instrumentId"/>
+        </relationship>
     </entity>
 </entities>

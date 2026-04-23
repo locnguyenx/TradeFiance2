@@ -1,38 +1,3 @@
-# Data and Resources Entity ECA Rules
-
-##### Wiki Spaces
-    
-        
-            [__ Mantle Business Artifacts](https://moqui.org/m/docs/mantle)    
-    
-    
-            [__ Moqui Applications](https://moqui.org/m/docs/apps)    
-    
-    
-            [__ Moqui Community](https://moqui.org/m/docs/moqui)    
-    
-    
-            [__ Moqui Framework](https://moqui.org/m/docs/framework)    
-    
-
-    
-    
-    
-
-##### Page Tree
-            [Moqui Framework](https://moqui.org/m/docs/framework)
-    
-    
-
-    
-
- 
-            [All Pages](https://moqui.org/m/alldocs/framework)
-    
-        
-    
-    
-
 # Entity ECA Rules
 
 Entity ECA (EECA) rules can be used to trigger actions to run when data is modified or searched. It is useful for maintaining entity fields (database columns) that are based on other entity fields or for updating data in a separate system based on data in this system. EECA rules should not generally be used for triggering business processes because the rules are applied too widely. Service ECA rules are a better tool for triggering processes.

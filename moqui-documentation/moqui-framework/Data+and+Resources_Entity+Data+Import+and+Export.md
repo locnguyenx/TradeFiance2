@@ -1,41 +1,5 @@
-# Data and Resources Entity Data Import and Export
-
-##### Wiki Spaces
-    
-        
-            [__ Mantle Business Artifacts](https://moqui.org/m/docs/mantle)    
-    
-    
-            [__ Moqui Applications](https://moqui.org/m/docs/apps)    
-    
-    
-            [__ Moqui Community](https://moqui.org/m/docs/moqui)    
-    
-    
-            [__ Moqui Framework](https://moqui.org/m/docs/framework)    
-    
-
-    
-    
-    
-
-##### Page Tree
-            [Moqui Framework](https://moqui.org/m/docs/framework)
-    
-    
-
-    
-
- 
-            [All Pages](https://moqui.org/m/alldocs/framework)
-    
-        
-    
-    
-
 # Entity Data Import and Export
 
-  
 * [Loading Entity XML and CSV](#loading-entity-xml-and-csv)
 * [Writing Entity XML](#writing-entity-xml)
 * [Views and Forms for Easy View and Export](#views-and-forms-for-easy-view-and-export)

@@ -1,41 +1,5 @@
-# Data and Resources Resources and Content
-
-##### Wiki Spaces
-    
-        
-            [__ Mantle Business Artifacts](https://moqui.org/m/docs/mantle)    
-    
-    
-            [__ Moqui Applications](https://moqui.org/m/docs/apps)    
-    
-    
-            [__ Moqui Community](https://moqui.org/m/docs/moqui)    
-    
-    
-            [__ Moqui Framework](https://moqui.org/m/docs/framework)    
-    
-
-    
-    
-    
-
-##### Page Tree
-            [Moqui Framework](https://moqui.org/m/docs/framework)
-    
-    
-
-    
-
- 
-            [All Pages](https://moqui.org/m/alldocs/framework)
-    
-        
-    
-    
-
 # Resources: Content, Templates, and Scripts
 
-  
 * [Resource Locations](#resource-locations)
 * [Using Resources](#using-resources)
 * [Rendering Templates and Running Scripts](#rendering-templates-and-running-scripts)

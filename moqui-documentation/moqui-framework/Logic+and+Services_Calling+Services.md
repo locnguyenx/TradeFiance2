@@ -1,38 +1,3 @@
-# Logic and Services Calling Services
-
-##### Wiki Spaces
-    
-        
-            [__ Mantle Business Artifacts](https://moqui.org/m/docs/mantle)    
-    
-    
-            [__ Moqui Applications](https://moqui.org/m/docs/apps)    
-    
-    
-            [__ Moqui Community](https://moqui.org/m/docs/moqui)    
-    
-    
-            [__ Moqui Framework](https://moqui.org/m/docs/framework)    
-    
-
-    
-    
-    
-
-##### Page Tree
-            [Moqui Framework](https://moqui.org/m/docs/framework)
-    
-    
-
-    
-
- 
-            [All Pages](https://moqui.org/m/alldocs/framework)
-    
-        
-    
-    
-
 # Calling Services
 
 There are DSL-style interfaces available through the ServiceFacade (ec.**getService**(), or in Groovy ec.service) that have options applicable to the various ways of calling a service. All of these service call interfaces have **name**() methods to specify the service name, and **parameter**() and **parameters**() methods to specify the input parameters for the service. These and other methods on the various interfaces return an instance of themselves so that calls can be chained. Most have some variation of a **call**() method to actually call the service.

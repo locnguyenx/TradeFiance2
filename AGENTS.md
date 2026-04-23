@@ -121,15 +121,16 @@ Only pause to ask for confirmation when:
 |------|---------|
 | `.agents/rules/system-context.md` | Core Context & System Architecture |
 | `.agents/rules/trade-finance.md` | Domain-specific rules |
-| `.agents/rules/moqui-entities.md` | Entity constraints |
-| `.agents/rules/moqui-services.md` | Service constraints |
-| `.agents/rules/moqui-screens.md` | UI constraints |
+| `.agents/rules/moqui-entities.md` | Moqui Entity constraints |
+| `.agents/rules/moqui-services.md` | Moqui Service constraints |
+| `.agents/rules/moqui-screens.md` | Moqui UI constraints |
 | `.agents/rules/testing-debugging.md` | Testing, Issue tracking & Debugging Rules |
 
 ### Knowledge Base
 
 | File | Purpose |
 |------|---------|
+| `.agents/rules/moqui-framework.md` | Moqui Framework development guidelines |
 | `.agents/knowledge/moqui-entity-patterns.md` | Entity patterns |
 | `.agents/knowledge/moqui-service-patterns.md` | Service patterns |
 | `.agents/knowledge/moqui-ui-patterns.md` | UI patterns |

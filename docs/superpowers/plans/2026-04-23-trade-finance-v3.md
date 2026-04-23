@@ -62,7 +62,7 @@
 </entity>
 ```
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 In `TradeCommonEntitiesSpec.groovy`, add a test that creates a TradeInstrument with the new transaction management fields and verifies they persist correctly:
 
@@ -104,14 +104,14 @@ def "TradeInstrument persists transaction management fields"() {
 }
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd runtime/component/TradeFinance && gradle test --tests "*TradeCommonEntitiesSpec*transaction management*" 2>&1 | tail -20
 ```
 Expected: FAIL — fields do not exist yet.
 
-- [ ] **Step 3: Add the 12 new transaction management fields to TradeInstrument**
+- [x] **Step 3: Add the 12 new transaction management fields to TradeInstrument**
 
 Add these fields to the `TradeInstrument` entity in `TradeCommonEntities.xml`, after `customerFacilityId`:
 
@@ -132,14 +132,14 @@ Add these fields to the `TradeInstrument` entity in `TradeCommonEntities.xml`, a
 
 Also update the entity comment to reflect the snapshot + transaction management dual purpose.
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 ```bash
 cd runtime/component/TradeFinance && gradle test --tests "*TradeCommonEntitiesSpec*transaction management*" 2>&1 | tail -20
 ```
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add entity/TradeCommonEntities.xml src/test/groovy/moqui/trade/finance/TradeCommonEntitiesSpec.groovy
@@ -166,7 +166,7 @@ Ref: BDD-CMN-ENT-01, REQ-COM-ENT-01"
 
 **Current state of TradeParty (4 fields):** `partyId`, `partyName`, `kycStatus`, `kycExpiryDate`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```groovy
 def "TradeParty persists SWIFT and compliance fields"() {
@@ -194,8 +194,8 @@ def "TradeParty persists SWIFT and compliance fields"() {
 }
 ```
 
-- [ ] **Step 2: Run test — expect FAIL**
-- [ ] **Step 3: Add 5 new fields to TradeParty**
+- [x] **Step 2: Run test — expect FAIL**
+- [x] **Step 3: Add 5 new fields to TradeParty**
 
 ```xml
 <field name="sanctionsStatus" type="text-short"/> <!-- Clear, Suspended, Blocked -->
@@ -205,8 +205,8 @@ def "TradeParty persists SWIFT and compliance fields"() {
 <field name="partyRoleEnumId" type="id"/>
 ```
 
-- [ ] **Step 4: Run test — expect PASS**
-- [ ] **Step 5: Commit**
+- [x] **Step 4: Run test — expect PASS**
+- [x] **Step 5: Commit**
 
 ```bash
 git add entity/TradeCommonEntities.xml src/test/groovy/moqui/trade/finance/TradeCommonEntitiesSpec.groovy
@@ -230,9 +230,9 @@ partyRoleEnumId. Ref: BDD-CMN-ENT-02, REQ-COM-ENT-02"
 - Modify: `runtime/component/TradeFinance/data/TradeFinanceMasterData.xml`
 - Test: `src/test/groovy/moqui/trade/finance/TradeCommonEntitiesSpec.groovy`
 
-- [ ] **Step 1: Write the failing test** verifying `partyId` FK on CustomerFacility
-- [ ] **Step 2: Run test — expect FAIL**
-- [ ] **Step 3: Add `partyId` field to CustomerFacility, update seed data to include `partyId` on all existing facility records**
+- [x] **Step 1: Write the failing test** verifying `partyId` FK on CustomerFacility
+- [x] **Step 2: Run test — expect FAIL**
+- [x] **Step 3: Add `partyId` field to CustomerFacility, update seed data to include `partyId` on all existing facility records**
 
 ```xml
 <field name="partyId" type="id"/> <!-- FK to owning customer TradeParty -->
@@ -243,8 +243,8 @@ Seed data update:
 <moqui.trade.instrument.CustomerFacility facilityId="FAC-ACME-001" partyId="ACME_CORP_001" totalApprovedLimit="10000000.00" utilizedAmount="2500000.00" facilityExpiryDate="2027-12-31"/>
 ```
 
-- [ ] **Step 4: Run test — expect PASS**
-- [ ] **Step 5: Commit**
+- [x] **Step 4: Run test — expect PASS**
+- [x] **Step 5: Commit**
 
 ---
 
@@ -259,17 +259,17 @@ Seed data update:
 - Modify: `runtime/component/TradeFinance/entity/TradeCommonEntities.xml` (TradeTransactionAudit, lines 29-37)
 - Test: `src/test/groovy/moqui/trade/finance/TradeCommonEntitiesSpec.groovy`
 
-- [ ] **Step 1: Write the failing test** verifying `ipAddress` and `fieldChanged` persist
-- [ ] **Step 2: Run test — expect FAIL**
-- [ ] **Step 3: Add 2 new fields**
+- [x] **Step 1: Write the failing test** verifying `ipAddress` and `fieldChanged` persist
+- [x] **Step 2: Run test — expect FAIL**
+- [x] **Step 3: Add 2 new fields**
 
 ```xml
 <field name="ipAddress" type="text-short"/>
 <field name="fieldChanged" type="text-medium"/>
 ```
 
-- [ ] **Step 4: Run test — expect PASS**
-- [ ] **Step 5: Commit**
+- [x] **Step 4: Run test — expect PASS**
+- [x] **Step 5: Commit**
 
 ---
 
@@ -285,11 +285,11 @@ Seed data update:
 - Create: `runtime/component/TradeFinance/data/TradeProductCatalogData.xml`
 - Test: `src/test/groovy/moqui/trade/finance/TradeCommonEntitiesSpec.groovy`
 
-- [ ] **Step 1: Write the failing tests** — one test per new entity verifying all fields persist
+- [x] **Step 1: Write the failing tests** — one test per new entity verifying all fields persist
 
-- [ ] **Step 2: Run tests — expect FAIL**
+- [x] **Step 2: Run tests — expect FAIL**
 
-- [ ] **Step 3: Add three new entities to TradeCommonEntities.xml**
+- [x] **Step 3: Add three new entities to TradeCommonEntities.xml**
 
 **FeeConfiguration:**
 ```xml
@@ -341,7 +341,7 @@ Seed data update:
 </entity>
 ```
 
-- [ ] **Step 4: Create seed data file `TradeProductCatalogData.xml` with standard product configurations**
+- [x] **Step 4: Create seed data file `TradeProductCatalogData.xml` with standard product configurations**
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -377,8 +377,8 @@ Seed data update:
 </entity-facade-xml>
 ```
 
-- [ ] **Step 5: Run tests — expect PASS**
-- [ ] **Step 6: Commit**
+- [x] **Step 5: Run tests — expect PASS**
+- [x] **Step 6: Commit**
 
 ```bash
 git add entity/TradeCommonEntities.xml data/TradeProductCatalogData.xml src/test/groovy/moqui/trade/finance/TradeCommonEntitiesSpec.groovy
@@ -404,7 +404,7 @@ Ref: BDD-CMN-MAS-01, BDD-CMN-PRD-01, BDD-CMN-AUTH-01"
 
 **Current state (13 fields):** `instrumentId`, `businessStateId`, `beneficiaryPartyId`, `tolerancePositive/Negative`, `tenorTypeId`, `usanceDays`, `portOfLoading/Discharge`, `expiryPlace`, `goodsDescription`, `documentsRequired`, `additionalConditions`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```groovy
 def "ImportLetterOfCredit persists effective values and new fields"() {
@@ -452,9 +452,9 @@ def "ImportLetterOfCredit persists effective values and new fields"() {
 }
 ```
 
-- [ ] **Step 2: Run test — expect FAIL**
+- [x] **Step 2: Run test — expect FAIL**
 
-- [ ] **Step 3: Add 15 new fields to ImportLetterOfCredit**
+- [x] **Step 3: Add 15 new fields to ImportLetterOfCredit**
 
 ```xml
 <!-- LC-specific new fields -->
@@ -484,8 +484,8 @@ Also add relationship to TradeProductCatalog:
 </relationship>
 ```
 
-- [ ] **Step 4: Run test — expect PASS**
-- [ ] **Step 5: Commit**
+- [x] **Step 4: Run test — expect PASS**
+- [x] **Step 5: Commit**
 
 ---
 
@@ -500,11 +500,11 @@ Also add relationship to TradeProductCatalog:
 - Modify: `runtime/component/TradeFinance/entity/ImportLcEntities.xml`
 - Test: `src/test/groovy/moqui/trade/finance/ImportLcEntitiesSpec.groovy`
 
-- [ ] **Step 1: Write the failing tests** — one per new entity
+- [x] **Step 1: Write the failing tests** — one per new entity
 
-- [ ] **Step 2: Run tests — expect FAIL**
+- [x] **Step 2: Run tests — expect FAIL**
 
-- [ ] **Step 3: Add two new entities**
+- [x] **Step 3: Add two new entities**
 
 **PresentationDiscrepancy:**
 ```xml
@@ -549,8 +549,8 @@ Also add relationship to TradeProductCatalog:
 </entity>
 ```
 
-- [ ] **Step 4: Run tests — expect PASS**
-- [ ] **Step 5: Commit**
+- [x] **Step 4: Run tests — expect PASS**
+- [x] **Step 5: Commit**
 
 ---
 
@@ -565,11 +565,11 @@ Also add relationship to TradeProductCatalog:
 - Modify: `runtime/component/TradeFinance/entity/ImportLcEntities.xml`
 - Test: `src/test/groovy/moqui/trade/finance/ImportLcEntitiesSpec.groovy`
 
-- [ ] **Step 1: Write failing tests for new fields on each entity**
+- [x] **Step 1: Write failing tests for new fields on each entity**
 
-- [ ] **Step 2: Run tests — expect FAIL**
+- [x] **Step 2: Run tests — expect FAIL**
 
-- [ ] **Step 3: Add fields**
+- [x] **Step 3: Add fields**
 
 **ImportLcAmendment — add 3 fields:**
 ```xml
@@ -594,8 +594,8 @@ Also add relationship to TradeProductCatalog:
 <field name="issuanceFee" type="number-decimal"/>
 ```
 
-- [ ] **Step 4: Run tests — expect PASS**
-- [ ] **Step 5: Commit**
+- [x] **Step 4: Run tests — expect PASS**
+- [x] **Step 5: Commit**
 
 ---
 
@@ -610,11 +610,11 @@ Also add relationship to TradeProductCatalog:
 - Modify: `runtime/component/TradeFinance/data/TradeFinanceMasterData.xml`
 - Test: `src/test/groovy/moqui/trade/finance/TradeCommonEntitiesSpec.groovy`
 
-- [ ] **Step 1: Write a test that verifies all Business State StatusItems exist and valid transitions are defined**
+- [x] **Step 1: Write a test that verifies all Business State StatusItems exist and valid transitions are defined**
 
-- [ ] **Step 2: Run test — expect FAIL**
+- [x] **Step 2: Run test — expect FAIL**
 
-- [ ] **Step 3: Add seed data for LC Business States and valid transitions**
+- [x] **Step 3: Add seed data for LC Business States and valid transitions**
 
 ```xml
 <!-- LC Business States -->
@@ -660,8 +660,8 @@ Also add relationship to TradeProductCatalog:
 <moqui.basic.Enumeration enumId="SHARED" enumTypeId="ChargeAllocation" description="Shared"/>
 ```
 
-- [ ] **Step 4: Run test — expect PASS**
-- [ ] **Step 5: Commit**
+- [x] **Step 4: Run test — expect PASS**
+- [x] **Step 5: Commit**
 
 ---
 
@@ -772,11 +772,11 @@ The service scans all SWIFT-mapped fields against the X Character Set (`A-Z`, `a
 - Modify: `runtime/component/TradeFinance/service/ImportLcServices.xml` (create#ImportLetterOfCredit)
 - Test: `src/test/groovy/moqui/trade/finance/BddImportLcModuleSpec.groovy`
 
-- [ ] **Step 1: Write the failing test** — after calling `create#ImportLetterOfCredit`, verify that `effectiveAmount`, `effectiveExpiryDate`, `effectiveOutstandingAmount`, and `cumulativeDrawnAmount` are correctly initialized from the input values
-- [ ] **Step 2: Run test — expect FAIL**
-- [ ] **Step 3: Modify the existing create service to also set transaction management fields on TradeInstrument and initialize effective values on ImportLetterOfCredit**
-- [ ] **Step 4: Run test — expect PASS**
-- [ ] **Step 5: Commit**
+- [x] **Step 1: Write the failing test** — after calling `create#ImportLetterOfCredit`, verify that `effectiveAmount`, `effectiveExpiryDate`, `effectiveOutstandingAmount`, and `cumulativeDrawnAmount` are correctly initialized from the input values
+- [x] **Step 2: Run test — expect FAIL**
+- [x] **Step 3: Modify the existing create service to also set transaction management fields on TradeInstrument and initialize effective values on ImportLetterOfCredit**
+- [x] **Step 4: Run test — expect PASS**
+- [x] **Step 5: Commit**
 
 ---
 

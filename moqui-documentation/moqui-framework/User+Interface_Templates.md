@@ -1,38 +1,3 @@
-# User Interface Templates
-
-##### Wiki Spaces
-    
-        
-            [__ Mantle Business Artifacts](https://moqui.org/m/docs/mantle)    
-    
-    
-            [__ Moqui Applications](https://moqui.org/m/docs/apps)    
-    
-    
-            [__ Moqui Community](https://moqui.org/m/docs/moqui)    
-    
-    
-            [__ Moqui Framework](https://moqui.org/m/docs/framework)    
-    
-
-    
-    
-    
-
-##### Page Tree
-            [Moqui Framework](https://moqui.org/m/docs/framework)
-    
-    
-
-    
-
- 
-            [All Pages](https://moqui.org/m/alldocs/framework)
-    
-        
-    
-    
-
 # Templates
 
 While a wide variety of screens can be built with XML Forms and the various XML Screen widgets and layout elements. Quite a lot can be done with the OOTB elements. Here is an example of a more complex screen, the Task Summary screen from the HiveMind PM application that is made with only OOTB elements and some custom CSS:

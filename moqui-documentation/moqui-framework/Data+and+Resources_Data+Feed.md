@@ -1,38 +1,3 @@
-# Data and Resources Data Feed
-
-##### Wiki Spaces
-    
-        
-            [__ Mantle Business Artifacts](https://moqui.org/m/docs/mantle)    
-    
-    
-            [__ Moqui Applications](https://moqui.org/m/docs/apps)    
-    
-    
-            [__ Moqui Community](https://moqui.org/m/docs/moqui)    
-    
-    
-            [__ Moqui Framework](https://moqui.org/m/docs/framework)    
-    
-
-    
-    
-    
-
-##### Page Tree
-            [Moqui Framework](https://moqui.org/m/docs/framework)
-    
-    
-
-    
-
- 
-            [All Pages](https://moqui.org/m/alldocs/framework)
-    
-        
-    
-    
-
 # Data Feed
 
 A Data Feed is a configurable way to push Data Documents to a service or group multiple documents for retrieval through an API call. There service to call is specified in the _feedReceiveServiceName_ field and should implement the `org.moqui.EntityServices.receive#DataFeed` service interface. The main input parameter is the _documentList_ which will have a List of Maps representing each DataDocument instance to process when received. See the service interface definition for more details:

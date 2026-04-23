@@ -1,39 +1,4 @@
-# System Interfaces Enterprise Integration with Apache Camel
-
-##### Wiki Spaces
-    
-        
-            [__ Mantle Business Artifacts](https://moqui.org/m/docs/mantle)    
-    
-    
-            [__ Moqui Applications](https://moqui.org/m/docs/apps)    
-    
-    
-            [__ Moqui Community](https://moqui.org/m/docs/moqui)    
-    
-    
-            [__ Moqui Framework](https://moqui.org/m/docs/framework)    
-    
-
-    
-    
-    
-
-##### Page Tree
-            [Moqui Framework](https://moqui.org/m/docs/framework)
-    
-    
-
-    
-
- 
-            [All Pages](https://moqui.org/m/alldocs/framework)
-    
-        
-    
-    
-
-## Enterprise Integration with Apache Camel
+# Enterprise Integration with Apache Camel
 
 Apache Camel ([_http://camel.apache.org_](http://camel.apache.org)) is a tool for routing and processing messages with tools for Enterprise Integration Patterns which are described here (and other pages on this site have much other good information about EIP): [_http://www.eaipatterns.com/toc.html_](http://www.eaipatterns.com/toc.html)
 

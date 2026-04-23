@@ -1,38 +1,3 @@
-# System Interfaces Data and Logic Level Interfaces
-
-##### Wiki Spaces
-    
-        
-            [__ Mantle Business Artifacts](https://moqui.org/m/docs/mantle)    
-    
-    
-            [__ Moqui Applications](https://moqui.org/m/docs/apps)    
-    
-    
-            [__ Moqui Community](https://moqui.org/m/docs/moqui)    
-    
-    
-            [__ Moqui Framework](https://moqui.org/m/docs/framework)    
-    
-
-    
-    
-    
-
-##### Page Tree
-            [Moqui Framework](https://moqui.org/m/docs/framework)
-    
-    
-
-    
-
- 
-            [All Pages](https://moqui.org/m/alldocs/framework)
-    
-        
-    
-    
-
 # Data and Logic Level Interfaces
 
 System interfaces can generally be divided into two main categories of supporting a step in a process and transferring data (often to keep data updated in another system). For most system integrations a process level one is more flexible and also more focused on a specific part of the system as opposed to transferring all data. Sometimes keeping data consistent between systems is the nature of the integration requirement or the only option available, and then a data level integration is the way to go. Moqui has tools for both logic/process and data level system interfaces.

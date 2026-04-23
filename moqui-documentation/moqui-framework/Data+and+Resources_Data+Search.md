@@ -1,38 +1,3 @@
-# Data and Resources Data Search
-
-##### Wiki Spaces
-    
-        
-            [__ Mantle Business Artifacts](https://moqui.org/m/docs/mantle)    
-    
-    
-            [__ Moqui Applications](https://moqui.org/m/docs/apps)    
-    
-    
-            [__ Moqui Community](https://moqui.org/m/docs/moqui)    
-    
-    
-            [__ Moqui Framework](https://moqui.org/m/docs/framework)    
-    
-
-    
-    
-    
-
-##### Page Tree
-            [Moqui Framework](https://moqui.org/m/docs/framework)
-    
-    
-
-    
-
- 
-            [All Pages](https://moqui.org/m/alldocs/framework)
-    
-        
-    
-    
-
 # Data Search
 
 The Data Search feature in Moqui Framework is based on ElasticSearch ([http://www.elasticsearch.org](http://www.elasticsearch.org)). This is a distributed text search tool based on_Apache Lucene_. ElasticSearch uses JSON documents as the artifact to search, and each named field in a JSON document is a facet for searching. The _Data Document_ feature produces documents with 4 special fields that ElasticSearch uses, as described in the Data Document section (**_index**, **_type**, **_id**, and **_timestamp**).

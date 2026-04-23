@@ -1,7 +1,5 @@
 <component name="TradeFinance" version="1.0.0"
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
            xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/moqui-conf-3.0.xsd">
-    <entity-facade-xml type="seed" location="component://TradeFinance/data/TradeFinanceSeedData.xml"/>
-    <entity-facade-xml type="seed" location="component://TradeFinance/data/TradeClauseSeedData.xml"/>
-    <entity-facade-xml type="seed" location="component://TradeFinance/data/TradeFinanceAuthData.xml"/>
+    <depends-on name="mantle-udm"/>
 </component>

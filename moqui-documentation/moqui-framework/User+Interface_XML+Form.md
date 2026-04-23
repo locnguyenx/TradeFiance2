@@ -1,38 +1,3 @@
-# User Interface XML Form
-
-##### Wiki Spaces
-    
-        
-            [__ Mantle Business Artifacts](https://moqui.org/m/docs/mantle)    
-    
-    
-            [__ Moqui Applications](https://moqui.org/m/docs/apps)    
-    
-    
-            [__ Moqui Community](https://moqui.org/m/docs/moqui)    
-    
-    
-            [__ Moqui Framework](https://moqui.org/m/docs/framework)    
-    
-
-    
-    
-    
-
-##### Page Tree
-            [Moqui Framework](https://moqui.org/m/docs/framework)
-    
-    
-
-    
-
- 
-            [All Pages](https://moqui.org/m/alldocs/framework)
-    
-        
-    
-    
-
 # XML Form
 
 There are two types of XML Form: single and list. A single form represents a single set of fields with a label and widget for each. A list form is presented as a table with a column for each field, the label in the table header, a widget for the field in each row, and a row for each entry in the list the form output is based on.

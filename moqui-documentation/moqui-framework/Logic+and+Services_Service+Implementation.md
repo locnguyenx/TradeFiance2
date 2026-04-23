@@ -1,38 +1,3 @@
-# Logic and Services Service Implementation
-
-##### Wiki Spaces
-    
-        
-            [__ Mantle Business Artifacts](https://moqui.org/m/docs/mantle)    
-    
-    
-            [__ Moqui Applications](https://moqui.org/m/docs/apps)    
-    
-    
-            [__ Moqui Community](https://moqui.org/m/docs/moqui)    
-    
-    
-            [__ Moqui Framework](https://moqui.org/m/docs/framework)    
-    
-
-    
-    
-    
-
-##### Page Tree
-            [Moqui Framework](https://moqui.org/m/docs/framework)
-    
-    
-
-    
-
- 
-            [All Pages](https://moqui.org/m/alldocs/framework)
-    
-        
-    
-    
-
 # Service Implementation
 
 Some service types have local implementations while others have no implementation (interface) or the service definition is a proxy for something else and the location refers to an external implementation (_remote-xml-rpc_,* remote-json-rpc*, and _camel_). The remote and _Apache Camel_ types are described in detail in the System Interfaces section.
