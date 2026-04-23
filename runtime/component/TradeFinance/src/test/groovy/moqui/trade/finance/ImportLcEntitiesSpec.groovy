@@ -158,4 +158,96 @@ class ImportLcEntitiesSpec extends Specification {
         ec.entity.find("moqui.trade.instrument.TradeInstrument")
             .condition("instrumentId", "LC-MGMT-TEST").deleteAll()
     }
+
+    def "ImportLcAmendment persists extended fields"() {
+        setup:
+        ec.entity.makeValue("moqui.trade.instrument.TradeInstrument")
+                .setAll([instrumentId: "LC-AMEND-TEST", transactionRef: "TF-LC-AM-01"]).create()
+        ec.entity.makeValue("moqui.trade.importlc.ImportLetterOfCredit")
+                .setAll([instrumentId: "LC-AMEND-TEST", businessStateId: "LC_ISSUED"]).create()
+
+        when:
+        ec.service.sync().name("create#moqui.trade.importlc.ImportLcAmendment").parameters([
+            amendmentId: "AMEND_01",
+            instrumentId: "LC-AMEND-TEST",
+            amendmentBusinessStateId: "AMEND_DRAFT",
+            amendmentTypeEnumId: "AMEND_INCREASE",
+            isBeneficiaryAcceptanceRequired: "Y"
+        ]).call()
+        def am = ec.entity.find("moqui.trade.importlc.ImportLcAmendment")
+                .condition("amendmentId", "AMEND_01").one()
+
+        then:
+        am != null
+        am.amendmentBusinessStateId == "AMEND_DRAFT"
+        am.isBeneficiaryAcceptanceRequired == "Y"
+
+        cleanup:
+        ec.entity.find("moqui.trade.importlc.ImportLcAmendment")
+            .condition("amendmentId", "AMEND_01").deleteAll()
+        ec.entity.find("moqui.trade.importlc.ImportLetterOfCredit")
+            .condition("instrumentId", "LC-AMEND-TEST").deleteAll()
+        ec.entity.find("moqui.trade.instrument.TradeInstrument")
+            .condition("instrumentId", "LC-AMEND-TEST").deleteAll()
+    }
+
+    def "TradeDocumentPresentation persists status field"() {
+        setup:
+        ec.entity.makeValue("moqui.trade.instrument.TradeInstrument")
+                .setAll([instrumentId: "LC-PRES-TEST", transactionRef: "TF-LC-PR-01"]).create()
+        ec.entity.makeValue("moqui.trade.importlc.ImportLetterOfCredit")
+                .setAll([instrumentId: "LC-PRES-TEST", businessStateId: "LC_ISSUED"]).create()
+
+        when:
+        ec.service.sync().name("create#moqui.trade.importlc.TradeDocumentPresentation").parameters([
+            presentationId: "PRES_01",
+            instrumentId: "LC-PRES-TEST",
+            presentationStatusId: "PRES_DRAFT",
+            claimAmount: 50000
+        ]).call()
+        def pr = ec.entity.find("moqui.trade.importlc.TradeDocumentPresentation")
+                .condition("presentationId", "PRES_01").one()
+
+        then:
+        pr != null
+        pr.presentationStatusId == "PRES_DRAFT"
+
+        cleanup:
+        ec.entity.find("moqui.trade.importlc.TradeDocumentPresentation")
+            .condition("presentationId", "PRES_01").deleteAll()
+        ec.entity.find("moqui.trade.importlc.ImportLetterOfCredit")
+            .condition("instrumentId", "LC-PRES-TEST").deleteAll()
+        ec.entity.find("moqui.trade.instrument.TradeInstrument")
+            .condition("instrumentId", "LC-PRES-TEST").deleteAll()
+    }
+
+    def "ImportLcShippingGuarantee persists status field"() {
+        setup:
+        ec.entity.makeValue("moqui.trade.instrument.TradeInstrument")
+                .setAll([instrumentId: "LC-SG-TEST", transactionRef: "TF-LC-SG-01"]).create()
+        ec.entity.makeValue("moqui.trade.importlc.ImportLetterOfCredit")
+                .setAll([instrumentId: "LC-SG-TEST", businessStateId: "LC_ISSUED"]).create()
+
+        when:
+        ec.service.sync().name("create#moqui.trade.importlc.ImportLcShippingGuarantee").parameters([
+            guaranteeId: "SG_01",
+            instrumentId: "LC-SG-TEST",
+            guaranteeStatusId: "SG_DRAFT",
+            invoiceAmount: 20000
+        ]).call()
+        def sg = ec.entity.find("moqui.trade.importlc.ImportLcShippingGuarantee")
+                .condition("guaranteeId", "SG_01").one()
+
+        then:
+        sg != null
+        sg.guaranteeStatusId == "SG_DRAFT"
+
+        cleanup:
+        ec.entity.find("moqui.trade.importlc.ImportLcShippingGuarantee")
+            .condition("guaranteeId", "SG_01").deleteAll()
+        ec.entity.find("moqui.trade.importlc.ImportLetterOfCredit")
+            .condition("instrumentId", "LC-SG-TEST").deleteAll()
+        ec.entity.find("moqui.trade.instrument.TradeInstrument")
+            .condition("instrumentId", "LC-SG-TEST").deleteAll()
+    }
 }

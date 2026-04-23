@@ -60,6 +60,7 @@
         <field name="invoiceAmount" type="number-decimal"/>
         <field name="liabilityMultiplierRequired" type="number-integer" default="110"/> <!-- 110% per BRD -->
         <field name="transportDocReference" type="text-medium"/>
+        <field name="guaranteeStatusId" type="id"/>
         
         <relationship type="one" related="moqui.trade.importlc.ImportLetterOfCredit">
             <key-map field-name="instrumentId"/>
@@ -73,6 +74,7 @@
         <field name="claimAmount" type="number-decimal"/>
         <field name="isDiscrepant" type="text-indicator"/>
         <field name="applicantDecisionEnumId" type="id"/> <!-- PENDING, WAIVED, REFUSED -->
+        <field name="presentationStatusId" type="id"/>
         
         <relationship type="one" related="moqui.trade.importlc.ImportLetterOfCredit">
             <key-map field-name="instrumentId"/>
@@ -99,6 +101,9 @@
         <field name="amendmentNarrative" type="text-very-long"/>
         <field name="isFinancial" type="text-indicator"/>
         <field name="beneficiaryConsentStatusId" type="id"/> <!-- PENDING, ACCEPTED, REJECTED -->
+        <field name="amendmentBusinessStateId" type="id"/>
+        <field name="amendmentTypeEnumId" type="id"/>
+        <field name="isBeneficiaryAcceptanceRequired" type="text-indicator" default="'Y'"/>
         
         <relationship type="one" related="moqui.trade.importlc.ImportLetterOfCredit">
             <key-map field-name="instrumentId"/>
