@@ -87,4 +87,43 @@
         <field name="registeredAddress" type="text-medium"/>
         <field name="partyRoleEnumId" type="id"/>
     </entity>
+    
+    <entity entity-name="FeeConfiguration" package="moqui.trade.instrument">
+        <field name="feeConfigId" type="id" is-pk="true"/>
+        <field name="feeTypeEnumId" type="id"/>
+        <field name="calculationMethodEnumId" type="id"/>
+        <field name="ratePercent" type="number-decimal"/>
+        <field name="flatAmount" type="number-decimal"/>
+        <field name="minFloorAmount" type="number-decimal"/>
+        <field name="maxCeilingAmount" type="number-decimal"/>
+        <field name="currencyUomId" type="id"/>
+        <field name="isActive" type="text-indicator" default="'Y'"/>
+    </entity>
+
+    <entity entity-name="TradeProductCatalog" package="moqui.trade.instrument">
+        <field name="productCatalogId" type="id" is-pk="true"/>
+        <field name="productName" type="text-medium"/>
+        <field name="isActive" type="text-indicator" default="'Y'"/>
+        <!-- Common Constraints -->
+        <field name="allowedTenorEnumId" type="id"/>
+        <field name="maxToleranceLimit" type="number-decimal"/>
+        <!-- Product Specific Flags -->
+        <field name="allowRevolving" type="text-indicator" default="'N'"/>
+        <field name="allowAdvancePayment" type="text-indicator" default="'N'"/>
+        <field name="isStandby" type="text-indicator" default="'N'"/>
+        <field name="isTransferable" type="text-indicator" default="'N'"/>
+        <field name="accountingFrameworkEnumId" type="id"/>
+        <field name="mandatoryMarginPercent" type="number-decimal"/>
+        <field name="documentExamSlaDays" type="number-integer" default="5"/>
+        <field name="defaultSwiftFormatEnumId" type="id"/>
+    </entity>
+
+    <entity entity-name="UserAuthorityProfile" package="moqui.trade.instrument">
+        <field name="authorityProfileId" type="id" is-pk="true"/>
+        <field name="userId" type="id"/>
+        <field name="authorityTierEnumId" type="id"/>
+        <field name="maxApprovalAmount" type="number-decimal"/>
+        <field name="currencyUomId" type="id"/>
+        <field name="isSuspended" type="text-indicator" default="'N'"/>
+    </entity>
 </entities>

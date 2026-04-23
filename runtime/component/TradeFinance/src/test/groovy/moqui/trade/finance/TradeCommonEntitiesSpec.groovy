@@ -154,4 +154,74 @@ class TradeCommonEntitiesSpec extends Specification {
         ec.entity.find("moqui.trade.instrument.TradeTransactionAudit")
             .condition("instrumentId", "AUDIT-TEST").deleteAll()
     }
+
+    def "FeeConfiguration persists correctly"() {
+        when:
+        ec.service.sync().name("create#moqui.trade.instrument.FeeConfiguration").parameters([
+            feeConfigId: "FEE_TEST_001",
+            feeTypeEnumId: "ISSUANCE_FEE",
+            calculationMethodEnumId: "PERCENTAGE",
+            ratePercent: 0.25,
+            minFloorAmount: 100,
+            currencyUomId: "USD",
+            isActive: "Y"
+        ]).call()
+        def fee = ec.entity.find("moqui.trade.instrument.FeeConfiguration")
+                .condition("feeConfigId", "FEE_TEST_001").one()
+
+        then:
+        fee != null
+        fee.feeTypeEnumId == "ISSUANCE_FEE"
+        fee.ratePercent == 0.25
+
+        cleanup:
+        ec.entity.find("moqui.trade.instrument.FeeConfiguration")
+            .condition("feeConfigId", "FEE_TEST_001").deleteAll()
+    }
+
+    def "TradeProductCatalog persists correctly"() {
+        when:
+        ec.service.sync().name("create#moqui.trade.instrument.TradeProductCatalog").parameters([
+            productCatalogId: "PROD_TEST_001",
+            productName: "Test Product",
+            isActive: "Y",
+            allowRevolving: "Y",
+            documentExamSlaDays: 5
+        ]).call()
+        def prod = ec.entity.find("moqui.trade.instrument.TradeProductCatalog")
+                .condition("productCatalogId", "PROD_TEST_001").one()
+
+        then:
+        prod != null
+        prod.productName == "Test Product"
+        prod.allowRevolving == "Y"
+        prod.documentExamSlaDays == 5
+
+        cleanup:
+        ec.entity.find("moqui.trade.instrument.TradeProductCatalog")
+            .condition("productCatalogId", "PROD_TEST_001").deleteAll()
+    }
+
+    def "UserAuthorityProfile persists correctly"() {
+        when:
+        ec.service.sync().name("create#moqui.trade.instrument.UserAuthorityProfile").parameters([
+            authorityProfileId: "AUTH_TEST_001",
+            userId: "USER_001",
+            authorityTierEnumId: "TIER_4",
+            maxApprovalAmount: 5000000,
+            currencyUomId: "USD",
+            isSuspended: "N"
+        ]).call()
+        def auth = ec.entity.find("moqui.trade.instrument.UserAuthorityProfile")
+                .condition("authorityProfileId", "AUTH_TEST_001").one()
+
+        then:
+        auth != null
+        auth.authorityTierEnumId == "TIER_4"
+        auth.maxApprovalAmount == 5000000
+
+        cleanup:
+        ec.entity.find("moqui.trade.instrument.UserAuthorityProfile")
+            .condition("authorityProfileId", "AUTH_TEST_001").deleteAll()
+    }
 }
