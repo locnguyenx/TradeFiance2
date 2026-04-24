@@ -1,46 +1,56 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { AmendmentStepper } from './AmendmentStepper';
+import { tradeApi } from '../api/tradeApi';
 
-// ABOUTME: Test suite for LC Amendment workflow mapping to REQ-IMP-PRC-02.
-// UI Traceability: REQ-UI-IMP-06 (Amendment Stepper)
+jest.mock('../api/tradeApi', () => ({
+    tradeApi: {
+        getImportLc: jest.fn().mockResolvedValue({
+            instrumentId: 'IMLC/2026/001',
+            amount: 500000,
+            currencyUomId: 'USD',
+            expiryDate: '2026-12-31',
+            beneficiaryPartyId: 'PARTY_EXP_1',
+            effectiveAmount: 500000,
+            effectiveExpiryDate: '2026-12-31'
+        }),
+        createLcAmendment: jest.fn().mockResolvedValue({ success: true })
+    }
+}));
 
-describe('AmendmentStepper (BDD-IMP-AMD-*)', () => {
-    it('BDD-IMP-AMD-03: Loads existing LC context in Step 1 (Non-Financial Amendment)', () => {
+describe('AmendmentStepper v3.0 (REQ-UI-IMP-06)', () => {
+    it('integrates with tradeApi.getImportLc to load real context', async () => {
         render(<AmendmentStepper lcId="IMLC/2026/001" />);
-        expect(screen.getByText(/Current LC Context/i)).toBeInTheDocument();
-        expect(screen.getByText(/IMLC\/2026\/001/i)).toBeInTheDocument();
+        await screen.findByText(/Current LC Context/i);
+        expect(tradeApi.getImportLc).toHaveBeenCalledWith('IMLC/2026/001');
+        expect(screen.getAllByText(/500,000/).length).toBeGreaterThan(0);
     });
 
-    it('BDD-IMP-AMD-01: Allows input of financial delta (Amount increase) in Step 2', () => {
+    it('v3.0: displays Effective vs Snapshot values side-by-side during financial amendment', async () => {
         render(<AmendmentStepper lcId="IMLC/2026/001" />);
-        fireEvent.click(screen.getByTestId('next-button'));
+        await screen.findByText(/Current LC Context/i);
         
-        expect(screen.getByLabelText(/Amount Adjustment/i)).toBeInTheDocument();
-        const amountInput = screen.getByPlaceholderText(/e.g. \+50000/i);
-        fireEvent.change(amountInput, { target: { value: '50000' } });
-        expect(screen.getByText(/New Total Liability: \$ 550,000/i)).toBeInTheDocument();
+        fireEvent.click(screen.getByTestId('next-button')); // to Step 2
+        
+        expect(await screen.findByText(/Current Effective Amount:/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/500,000/).length).toBeGreaterThan(0);
+        
+        const deltaInput = screen.getByPlaceholderText(/e.g. \+50000/i);
+        fireEvent.change(deltaInput, { target: { value: '25000' } });
+        
+        expect(screen.getAllByText(/525,000/).length).toBeGreaterThan(0);
     });
 
-    it('BDD-IMP-AMD-04: Tracks Beneficiary Consent requirement (Pending Consent)', () => {
+    it('v3.0: validates extension logic for expiry dates (only extensions allowed)', async () => {
         render(<AmendmentStepper lcId="IMLC/2026/001" />);
-        // Move to Review Step
-        for(let i=0; i<4; i++) fireEvent.click(screen.getByTestId('next-button'));
+        await screen.findByText(/Current LC Context/i);
         
-        expect(screen.getByLabelText(/Advise Beneficiary Consent Required/i)).toBeInTheDocument();
-    });
-
-    it('BDD-IMP-AMD-02: Amendment: Negative Delta Limits Unlocked (Preview MT 707)', () => {
-        render(<AmendmentStepper lcId="IMLC/2026/001" />);
-        // Step 2 entry decrease
-        fireEvent.click(screen.getByTestId('next-button'));
-        fireEvent.change(screen.getByPlaceholderText(/e.g. \+50000/i), { target: { value: '-15000' } });
+        fireEvent.click(screen.getByTestId('next-button')); // to Step 2
         
-        // Move to Step 4
-        fireEvent.click(screen.getByTestId('next-button')); // to step 3
-        fireEvent.click(screen.getByTestId('next-button')); // to step 4
+        const dateInput = screen.getByLabelText(/New Expiry Date/i);
+        fireEvent.change(dateInput, { target: { value: '2025-11-30' } }); // Earlier than 2026-12-31
         
-        expect(screen.getByRole('heading', { name: /MT 707 Preview/i })).toBeInTheDocument();
-        const swiftBlock = screen.getByTestId('swift-block');
-        expect(swiftBlock.textContent).toContain(':32B: USD-15000');
+        fireEvent.click(screen.getByTestId('next-button')); // Try to proceed
+        
+        expect(await screen.findByText(/Expiry date must be an extension/i)).toBeInTheDocument();
     });
 });

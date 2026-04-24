@@ -1,10 +1,10 @@
-import React from 'react';
 import { SystemAdminSettings } from '../../../components/SystemAdminSettings';
+import { GlobalShell } from '../../../components/GlobalShell';
 
-export default async function AdminTiersPage() {
+export default function TierAdminPage() {
   return (
-    <div style={{ padding: '2rem' }}>
-      <SystemAdminSettings activePanel="authority" />
-    </div>
+    <GlobalShell>
+      <SystemAdminSettings activePanel="user" />
+    </GlobalShell>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { tradeApi } from '../api/tradeApi';
 
 // ABOUTME: High-Density Document Examination Workspace (REQ-UI-IMP-04).
 // ABOUTME: Implements Split-Pane for comparing LC Terms vs presented Documents.
@@ -12,6 +13,13 @@ interface DocRow {
     copies: number;
 }
 
+interface Discrepancy {
+    id: string;
+    code: string;
+    description: string;
+    isWaived: boolean;
+}
+
 export const DocumentExamination: React.FC = () => {
     const [decision, setDecision] = useState<'Accept' | 'Discrepant' | null>(null);
     const [docs, setDocs] = useState<DocRow[]>([
@@ -19,7 +27,31 @@ export const DocumentExamination: React.FC = () => {
         { id: '2', name: 'Ocean Bill of Lading', originals: 3, copies: 0 },
         { id: '3', name: 'Packing List', originals: 1, copies: 2 },
     ]);
-    const [discrepancies, setDiscrepancies] = useState<string[]>([]);
+    const [discrepancies, setDiscrepancies] = useState<Discrepancy[]>([]);
+    const [selectedCode, setSelectedCode] = useState('');
+    const [detail, setDetail] = useState('');
+
+    const logDiscrepancy = () => {
+        if (!selectedCode) return;
+        const newDisc: Discrepancy = {
+            id: Math.random().toString(36).substr(2, 9),
+            code: selectedCode,
+            description: detail,
+            isWaived: false
+        };
+        setDiscrepancies([...discrepancies, newDisc]);
+        setDecision('Discrepant');
+        setSelectedCode('');
+        setDetail('');
+    };
+
+    const handleWaive = async (id: string) => {
+        // In real app, we'd have presentationId
+        const res = await tradeApi.waiveDiscrepancy('TEST_PRES_ID');
+        if (res.success || !res.error) {
+            setDiscrepancies(discrepancies.map(d => d.id === id ? { ...d, isWaived: true } : d));
+        }
+    };
 
     return (
         <div className="exam-workspace">
@@ -76,21 +108,46 @@ export const DocumentExamination: React.FC = () => {
                             ))}
                         </tbody>
                     </table>
-                    <button className="add-row-btn">+ Add Document Row</button>
                 </section>
 
                 <section className="discrepancy-logger">
                     <header className="pane-header">
-                        <h3>Discrepancy Logger (ISBP)</h3>
+                        <h3>Discrepancy Logger (ISBP-745)</h3>
                     </header>
                     <div className="logger-entry">
-                        <select className="isbp-select">
-                            <option>Select ISBP Code...</option>
-                            <option>Code 12: Late Shipment</option>
-                            <option>Code 45: Data Mismatch</option>
+                        <select 
+                            className="isbp-select" 
+                            value={selectedCode}
+                            onChange={(e) => setSelectedCode(e.target.value)}
+                        >
+                            <option value="">Select ISBP Code...</option>
+                            <option value="LATE_SHIPMENT">Late Shipment</option>
+                            <option value="GOODS_MISMATCH">Description of Goods Mismatch</option>
+                            <option value="DOCS_MISSING">Mandatory Documents Missing</option>
+                            <option value="EXPIRY_LAPSED">Presentation after Expiry</option>
                         </select>
-                        <textarea placeholder="Specific discrepancy detail..."></textarea>
-                        <button className="log-btn">Log Discrepancy</button>
+                        <textarea 
+                            value={detail}
+                            onChange={(e) => setDetail(e.target.value)}
+                            placeholder="Specific discrepancy detail..."
+                        />
+                        <button className="log-btn" onClick={logDiscrepancy}>Log Discrepancy</button>
+                    </div>
+
+                    <div className="logged-discrepancies">
+                        {discrepancies.map(d => (
+                            <div key={d.id} className={`disc-item ${d.isWaived ? 'waived' : ''}`}>
+                                <div className="disc-info">
+                                    <span className="disc-code">{d.code}</span>
+                                    <p className="disc-desc">{d.description || 'No additional detail'}</p>
+                                </div>
+                                {!d.isWaived ? (
+                                    <button className="waive-btn" onClick={() => handleWaive(d.id)}>Waive</button>
+                                ) : (
+                                    <span className="waived-tag">WAIVED</span>
+                                )}
+                            </div>
+                        ))}
                     </div>
                 </section>
 
@@ -122,12 +179,20 @@ export const DocumentExamination: React.FC = () => {
                 .matrix-table th { text-align: left; padding: 0.75rem; font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; }
                 .matrix-table td { padding: 0.75rem; border-bottom: 1px solid #f1f5f9; }
                 .matrix-table input { width: 60px; padding: 0.4rem; border: 1px solid #e2e8f0; border-radius: 4px; }
-                .add-row-btn { margin-top: 1rem; background: none; border: 1px dashed #cbd5e1; color: #64748b; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: 600; }
 
+                .discrepancy-logger { border-top: 1px solid #f1f5f9; padding-top: 1.5rem; }
                 .logger-entry { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
                 .isbp-select { padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.875rem; }
                 .logger-entry textarea { height: 100px; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 6px; resize: none; font-size: 0.875rem; }
-                .log-btn { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; padding: 0.6rem; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 0.75rem; align-self: flex-end; }
+                .log-btn { background: #1e293b; color: white; border: none; padding: 0.6rem 1.25rem; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 0.75rem; align-self: flex-end; }
+
+                .logged-discrepancies { margin-top: 2rem; display: flex; flex-direction: column; gap: 0.75rem; }
+                .disc-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px; }
+                .disc-item.waived { background: #f0f9ff; border-color: #bae6fd; opacity: 0.8; }
+                .disc-code { font-size: 0.7rem; font-weight: 800; color: #9f1239; background: white; padding: 0.2rem 0.5rem; border-radius: 4px; }
+                .disc-desc { font-size: 0.8125rem; color: #1e293b; margin: 0.25rem 0 0 0; }
+                .waive-btn { background: #9f1239; color: white; border: none; padding: 0.4rem 0.75rem; border-radius: 4px; font-size: 0.7rem; font-weight: 700; cursor: pointer; }
+                .waived-tag { font-size: 0.7rem; font-weight: 800; color: #0369a1; }
 
                 .action-footer { margin-top: auto; padding: 1.5rem; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; position: sticky; bottom: 0; }
                 .decision-toggle { display: flex; gap: 1px; background: #e2e8f0; border-radius: 8px; overflow: hidden; padding: 2px; }
@@ -135,7 +200,7 @@ export const DocumentExamination: React.FC = () => {
                 .decision-toggle button.active.green { background: #059669; color: white; }
                 .decision-toggle button.active.red { background: #dc2626; color: white; }
                 
-                .primary-btn { background: #1e293b; color: white; padding: 0.75rem 2rem; border-radius: 6px; font-weight: 700; border: none; cursor: pointer; }
+                .primary-btn { background: #2563eb; color: white; padding: 0.75rem 2rem; border-radius: 6px; font-weight: 700; border: none; cursor: pointer; }
                 .primary-btn:disabled { opacity: 0.3; cursor: not-allowed; }
             `}</style>
         </div>

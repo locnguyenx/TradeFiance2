@@ -1,22 +1,8 @@
-// ABOUTME: tradeApi.ts provides a unified client for interacting with the Moqui Trade Finance REST API.
-// ABOUTME: Handles fetching KPIs, listing Import LCs, and submitting authorization actions.
+import { TradeInstrument, ImportLetterOfCredit, TradeParty, TradeProductCatalog, FeeConfiguration, UserAuthorityProfile, QueueItem } from './types';
 
 const API_BASE = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) 
   ? `${process.env.NEXT_PUBLIC_API_URL}/rest/s1/trade` 
   : '/rest/s1/trade';
-
-export interface ImportLc {
-  instrumentId: string;
-  transactionRef: string;
-  businessStateId: string;
-  baseEquivalentAmount: number;
-  applicantName?: string;
-  beneficiaryName?: string;
-  amount?: number;
-  currency?: string;
-  expiryDate?: string;
-  slaDaysRemaining?: number;
-}
 
 export interface Kpis {
   pendingDrafts: number;
@@ -25,7 +11,7 @@ export interface Kpis {
 }
 
 export interface LcListResponse {
-  lcList: ImportLc[];
+  lcList: (TradeInstrument & ImportLetterOfCredit)[];
   lcListCount: number;
 }
 
@@ -88,8 +74,13 @@ export const tradeApi = {
     return res.json();
   },
 
-  async getImportLc(instrumentId: string): Promise<ImportLc & any> {
+  async getImportLc(instrumentId: string): Promise<TradeInstrument & ImportLetterOfCredit> {
     const res = await this._fetch(`${API_BASE}/import-lc/${instrumentId}`);
+    return res.json();
+  },
+
+  async getInstrument(instrumentId: string): Promise<TradeInstrument> {
+    const res = await this._fetch(`${API_BASE}/instrument/${instrumentId}`);
     return res.json();
   },
 
@@ -158,6 +149,97 @@ export const tradeApi = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ configKey: key, configValue: value }),
     });
+    return res.json();
+  },
+
+  async getApprovals(params?: { tier?: string; productType?: string; actionType?: string; priority?: string }): Promise<{ approvalsList: QueueItem[] }> {
+    const query = params ? '?' + new URLSearchParams(params as Record<string, string>).toString() : '';
+    const res = await this._fetch(`${API_BASE}/approvals${query}`);
+    return res.json();
+  },
+
+  async getProductCatalog(): Promise<{ productList: TradeProductCatalog[] }> {
+    const res = await this._fetch(`${API_BASE}/product-catalog`);
+    return res.json();
+  },
+
+  async updateProductCatalog(catalogId: string, data: Partial<TradeProductCatalog>): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/product-catalog/${catalogId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+
+  async getFeeConfigurations(): Promise<{ feeList: FeeConfiguration[] }> {
+    const res = await this._fetch(`${API_BASE}/fee-configurations`);
+    return res.json();
+  },
+
+  async updateFeeConfiguration(feeConfigId: string, data: Partial<FeeConfiguration>): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/fee-configurations/${feeConfigId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+
+  async getParties(search?: string): Promise<{ partyList: TradeParty[] }> {
+    const query = search ? `?search=${encodeURIComponent(search)}` : '';
+    const res = await this._fetch(`${API_BASE}/parties${query}`);
+    return res.json();
+  },
+
+  async getParty(partyId: string): Promise<TradeParty> {
+    const res = await this._fetch(`${API_BASE}/parties/${partyId}`);
+    return res.json();
+  },
+
+  async getUserAuthorityProfiles(): Promise<{ profileList: UserAuthorityProfile[] }> {
+    const res = await this._fetch(`${API_BASE}/authority-profiles`);
+    return res.json();
+  },
+
+  async rejectToMaker(instrumentId: string, rejectionReason: string): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/reject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ instrumentId, rejectionReason }),
+    });
+    return res.json();
+  },
+
+  async waiveDiscrepancy(presentationId: string): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/import-lc/presentation/${presentationId}/waive`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ applicantDecisionEnumId: 'WAIVED' }),
+    });
+    return res.json();
+  },
+
+  async settleLcPresentation(instrumentId: string, presentationId: string, data: any): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/import-lc/${instrumentId}/settlement`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ presentationId, ...data }),
+    });
+    return res.json();
+  },
+
+  async updateUserAuthorityProfile(authorityProfileId: string, data: Partial<UserAuthorityProfile>): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/authority-profiles/${authorityProfileId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+
+  async getExposureData(): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/exposure-data`);
     return res.json();
   },
 };

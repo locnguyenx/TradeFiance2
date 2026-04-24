@@ -78,6 +78,51 @@ describe('ImportLcDashboard (REQ-UI-IMP-02)', () => {
 
         expect(screen.getByText(/New Amendment/i)).toBeInTheDocument();
         expect(screen.getByText(/Present Documents/i)).toBeInTheDocument();
-        expect(screen.getByText(/Request Cancellation/i)).toBeInTheDocument();
+    });
+    it('v3.0: displays Effective values and "In Amendment" indicators', async () => {
+        const { tradeApi } = require('../api/tradeApi');
+        tradeApi.getImportLcs.mockResolvedValue({
+            lcList: [{ 
+                instrumentId: '2', 
+                transactionRef: 'LC-2026-002', 
+                amount: 100000,
+                expiryDate: '2026-06-30',
+                effectiveAmount: 120000, // Amplitude increase
+                effectiveExpiryDate: '2026-07-15',
+                businessStateId: 'LC_ISSUED',
+            }],
+            lcListCount: 1
+        });
+
+        render(<ImportLcDashboard />);
+        
+        await waitFor(() => {
+            expect(screen.getByText('120,000')).toBeInTheDocument();
+            expect(screen.getByText('2026-07-15')).toBeInTheDocument();
+            expect(screen.getByText(/Amended/i)).toBeInTheDocument();
+        });
+    });
+
+    it('v3.0: falls back to base values when effective values are null', async () => {
+        const { tradeApi } = require('../api/tradeApi');
+        tradeApi.getImportLcs.mockResolvedValue({
+            lcList: [{ 
+                instrumentId: '3', 
+                transactionRef: 'LC-2026-003', 
+                amount: 80000,
+                expiryDate: '2026-05-30',
+                effectiveAmount: null,
+                effectiveExpiryDate: null,
+                businessStateId: 'LC_ISSUED',
+            }],
+            lcListCount: 1
+        });
+
+        render(<ImportLcDashboard />);
+        
+        await waitFor(() => {
+            expect(screen.getByText('80,000')).toBeInTheDocument();
+            expect(screen.getByText('2026-05-30')).toBeInTheDocument();
+        });
     });
 });

@@ -1,7 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { setupApiMocks } from './helpers/api-mock';
 
 test.describe('Navigation Integrity (BDD-IMP-FLOW-*, BDD-CMN-WF-01)', () => {
   test.beforeEach(async ({ page }) => {
+    await setupApiMocks(page);
     await page.goto('/import-lc');
   });
 
@@ -48,9 +50,27 @@ test.describe('Navigation Integrity (BDD-IMP-FLOW-*, BDD-CMN-WF-01)', () => {
   });
 
   test('BDD-CMN-MAS-03: Party Directory navigation from sidebar', async ({ page }) => {
-    await page.getByRole('link', { name: 'Party Directory' }).click();
+    await page.getByRole('link', { name: 'Counterparties' }).click();
     await expect(page).toHaveURL(/\/parties/);
-    await expect(page.getByRole('heading', { name: 'Party Directory', exact: true })).toBeVisible();
+    await expect(page.getByText('Counterparties')).toBeVisible();
+  });
+
+  test('BDD-CMN-EXP-01: Credit Facilities navigation from sidebar', async ({ page }) => {
+    await page.getByRole('link', { name: 'Credit Facilities' }).click();
+    await expect(page).toHaveURL(/\/facilities/);
+    await expect(page.getByText('Exposure & Credit Facilities')).toBeVisible();
+  });
+
+  test('BDD-CMN-TRF-01: Tariff & Fee Mapping navigation from sidebar', async ({ page }) => {
+    await page.getByRole('link', { name: 'Tariff & Fee Mapping' }).click();
+    await expect(page).toHaveURL(/\/tariffs/);
+    await expect(page.getByText('Tariff & Fee Configuration')).toBeVisible();
+  });
+
+  test('BDD-CMN-PRD-01: Product Config navigation from sidebar', async ({ page }) => {
+    await page.getByRole('link', { name: 'Product Config' }).click();
+    await expect(page).toHaveURL(/.*product/);
+    await expect(page.getByText('Product Configuration Matrix')).toBeVisible();
   });
 
   test('BDD-CMN-WF-01: Operations Dashboard (Return from Navigation)', async ({ page }) => {

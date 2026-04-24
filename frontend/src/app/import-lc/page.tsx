@@ -1,8 +1,13 @@
 'use client';
 
 import React from 'react';
-import { ImportLcDashboard } from '../../components/ImportLcDashboard';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
+
+const ImportLcDashboard = dynamic(
+  () => import('../../components/ImportLcDashboard').then(mod => mod.ImportLcDashboard),
+  { ssr: false }
+);
 
 export default function DashboardPage() {
   return (

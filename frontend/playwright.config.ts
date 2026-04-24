@@ -8,7 +8,7 @@ export default defineConfig({
   workers: 1,
   reporter: 'html',
   use: {
-    baseURL: 'http://127.0.0.1:3001',
+    baseURL: 'http://localhost:3001',
     trace: 'on-first-retry',
   },
   projects: [
@@ -18,8 +18,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'next start -H 127.0.0.1 -p 3001',
-    url: 'http://127.0.0.1:3001/import-lc',
+    command: 'npm run dev -- -p 3001',
+    url: 'http://localhost:3001/import-lc',
     reuseExistingServer: true,
     timeout: 300000,
   },

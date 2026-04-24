@@ -1,41 +1,44 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { CheckersQueue } from './CheckersQueue';
 
-// ABOUTME: Test suite for Global Checker Queue mapping to REQ-UI-CMN-02.
-// UI Traceability: REQ-UI-CMN-02
+const mockItem = {
+    instrumentId: '1',
+    transactionRef: 'TF-IMP-001',
+    module: 'Import LC',
+    action: 'Issuance',
+    makerUserId: 'maker1',
+    baseEquivalentAmount: 50000,
+    timeInQueue: '2h 15m',
+    priorityEnumId: 'NORMAL',
+    lifecycleStatusId: 'INST_PENDING_APPROVAL'
+};
 
-describe('CheckersQueue (REQ-UI-CMN-02)', () => {
-    it('Renders the priority inbox with transaction metadata and SLA timers', () => {
-        render(<CheckersQueue />);
-        expect(screen.getByText(/Global Checker Queue/i)).toBeInTheDocument();
-        // Check for specific columns
-        expect(screen.getByText(/Transaction Ref/i)).toBeInTheDocument();
-        expect(screen.getAllByText(/Module/i).length).toBeGreaterThan(0);
-        expect(screen.getAllByText(/SLA/i).length).toBeGreaterThan(0);
+describe('CheckersQueue v3.0 (REQ-UI-CMN-02)', () => {
+    it('displays priority column and sorts URGENT above NORMAL', () => {
+        const items = [
+            { ...mockItem, id: '1', transactionRef: 'TX-A', priorityEnumId: 'NORMAL' },
+            { ...mockItem, id: '2', transactionRef: 'TX-B', priorityEnumId: 'URGENT' },
+        ];
+        // @ts-ignore - CheckersQueue doesn't accept items prop yet
+        render(<CheckersQueue items={items} />);
+        const rows = screen.getAllByRole('row');
+        // Header + 2 data rows. URGENT (TX-B) should appear first.
+        expect(within(rows[1]).getByText('TX-B')).toBeInTheDocument();
+        expect(within(rows[2]).getByText('TX-A')).toBeInTheDocument();
     });
 
-    it('Categorizes transactions by priority and status', () => {
-        render(<CheckersQueue />);
-        expect(screen.getByText(/High Priority/i)).toBeInTheDocument();
-        expect(screen.getAllByText(/Pending Authorisation/i).length).toBeGreaterThan(0);
+    it('shows PARTIAL APPROVAL badge for Tier 4 pending second checker', () => {
+        const items = [
+            { ...mockItem, id: '1', lifecycleStatusId: 'INST_PARTIAL_APPROVAL' },
+        ];
+        // @ts-ignore
+        render(<CheckersQueue items={items} />);
+        expect(screen.getByText(/PARTIAL APPROVAL/i)).toBeInTheDocument();
     });
 
-    it('Provides row level actions to launch Authorization Workspace', () => {
-        render(<CheckersQueue />);
-        const authButtons = screen.getAllByRole('button', { name: /Authorize/i });
-        expect(authButtons.length).toBeGreaterThan(0);
-    });
-
-    it('Launches the Full-Screen Authorization Modal when row action is clicked (REQ-UI-CMN-02)', async () => {
-        const { fireEvent } = await import('@testing-library/react');
-        render(<CheckersQueue />);
-        
-        const authBtn = screen.getAllByRole('button', { name: /Authorize/i })[0];
-        fireEvent.click(authBtn);
-
-        // Expect the authorization workspace to appear
-        expect(screen.getByText(/Instrument Data \(Highlighting Deltas\)/i)).toBeInTheDocument();
-        expect(screen.getByText(/Compliance Deck/i)).toBeInTheDocument();
-        expect(screen.getAllByText(/Authorize/i).length).toBeGreaterThan(0);
+    it('renders tier indicator in KPI banner', () => {
+        // @ts-ignore
+        render(<CheckersQueue items={[]} userTier="TIER_3" />);
+        expect(screen.getByText(/Your Authority: TIER 3/i)).toBeInTheDocument();
     });
 });

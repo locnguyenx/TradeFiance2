@@ -1,12 +1,10 @@
-'use client';
-
-import React from 'react';
 import { SystemAdminSettings } from '../../../components/SystemAdminSettings';
+import { GlobalShell } from '../../../components/GlobalShell';
 
-export default function AdminProductPage() {
+export default function ProductAdminPage() {
   return (
-    <div style={{ padding: '2rem' }}>
+    <GlobalShell>
       <SystemAdminSettings activePanel="product" />
-    </div>
+    </GlobalShell>
   );
 }

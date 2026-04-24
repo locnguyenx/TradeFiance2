@@ -1,241 +1,275 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { tradeApi } from '../api/tradeApi';
+import { TradeParty } from '../api/types';
 
-// ABOUTME: Party Directory & KYC Management implementing REQ-UI-CMN-03.
-// ABOUTME: Provides a split-pane interface for compliance officers to track party eligibility and AML status.
-
-interface Party {
-    id: string;
-    name: string;
-    role: string;
-    kycStatus: 'Verified' | 'Expired' | 'Pending';
-    amlStatus: 'Clear' | 'Alert' | 'Pending';
-    lastVerification: string;
-    riskRating: 'Low' | 'Medium' | 'High';
-}
-
-const mockParties: Party[] = [
-    { id: 'P001', name: 'Global Corp', role: 'Applicant', kycStatus: 'Verified', amlStatus: 'Clear', lastVerification: '2026-01-15', riskRating: 'Low' },
-    { id: 'P002', name: 'Export Ltd', role: 'Beneficiary', kycStatus: 'Verified', amlStatus: 'Clear', lastVerification: '2026-02-10', riskRating: 'Low' },
-    { id: 'P003', name: 'Fast Trade SA', role: 'Applicant', kycStatus: 'Expired', amlStatus: 'Pending', lastVerification: '2025-05-20', riskRating: 'Medium' },
-];
+// ABOUTME: PartyDirectory implements KYC and Sanctions status monitoring for v3.0.
+// ABOUTME: Master-Detail view for manageable trade finance counterparties.
 
 export const PartyDirectory: React.FC = () => {
-    const [selectedParty, setSelectedParty] = useState<Party>(mockParties[0]);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [activeTab, setActiveTab] = useState<'kyc' | 'credit' | 'history' | 'roles' | 'compliance'>('kyc');
+    const [parties, setParties] = useState<TradeParty[]>([]);
+    const [selectedParty, setSelectedParty] = useState<TradeParty | null>(null);
+    const [search, setSearch] = useState('');
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    const filteredParties = mockParties.filter(p => 
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        p.id.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    useEffect(() => {
+        loadParties();
+    }, [search]);
+
+    const loadParties = async () => {
+        try {
+            const data = await tradeApi.getParties(search);
+            setParties(data.partyList);
+            if (data.partyList.length > 0 && !selectedParty) {
+                setSelectedParty(data.partyList[0]);
+            }
+        } catch (err) {
+            setError('Failed to load party directory');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSelectParty = (partyId: string) => {
+        const party = parties.find(p => p.partyId === partyId);
+        if (party) setSelectedParty(party);
+    };
+
+    const getStatusColor = (status?: string) => {
+        if (!status) return '#64748b';
+        switch (status) {
+            case 'KYC_PASSED':
+            case 'SANCTIONS_CLEAN':
+                return '#10b981';
+            case 'KYC_PENDING':
+                return '#f59e0b';
+            case 'SANCTIONS_CHECK_FAILED':
+            case 'KYC_REJECTED':
+                return '#ef4444';
+            default:
+                return '#64748b';
+        }
+    };
+
+    if (loading && parties.length === 0) return <div className="admin-loading">Loading directory...</div>;
 
     return (
-        <div className="directory-container premium-card">
-            <aside className="party-sidebar" style={{ width: '380px' }}>
-                <header className="sidebar-header">
-                    <h2>Party Directory</h2>
-                    <input 
-                        type="text" 
-                        placeholder="Search by Name or ID..." 
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="search-input"
-                    />
+        <div className="party-directory-layout">
+            <aside className="party-list-pane">
+                <header className="pane-header">
+                    <h3>Counterparties</h3>
+                    <div className="search-box">
+                        <input 
+                            type="text" 
+                            placeholder="Search parties..." 
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                        />
+                    </div>
                 </header>
-                <div className="party-list">
-                    <table className="list-table">
-                        <thead>
-                            <tr>
-                                <th>Party Name</th>
-                                <th>KYC</th>
-                                <th>AML</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredParties.map(p => (
-                                <tr 
-                                    key={p.id} 
-                                    className={selectedParty?.id === p.id ? 'selected' : ''}
-                                    onClick={() => setSelectedParty(p)}
-                                >
-                                    <td className="party-name">
-                                        <div>{p.name}</div>
-                                        <span className="party-id-small">{p.id}</span>
-                                    </td>
-                                    <td>
-                                        <span className={`status-tag ${p.kycStatus}`}>{p.kycStatus}</span>
-                                    </td>
-                                    <td>
-                                        <span className={`aml-tag ${p.amlStatus}`}>{p.amlStatus}</span>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                <div className="party-items">
+                    {parties.map(p => (
+                        <div 
+                            key={p.partyId} 
+                            className={`party-item ${selectedParty?.partyId === p.partyId ? 'active' : ''}`}
+                            onClick={() => handleSelectParty(p.partyId)}
+                        >
+                            <span className="party-name">{p.partyName}</span>
+                            <span className="party-id">{p.partyId}</span>
+                        </div>
+                    ))}
                 </div>
             </aside>
 
-            <main className="party-main-content">
-                <header className="details-header">
-                    <div className="header-meta">
-                        <div className="badge-row">
-                            <span className="category-badge">CORPORATE ENTITY</span>
-                            <span className="risk-level">RISK: {selectedParty?.riskRating}</span>
-                        </div>
-                        <h1>{selectedParty?.name}</h1>
-                        <span className="party-id-large">Identification: {selectedParty?.id}</span>
-                    </div>
-                    <div className="tab-nav" role="tablist">
-                        {['kyc', 'compliance', 'roles', 'credit', 'history'].map((tab) => (
-                            <button 
-                                key={tab}
-                                className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
-                                onClick={() => setActiveTab(tab as any)}
-                            >
-                                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                            </button>
-                        ))}
-                    </div>
-                </header>
+            <main className="party-detail-pane">
+                {selectedParty ? (
+                    <>
+                        <header className="pane-header detail-header">
+                            <div className="title-group">
+                                <h2>{selectedParty.partyName}</h2>
+                                <span className="id-badge">{selectedParty.partyId}</span>
+                            </div>
+                            <div className="risk-indicator" style={{ borderLeft: `4px solid ${getStatusColor(selectedParty.kycStatusEnumId)}` }}>
+                                <span className="label">Risk Rating</span>
+                                <span className="value">{selectedParty.riskRating || 'UNRATED'}</span>
+                            </div>
+                        </header>
 
-                <div className="details-view">
-                    {activeTab === 'kyc' && (
-                        <div className="details-grid">
-                            <section className="info-card">
-                                <h3>KYC & Vetting Details</h3>
-                                <div className="data-row">
-                                    <span className="label">Verification Date</span>
-                                    <span className="value">{selectedParty?.lastVerification}</span>
+                        <div className="party-content">
+                            <div className="status-grid">
+                                <div className="status-card">
+                                    <span className="card-label">KYC Status</span>
+                                    <span className="card-value" style={{ color: getStatusColor(selectedParty.kycStatusEnumId) }}>
+                                        {selectedParty.kycStatusEnumId?.replace('KYC_', '') || 'UNKNOWN'}
+                                    </span>
+                                    <span className="last-update">Last Updated: {selectedParty.lastKycUpdate || 'N/A'}</span>
                                 </div>
-                                <div className="data-row">
-                                    <span className="label">Renewal Due</span>
-                                    <span className="value text-warning">2027-01-15</span>
+                                <div className="status-card">
+                                    <span className="card-label">Sanctions Status</span>
+                                    <span className="card-value" style={{ color: getStatusColor(selectedParty.sanctionsStatusEnumId) }}>
+                                        {selectedParty.sanctionsStatusEnumId?.replace('SANCTIONS_', '') || 'UNKNOWN'}
+                                    </span>
+                                    <span className="last-update">Real-time Check: ACTIVE</span>
                                 </div>
-                                <div className="data-row">
-                                    <span className="label">Ultimate Beneficial Owner</span>
-                                    <span className="value">John Doe (Validated)</span>
+                            </div>
+
+                            <section className="info-section">
+                                <h3>Organization Details</h3>
+                                <div className="detail-row">
+                                    <span className="label">Role Type</span>
+                                    <span className="value">{selectedParty.roleTypeId}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="label">Tax Identifier</span>
+                                    <span className="value">Not Available in Directory</span>
                                 </div>
                             </section>
-                        </div>
-                    )}
 
-                    {activeTab === 'compliance' && (
-                        <div className="details-grid">
-                            <section className="info-card">
-                                <h3>Compliance Narrative & Flags</h3>
-                                <div className="narrative">
-                                    No adverse media found. Sanctions screening clear as of 2026-04-22.
-                                    Entity has been active in Trade Finance for 5+ years without incident.
-                                </div>
-                                <div className="flag-list">
-                                    <div className="flag-item green">UN Sanctions: CLEAR</div>
-                                    <div className="flag-item green">OFAC List: CLEAR</div>
-                                    <div className="flag-item yellow">PEP Connect: TRACE (Non-Controlling)</div>
-                                </div>
-                            </section>
+                            <div className="compliance-banner">
+                                <p>Transaction processing is permitted only for parties with PASSED KYC and CLEAN Sanctions status.</p>
+                            </div>
                         </div>
-                    )}
-
-                    {activeTab === 'roles' && (
-                        <div className="details-grid">
-                            <section className="info-card">
-                                <h3>Authorized Capacity</h3>
-                                <div className="role-grid">
-                                    <div className="role-box">
-                                        <div className="role-title">Applicant</div>
-                                        <div className="role-stat">ACTIVE</div>
-                                    </div>
-                                    <div className="role-box inactive">
-                                        <div className="role-title">Beneficiary</div>
-                                        <div className="role-stat">PENDING</div>
-                                    </div>
-                                    <div className="role-box">
-                                        <div className="role-title">Payer</div>
-                                        <div className="role-stat">ACTIVE</div>
-                                    </div>
-                                </div>
-                            </section>
-                        </div>
-                    )}
-
-                    {activeTab === 'credit' && (
-                        <div className="details-grid">
-                            <section className="info-card">
-                                <h3>Allocated Facilities</h3>
-                                <div className="facility-item">
-                                    <div className="fac-header">
-                                        <span className="fac-name">Import LC Line</span>
-                                        <span className="fac-amount">$5,000,000</span>
-                                    </div>
-                                    <div className="fac-progress">
-                                        <div className="bar" style={{ width: '65%' }}></div>
-                                    </div>
-                                    <div className="fac-meta">Utilization: 65% ($3,250,000)</div>
-                                </div>
-                            </section>
-                        </div>
-                    )}
-
-                    {activeTab === 'history' && (
-                        <div className="empty-history">
-                            <div className="icon">📂</div>
-                            <p>No transactions found for the selected period.</p>
-                        </div>
-                    )}
-                </div>
+                    </>
+                ) : (
+                    <div className="empty-selection">Select a party to view compliance details</div>
+                )}
             </main>
 
             <style jsx>{`
-                .directory-container { display: flex; height: calc(100vh - 120px); overflow: hidden; background: white; }
-                .party-sidebar { width: 350px; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; background: #f8fafc; }
-                .sidebar-header { padding: 1.5rem; border-bottom: 1px solid #e2e8f0; }
-                .search-input { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; margin-top: 1rem; }
-                
-                .party-list { flex: 1; overflow-y: auto; }
-                .list-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
-                .list-table th { text-align: left; padding: 1rem 1.5rem; font-weight: 600; color: #64748b; background: #f1f5f9; position: sticky; top: 0; }
-                .list-table td { padding: 1rem 1.5rem; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: background 0.2s; }
-                .list-table tr:hover { background: #eff6ff; }
-                .list-table tr.selected { background: #dbeafe; border-left: 4px solid #2563eb; }
-                
+                .party-directory-layout {
+                    display: grid;
+                    grid-template-columns: 320px 1fr;
+                    background: white;
+                    border-radius: 12px;
+                    border: 1px solid #e2e8f0;
+                    overflow: hidden;
+                    min-height: 700px;
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                }
+
+                .pane-header {
+                    padding: 1.5rem;
+                    border-bottom: 1px solid #f1f5f9;
+                    background: #f8fafc;
+                }
+
+                .search-box {
+                    margin-top: 1rem;
+                }
+
+                .search-box input {
+                    width: 100%;
+                    padding: 0.5rem 0.75rem;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 6px;
+                    font-size: 0.875rem;
+                }
+
+                .party-list-pane {
+                    border-right: 1px solid #f1f5f9;
+                    background: #f8fafc;
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                .party-items {
+                    padding: 1rem;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.5rem;
+                    overflow-y: auto;
+                }
+
+                .party-item {
+                    padding: 1rem;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.25rem;
+                    transition: all 0.2s;
+                    border: 1px solid transparent;
+                }
+
+                .party-item:hover { background: #f1f5f9; }
+                .party-item.active { background: white; border-color: #2563eb; }
+
                 .party-name { font-weight: 600; color: #1e293b; }
-                .role-chip { font-size: 0.7rem; padding: 0.125rem 0.375rem; background: #e2e8f0; border-radius: 4px; color: #475569; font-weight: 700; text-transform: uppercase; }
-                .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 0.5rem; }
-                .status-dot.Verified { background: #10b981; }
-                .status-dot.Expired { background: #ef4444; }
-                .status-dot.Pending { background: #f59e0b; }
+                .party-id { font-size: 0.75rem; color: #64748b; }
 
-                .party-main-content { flex: 1; padding: 2.5rem; overflow-y: auto; background: white; display: flex; flex-direction: column; }
-                .details-header { margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: flex-start; }
-                .header-meta h1 { font-size: 1.875rem; font-weight: 800; color: #0f172a; margin: 0; }
-                .party-id { color: #64748b; font-size: 0.875rem; font-family: monospace; }
+                .party-detail-pane { background: white; display: flex; flex-direction: column; }
 
-                .tab-nav { display: flex; gap: 0.5rem; background: #f8fafc; padding: 0.25rem; border-radius: 8px; border: 1px solid #e2e8f0; }
-                .tab-btn { padding: 0.5rem 1rem; border: none; background: none; border-radius: 6px; font-size: 0.875rem; font-weight: 600; color: #64748b; cursor: pointer; transition: all 0.2s; }
-                .tab-btn:hover { color: #1e293b; background: #f1f5f9; }
-                .tab-btn.active { background: white; color: #2563eb; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+                .detail-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    background: white;
+                }
 
-                .details-view { flex: 1; }
-                .details-grid { display: grid; grid-template-columns: 1fr; gap: 2rem; }
-                .kyc-section, .limits-section { padding: 1.5rem; }
-                .kyc-section h3, .limits-section h3 { margin-top: 0; font-size: 1rem; margin-bottom: 1.5rem; color: #334155; }
-                
-                .property { display: flex; justify-content: space-between; margin-bottom: 1rem; font-size: 0.875rem; }
-                .property-label { color: #64748b; font-weight: 500; }
-                
-                .status-badge { font-weight: 700; font-size: 0.75rem; text-transform: uppercase; padding: 0.25rem 0.5rem; border-radius: 4px; }
-                .status-badge.Clear { background: #ecfdf5; color: #059669; }
-                .status-badge.Alert { background: #fef2f2; color: #dc2626; }
-                
-                .risk-Low { color: #059669; font-weight: 700; }
-                .risk-Medium { color: #d97706; font-weight: 700; }
-                .risk-High { color: #dc2626; font-weight: 700; }
+                .title-group h2 { margin: 0; font-size: 1.5rem; color: #1e293b; }
+                .id-badge { font-size: 0.75rem; font-weight: 700; color: #64748b; background: #f1f5f9; padding: 0.2rem 0.5rem; border-radius: 4px; }
 
-                .facility-item { display: flex; justify-content: space-between; padding: 0.75rem; background: #f8fafc; border-radius: 8px; margin-bottom: 0.75rem; }
-                .facility-ref { font-weight: 600; color: #2563eb; font-size: 0.8125rem; }
-                .facility-amount { font-weight: 700; color: #1e293b; }
+                .risk-indicator {
+                    padding-left: 1rem;
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                .risk-indicator .label { font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; }
+                .risk-indicator .value { font-size: 1.125rem; font-weight: 800; color: #1e293b; }
+
+                .party-content { padding: 2rem; display: flex; flex-direction: column; gap: 2.5rem; }
+
+                .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+
+                .status-card {
+                    padding: 1.5rem;
+                    background: #f8fafc;
+                    border-radius: 12px;
+                    border: 1px solid #f1f5f9;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.5rem;
+                }
+
+                .card-label { font-size: 0.875rem; font-weight: 600; color: #64748b; }
+                .card-value { font-size: 1.25rem; font-weight: 800; }
+                .last-update { font-size: 0.75rem; color: #94a3b8; }
+
+                .info-section h3 {
+                    margin: 0 0 1rem 0;
+                    font-size: 0.875rem;
+                    text-transform: uppercase;
+                    color: #64748b;
+                    border-bottom: 1px solid #f1f5f9;
+                    padding-bottom: 0.5rem;
+                }
+
+                .detail-row {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 0.75rem 0;
+                    border-bottom: 1px solid #f8fafc;
+                }
+
+                .detail-row .label { font-size: 0.875rem; color: #64748b; }
+                .detail-row .value { font-size: 0.875rem; font-weight: 600; color: #1e293b; }
+
+                .compliance-banner {
+                    padding: 1rem;
+                    background: #f0fdf4;
+                    border: 1px solid #dcfce7;
+                    border-radius: 8px;
+                    color: #166534;
+                    font-size: 0.875rem;
+                    font-weight: 500;
+                    text-align: center;
+                }
+
+                .empty-selection { display: flex; justify-content: center; align-items: center; height: 100%; color: #94a3b8; font-style: italic; }
+                .admin-loading { padding: 2rem; text-align: center; color: #64748b; }
             `}</style>
         </div>
     );

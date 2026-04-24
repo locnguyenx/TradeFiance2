@@ -30,9 +30,29 @@ describe('DocumentExamination (BDD-IMP-FLOW-04,05,06 / BDD-IMP-VAL-02)', () => {
         expect(decBtn).toHaveClass('active');
     });
 
-    it('BDD-IMP-DOC-02: Presentation: Internal Notice on Discrepancy (Reviewer Notification)', () => {
-        const notifyReviewer = (docs: any) => docs.discrepancies.length > 0;
-        const docs = { discrepancies: ['Late Shipment'] };
-        expect(notifyReviewer(docs)).toBe(true);
+    it('v3.0: renders discrepancy code dropdown with ISBP-745 codes', () => {
+        render(<DocumentExamination />);
+        const select = screen.getByRole('combobox');
+        expect(within(select).getByText(/Late Shipment/i)).toBeInTheDocument();
+        expect(within(select).getByText(/Description of Goods Mismatch/i)).toBeInTheDocument();
+    });
+
+    it('v3.0: allows waiving discrepant documents and calls waiveDiscrepancy API', async () => {
+        const { tradeApi } = require('../api/tradeApi');
+        tradeApi.waiveDiscrepancy = jest.fn().mockResolvedValue({ success: true });
+        
+        render(<DocumentExamination />);
+        
+        // Log a discrepancy first
+        fireEvent.change(screen.getByRole('combobox'), { target: { value: 'LATE_SHIPMENT' } });
+        fireEvent.click(screen.getByRole('button', { name: /Log Discrepancy/i }));
+        
+        // Find Waive button/checkbox (assuming we add a Waive action to the logged items)
+        const waiveBtn = await screen.findByRole('button', { name: /Waive/i });
+        fireEvent.click(waiveBtn);
+        
+        expect(tradeApi.waiveDiscrepancy).toHaveBeenCalled();
     });
 });
+
+import { within } from '@testing-library/react';

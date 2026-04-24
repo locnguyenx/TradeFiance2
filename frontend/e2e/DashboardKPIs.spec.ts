@@ -1,8 +1,16 @@
 import { test, expect } from '@playwright/test';
+import { setupApiMocks } from './helpers/api-mock';
 
 test.describe('Dashboard Functions', () => {
   test.beforeEach(async ({ page }) => {
+    await setupApiMocks(page);
     await page.goto('/import-lc');
+  });
+
+  test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+      await page.screenshot({ path: `test-results/failure-${testInfo.title.replace(/\s+/g, '-')}.png` });
+    }
   });
 
   test('should display KPI widgets with expected labels', async ({ page }) => {

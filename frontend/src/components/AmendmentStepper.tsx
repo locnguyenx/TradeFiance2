@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { tradeApi } from '../api/tradeApi';
+import { TradeInstrument, ImportLetterOfCredit } from '../api/types';
 
 // ABOUTME: LC Amendment Stepper implementing REQ-IMP-PRC-02.
 // ABOUTME: Allows makers to capture "Delta" changes to active LCs and preview SWIFT MT 707.
@@ -20,6 +21,7 @@ interface AmendmentStepperProps {
 
 export const AmendmentStepper: React.FC<AmendmentStepperProps> = ({ lcId }) => {
     const [stepIndex, setStepIndex] = useState(0);
+    const [instrument, setInstrument] = useState<(TradeInstrument & ImportLetterOfCredit) | null>(null);
     const [delta, setDelta] = useState({
         amountAdjustment: '0',
         newExpiryDate: '',
@@ -27,23 +29,37 @@ export const AmendmentStepper: React.FC<AmendmentStepperProps> = ({ lcId }) => {
         beneficiaryConsentRequired: true,
     });
 
-    // Mock original LC context
-    const originalLc = {
-        id: lcId,
-        amount: 500000,
-        currency: 'USD',
-        expiryDate: '2026-12-31',
-        beneficiary: 'Global Export Ltd',
-    };
-
     const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [status, setStatus] = useState<'IDLE' | 'SUBMITTED'>('IDLE');
 
-    const newTotalLiability = originalLc.amount + (parseFloat(delta.amountAdjustment) || 0);
+    useEffect(() => {
+        setLoading(true);
+        tradeApi.getImportLc(lcId).then(data => {
+            setInstrument(data);
+            setLoading(false);
+        });
+    }, [lcId]);
+
+    if (loading && !instrument) return <div className="p-8 text-center">Loading LC Context...</div>;
+    if (!instrument) return <div className="p-8 text-center text-danger">LC Not Found</div>;
+
+    const originalAmount = instrument.effectiveAmount || instrument.amount || 0;
+    const newTotalLiability = originalAmount + (parseFloat(delta.amountAdjustment) || 0);
 
     const handleNext = () => {
         setError('');
+        
+        // Validation for Step 1 (Financial)
+        if (stepIndex === 1) {
+            if (delta.newExpiryDate && instrument.expiryDate) {
+                if (new Date(delta.newExpiryDate) < new Date(instrument.expiryDate)) {
+                    setError('Expiry date must be an extension of the current expiry date.');
+                    return;
+                }
+            }
+        }
+
         setStepIndex(prev => Math.min(prev + 1, 4));
     }
     const handleBack = () => {
@@ -76,8 +92,8 @@ export const AmendmentStepper: React.FC<AmendmentStepperProps> = ({ lcId }) => {
     return (
         <div className="stepper-container premium-card">
             <header className="stepper-header">
-                <div className="context-banner">Amending Instrument: {originalLc.id}</div>
-                <div className="liability-banner">New Total Liability: $ {newTotalLiability.toLocaleString()}</div>
+                <div className="context-banner">Amending Instrument: {lcId}</div>
+                <div className="liability-banner">New Total Liability: {instrument.currencyUomId || 'USD'} {newTotalLiability.toLocaleString()}</div>
             </header>
 
             <div className="stepper-progress">
@@ -96,16 +112,16 @@ export const AmendmentStepper: React.FC<AmendmentStepperProps> = ({ lcId }) => {
                         <h3>Current LC Context</h3>
                         <div className="context-grid">
                             <div className="context-item">
-                                <span className="label">Original Amount</span>
-                                <span className="value">{originalLc.currency} {originalLc.amount.toLocaleString()}</span>
+                                <span className="label">Current Amount</span>
+                                <span className="value">{instrument.currencyUomId || 'USD'} {originalAmount.toLocaleString()}</span>
                             </div>
                             <div className="context-item">
-                                <span className="label">Original Expiry</span>
-                                <span className="value">{originalLc.expiryDate}</span>
+                                <span className="label">Current Expiry</span>
+                                <span className="value">{instrument.expiryDate}</span>
                             </div>
                             <div className="context-item">
-                                <span className="label">Beneficiary</span>
-                                <span className="value">{originalLc.beneficiary}</span>
+                                <span className="label">Beneficiary ID</span>
+                                <span className="value">{instrument.beneficiaryPartyId}</span>
                             </div>
                         </div>
                     </section>
@@ -122,7 +138,7 @@ export const AmendmentStepper: React.FC<AmendmentStepperProps> = ({ lcId }) => {
                                 value={delta.amountAdjustment}
                                 onChange={e => setDelta({...delta, amountAdjustment: e.target.value})}
                             />
-                            <p className="helper-text">Positive for increase, negative for decrease.</p>
+                            <p className="helper-text">Current Effective Amount: {instrument.currencyUomId || 'USD'} {originalAmount.toLocaleString()}</p>
                         </div>
                         <div className="field-group">
                             <label htmlFor="newExpiryDate">New Expiry Date</label>
@@ -132,6 +148,7 @@ export const AmendmentStepper: React.FC<AmendmentStepperProps> = ({ lcId }) => {
                                 value={delta.newExpiryDate}
                                 onChange={e => setDelta({...delta, newExpiryDate: e.target.value})}
                             />
+                            <p className="helper-text">Original: {instrument.expiryDate}</p>
                         </div>
                     </section>
                 )}
@@ -156,8 +173,8 @@ export const AmendmentStepper: React.FC<AmendmentStepperProps> = ({ lcId }) => {
                         <h3>MT 707 Preview</h3>
                         <div className="swift-block" data-testid="swift-block">
                             <pre>
-{`:20: ${originalLc.id.trim()}
-:32B: ${originalLc.currency}${delta.amountAdjustment}
+{`:20: ${lcId.trim()}
+:32B: ${instrument.currencyUomId || 'USD'}${delta.amountAdjustment}
 :77A: AMENDMENT TO LC
 ${delta.newExpiryDate ? `:31E: ${delta.newExpiryDate}` : ''}`}
                             </pre>
@@ -169,8 +186,8 @@ ${delta.newExpiryDate ? `:31E: ${delta.newExpiryDate}` : ''}`}
                     <section className="review-section">
                         <div className="review-card">
                             <h4>Review Amendment</h4>
-                            <p>Adjustment: $ {parseFloat(delta.amountAdjustment).toLocaleString()}</p>
-                            <p>New Total: $ {newTotalLiability.toLocaleString()}</p>
+                            <p>Adjustment: {instrument.currencyUomId || 'USD'} {parseFloat(delta.amountAdjustment).toLocaleString()}</p>
+                            <p>New Total: {instrument.currencyUomId || 'USD'} {newTotalLiability.toLocaleString()}</p>
                         </div>
                         <div className="consent-check">
                             <label htmlFor="consentRequired">
@@ -221,6 +238,7 @@ ${delta.newExpiryDate ? `:31E: ${delta.newExpiryDate}` : ''}`}
                 .field-group { display: flex; flex-direction: column; gap: 0.5rem; }
                 .field-group label { font-weight: 600; font-size: 0.875rem; color: #334155; }
                 .field-group input { padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 6px; }
+                .helper-text { font-size: 0.75rem; color: #64748b; margin: 0; }
                 
                 .context-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1rem; }
                 .context-item { display: flex; flex-direction: column; gap: 0.25rem; }
@@ -234,6 +252,7 @@ ${delta.newExpiryDate ? `:31E: ${delta.newExpiryDate}` : ''}`}
 
                 .stepper-footer { display: flex; justify-content: space-between; margin-top: 3rem; border-top: 1px solid #f1f5f9; padding-top: 2rem; }
                 .primary-btn { background: #2563eb; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; font-weight: 600; cursor: pointer; }
+                .primary-btn:disabled { opacity: 0.5; cursor: not-allowed; }
                 .secondary-btn { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; padding: 0.75rem 1.5rem; border-radius: 6px; font-weight: 600; cursor: pointer; }
             `}</style>
         </div>

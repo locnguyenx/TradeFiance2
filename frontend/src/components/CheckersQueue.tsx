@@ -1,37 +1,44 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CheckerAuthorization } from './CheckerAuthorization';
+import { QueueItem } from '../api/types';
 
 // ABOUTME: Global Checker Queue implementing REQ-UI-CMN-02.
 // ABOUTME: Central inbox for second-pair-of-eyes authorization across all Trade modules.
 
-interface QueuedTransaction {
-    id: string;
-    ref: string;
-    module: string;
-    submitter: string;
-    amount: string;
-    status: string;
-    priority: 'High' | 'Normal';
-    slaMinutesRemaining: number;
+interface CheckersQueueProps {
+    items?: QueueItem[];
+    userTier?: string;
 }
 
-const mockQueue: QueuedTransaction[] = [
-    { id: 'TX001', ref: 'IMLC/2026/001', module: 'Import LC', submitter: 'J. Smith', amount: 'USD 500,000.00', status: 'Pending Authorisation', priority: 'High', slaMinutesRemaining: 45 },
-    { id: 'TX002', ref: 'AMND/2026/004', module: 'Import LC', submitter: 'L. Doe', amount: 'N/A (Amendment)', status: 'Pending Authorisation', priority: 'Normal', slaMinutesRemaining: 120 },
-    { id: 'TX003', ref: 'ISU/FAC/99', module: 'Facilities', submitter: 'Admin', amount: 'USD 10,000,000.00', status: 'Pending Authorisation', priority: 'High', slaMinutesRemaining: 15 },
-];
-
-export const CheckersQueue: React.FC = () => {
+export const CheckersQueue: React.FC<CheckersQueueProps> = ({ items = [], userTier = 'TIER_1' }) => {
     const [selectedInstrumentId, setSelectedInstrumentId] = useState<string | null>(null);
+
+    const priorityWeight: Record<string, number> = {
+        'URGENT': 3,
+        'EXPRESS': 2,
+        'NORMAL': 1
+    };
+
+    const sortedItems = [...items].sort((a, b) => {
+        const weightA = priorityWeight[a.priorityEnumId] || 0;
+        const weightB = priorityWeight[b.priorityEnumId] || 0;
+        if (weightB !== weightA) return weightB - weightA;
+        return (b.timeInQueue || '').localeCompare(a.timeInQueue || ''); // Simplified sort for time
+    });
+
+    const slaAlertCount = items.filter(item => (item.timeInQueue || '').includes('h') && parseInt(item.timeInQueue || '0') > 4).length; // Dummy logic for SLA
 
     return (
         <div className="queue-container">
             <header className="queue-header">
                 <div className="header-text">
                     <h1>Global Checker Queue</h1>
-                    <p>You have {mockQueue.length} items requiring immediate attention.</p>
+                    <div className="kpi-banner">
+                        <span className="kpi-tag tier-tag">Your Authority: {userTier.replace('_', ' ')}</span>
+                        <span className="kpi-tag sla-tag">{slaAlertCount} SLA Alerts Pending</span>
+                    </div>
                 </div>
                 <div className="queue-filters">
                     <button className="filter-chip active">All Modules</button>
@@ -47,35 +54,40 @@ export const CheckersQueue: React.FC = () => {
                             <th>Priority</th>
                             <th>Transaction Ref</th>
                             <th>Module</th>
-                            <th>Status</th>
+                            <th>Action</th>
                             <th>Amount</th>
-                            <th>Submitter</th>
-                            <th>SLA</th>
+                            <th>Maker</th>
+                            <th>Time in Queue</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {mockQueue.map(item => (
-                            <tr key={item.id} className="clickable-row" onClick={() => setSelectedInstrumentId(item.id)}>
+                        {sortedItems.map(item => (
+                            <tr key={item.instrumentId} className="clickable-row" onClick={() => setSelectedInstrumentId(item.instrumentId)}>
                                 <td>
-                                    <span className={`priority-badge ${item.priority.toLowerCase()}`}>
-                                        {item.priority}
+                                    <span className={`priority-badge ${(item.priorityEnumId || 'normal').toLowerCase()}`}>
+                                        {item.priorityEnumId}
                                     </span>
                                 </td>
-                                <td className="ref-cell">{item.ref}</td>
+                                <td className="ref-cell">
+                                    {item.transactionRef}
+                                    {item.lifecycleStatusId === 'INST_PARTIAL_APPROVAL' && (
+                                        <div className="status-label partial">PARTIAL APPROVAL</div>
+                                    )}
+                                </td>
                                 <td><span className="module-tag">{item.module}</span></td>
-                                <td><span className="status-tag">{item.status}</span></td>
-                                <td className="amount-cell">{item.amount}</td>
-                                <td>{item.submitter}</td>
+                                <td><span className="action-tag">{item.action}</span></td>
+                                <td className="amount-cell">{(item.baseEquivalentAmount || 0).toLocaleString()}</td>
+                                <td>{item.makerUserId}</td>
                                 <td>
-                                    <div className={`sla-timer ${item.slaMinutesRemaining < 30 ? 'critical' : ''}`}>
-                                        {Math.floor(item.slaMinutesRemaining / 60)}h {item.slaMinutesRemaining % 60}m
+                                    <div className={`sla-timer`}>
+                                        {item.timeInQueue}
                                     </div>
                                 </td>
                                 <td>
                                     <button 
                                         className="authorize-btn"
-                                        onClick={(e) => { e.stopPropagation(); setSelectedInstrumentId(item.id); }}
+                                        onClick={(e) => { e.stopPropagation(); setSelectedInstrumentId(item.instrumentId); }}
                                     >
                                         Authorize
                                     </button>
@@ -99,8 +111,11 @@ export const CheckersQueue: React.FC = () => {
                 .queue-container { display: flex; flex-direction: column; gap: 2rem; padding: 1rem; }
                 .queue-header { display: flex; justify-content: space-between; align-items: flex-end; }
                 .header-text h1 { margin: 0; font-size: 1.875rem; font-weight: 800; color: #0f172a; }
-                .header-text p { margin: 0.5rem 0 0 0; color: #64748b; font-size: 0.875rem; }
-
+                .kpi-banner { display: flex; gap: 1rem; margin-top: 0.5rem; }
+                .kpi-tag { font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.75rem; border-radius: 9999px; }
+                .tier-tag { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+                .sla-tag { background: #fff1f2; color: #9f1239; border: 1px solid #fecdd3; }
+                
                 .queue-filters { display: flex; gap: 0.75rem; }
                 .filter-chip { padding: 0.5rem 1rem; border-radius: 9999px; border: 1px solid #e2e8f0; background: white; color: #475569; font-size: 0.8125rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
                 .filter-chip:hover { border-color: #cbd5e1; background: #f8fafc; }
@@ -114,22 +129,20 @@ export const CheckersQueue: React.FC = () => {
                 .clickable-row { cursor: pointer; transition: background 0.2s; }
                 .clickable-row:hover { background: #f8fafc; }
                 
-                .ref-cell { font-weight: 700; color: #2563eb; }
+                .ref-cell { font-weight: 700; color: #2563eb; display: flex; flex-direction: column; gap: 0.25rem; }
+                .status-label { font-size: 0.625rem; font-weight: 800; padding: 0.125rem 0.375rem; border-radius: 2px; width: fit-content; }
+                .status-label.partial { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+                
                 .amount-cell { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
                 .module-tag { font-size: 0.75rem; font-weight: 700; background: #f1f5f9; color: #475569; padding: 0.25rem 0.5rem; border-radius: 4px; }
+                .action-tag { font-size: 0.75rem; font-weight: 500; color: #64748b; }
                 
                 .priority-badge { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; padding: 0.25rem 0.5rem; border-radius: 4px; }
-                .priority-badge.high { background: #fef2f2; color: #dc2626; }
-                .priority-badge.normal { background: #f0f9ff; color: #0284c7; }
+                .priority-badge.urgent { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+                .priority-badge.express { background: #fff7ed; color: #ea580c; border: 1px solid #ffedd5; }
+                .priority-badge.normal { background: #f0f9ff; color: #0284c7; border: 1px solid #e0f2fe; }
 
-                .sla-timer { font-weight: 700; color: #059669; }
-                .sla-timer.critical { color: #dc2626; animation: pulse 2s infinite; }
-
-                @keyframes pulse {
-                    0% { opacity: 1; }
-                    50% { opacity: 0.6; }
-                    100% { opacity: 1; }
-                }
+                .sla-timer { font-weight: 700; color: #475569; }
 
                 .authorize-btn { background: #2563eb; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
                 .authorize-btn:hover { background: #1d4ed8; }

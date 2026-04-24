@@ -1,12 +1,16 @@
 'use client';
+
 import React, { useState, useEffect } from 'react';
 import { tradeApi } from '../api/tradeApi';
+import { ProductCatalogManager } from './ProductCatalogManager';
+import { TariffManager } from './TariffManager';
+import { UserAuthorityManager } from './UserAuthorityManager';
 
 // ABOUTME: SystemAdminSettings component provides configuration panels for user authorities, system audits, and product matrices.
 // ABOUTME: Centralizes key governance settings for the Trade Finance platform.
 
 interface AdminSettingsProps {
-    activePanel?: 'authority' | 'audit' | 'product';
+    activePanel?: 'authority' | 'audit' | 'product' | 'tariff' | 'user';
 }
 
 export const SystemAdminSettings: React.FC<AdminSettingsProps> = ({ activePanel }) => {
@@ -116,36 +120,19 @@ export const SystemAdminSettings: React.FC<AdminSettingsProps> = ({ activePanel 
 
             {(showAll || activePanel === 'product') && (
                 <section className="admin-panel premium-card">
-                    <header className="panel-header">
-                        <h2>Trade Product Configuration Matrix</h2>
-                    </header>
-                    <form className="config-form" onSubmit={(e) => {
-                        e.preventDefault();
-                        const formData = new FormData(e.currentTarget);
-                        handleConfigSave('LC_PRODUCT_CONFIG', JSON.stringify({
-                            allowRevolving: formData.get('allowRevolving') === 'on',
-                            mandatoryMargin: formData.get('mandatoryMargin') === 'on',
-                            transferable: formData.get('transferable') === 'on'
-                        }));
-                    }}>
-                        <div className="form-grid">
-                            <div className="form-field">
-                                <input type="checkbox" id="allowRevolving" name="allowRevolving" defaultChecked />
-                                <label htmlFor="allowRevolving">Allow Revolving LCs</label>
-                            </div>
-                            <div className="form-field">
-                                <input type="checkbox" id="mandatoryMargin" name="mandatoryMargin" defaultChecked />
-                                <label htmlFor="mandatoryMargin">Mandatory Margin</label>
-                            </div>
-                            <div className="form-field">
-                                <input type="checkbox" id="transferable" name="transferable" />
-                                <label htmlFor="transferable">Allow Transferable LCs</label>
-                            </div>
-                        </div>
-                        <div className="form-actions">
-                            <button type="submit" className="primary-btn">Save Configuration</button>
-                        </div>
-                    </form>
+                    <ProductCatalogManager />
+                </section>
+            )}
+
+            {(showAll || activePanel === 'tariff') && (
+                <section className="admin-panel premium-card">
+                    <TariffManager />
+                </section>
+            )}
+
+            {(showAll || activePanel === 'user') && (
+                <section className="admin-panel premium-card">
+                    <UserAuthorityManager />
                 </section>
             )}
 

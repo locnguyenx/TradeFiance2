@@ -23,8 +23,10 @@ const sectionsPerStep = [
 
 export const IssuanceStepper: React.FC = () => {
     const [stepIndex, setStepIndex] = useState(0);
+    const [products, setProducts] = useState<any[]>([]);
     const [formData, setFormData] = useState({
         transactionRef: '',
+        productCatalogId: '',
         applicant: '',
         beneficiary: '',
         amount: '',
@@ -40,6 +42,11 @@ export const IssuanceStepper: React.FC = () => {
         goodsDescription: '',
         documentsRequired: '',
         additionalConditions: '',
+        // v3.0 New Fields
+        chargeAllocationEnumId: 'APPLICANT',
+        confirmationEnumId: 'WITHOUT',
+        latestShipmentDate: '',
+        lcTypeEnumId: 'SIGHT',
         marginType: 'None',
         marginPercentage: '100',
         marginAmount: '0',
@@ -48,6 +55,11 @@ export const IssuanceStepper: React.FC = () => {
             { type: 'Issuance Commission', rate: '0.125', amount: '0', account: '' }
         ]
     });
+    const [swiftErrors, setSwiftErrors] = useState<Record<string, string>>({});
+
+    useEffect(() => {
+        tradeApi.getProductCatalog().then(res => setProducts(res.productList || []));
+    }, []);
     const [activeClauseType, setActiveClauseType] = useState<'GOODS' | 'DOCUMENTS' | 'CONDITIONS' | null>(null);
     
     const [status, setStatus] = useState<'DRAFT' | 'SUBMITTED' | 'IDLE'>('IDLE');
@@ -66,6 +78,19 @@ export const IssuanceStepper: React.FC = () => {
             }
         }
     }, [formData.issueDate, formData.expiryDate]);
+
+    const validateSwift = (field: string, value: string) => {
+        const swiftRegex = /^[a-zA-Z0-9/\-?:().,'+ \n\r]*$/;
+        if (!swiftRegex.test(value)) {
+            setSwiftErrors(prev => ({ ...prev, [field]: 'Invalid SWIFT character detected' }));
+        } else {
+            setSwiftErrors(prev => {
+                const updated = { ...prev };
+                delete updated[field];
+                return updated;
+            });
+        }
+    };
 
     const handleNext = () => {
         setErrorMessage('');
@@ -152,6 +177,17 @@ export const IssuanceStepper: React.FC = () => {
                 {stepIndex === 0 && (
                     <section className="form-grid">
                         <div className="field-group">
+                            <label htmlFor="productCatalogId">LC Product</label>
+                            <select 
+                                id="productCatalogId"
+                                value={formData.productCatalogId}
+                                onChange={e => setFormData({...formData, productCatalogId: e.target.value})}
+                            >
+                                <option value="">Select Product...</option>
+                                {products.map(p => <option key={p.productCatalogId} value={p.productCatalogId}>{p.productName}</option>)}
+                            </select>
+                        </div>
+                        <div className="field-group">
                             <label htmlFor="transactionRef">Transaction Reference</label>
                             <input 
                                 id="transactionRef"
@@ -227,7 +263,14 @@ export const IssuanceStepper: React.FC = () => {
                                     <label htmlFor="goodsDescription">Description of Goods</label>
                                     <button className="helper-link" onClick={() => setActiveClauseType('GOODS')}>+ Standard Clauses</button>
                                 </div>
-                                <textarea id="goodsDescription" rows={4} value={formData.goodsDescription} onChange={e => setFormData({...formData, goodsDescription: e.target.value})} />
+                                <textarea 
+                                    id="goodsDescription" 
+                                    rows={4} 
+                                    value={formData.goodsDescription} 
+                                    onChange={e => setFormData({...formData, goodsDescription: e.target.value})} 
+                                    onBlur={e => validateSwift('goodsDescription', e.target.value)}
+                                />
+                                {swiftErrors.goodsDescription && <p className="error-text">{swiftErrors.goodsDescription}</p>}
                             </div>
                             <div className="field-group full-width">
                                 <div className="flex justify-between items-center mb-1">
@@ -261,6 +304,18 @@ export const IssuanceStepper: React.FC = () => {
                         </section>
                         <section id="charges" className="full-width">
                             <h3 className="section-title">Charges</h3>
+                            <div className="field-group mb-4">
+                                <label htmlFor="chargeAllocationEnumId">Charge Allocation</label>
+                                <select 
+                                    id="chargeAllocationEnumId"
+                                    value={formData.chargeAllocationEnumId}
+                                    onChange={e => setFormData({...formData, chargeAllocationEnumId: e.target.value})}
+                                >
+                                    <option value="APPLICANT">Applicant Account</option>
+                                    <option value="BENEFICIARY">Beneficiary (Deduct from proceeds)</option>
+                                    <option value="SHARED">Shared (70/30)</option>
+                                </select>
+                            </div>
                             <div className="helper-box">
                                 <p>Issuance Commission (Default): 0.125%</p>
                                 <p>Estimated Charge: {formData.amount ? (Number(formData.amount) * 0.00125).toFixed(2) : '0.00'}</p>
