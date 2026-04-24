@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <entity-facade-xml>
+    <!-- Authority Profiles for Testing -->
+    <trade.UserAuthorityProfile authorityProfileId="T1-01" userId="trade.admin" authorityTierEnumId="TIER_1" maxApprovalAmount="100000.00" currencyUomId="USD" isSuspended="N"/>
+    <trade.UserAuthorityProfile authorityProfileId="T1-E2E" userId="trade.maker" authorityTierEnumId="TIER_1" maxApprovalAmount="1000000.00" currencyUomId="USD" isSuspended="N"/>
+    <trade.UserAuthorityProfile authorityProfileId="T2-01" userId="trade.checker" authorityTierEnumId="TIER_2" maxApprovalAmount="1000000.00" currencyUomId="USD" isSuspended="N"/>
+    
     <!-- Master Data: Trade Parties -->
     <trade.TradeParty partyId="ACME_CORP_001" partyName="Acme Corporation Ltd" kycStatus="Active" kycExpiryDate="2027-12-31"/>
     <trade.TradeParty partyId="GLOBAL_EXP_002" partyName="Global Exports Inc" kycStatus="Active" kycExpiryDate="2027-06-30"/>

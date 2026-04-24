@@ -3,6 +3,7 @@ import spock.lang.Specification
 import spock.lang.Shared
 import org.moqui.Moqui
 import org.moqui.context.ExecutionContext
+import org.moqui.entity.EntityCondition
 import java.sql.Date
 
 // ABOUTME: ImportLcServicesSpec tests the core lifecycle services for Import Letters of Credit.
@@ -15,6 +16,25 @@ class ImportLcServicesSpec extends Specification {
         ec = Moqui.getExecutionContext()
         ec.artifactExecution.disableAuthz()
         ec.user.loginUser("trade.admin", "trade123")
+        
+        if (ec.entity.find("moqui.security.UserAccount").condition("username", "trade.admin").count() == 0) {
+            ec.entity.makeValue("moqui.security.UserAccount")
+                .setAll([userId: "trade.admin", username: "trade.admin", currentPassword: "trade123", firstName: "Trade", lastName: "Admin"])
+                .create()
+        }
+        if (ec.entity.find("trade.UserAuthorityProfile").condition("userId", "trade.admin").count() == 0) {
+            ec.entity.makeValue("trade.UserAuthorityProfile")
+                .setAll([authorityProfileId: "T1-01", userId: "trade.admin", authorityTierEnumId: "TIER_1", maxApprovalAmount: 1000000.00, currencyUomId: "USD"])
+                .create()
+        }
+        
+        def testPrefix = "TF-TEST-" + System.currentTimeMillis()
+        ec.entity.find("trade.importlc.TradeDocumentPresentationItem").condition("presentationId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+        ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+        ec.entity.find("trade.importlc.ImportLcSettlement").condition("presentationId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+        ec.entity.find("trade.importlc.ImportLcAmendment").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+        ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+        ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
     }
 
     def cleanupSpec() {
@@ -182,11 +202,11 @@ class ImportLcServicesSpec extends Specification {
         def instrumentId = createResult.instrumentId
 
         // Manually create a presentation record
-        def presId = ec.entity.makeValue("trade.importlc.TradeDocumentPresentation", [
-            instrumentId: instrumentId,
-            claimAmount: 40000.0,
-            presentationStatusId: "PRES_COMPLIANT"
-        ]).setSequencedIdPrimary().create().presentationId
+        def presValue = ec.entity.makeValue("trade.importlc.TradeDocumentPresentation")
+        presValue.setAll([instrumentId: instrumentId, claimAmount: 40000.0, presentationStatusId: "PRES_COMPLIANT"])
+        presValue.setSequencedIdPrimary()
+        presValue.create()
+        def presId = presValue.presentationId
 
         when:
         def setlResult = ec.service.sync().name("trade.importlc.ImportLcServices.settle#Presentation").parameters([
@@ -196,6 +216,9 @@ class ImportLcServicesSpec extends Specification {
         ]).call()
 
         then:
+        if (ec.message.hasError()) {
+            println "ERROR in settle: " + ec.message.getErrorsString()
+        }
         !ec.message.hasError()
         def lcLookup = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).one()
         lcLookup != null
