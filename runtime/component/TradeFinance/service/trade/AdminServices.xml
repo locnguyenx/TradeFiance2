@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.xsd">
+
+    <!-- ABOUTME: AdminServices.xml handles system-level governance and audit retrieval. -->
+
+    <service verb="get" noun="TradeAuditLogs">
+        <in-parameters><parameter name="transactionRef"/></in-parameters>
+        <out-parameters>
+            <parameter name="auditLogList" type="List"><parameter name="log" type="Map"/></parameter>
+        </out-parameters>
+        <actions>
+            <entity-find entity-name="trade.common.TradeAuditLog" list="auditLogList">
+                <econdition field-name="transactionRef" from="transactionRef" ignore-if-empty="true"/>
+                <order-by field-name="-timestamp"/>
+            </entity-find>
+        </actions>
+    </service>
+
+    <service verb="update" noun="TradeProductConfig">
+        <in-parameters>
+            <parameter name="configKey" required="true"/>
+            <parameter name="configValue" required="true"/>
+        </in-parameters>
+        <actions>
+            <service-call name="create#trade.common.TradeConfig" in-map="[configKey:configKey, configValue:configValue]" out-map="context"/>
+            <!-- Capture Audit -->
+            <service-call name="create#trade.common.TradeAuditLog" in-map="[
+                changedByUserId: ec.user.userId,
+                actionName: 'UPDATE_CONFIG',
+                deltaJson: '[key:' + configKey + ', value:' + configValue + ']'
+            ]"/>
+        </actions>
+    </service>
+
+    <service verb="calculate" noun="AuthorityTier">
+        <in-parameters><parameter name="amount" type="BigDecimal" required="true"/></in-parameters>
+        <out-parameters><parameter name="tier" type="Integer" required="true"/></out-parameters>
+        <actions>
+            <set field="tier" from="amount &lt; 100000.0 ? 1 : (amount &lt; 1000000.0 ? 2 : 3)"/>
+        </actions>
+    </service>
+
+    <service verb="check" noun="UserActive">
+        <in-parameters><parameter name="isSuspended" type="Boolean" required="true"/></in-parameters>
+        <out-parameters><parameter name="isVisible" type="Boolean"/></out-parameters>
+        <actions><set field="isVisible" from="!isSuspended" type="Boolean"/></actions>
+    </service>
+
+    <service verb="check" noun="ApprovalStatus">
+        <in-parameters>
+            <parameter name="approvals" type="Integer" required="true"/>
+            <parameter name="requiredApprovals" type="Integer" required="true"/>
+        </in-parameters>
+        <out-parameters><parameter name="isApproved" type="Boolean"/></out-parameters>
+        <actions><set field="isApproved" from="approvals >= requiredApprovals" type="Boolean"/></actions>
+    </service>
+</services>

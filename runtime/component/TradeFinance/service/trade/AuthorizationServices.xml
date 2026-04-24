@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ABOUTME: AuthorizationServices implements the Maker/Checker risk matrix and authority level evaluation. -->
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.0.xsd">
+
+    <service verb="evaluate" noun="MakerCheckerMatrix">
+        <in-parameters>
+            <parameter name="instrumentId" required="true"/>
+            <parameter name="userId" default="ec.user.userId" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="isAuthorized" type="Boolean"/>
+            <parameter name="authorityTierEnumId"/>
+        </out-parameters>
+        <actions>
+            <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument">
+                <field-map field-name="instrumentId"/>
+            </entity-find-one>
+            <if condition="!instrument"><return error="true" message="Instrument ${instrumentId} not found"/></if>
+
+            <!-- 1. Determine evaluation amount (use effectiveAmount for LCs if available) -->
+            <set field="evaluationAmount" from="instrument.amount ?: 0"/>
+            <if condition="instrument.instrumentTypeEnumId == 'IMPORT_LC'">
+                <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc">
+                    <field-map field-name="instrumentId"/>
+                </entity-find-one>
+                <if condition="lc?.effectiveAmount"><set field="evaluationAmount" from="lc.effectiveAmount"/></if>
+            </if>
+            
+            <!-- 2. Prohibit same user from Maker and Checker actions -->
+            <entity-find entity-name="trade.TradeTransactionAudit" list="makerAudits">
+                <econdition field-name="instrumentId"/>
+                <econdition field-name="actionEnumId" value="MAKER_COMMIT"/>
+            </entity-find>
+            <if condition="makerAudits &amp;&amp; makerAudits[0].userId == userId">
+                <set field="isAuthorized" from="false" type="Boolean"/>
+                <return/>
+            </if>
+            
+            <!-- 3. Check Authority Tier / Limit -->
+            <entity-find entity-name="trade.UserAuthorityProfile" list="profiles">
+                <econdition field-name="userId"/>
+                <econdition field-name="isSuspended" operator="not-equals" value="Y"/>
+                <order-by field-name="maxApprovalAmount"/>
+            </entity-find>
+            <if condition="!profiles">
+                <set field="isAuthorized" from="false" type="Boolean"/>
+                <return/>
+            </if>
+            
+            <set field="isAuthorized" value="false" type="Boolean"/>
+            <iterate list="profiles" entry="profile">
+                <if condition="evaluationAmount &lt;= profile.maxApprovalAmount">
+                    <set field="isAuthorized" value="true" type="Boolean"/>
+                    <set field="authorityTierEnumId" from="profile.authorityTierEnumId"/>
+                    <break/>
+                </if>
+            </iterate>
+        </actions>
+    </service>
+    <service verb="authorize" noun="Instrument">
+        <in-parameters>
+            <parameter name="instrumentId" required="true"/>
+            <parameter name="userId" default="ec.user.userId" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="isAuthorized" type="Boolean"/>
+        </out-parameters>
+        <actions>
+            <log level="info" message="DEBUG: authorize context: ${context}"/>
+            <service-call name="AuthorizationServices.evaluate#MakerCheckerMatrix" in-map="context" out-map="evalOut"/>
+            <set field="isAuthorized" from="evalOut.isAuthorized"/>
+            
+            <if condition="isAuthorized">
+                <service-call name="update#trade.TradeInstrument" in-map="[instrumentId:instrumentId, lifecycleStatusId:'INST_AUTHORIZED']"/>
+            </if>
+        </actions>
+    </service>
+</services>

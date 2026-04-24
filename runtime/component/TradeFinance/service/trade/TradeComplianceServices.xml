@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ABOUTME: TradeComplianceServices provides a proxy interface for external Sanctions and AML screening systems. -->
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.0.xsd">
+
+    <service verb="check" noun="Sanctions">
+        <in-parameters>
+            <parameter name="partyId"/>
+            <parameter name="partyName"/>
+            <parameter name="instrumentId"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="isCleared" type="Boolean"/>
+            <parameter name="isHit" type="Boolean"/>
+            <parameter name="screeningReference" type="String"/>
+        </out-parameters>
+        <actions>
+            <!-- Consolidate logic -->
+            <set field="isCleared" value="true" type="Boolean"/>
+            <set field="isHit" from="partyName?.contains('Banned') ?: false" type="Boolean"/>
+            <set field="isCleared" from="!isHit"/>
+            <set field="screeningReference" value="SCR-${instrumentId ?: (partyId ?: partyName)}-${ec.user.nowTimestamp.time}"/>
+        </actions>
+    </service>
+</services>

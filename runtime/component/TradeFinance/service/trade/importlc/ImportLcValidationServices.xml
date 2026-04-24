@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ABOUTME: ImportLcValidationServices enforces SWIFT and business rule compliance for LC operations. -->
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          package="trade.importlc"
+          xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.0.xsd">
+
+    <service verb="evaluate" noun="Drawing" authenticate="false">
+        <in-parameters>
+            <parameter name="instrumentId" required="true"/>
+            <parameter name="claimAmount" type="BigDecimal" required="true"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc">
+                <field-map field-name="instrumentId"/>
+            </entity-find-one>
+            <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument">
+                <field-map field-name="instrumentId"/>
+            </entity-find-one>
+            
+            <if condition="!lc"><return error="true" message="LC not found"/></if>
+            
+            <set field="maxAllowed" from="instrument.baseEquivalentAmount * (1 + (lc.tolerancePositive ?: 0))"/>
+            <if condition="claimAmount &gt; maxAllowed">
+                <return error="true" message="Claim amount ${claimAmount} exceeds tolerance limit ${maxAllowed}"/>
+            </if>
+        </actions>
+    </service>
+
+    <service verb="validate" noun="Presentation" authenticate="false">
+        <in-parameters>
+            <parameter name="instrumentId" required="true"/>
+            <parameter name="claimAmount" type="BigDecimal" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="isDiscrepant" type="Boolean"/>
+            <parameter name="discrepancyMessage" type="String"/>
+        </out-parameters>
+        <actions>
+            <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument">
+                <field-map field-name="instrumentId"/>
+            </entity-find-one>
+            
+            <set field="isDiscrepant" from="false"/>
+            
+            <!-- Check 1: Expiry date -->
+            <if condition="ec.user.nowTimestamp.after(instrument.expiryDate)">
+                <set field="isDiscrepant" from="true"/>
+                <set field="discrepancyMessage" value="Presentation after LC Expiry Date"/>
+            </if>
+            
+            <!-- Check 2: Drawing amount vs Limit (calling existing evaluate#Drawing) -->
+            <service-call name="trade.importlc.ImportLcValidationServices.evaluate#Drawing" 
+                          in-map="context" out-map="drawingCheck" ignore-error="true"/>
+            <if condition="ec.message.hasError()">
+                <set field="isDiscrepant" from="true"/>
+                <set field="discrepancyMessage" from="ec.message.getErrorsString()"/>
+                <script>ec.message.clearAll()</script>
+            </if>
+        </actions>
+    </service>
+
+    <service verb="validate" noun="SwiftFields" authenticate="false">
+        <in-parameters>
+            <parameter name="transactionRef" type="String"/>
+            <parameter name="goodsDescription" type="String"/>
+            <parameter name="documentsRequired" type="String"/>
+            <parameter name="additionalConditions" type="String"/>
+            <parameter name="portOfLoading" type="String"/>
+            <parameter name="portOfDischarge" type="String"/>
+            <parameter name="registeredAddress" type="String"/>
+        </in-parameters>
+        <actions>
+            <script><![CDATA[
+                import java.util.regex.Pattern
+                def SWIFT_X_PATTERN = Pattern.compile("^[A-Za-z0-9 \\-/?:().,'+]+\$")
+                def errors = []
+
+                def checkXCharSet = { String fieldName, String value ->
+                    if (!value) return
+                    value.eachWithIndex { ch, idx ->
+                        if (!SWIFT_X_PATTERN.matcher(ch.toString()).matches()) {
+                            errors.add("${fieldName} contains invalid SWIFT character '${ch}' at position ${idx + 1}")
+                        }
+                    }
+                }
+
+                // transactionRef checks (max 16 chars, no leading/trailing '/', no '//')
+                if (transactionRef) {
+                    if (transactionRef.length() > 16) errors.add("transactionRef exceeds 16 character SWIFT limit")
+                    if (transactionRef.startsWith("/") || transactionRef.endsWith("/"))
+                        errors.add("transactionRef cannot start or end with '/'")
+                    if (transactionRef.contains("//")) errors.add("transactionRef cannot contain '//'")
+                }
+
+                // Narrative field checks
+                checkXCharSet("goodsDescription", goodsDescription)
+                checkXCharSet("documentsRequired", documentsRequired)
+                checkXCharSet("additionalConditions", additionalConditions)
+
+                // Length checks
+                if (portOfLoading && portOfLoading.length() > 65) errors.add("portOfLoading exceeds 65 character SWIFT limit")
+                if (portOfDischarge && portOfDischarge.length() > 65) errors.add("portOfDischarge exceeds 65 character SWIFT limit")
+
+                // registeredAddress: max 4 lines x 35 chars, X Char Set per line
+                if (registeredAddress) {
+                    def lines = registeredAddress.split('\n')
+                    if (lines.size() > 4) errors.add("registeredAddress exceeds 4 line SWIFT limit")
+                    lines.eachWithIndex { line, idx ->
+                        if (line.length() > 35) errors.add("registeredAddress line ${idx + 1} exceeds 35 character SWIFT limit")
+                        checkXCharSet("registeredAddress line ${idx + 1}", line)
+                    }
+                }
+
+                errors.each { ec.message.addError(it) }
+            ]]></script>
+        </actions>
+    </service>
+
+    <service verb="transition" noun="BusinessState" authenticate="false" require-new-transaction="true">
+        <in-parameters>
+            <parameter name="instrumentId" type="String" required="true"/>
+            <parameter name="fromStateId" type="String"/>
+            <parameter name="toStateId" type="String" required="true"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument">
+                <field-map field-name="instrumentId"/>
+            </entity-find-one>
+
+            <!-- Global Hold Check -->
+            <if condition="instrument?.businessStateId == 'LC_HOLD'">
+                <return error="true" message="Instrument ${instrumentId} is on Compliance Hold. No state transitions allowed."/>
+            </if>
+
+            <if condition="!instrument">
+                <log message="Instrument ${instrumentId} not found, proceeding with transition check using fromStateId" level="info"/>
+            </if>
+
+            <set field="actualFromState" from="fromStateId ?: instrument?.businessStateId"/>
+            
+            <if condition="!actualFromState">
+                <return error="true" message="Cannot validate transition: fromStateId is missing and instrument ${instrumentId} not found or has no businessStateId"/>
+            </if>
+
+            <if condition="actualFromState == toStateId"><return/></if>
+
+            <script><![CDATA[
+                def validChange = ec.entity.find("moqui.basic.StatusFlowTransition")
+                    .condition([statusId: actualFromState, toStatusId: toStateId])
+                    .one()
+                
+                if (!validChange) {
+                    ec.message.addError("Transition from ${actualFromState} to ${toStateId} is not allowed per StatusFlowTransition rules.")
+                }
+            ]]></script>
+        </actions>
+    </service>
+</services>

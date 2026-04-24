@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ABOUTME: trade.rest.xml defines the standard Moqui REST API for Trade Finance. -->
+<resource xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/rest-api-3.xsd"
+          name="trade" displayName="Trade Finance REST API" version="1.0.0" require-authentication="false">
+    <resource name="login">
+        <method type="post">
+            <service name="org.moqui.impl.UserServices.login#UserAccount"/>
+        </method>
+    </resource>
+    <resource name="auth-test">
+        <method type="get">
+            <service name="ImportLcServices.get#AuthTest"/>
+        </method>
+    </resource>
+    <resource name="kpis">
+        <method type="get">
+            <service name="ImportLcServices.get#Kpis"/>
+        </method>
+    </resource>
+    <resource name="import-lc">
+        <method type="get"><service name="ImportLcServices.get#ImportLetterOfCreditList"/></method>
+        <method type="post"><service name="ImportLcServices.create#ImportLetterOfCredit"/></method>
+        <id name="instrumentId">
+            <method type="get" require-authentication="false"><service name="ImportLcServices.get#ImportLetterOfCredit"/></method>
+            <method type="post" require-authentication="false"><service name="ImportLcServices.update#ImportLetterOfCredit"/></method>
+            <resource name="amendments">
+                <method type="post"><service name="ImportLcServices.create#ImportLcAmendment"/></method>
+            </resource>
+            <resource name="presentations">
+                <method type="post"><service name="ImportLcServices.create#ImportLcPresentation"/></method>
+                <id name="presentationId">
+                    <resource name="waiver">
+                        <method type="patch"><service name="ImportLcServices.update#ImportLcPresentationWaiver"/></method>
+                    </resource>
+                </id>
+            </resource>
+            <resource name="settlements">
+                <method type="post"><service name="TradeAccountingServices.create#ImportLcSettlement"/></method>
+            </resource>
+            <resource name="shipping-guarantees">
+                <method type="post"><service name="ImportLcServices.create#ShippingGuarantee"/></method>
+            </resource>
+            <resource name="cancel">
+                <method type="post"><service name="ImportLcServices.update#ImportLcCancel"/></method>
+            </resource>
+        </id>
+    </resource>
+    <resource name="authorize">
+        <method type="post"><service name="AuthorizationServices.authorize#Instrument"/></method>
+    </resource>
+    <resource name="standard-clauses">
+        <method type="get"><service name="trade.common.TradeClauseServices.get#StandardClauses"/></method>
+    </resource>
+
+    <resource name="audit-logs">
+        <method type="get"><service name="trade.common.AdminServices.get#TradeAuditLogs"/></method>
+    </resource>
+
+    <resource name="product-config">
+        <method type="post"><service name="trade.common.AdminServices.update#TradeProductConfig"/></method>
+    </resource>
+</resource>

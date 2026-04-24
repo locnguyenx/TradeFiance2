@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-facade-xml>
+    <!-- Master Data: Trade Parties -->
+    <trade.TradeParty partyId="ACME_CORP_001" partyName="Acme Corporation Ltd" kycStatus="Active" kycExpiryDate="2027-12-31"/>
+    <trade.TradeParty partyId="GLOBAL_EXP_002" partyName="Global Exports Inc" kycStatus="Active" kycExpiryDate="2027-06-30"/>
+    <trade.TradeParty partyId="RISKY_BIZ_003" partyName="Risky Business Trading" kycStatus="Expired" kycExpiryDate="2024-01-01"/>
+    <trade.TradeParty partyId="BANNED_ENTITY_004" partyName="Banned Corp" kycStatus="Active" kycExpiryDate="2028-01-01"/>
+    
+    <trade.TradeParty partyId="ISSUING_BANK_001" partyName="Trade Finance Bank" kycStatus="Active"/>
+    <trade.TradeParty partyId="ADVISING_BANK_001" partyName="Overseas Banking Corp" kycStatus="Active"/>
+
+    <!-- Master Data: Customer Facilities -->
+    <trade.CustomerFacility facilityId="FAC-ACME-001" totalApprovedLimit="10000000.00" utilizedAmount="2500000.00" facilityExpiryDate="2027-12-31"/>
+    <trade.CustomerFacility facilityId="FAC-GLOBAL-002" totalApprovedLimit="5000000.00" utilizedAmount="4800000.00" facilityExpiryDate="2027-01-01"/>
+    <trade.CustomerFacility facilityId="FAC-EXPIRED-003" totalApprovedLimit="1000000.00" utilizedAmount="0.00" facilityExpiryDate="2024-12-31"/>
+
+    <!-- Master Data: Product Configurations -->
+    <trade.common.TradeConfig configId="CFG_TOL_VAL" configKey="MAX_TOLERANCE" configValue="0.10" description="Maximum drawing tolerance multiplier (e.g. 0.10 for 10%)"/>
+    <trade.common.TradeConfig configId="CFG_SLA_EXAM" configKey="DOC_EXAM_SLA_DAYS" configValue="5" description="Standard banking days for document examination (UCP 600)"/>
+    <trade.common.TradeConfig configId="CFG_SG_MULT" configKey="SG_LIABILITY_MULT" configValue="1.10" description="Liability multiplier for Shipping Guarantees (e.g. 1.10 for 110%)"/>
+    <trade.common.TradeConfig configId="CFG_TEN_REST" configKey="TENOR_RESTRICTION" configValue="Sight Only" description="Allowed LC Tenors for standard products"/>
+
+    <!-- Internal Organization Setup -->
+    <mantle.party.Party partyId="InternalOrganization" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="InternalOrganization" organizationName="Trade Finance Digital Bank"/>
+    
+    <moqui.basic.EnumerationType enumTypeId="AcctgTransType" description="Accounting Transaction Type"/>
+    <moqui.basic.Enumeration enumId="AttInternal" enumTypeId="AcctgTransType" description="Internal Transfer"/>
+</entity-facade-xml>

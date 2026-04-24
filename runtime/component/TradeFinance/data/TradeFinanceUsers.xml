@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ABOUTME: TradeFinanceUsers.xml provisions standard test users and roles for the Digital Trade Finance platform. -->
+<entity-facade-xml>
+    <!-- User Groups / Roles -->
+    <moqui.security.UserGroup userGroupId="TRADE_MAKER" description="Trade Maker (Issuance)"/>
+    <moqui.security.UserGroup userGroupId="TRADE_CHECKER" description="Trade Checker (Authorization)"/>
+    <moqui.security.UserGroup userGroupId="TRADE_BACKOFFICE" description="Trade Backoffice (Limits/Masters)"/>
+    <moqui.security.UserGroup userGroupId="TRADE_ADMIN" description="Trade System Administrator"/>
+
+    <!-- Test Users (Password: trade123) -->
+    <!-- Note: In a real system, these would have salted hashes. For dev/test, we use plain if permitted or assume bootstrap. -->
+    <!-- Test Users (Password: trade123) -->
+    <moqui.security.UserAccount userId="trade.maker" username="trade.maker" currentPassword="c24d5351b36465467d3224f3fa2dd4bd3f6e6e87f1d2ad0c51ce27792d9637aa" passwordSalt="SALT123" passwordHashType="SHA-256" firstName="Trade" lastName="Maker" emailAddress="maker@bank.com"/>
+    <moqui.security.UserAccount userId="trade.checker" username="trade.checker" currentPassword="c24d5351b36465467d3224f3fa2dd4bd3f6e6e87f1d2ad0c51ce27792d9637aa" passwordSalt="SALT123" passwordHashType="SHA-256" firstName="Trade" lastName="Checker" emailAddress="checker@bank.com"/>
+    <moqui.security.UserAccount userId="trade.backoffice" username="trade.backoffice" currentPassword="c24d5351b36465467d3224f3fa2dd4bd3f6e6e87f1d2ad0c51ce27792d9637aa" passwordSalt="SALT123" passwordHashType="SHA-256" firstName="Trade" lastName="Backoffice" emailAddress="backoffice@bank.com"/>
+    <moqui.security.UserAccount userId="trade.admin" username="trade.admin" currentPassword="c24d5351b36465467d3224f3fa2dd4bd3f6e6e87f1d2ad0c51ce27792d9637aa" passwordSalt="SALT123" passwordHashType="SHA-256" firstName="System" lastName="Admin" emailAddress="admin@bank.com"/>
+
+    <!-- User Group Assignments -->
+    <moqui.security.UserGroupMember userId="trade.maker" userGroupId="TRADE_MAKER" fromDate="2026-01-01 00:00:00"/>
+    <moqui.security.UserGroupMember userId="trade.checker" userGroupId="TRADE_CHECKER" fromDate="2026-01-01 00:00:00"/>
+    <moqui.security.UserGroupMember userId="trade.backoffice" userGroupId="TRADE_MAKER" fromDate="2026-01-01 00:00:00"/> <!-- Backoffice often acts as Maker -->
+    <moqui.security.UserGroupMember userId="trade.backoffice" userGroupId="TRADE_BACKOFFICE" fromDate="2026-01-01 00:00:00"/>
+    <moqui.security.UserGroupMember userId="trade.admin" userGroupId="TRADE_ADMIN" fromDate="2026-01-01 00:00:00"/>
+
+    <moqui.security.ArtifactGroup artifactGroupId="TRADE_FINANCE_ENTITIES" description="Trade Finance Entities"/>
+    <moqui.security.ArtifactGroupMember artifactGroupId="TRADE_FINANCE_ENTITIES" artifactName="trade.TradeInstrument" artifactTypeEnumId="AT_ENTITY" inheritAuthz="Y"/>
+    <moqui.security.ArtifactGroupMember artifactGroupId="TRADE_FINANCE_ENTITIES" artifactName="trade.importlc.ImportLetterOfCredit" artifactTypeEnumId="AT_ENTITY" inheritAuthz="Y"/>
+    <moqui.security.ArtifactGroupMember artifactGroupId="TRADE_FINANCE_ENTITIES" artifactName="trade.importlc.ImportLetterOfCreditDetail" artifactTypeEnumId="AT_ENTITY" inheritAuthz="Y"/>
+    <moqui.security.ArtifactGroupMember artifactGroupId="TRADE_FINANCE_ENTITIES" artifactName="trade.TradeInstrumentParty" artifactTypeEnumId="AT_ENTITY" inheritAuthz="Y"/>
+
+    <moqui.security.ArtifactGroup artifactGroupId="TRADE_FINANCE_SERVICES" description="Trade Finance Services"/>
+    <moqui.security.ArtifactGroupMember artifactGroupId="TRADE_FINANCE_SERVICES" artifactName="ImportLcServices\..*" artifactTypeEnumId="AT_SERVICE" nameIsPattern="Y" inheritAuthz="Y"/>
+    <moqui.security.ArtifactGroupMember artifactGroupId="TRADE_FINANCE_SERVICES" artifactName="AuthorizationServices\..*" artifactTypeEnumId="AT_SERVICE" nameIsPattern="Y" inheritAuthz="Y"/>
+    <moqui.security.ArtifactGroupMember artifactGroupId="TRADE_FINANCE_SERVICES" artifactName="TradeCommonServices\..*" artifactTypeEnumId="AT_SERVICE" nameIsPattern="Y" inheritAuthz="Y"/>
+    <moqui.security.ArtifactGroupMember artifactGroupId="TRADE_FINANCE_SERVICES" artifactName="SwiftGenerationServices\..*" artifactTypeEnumId="AT_SERVICE" nameIsPattern="Y" inheritAuthz="Y"/>
+    <moqui.security.ArtifactGroupMember artifactGroupId="TRADE_FINANCE_SERVICES" artifactName="AdminServices\..*" artifactTypeEnumId="AT_SERVICE" nameIsPattern="Y" inheritAuthz="Y"/>
+    <moqui.security.ArtifactGroupMember artifactGroupId="TRADE_FINANCE_SERVICES" artifactName="TradeAccountingServices\..*" artifactTypeEnumId="AT_SERVICE" nameIsPattern="Y" inheritAuthz="Y"/>
+    <moqui.security.ArtifactGroupMember artifactGroupId="TRADE_FINANCE_SERVICES" artifactName="moqui\.trade\..*" artifactTypeEnumId="AT_SERVICE" nameIsPattern="Y" inheritAuthz="Y"/>
+    <moqui.security.ArtifactGroupMember artifactGroupId="TRADE_FINANCE_SERVICES" artifactName="trade\..*" artifactTypeEnumId="AT_SERVICE" nameIsPattern="Y" inheritAuthz="Y"/>
+
+    <!-- Authorization Assignments -->
+    <moqui.security.ArtifactAuthz artifactAuthzId="TM_ENTITIES" userGroupId="TRADE_MAKER" artifactGroupId="TRADE_FINANCE_ENTITIES" authzTypeEnumId="AUTHZT_ALLOW" authzActionEnumId="AUTHZA_ALL"/>
+    <moqui.security.ArtifactAuthz artifactAuthzId="TM_SERVICES" userGroupId="TRADE_MAKER" artifactGroupId="TRADE_FINANCE_SERVICES" authzTypeEnumId="AUTHZT_ALLOW" authzActionEnumId="AUTHZA_ALL"/>
+    <moqui.security.ArtifactAuthz artifactAuthzId="TC_ENTITIES" userGroupId="TRADE_CHECKER" artifactGroupId="TRADE_FINANCE_ENTITIES" authzTypeEnumId="AUTHZT_ALLOW" authzActionEnumId="AUTHZA_ALL"/>
+    <moqui.security.ArtifactAuthz artifactAuthzId="TC_SERVICES" userGroupId="TRADE_CHECKER" artifactGroupId="TRADE_FINANCE_SERVICES" authzTypeEnumId="AUTHZT_ALLOW" authzActionEnumId="AUTHZA_ALL"/>
+    <moqui.security.ArtifactAuthz artifactAuthzId="TB_ENTITIES" userGroupId="TRADE_BACKOFFICE" artifactGroupId="TRADE_FINANCE_ENTITIES" authzTypeEnumId="AUTHZT_ALLOW" authzActionEnumId="AUTHZA_ALL"/>
+    <moqui.security.ArtifactAuthz artifactAuthzId="TB_SERVICES" userGroupId="TRADE_BACKOFFICE" artifactGroupId="TRADE_FINANCE_SERVICES" authzTypeEnumId="AUTHZT_ALLOW" authzActionEnumId="AUTHZA_ALL"/>
+    <moqui.security.ArtifactAuthz artifactAuthzId="TA_ENTITIES" userGroupId="TRADE_ADMIN" artifactGroupId="TRADE_FINANCE_ENTITIES" authzTypeEnumId="AUTHZT_ALLOW" authzActionEnumId="AUTHZA_ALL"/>
+    <moqui.security.ArtifactAuthz artifactAuthzId="TA_SERVICES" userGroupId="TRADE_ADMIN" artifactGroupId="TRADE_FINANCE_SERVICES" authzTypeEnumId="AUTHZT_ALLOW" authzActionEnumId="AUTHZA_ALL"/>
+</entity-facade-xml>

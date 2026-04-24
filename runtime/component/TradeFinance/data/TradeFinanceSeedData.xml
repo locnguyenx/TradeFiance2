@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-facade-xml>
+    <!-- Enumeration Types -->
+    <moqui.basic.EnumerationType enumTypeId="TradeSanctionsStatus" description="Sanctions Screening Status"/>
+    <moqui.basic.EnumerationType enumTypeId="TradeShipmentOption" description="Shipment Options (Partial, Transhipment)"/>
+    <moqui.basic.EnumerationType enumTypeId="TradeConfirmation" description="LC Confirmation Options"/>
+    <moqui.basic.EnumerationType enumTypeId="TradeLcType" description="LC Types"/>
+    <moqui.basic.EnumerationType enumTypeId="TradeAmendmentType" description="Amendment Types"/>
+    <moqui.basic.EnumerationType enumTypeId="TradeAuthorityTier" description="Authority Approval Tiers"/>
+    <moqui.basic.EnumerationType enumTypeId="TradeFeeType" description="Trade Fee Types"/>
+    <moqui.basic.EnumerationType enumTypeId="TradeFeeCalcMethod" description="Fee Calculation Methods"/>
+    <moqui.basic.EnumerationType enumTypeId="TradeSettlementType" description="LC Settlement Types"/>
+    <moqui.basic.EnumerationType enumTypeId="TradeInstrumentType" description="Trade Instrument Types"/>
+    <moqui.basic.EnumerationType enumTypeId="BeneficiaryConsentStatus" description="Beneficiary Consent Statuses"/>
+    <moqui.basic.EnumerationType enumTypeId="TradePriority" description="Trade Instrument Priority Levels"/>
+    <moqui.basic.EnumerationType enumTypeId="TradeLaunchAction" description="Trade Lifecycle Actions"/>
+
+    <!-- Audit Action Enums -->
+    <moqui.basic.Enumeration enumId="AUDIT_HOLD" enumTypeId="TradeLaunchAction" description="Compliance Hold Applied"/>
+    <moqui.basic.Enumeration enumId="AUDIT_RELEASE" enumTypeId="TradeLaunchAction" description="Compliance Hold Released"/>
+
+    <!-- Priority Level Enums -->
+    <moqui.basic.Enumeration enumId="PRIO_URGENT" enumTypeId="TradePriority" description="Urgent (T+0)" sequenceNum="1"/>
+    <moqui.basic.Enumeration enumId="PRIO_HIGH" enumTypeId="TradePriority" description="High (T+1)" sequenceNum="2"/>
+    <moqui.basic.Enumeration enumId="PRIO_NORMAL" enumTypeId="TradePriority" description="Normal (T+2)" sequenceNum="3"/>
+    <moqui.basic.Enumeration enumId="PRIO_LOW" enumTypeId="TradePriority" description="Low (T+3)" sequenceNum="4"/>
+
+    <!-- Sanctions Status Enums -->
+    <moqui.basic.Enumeration enumId="SANCTION_PENDING" enumTypeId="TradeSanctionsStatus" description="Pending Screening"/>
+    <moqui.basic.Enumeration enumId="SANCTION_CLEAR" enumTypeId="TradeSanctionsStatus" description="Clear / Sanctioned Name Not Found"/>
+    <moqui.basic.Enumeration enumId="SANCTION_BLOCKED" enumTypeId="TradeSanctionsStatus" description="Blocked / Positive Match Found"/>
+
+    <!-- Shipment Option Enums -->
+    <moqui.basic.Enumeration enumId="ALLOWED" enumTypeId="TradeShipmentOption" description="Allowed"/>
+    <moqui.basic.Enumeration enumId="NOT_ALLOWED" enumTypeId="TradeShipmentOption" description="Not Allowed"/>
+    <moqui.basic.Enumeration enumId="CONDITIONAL" enumTypeId="TradeShipmentOption" description="Conditional"/>
+
+    <!-- Confirmation Enums -->
+    <moqui.basic.Enumeration enumId="CONFIRMED" enumTypeId="TradeConfirmation" description="Confirmed"/>
+    <moqui.basic.Enumeration enumId="WITHOUT" enumTypeId="TradeConfirmation" description="Without Confirmation"/>
+    <moqui.basic.Enumeration enumId="MAY_ADD" enumTypeId="TradeConfirmation" description="May Add Confirmation"/>
+
+    <!-- LC Type Enums -->
+    <moqui.basic.Enumeration enumId="IRREVOCABLE" enumTypeId="TradeLcType" description="Irrevocable"/>
+    <moqui.basic.Enumeration enumId="REVOCABLE" enumTypeId="TradeLcType" description="Revocable (Legacy/Special)"/>
+    <moqui.basic.Enumeration enumId="STANDBY" enumTypeId="TradeLcType" description="Standby LC"/>
+
+    <!-- Amendment Type Enums -->
+    <moqui.basic.Enumeration enumId="AMEND_INCREASE" enumTypeId="TradeAmendmentType" description="Increase Amount"/>
+    <moqui.basic.Enumeration enumId="AMEND_DECREASE" enumTypeId="TradeAmendmentType" description="Decrease Amount"/>
+    <moqui.basic.Enumeration enumId="AMEND_EXTENSION" enumTypeId="TradeAmendmentType" description="Extension of Expiry"/>
+    <moqui.basic.Enumeration enumId="AMEND_OTHER" enumTypeId="TradeAmendmentType" description="Other Non-Financial Changes"/>
+
+    <!-- Authority Tiers -->
+    <moqui.basic.Enumeration enumId="TIER_1" enumTypeId="TradeAuthorityTier" description="Tier 1 - Maker/Junior"/>
+    <moqui.basic.Enumeration enumId="TIER_2" enumTypeId="TradeAuthorityTier" description="Tier 2 - Senior Officer"/>
+    <moqui.basic.Enumeration enumId="TIER_3" enumTypeId="TradeAuthorityTier" description="Tier 3 - Manager"/>
+    <moqui.basic.Enumeration enumId="TIER_4" enumTypeId="TradeAuthorityTier" description="Tier 4 - Director/Executive"/>
+
+    <!-- Fee Types -->
+    <moqui.basic.Enumeration enumId="ISSUANCE_FEE" enumTypeId="TradeFeeType" description="Issuance Fee"/>
+    <moqui.basic.Enumeration enumId="AMENDMENT_FEE" enumTypeId="TradeFeeType" description="Amendment Fee"/>
+    <moqui.basic.Enumeration enumId="NEGOTIATION_FEE" enumTypeId="TradeFeeType" description="Negotiation/Payment Fee"/>
+    <moqui.basic.Enumeration enumId="SWIFT_FEE" enumTypeId="TradeFeeType" description="SWIFT Transmission Fee"/>
+
+    <!-- Fee Calc Methods -->
+    <moqui.basic.Enumeration enumId="PERCENTAGE" enumTypeId="TradeFeeCalcMethod" description="Percentage of Amount"/>
+    <moqui.basic.Enumeration enumId="FLAT_RATE" enumTypeId="TradeFeeCalcMethod" description="Flat Rate per Transaction"/>
+
+    <!-- Settlement Types -->
+    <moqui.basic.Enumeration enumId="SIGHT_PAYMENT" enumTypeId="TradeSettlementType" description="Sight Payment"/>
+    <moqui.basic.Enumeration enumId="DEFERRED_PAYMENT" enumTypeId="TradeSettlementType" description="Deferred Payment"/>
+    <moqui.basic.Enumeration enumId="ACCEPTANCE" enumTypeId="TradeSettlementType" description="Acceptance"/>
+    <moqui.basic.Enumeration enumId="NEGOTIATION" enumTypeId="TradeSettlementType" description="Negotiation"/>
+
+    <!-- Instrument Types -->
+    <moqui.basic.Enumeration enumId="IMPORT_LC" enumTypeId="TradeInstrumentType" description="Import Letter of Credit"/>
+    <moqui.basic.Enumeration enumId="EXPORT_LC" enumTypeId="TradeInstrumentType" description="Export Letter of Credit"/>
+    <moqui.basic.Enumeration enumId="SHIPPING_GUARANTEE" enumTypeId="TradeInstrumentType" description="Shipping Guarantee"/>
+    <moqui.basic.Enumeration enumId="BILL_COLLECTION" enumTypeId="TradeInstrumentType" description="Bill Collection"/>
+    
+    <!-- Beneficiary Consent statuses -->
+    <moqui.basic.Enumeration enumId="PENDING" enumTypeId="BeneficiaryConsentStatus" description="Pending"/>
+    <moqui.basic.Enumeration enumId="ACCEPTED" enumTypeId="BeneficiaryConsentStatus" description="Accepted"/>
+    <moqui.basic.Enumeration enumId="REJECTED" enumTypeId="BeneficiaryConsentStatus" description="Rejected"/>
+
+    <!-- Status Types -->
+    <moqui.basic.StatusType statusTypeId="TradeTransactionStatus" description="System/Transaction Processing States"/>
+    <moqui.basic.StatusType statusTypeId="TradeLcBusinessState" description="Import LC Business Lifecycle States"/>
+    <moqui.basic.StatusType statusTypeId="TradeAmendmentBusinessState" description="Import LC Amendment Business States"/>
+    <moqui.basic.StatusType statusTypeId="TradePresentationStatus" description="Document Presentation Statuses"/>
+    <moqui.basic.StatusType statusTypeId="TradeGuaranteeStatus" description="Shipping Guarantee Statuses"/>
+
+    <!-- Transaction Statuses (Maker/Checker) -->
+    <moqui.basic.StatusItem statusId="TX_DRAFT" statusTypeId="TradeTransactionStatus" description="Transaction Draft"/>
+    <moqui.basic.StatusItem statusId="TX_PENDING" statusTypeId="TradeTransactionStatus" description="Pending Approval"/>
+    <moqui.basic.StatusItem statusId="TX_APPROVED" statusTypeId="TradeTransactionStatus" description="Approved/Committed"/>
+    <moqui.basic.StatusItem statusId="TX_REJECTED" statusTypeId="TradeTransactionStatus" description="Rejected/Sent Back"/>
+
+    <!-- LC Business States -->
+    <moqui.basic.StatusItem statusId="LC_DRAFT" statusTypeId="TradeLcBusinessState" description="Draft"/>
+    <moqui.basic.StatusItem statusId="LC_PENDING" statusTypeId="TradeLcBusinessState" description="Pending Approval"/>
+    <moqui.basic.StatusItem statusId="LC_ISSUED" statusTypeId="TradeLcBusinessState" description="Issued/Active"/>
+    <moqui.basic.StatusItem statusId="LC_DOCS_RECEIVED" statusTypeId="TradeLcBusinessState" description="Documents Received"/>
+    <moqui.basic.StatusItem statusId="LC_DISCREPANT" statusTypeId="TradeLcBusinessState" description="Discrepant"/>
+    <moqui.basic.StatusItem statusId="LC_ACCEPTED" statusTypeId="TradeLcBusinessState" description="Accepted/Clean"/>
+    <moqui.basic.StatusItem statusId="LC_SETTLED" statusTypeId="TradeLcBusinessState" description="Settled"/>
+    <moqui.basic.StatusItem statusId="LC_EXPIRED" statusTypeId="TradeLcBusinessState" description="Expired"/>
+    <moqui.basic.StatusItem statusId="LC_CLOSED" statusTypeId="TradeLcBusinessState" description="Closed"/>
+    <moqui.basic.StatusItem statusId="LC_CANCELLED" statusTypeId="TradeLcBusinessState" description="Cancelled"/>
+    <moqui.basic.StatusItem statusId="LC_AMENDMENT_PENDING" statusTypeId="TradeLcBusinessState" description="Amendment Pending"/>
+    <moqui.basic.StatusItem statusId="LC_HOLD" statusTypeId="TradeLcBusinessState" description="Compliance Hold"/>
+
+    <!-- Amendment Statuses -->
+    <moqui.basic.StatusItem statusId="AMEND_DRAFT" statusTypeId="TradeAmendmentBusinessState" description="Draft"/>
+    <moqui.basic.StatusItem statusId="AMEND_PENDING_APPROVAL" statusTypeId="TradeAmendmentBusinessState" description="Pending Approval"/>
+    <moqui.basic.StatusItem statusId="AMEND_APPROVED" statusTypeId="TradeAmendmentBusinessState" description="Approved"/>
+    <moqui.basic.StatusItem statusId="AMEND_REJECTED" statusTypeId="TradeAmendmentBusinessState" description="Rejected"/>
+    <moqui.basic.StatusItem statusId="AMEND_COMMITTED" statusTypeId="TradeAmendmentBusinessState" description="Committed to LC"/>
+
+    <!-- Presentation Statuses -->
+    <moqui.basic.StatusItem statusId="PRES_DRAFT" statusTypeId="TradePresentationStatus" description="Draft"/>
+    <moqui.basic.StatusItem statusId="PRES_RECEIVED" statusTypeId="TradePresentationStatus" description="Documents Received"/>
+    <moqui.basic.StatusItem statusId="PRES_EXAMINING" statusTypeId="TradePresentationStatus" description="Examination in Progress"/>
+    <moqui.basic.StatusItem statusId="PRES_DISCREPANT" statusTypeId="TradePresentationStatus" description="Discrepant"/>
+    <moqui.basic.StatusItem statusId="PRES_COMPLIANT" statusTypeId="TradePresentationStatus" description="Compliant Presentation"/>
+    <moqui.basic.StatusItem statusId="PRES_SETTLED" statusTypeId="TradePresentationStatus" description="Settled"/>
+
+    <!-- Guarantee Statuses -->
+    <moqui.basic.StatusItem statusId="SG_DRAFT" statusTypeId="TradeGuaranteeStatus" description="Draft"/>
+    <moqui.basic.StatusItem statusId="SG_ISSUED" statusTypeId="TradeGuaranteeStatus" description="Issued"/>
+    <moqui.basic.StatusItem statusId="SG_RETURNED" statusTypeId="TradeGuaranteeStatus" description="Returned/Cancelled"/>
+
+    <!-- Status Flow for Import LC -->
+    <moqui.basic.StatusFlow statusFlowId="ImportLcDefault" statusTypeId="TradeLcBusinessState" description="Import LC Default Flow"/>
+    <moqui.basic.StatusFlow statusFlowId="ImportLcDefault" statusTypeId="TradeAmendmentBusinessState" description="Import LC Amendment Flow"/>
+    
+    <!-- Lifecycle Transitions -->
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_DRAFT" toStatusId="LC_PENDING" transitionName="Submit for Approval"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_PENDING" toStatusId="LC_ISSUED" transitionName="Authorize/Issue"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_PENDING" toStatusId="LC_DRAFT" transitionName="Return to Draft"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_ISSUED" toStatusId="LC_DOCS_RECEIVED" transitionName="Receive Documents"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_ISSUED" toStatusId="LC_EXPIRED" transitionName="Expire LC"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_ISSUED" toStatusId="LC_CLOSED" transitionName="Close LC"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_DOCS_RECEIVED" toStatusId="LC_DISCREPANT" transitionName="Flag Discrepancy"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_DOCS_RECEIVED" toStatusId="LC_ACCEPTED" transitionName="Accept Documents"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_DISCREPANT" toStatusId="LC_ACCEPTED" transitionName="Waive Discrepancy"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_ACCEPTED" toStatusId="LC_SETTLED" transitionName="Settle"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_ACCEPTED" toStatusId="LC_ISSUED" transitionName="Revert to Issued on Partial Settlement"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_SETTLED" toStatusId="LC_CLOSED" transitionName="Close After Settlement"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_SETTLED" toStatusId="LC_ISSUED" transitionName="Reinstate After Partial Settlement"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_ISSUED" toStatusId="LC_AMENDMENT_PENDING" transitionName="Request Amendment"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_AMENDMENT_PENDING" toStatusId="LC_ISSUED" transitionName="Complete Amendment"/>
+    
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="AMEND_DRAFT" toStatusId="AMEND_PENDING_APPROVAL" transitionName="Submit for Approval"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="AMEND_PENDING_APPROVAL" toStatusId="AMEND_APPROVED" transitionName="Approve Amendment"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="AMEND_PENDING_APPROVAL" toStatusId="AMEND_REJECTED" transitionName="Reject Amendment"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="AMEND_APPROVED" toStatusId="AMEND_COMMITTED" transitionName="Commit to LC"/>
+</entity-facade-xml>

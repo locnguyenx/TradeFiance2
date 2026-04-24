@@ -10,12 +10,9 @@ build
 # ignore moqui framework
 /framework
 # runtime directory (separate repository so ignore directory entirely)
-/runtime/**
+/runtime/conf/*
 !/runtime/conf
 !/runtime/conf/*
-!/runtime/component/TradeFinance
-!/runtime/component/TradeFinance/**
-/runtime/component/TradeFinance/build
 /execwartmp
 /docker/runtime
 /docker/db

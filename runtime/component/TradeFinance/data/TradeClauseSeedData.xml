@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-facade-xml>
+    <!-- Goods Description Clauses -->
+    <trade.common.TradeStandardClause clauseId="CL_GOODS_001" clauseTypeEnumId="GOODS" clauseName="General Merchandise"
+        clauseText="General merchandise as per Proforma Invoice No. [REF] dated [DATE]. All goods to be packed in export standard seaworthy packaging."/>
+    
+    <!-- Documents Required Clauses -->
+    <trade.common.TradeStandardClause clauseId="CL_DOCS_001" clauseTypeEnumId="DOCUMENTS" clauseName="Full Set B/L"
+        clauseText="+ Full set of clean on board ocean Bill of Lading made out to the order of [BANK NAME], marked freight [PREPAID/COLLECT] and notify applicant."/>
+    <trade.common.TradeStandardClause clauseId="CL_DOCS_002" clauseTypeEnumId="DOCUMENTS" clauseName="Commercial Invoice"
+        clauseText="+ Signed commercial invoice in 3 originals and 3 copies indicating LC number and contract reference."/>
+    
+    <!-- Additional Conditions Clauses -->
+    <trade.common.TradeStandardClause clauseId="CL_COND_001" clauseTypeEnumId="CONDITIONS" clauseName="UCP 600"
+        clauseText="This Letter of Credit is subject to Uniform Customs and Practice for Documentary Credits (2007 Revision), International Chamber of Commerce Publication No. 600."/>
+    <trade.common.TradeStandardClause clauseId="CL_COND_002" clauseTypeEnumId="CONDITIONS" clauseName="Bank Charges"
+        clauseText="All banking charges outside the issuing bank are for the account of the beneficiary."/>
+</entity-facade-xml>

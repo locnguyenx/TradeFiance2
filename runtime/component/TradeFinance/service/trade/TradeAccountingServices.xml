@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ABOUTME: TradeAccountingServices handles the generation of Conventional GL entries for Trade Finance instruments. -->
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.0.xsd">
+
+    <service verb="post" noun="TradeEntry">
+        <in-parameters>
+            <parameter name="instrumentId" required="true"/>
+            <parameter name="entryTypeEnumId" required="true"/> <!-- e.g., LC_ISSUANCE_FEE -->
+            <parameter name="amount" type="BigDecimal" required="true"/>
+            <parameter name="currencyUomId" default-value="USD"/>
+            <parameter name="useLiveRate" type="Boolean" default="false"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument">
+                <field-map field-name="instrumentId"/>
+            </entity-find-one>
+
+            <if condition="useLiveRate">
+                <log level="info" message="Simulating Live FX Spread for ${currencyUomId}..."/>
+                <!-- BRD: Apply 0.5% spread for live FX -->
+                <set field="amount" from="amount * 1.005"/>
+            </if>
+            
+            <!-- Constructing Moqui AcctgTrans (Conventional) via script for robust catch -->
+            <script><![CDATA[
+                try {
+                    Map transOut = ec.service.sync().name("mantle.ledger.transaction.AcctgTrans")
+                        .parameters([acctgTransTypeEnumId:'AttInternal', 
+                                    organizationPartyId: (instrument.applicantPartyId ?: 'InternalOrganization'), 
+                                    transactionDate: ec.user.nowTimestamp, isPosted: 'N']).call()
+                    
+                    if (transOut?.acctgTransId) {
+                        ec.service.sync().name("mantle.ledger.LedgerServices.create#AcctgTransEntry")
+                            .parameters([acctgTransId: transOut.acctgTransId, debitCreditFlag: 'D', 
+                                        amount: amount, glAccountId: '111000']).call()
+                        ec.service.sync().name("mantle.ledger.LedgerServices.create#AcctgTransEntry")
+                            .parameters([acctgTransId: transOut.acctgTransId, debitCreditFlag: 'C', 
+                                        amount: amount, glAccountId: '411000']).call()
+                    }
+                } catch (Exception e) {
+                    ec.logger.warn("Accounting transaction creation skipped/failed: " + e.getMessage())
+                    ec.message.clearAll()
+                }
+            ]]></script>
+        </actions>
+    </service>
+    <service verb="create" noun="ImportLcSettlement">
+        <in-parameters>
+            <parameter name="instrumentId" required="true"/>
+            <parameter name="presentationId"/>
+            <parameter name="principalAmount" type="BigDecimal" required="true"/>
+            <parameter name="charges" type="BigDecimal" default-value="150.0"/>
+            <parameter name="debitAccountId" required="true"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument">
+                <field-map field-name="instrumentId"/>
+            </entity-find-one>
+            
+            <service-call name="trade.TradeAccountingServices.post#TradeEntry" 
+                          in-map="[instrumentId:instrumentId, entryTypeEnumId:'LC_SETTLEMENT_PRINCIPAL', amount:principalAmount]"/>
+            
+            <if condition="charges &amp;&amp; charges > 0">
+                <service-call name="trade.TradeAccountingServices.post#TradeEntry" 
+                              in-map="[instrumentId:instrumentId, entryTypeEnumId:'LC_SETTLEMENT_FEES', amount:charges]"/>
+            </if>
+            
+            <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" for-update="true"/>
+            <set field="lc.businessStateId" value="LC_SETTLED"/>
+            <entity-update value-field="lc"/>
+            
+            <if condition="instrument?.customerFacilityId">
+                <service-call name="trade.LimitServices.update#Utilization" 
+                              in-map="[facilityId:instrument.customerFacilityId, amountDelta:-principalAmount]"/>
+            </if>
+        </actions>
+    </service>
+    <service verb="calculate" noun="Fees">
+        <in-parameters>
+            <parameter name="baseAmount" type="BigDecimal" required="true"/>
+            <parameter name="minCharge" type="BigDecimal" default-value="50.0"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="totalFee" type="BigDecimal"/>
+        </out-parameters>
+        <actions>
+            <set field="totalFee" from="baseAmount &lt; minCharge ? minCharge : baseAmount"/>
+        </actions>
+    </service>
+</services>

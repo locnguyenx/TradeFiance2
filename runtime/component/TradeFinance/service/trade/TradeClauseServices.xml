@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ABOUTME: TradeClauseServices handles the retrieval of pre-approved legal text blocks for trade documents. -->
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.0.xsd">
+
+    <service verb="get" noun="StandardClauses">
+        <in-parameters>
+            <parameter name="clauseTypeEnumId"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="clauseList" type="List"><parameter name="clause" type="Map"/></parameter>
+        </out-parameters>
+        <actions>
+            <entity-find entity-name="trade.common.TradeStandardClause" list="clauseList">
+                <econdition field-name="clauseTypeEnumId" from="clauseTypeEnumId" ignore-if-empty="true"/>
+                <order-by field-name="clauseName"/>
+            </entity-find>
+        </actions>
+    </service>
+</services>

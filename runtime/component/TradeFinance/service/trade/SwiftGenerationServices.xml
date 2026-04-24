@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ABOUTME: SwiftGenerationServices handles the construction and formatting of SWIFT MTxxx message blocks. -->
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.0.xsd">
+
+    <service verb="generate" noun="Mt700">
+        <in-parameters>
+            <parameter name="instrumentId" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="swiftMessageId" type="id"/>
+        </out-parameters>
+        <actions>
+            <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc">
+                <field-map field-name="instrumentId"/>
+            </entity-find-one>
+            <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument">
+                <field-map field-name="instrumentId"/>
+            </entity-find-one>
+            
+            <if condition="!lc"><return error="true" message="LC not found"/></if>
+            
+            <!-- Check for overflow (REQ-IMP-SWIFT-05: > 6500 chars / 100 lines) -->
+            <set field="needs701" from="(lc.goodsDescription?.length() ?: 0) > 6500 || (lc.documentsRequired?.length() ?: 0) > 6500 || (lc.additionalConditions?.length() ?: 0) > 6500"/>
+            
+            <set field="tag27" from="needs701 ? '1/2' : '1/1'"/>
+            
+            <!-- Constructing skeletal MT700 block -->
+            <set field="msgText" value="{1:F01BANKBEBBAXXX0000000000}{2:I700BANKBEXAXXXXN}{4:\n:27:${tag27}\n:20:${instrument.transactionRef}\n:31C:${instrument.issueDate?.format('yyMMdd')}\n:40A:IRREVOCABLE\n:50:APPLICANT NAME\n:59:/BENEFICIARY NAME\n:32B:${instrument.productEnumId} ${instrument.baseEquivalentAmount}\n-}"/>
+            
+            <service-call name="create#trade.importlc.SwiftMessage" 
+                          in-map="[instrumentId:instrumentId, messageType:'MT700', messageContent:msgText]" 
+                          out-map="createOut"/>
+            <set field="swiftMessageId" from="createOut.swiftMessageId"/>
+            
+            <if condition="needs701">
+                <service-call name="trade.SwiftGenerationServices.generate#Mt701" in-map="[instrumentId:instrumentId]"/>
+            </if>
+        </actions>
+    </service>
+
+    <service verb="generate" noun="Mt701">
+        <in-parameters>
+            <parameter name="instrumentId" required="true"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument">
+                <field-map field-name="instrumentId"/>
+            </entity-find-one>
+            <set field="msgText" value="{1:F01...}{2:I701...}{4:\n:27:2/2\n:20:${instrument.transactionRef}\n:45B:OVERFLOW GOODS...\n-}"/>
+            <service-call name="create#trade.importlc.SwiftMessage" 
+                          in-map="[instrumentId:instrumentId, messageType:'MT701', messageContent:msgText]"/>
+        </actions>
+    </service>
+    <service verb="format" noun="XCharacter">
+        <in-parameters><parameter name="rawText" required="true"/></in-parameters>
+        <out-parameters><parameter name="cleanText" required="true"/></out-parameters>
+        <actions>
+            <!-- REQ-IMP-SWIFT-01: strip invalid, convert & to AND -->
+            <set field="textWithAnd" from="rawText.replace('&amp;', 'AND')"/>
+            <set field="cleanText" from="textWithAnd.replaceAll(/[^a-zA-Z0-9.\\/\\-\\?\\:\\(\\)\\,\\'\\+\\s]/, ' ')"/>
+        </actions>
+    </service>
+
+    <service verb="format" noun="Tag">
+        <in-parameters>
+            <parameter name="tag" required="true"/>
+            <parameter name="instrumentId"/>
+            <parameter name="data" type="Map"/> <!-- fallback for manual triggers -->
+        </in-parameters>
+        <out-parameters><parameter name="swText" required="true"/></out-parameters>
+        <actions>
+            <set field="data" from="[:]"/>
+            <log level="info" message="DEBUG_SWT: instrumentId=${instrumentId}, tag=${tag}"/>
+            <if condition="instrumentId">
+                <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument">
+                    <field-map field-name="instrumentId"/>
+                </entity-find-one>
+                <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc">
+                    <field-map field-name="instrumentId"/>
+                </entity-find-one>
+                <log level="info" message="DEBUG_SWT: instrumentId=${instrumentId}, instrument found=${instrument != null}, lc found=${lc != null}"/>
+                <if condition="instrument">
+                    <set field="data.amt" from="instrument.amount" type="BigDecimal"/>
+                    <set field="data.cur" from="instrument.currencyUomId ?: 'USD'"/>
+                    <set field="data.benchId" from="instrument.beneficiaryPartyId ?: lc?.beneficiaryPartyId ?: ''"/>
+                </if>
+                <if condition="lc">
+                    <set field="data.tol" from="lc.tolerancePositive ?: 0.0" type="BigDecimal"/>
+                    <if condition="!data.benchId"><set field="data.benchId" from="lc.beneficiaryPartyId ?: ''"/></if>
+                </if>
+            </if>
+            <script>
+                import java.text.DecimalFormat
+                import java.text.DecimalFormatSymbols
+                
+                try {
+                    def symbols = new DecimalFormatSymbols(Locale.US)
+                    symbols.setDecimalSeparator(',' as char)
+                    def df = new DecimalFormat("#,##0.00", symbols)
+                    df.setGroupingUsed(false)
+
+                    if (tag == "32B") {
+                        swText = "${data.cur ?: 'USD'}${df.format(data.amt ?: 0.0)}"
+                    } else if (tag == "39A") {
+                        int tolScaled = (int)((data.tol ?: 0.0) * 100)
+                        swText = "${tolScaled}/${tolScaled}"
+                    } else if (tag == "59") {
+                        swText = "/" + (data.benchId ?: "")
+                    } else {
+                        swText = ""
+                    }
+                    ec.logger.log("info", "DEBUG_SWT_OUT: swText=${swText}", null)
+                } catch (Exception e) {
+                    ec.logger.log("error", "ERROR_SWT: ${e.message}", e)
+                    swText = ""
+                }
+            </script>
+            <set field="swText" from="swText"/>
+        </actions>
+    </service>
+
+    <service verb="split" noun="Rows">
+        <in-parameters><parameter name="text" required="true"/></in-parameters>
+        <out-parameters><parameter name="rows" type="List" required="true"/></out-parameters>
+        <actions>
+            <set field="rows" from="text.split('(?&lt;=\\G.{65})') as List"/>
+        </actions>
+    </service>
+    <service verb="generate" noun="Mt750">
+        <in-parameters><parameter name="presentationId" required="true"/></in-parameters>
+        <out-parameters><parameter name="swiftMessageId" type="id"/></out-parameters>
+        <actions>
+            <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="presentation"/>
+            <if condition="!presentation"><return error="true" message="Presentation ${presentationId} not found"/></if>
+            <set field="instrumentId" from="presentation.instrumentId"/>
+            
+            <entity-find entity-name="trade.importlc.PresentationDiscrepancy" list="discrepancies">
+                <econdition field-name="presentationId"/>
+            </entity-find>
+            
+            <set field="discrepanciesText" value=""/>
+            <iterate list="discrepancies" entry="discrepancy">
+                <set field="discrepanciesText" from="discrepanciesText + discrepancy.discrepancyCode + ': ' + (discrepancy.discrepancyDescription ?: '') + '\n'"/>
+            </iterate>
+            
+            <set field="msgText" value="{1:F01...}{2:I750...}{4:\n:20:${presentation.presentationId}\n:21:${presentation.presentingBankRef ?: 'NONREF'}\n:32B:USD${presentation.claimAmount}\n:77J:${discrepanciesText}\n-}"/>
+            
+            <service-call name="create#trade.importlc.SwiftMessage" 
+                          in-map="[instrumentId:instrumentId, messageType:'MT750', messageContent:msgText]" out-map="createOut"/>
+            <set field="swiftMessageId" from="createOut.swiftMessageId"/>
+        </actions>
+    </service>
+
+    <service verb="generate" noun="Mt734">
+        <in-parameters><parameter name="presentationId" required="true"/></in-parameters>
+        <out-parameters><parameter name="swiftMessageId" type="id"/></out-parameters>
+        <actions>
+            <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="presentation"/>
+            <set field="msgText" value="{1:F01...}{2:I734...}{4:\n:20:${presentation.presentationId}\n-}"/>
+            <service-call name="create#trade.importlc.SwiftMessage" in-map="[presentationId:presentationId, instrumentId:presentation.instrumentId, messageType:'MT734', messageContent:msgText]" out-map="createOut"/>
+            <set field="swiftMessageId" from="createOut.swiftMessageId"/>
+        </actions>
+    </service>
+
+    <service verb="generate" noun="Mt707">
+        <in-parameters><parameter name="amendmentId" required="true"/></in-parameters>
+        <out-parameters><parameter name="swiftMessageId" type="id"/></out-parameters>
+        <actions>
+            <entity-find-one entity-name="trade.importlc.ImportLcAmendment" value-field="amendment"/>
+            <if condition="!amendment"><return error="true" message="Amendment ${amendmentId} not found"/></if>
+            
+            <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument">
+                <field-map field-name="instrumentId" from="amendment.instrumentId"/>
+            </entity-find-one>
+            <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc">
+                <field-map field-name="instrumentId" from="amendment.instrumentId"/>
+            </entity-find-one>
+            
+            <set field="msgText" value="{1:F01...}{2:I707...}{4:\n:20:${instrument.transactionRef}\n:21:NONREF\n:31C:${instrument.issueDate?.format('yyMMdd')}\n:30:${amendment.amendmentDate?.format('yyMMdd')}\n:26E:${amendment.amendmentNumber}\n:34B:USD${lc.effectiveAmount}\n:79:${amendment.amendmentNarrative}\n-}" />
+            
+            <service-call name="create#trade.importlc.SwiftMessage" 
+                          in-map="[instrumentId:amendment.instrumentId, messageType:'MT707', messageContent:msgText]" out-map="createOut"/>
+            <set field="swiftMessageId" from="createOut.swiftMessageId"/>
+        </actions>
+    </service>
+
+    <service verb="generate" noun="Mt732">
+        <in-parameters><parameter name="presentationId" required="true"/></in-parameters>
+        <out-parameters><parameter name="swiftMessageId" type="id"/></out-parameters>
+        <actions>
+            <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="presentation"/>
+            <set field="msgText" value="{1:F01...}{2:I732...}{4:\n:20:${presentation.presentationId}\n:21:${presentation.presentingBankRef ?: 'NONREF'}\n:30:${ec.user.nowTimestamp.format('yyMMdd')}\n:32B:USD${presentation.claimAmount}\n-}"/>
+            <service-call name="create#trade.importlc.SwiftMessage" in-map="[presentationId:presentationId, instrumentId:presentation.instrumentId, messageType:'MT732', messageContent:msgText]" out-map="createOut"/>
+            <set field="swiftMessageId" from="createOut.swiftMessageId"/>
+        </actions>
+    </service>
+
+    <service verb="generate" noun="Mt202">
+        <in-parameters><parameter name="settlementId" required="true"/></in-parameters>
+        <out-parameters><parameter name="swiftMessageId" type="id"/></out-parameters>
+        <actions>
+            <entity-find-one entity-name="trade.importlc.ImportLcSettlement" value-field="settlement"/>
+            <set field="msgText" value="{1:F01...}{2:I202...}{4:\n:20:${settlement.settlementId}\n:21:NONREF\n:32A:${ec.user.nowTimestamp.format('yyMMdd')}USD${settlement.settlementAmount}\n-}"/>
+            <service-call name="create#trade.importlc.SwiftMessage" in-map="[instrumentId:settlement.instrumentId, messageType:'MT202', messageContent:msgText]" out-map="createOut"/>
+            <set field="swiftMessageId" from="createOut.swiftMessageId"/>
+        </actions>
+    </service>
+
+    <service verb="generate" noun="Mt103">
+        <in-parameters><parameter name="settlementId" required="true"/></in-parameters>
+        <out-parameters><parameter name="swiftMessageId" type="id"/></out-parameters>
+        <actions>
+            <entity-find-one entity-name="trade.importlc.ImportLcSettlement" value-field="settlement"/>
+            <set field="msgText" value="{1:F01...}{2:I103...}{4:\n:20:${settlement.settlementId}\n:32A:${ec.user.nowTimestamp.format('yyMMdd')}USD${settlement.settlementAmount}\n:50K:/APPLICANT ACCOUNT\n:59:/BENEFICIARY ACCOUNT\n-}"/>
+            <service-call name="create#trade.importlc.SwiftMessage" in-map="[instrumentId:settlement.instrumentId, messageType:'MT103', messageContent:msgText]" out-map="createOut"/>
+            <set field="swiftMessageId" from="createOut.swiftMessageId"/>
+        </actions>
+    </service>
+
+    <service verb="generate" noun="Mt752">
+        <in-parameters><parameter name="presentationId" required="true"/></in-parameters>
+        <out-parameters><parameter name="swiftMessageId" type="id"/></out-parameters>
+        <actions>
+            <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="presentation"/>
+            <set field="instrumentId" from="presentation.instrumentId"/>
+            <set field="msgText" value="{1:F01...}{2:I752...}{4:\n:20:${presentation.presentingBankRef}\n:21:${presentation.instrumentId}\n:30:${ec.user.nowTimestamp.format('yyMMdd')}\n:32B:USD${presentation.claimAmount}\n-}"/>
+            <service-call name="create#trade.importlc.SwiftMessage" in-map="[instrumentId:instrumentId, messageType:'MT752', messageContent:msgText]" out-map="createOut"/>
+            <set field="swiftMessageId" from="createOut.swiftMessageId"/>
+        </actions>
+    </service>
+</services>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ABOUTME: TradeFinanceAuthData.xml provisions authorization groups and assignments for the Digital Trade Finance platform. -->
+<entity-facade-xml type="seed">
+    <!-- 
+      NOTE: Reusable ArtifactGroups and Authz assignments are consolidated 
+      into TradeFinanceUsers.xml to avoid loading order conflicts.
+      Seed data should only contain base infrastructure if necessary.
+    -->
+</entity-facade-xml>
