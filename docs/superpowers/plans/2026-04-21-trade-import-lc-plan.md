@@ -30,12 +30,12 @@ class ImportLcEntitiesSpec extends Specification {
     def "CREATE ImportLc validates relationships properly"() {
         given:
         ExecutionContext ec = ec
-        ec.entity.makeValue("trade.finance.TradeInstrument").setAll([instrumentId: "LC-100", transactionRef: "LC-01", baseEquivalentAmount: 500.0]).create()
+        ec.entity.makeValue("trade.TradeInstrument").setAll([instrumentId: "LC-100", transactionRef: "LC-01", baseEquivalentAmount: 500.0]).create()
         when:
-        def lc = ec.entity.makeValue("trade.finance.ImportLetterOfCredit")
+        def lc = ec.entity.makeValue("trade.ImportLetterOfCredit")
         lc.setAll([instrumentId: "LC-100", tolerancePositive: 10.0, toleranceNegative: 10.0, businessStateId: "DRAFT"])
         lc.create()
-        def found = ec.entity.find("trade.finance.ImportLetterOfCredit").condition("instrumentId", "LC-100").one()
+        def found = ec.entity.find("trade.ImportLetterOfCredit").condition("instrumentId", "LC-100").one()
         then:
         found.businessStateId == "DRAFT"
     }
@@ -45,14 +45,14 @@ class ImportLcEntitiesSpec extends Specification {
 - [x] **Step 2: Run test to verify it fails**
 
 Run: `gradle clean test --tests *ImportLcEntitiesSpec*`
-Expected: FAIL, Entity `trade.finance.ImportLetterOfCredit` missing
+Expected: FAIL, Entity `trade.ImportLetterOfCredit` missing
 
 - [x] **Step 3: Write minimal implementation**
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <entities xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/entity-definition-3.xsd">
-    <entity entity-name="ImportLetterOfCredit" package="trade.finance">
+    <entity entity-name="ImportLetterOfCredit" package="trade">
         <field name="instrumentId" type="id" is-pk="true"/>
         <field name="businessStateId" type="text-short"/>
         <field name="beneficiaryPartyId" type="id"/>
@@ -61,7 +61,7 @@ Expected: FAIL, Entity `trade.finance.ImportLetterOfCredit` missing
         <field name="tenorTypeId" type="id"/>
         <field name="usanceDays" type="number-integer"/>
         <field name="chargeAllocationEnumId" type="id"/>
-        <relationship type="one" related="trade.finance.TradeInstrument">
+        <relationship type="one" related="trade.TradeInstrument">
             <key-map field-name="instrumentId"/>
         </relationship>
     </entity>
@@ -105,7 +105,7 @@ class ImportLcValidationServicesSpec extends Specification {
         def claimAmount = 11500.0 // Mathematically invalid claim
         
         when:
-        ec.service.sync().name("trade.finance.ImportLcValidationServices.evaluateDrawing")
+        ec.service.sync().name("trade.ImportLcValidationServices.evaluateDrawing")
             .parameters([lcAmount: instrumentAmount, tolerancePercent: posTolerance, claimAmount: claimAmount]).call()
             
         then:

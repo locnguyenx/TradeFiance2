@@ -27,12 +27,12 @@ JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-21.jdk/Contents/Home ./gradlew 
 
 ### Run Single Test Spec
 ```bash
-./gradlew reloadSave :runtime:component:TradeFinance:test --tests moqui.trade.finance.TradeFinanceScreensSpec
+./gradlew reloadSave :runtime:component:TradeFinance:test --tests trade.TradeFinanceScreensSpec
 ```
 
 ### Run Specific Test Method
 ```bash
-./gradlew reloadSave :runtime:component:TradeFinance:test --tests "moqui.trade.finance.TradeFinanceServicesSpec#testCreateTrade"
+./gradlew reloadSave :runtime:component:TradeFinance:test --tests "trade.TradeFinanceServicesSpec#testCreateTrade"
 ```
 
 ### Run All Tests for a Specific Feature Area

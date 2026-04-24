@@ -23,8 +23,8 @@ The backend verification follows a multi-layered integration testing strategy us
 ### List of Test Suites
 | Module | Test Suite (Physical File) | Layer |
 |--------|----------------------------|-------|
-| Common Module | `moqui.trade.finance.BddCommonModuleSpec` | L2/L4 Mixed |
-| Import LC Module | `moqui.trade.finance.BddImportLcModuleSpec` | L2/L4 Mixed |
+| Common Module | `trade.BddCommonModuleSpec` | L2/L4 Mixed |
+| Import LC Module | `trade.BddImportLcModuleSpec` | L2/L4 Mixed |
 
 ---
 

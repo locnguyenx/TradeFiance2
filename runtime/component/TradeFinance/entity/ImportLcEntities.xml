@@ -3,7 +3,7 @@
 <entities xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/entity-definition-3.0.xsd">
 
-    <entity entity-name="ImportLetterOfCredit" package="moqui.trade.importlc">
+    <entity entity-name="ImportLetterOfCredit" package="trade.importlc">
         <field name="instrumentId" type="id" is-pk="true"/>
         <field name="businessStateId" type="id"/>
         <field name="beneficiaryPartyId" type="id"/>
@@ -38,24 +38,24 @@
         <field name="cumulativeDrawnAmount" type="number-decimal" default="0"/>
         <field name="totalAmendmentCount" type="number-integer" default="0"/>
 
-        <relationship type="one" related="moqui.trade.instrument.TradeInstrument">
+        <relationship type="one" related="trade.TradeInstrument">
             <key-map field-name="instrumentId"/>
         </relationship>
     </entity>
 
-    <entity entity-name="SwiftMessage" package="moqui.trade.importlc">
+    <entity entity-name="SwiftMessage" package="trade.importlc">
         <field name="swiftMessageId" type="id" is-pk="true"/>
         <field name="instrumentId" type="id"/>
         <field name="messageType" type="text-short"/> <!-- e.g., MT700 -->
         <field name="messageContent" type="text-very-long"/>
         <field name="generatedDate" type="date-time" default="ec.user.nowTimestamp"/>
         
-        <relationship type="one" related="moqui.trade.instrument.TradeInstrument">
+        <relationship type="one" related="trade.TradeInstrument">
             <key-map field-name="instrumentId"/>
         </relationship>
     </entity>
 
-    <entity entity-name="ImportLcShippingGuarantee" package="moqui.trade.importlc">
+    <entity entity-name="ImportLcShippingGuarantee" package="trade.importlc">
         <field name="guaranteeId" type="id" is-pk="true"/>
         <field name="instrumentId" type="id"/>
         <field name="invoiceAmount" type="number-decimal"/>
@@ -67,12 +67,12 @@
         <field name="redemptionDate" type="date"/>
         <field name="issuanceFee" type="number-decimal"/>
         
-        <relationship type="one" related="moqui.trade.importlc.ImportLetterOfCredit">
+        <relationship type="one" related="trade.importlc.ImportLetterOfCredit">
             <key-map field-name="instrumentId"/>
         </relationship>
     </entity>
 
-    <entity entity-name="TradeDocumentPresentation" package="moqui.trade.importlc">
+    <entity entity-name="TradeDocumentPresentation" package="trade.importlc">
         <field name="presentationId" type="id" is-pk="true"/>
         <field name="instrumentId" type="id"/>
         <field name="presentationDate" type="date" default="ec.user.nowTimestamp"/>
@@ -85,23 +85,23 @@
         <field name="claimCurrency" type="id"/>
         <field name="regulatoryDeadline" type="date"/>
         
-        <relationship type="one" related="moqui.trade.importlc.ImportLetterOfCredit">
+        <relationship type="one" related="trade.importlc.ImportLetterOfCredit">
             <key-map field-name="instrumentId"/>
         </relationship>
     </entity>
 
-    <entity entity-name="TradeDocumentPresentationItem" package="moqui.trade.importlc">
+    <entity entity-name="TradeDocumentPresentationItem" package="trade.importlc">
         <field name="presentationId" type="id" is-pk="true"/>
         <field name="documentTypeEnumId" type="id" is-pk="true"/>
         <field name="originalsCount" type="number-integer"/>
         <field name="copiesCount" type="number-integer"/>
         
-        <relationship type="one" related="moqui.trade.importlc.TradeDocumentPresentation">
+        <relationship type="one" related="trade.importlc.TradeDocumentPresentation">
             <key-map field-name="presentationId"/>
         </relationship>
     </entity>
 
-    <entity entity-name="ImportLcAmendment" package="moqui.trade.importlc">
+    <entity entity-name="ImportLcAmendment" package="trade.importlc">
         <field name="amendmentId" type="id" is-pk="true"/>
         <field name="instrumentId" type="id"/>
         <field name="amendmentDate" type="date" default="ec.user.nowTimestamp"/>
@@ -117,12 +117,12 @@
         <field name="newTolerance" type="number-decimal"/>
         <field name="chargeAllocationEnumId" type="id"/>
         
-        <relationship type="one" related="moqui.trade.importlc.ImportLetterOfCredit">
+        <relationship type="one" related="trade.importlc.ImportLetterOfCredit">
             <key-map field-name="instrumentId"/>
         </relationship>
     </entity>
 
-    <entity entity-name="PresentationDiscrepancy" package="moqui.trade.importlc">
+    <entity entity-name="PresentationDiscrepancy" package="trade.importlc">
         <field name="discrepancyId" type="id" is-pk="true"/>
         <field name="presentationId" type="id"/>
         <field name="discrepancyCode" type="text-short"/>
@@ -131,12 +131,12 @@
         <field name="waivedByUserId" type="id"/>
         <field name="waivedTimestamp" type="date-time"/>
         
-        <relationship type="one" related="moqui.trade.importlc.TradeDocumentPresentation">
+        <relationship type="one" related="trade.importlc.TradeDocumentPresentation">
             <key-map field-name="presentationId"/>
         </relationship>
     </entity>
 
-    <entity entity-name="ImportLcSettlement" package="moqui.trade.importlc">
+    <entity entity-name="ImportLcSettlement" package="trade.importlc">
         <field name="settlementId" type="id" is-pk="true"/>
         <field name="presentationId" type="id"/>
         <field name="instrumentId" type="id"/>
@@ -145,15 +145,28 @@
         <field name="settlementTypeEnumId" type="id"/>
         <field name="isPartialDraw" type="text-indicator" default="'Y'"/>
         
-        <relationship type="one" related="moqui.trade.importlc.TradeDocumentPresentation">
+        <relationship type="one" related="trade.importlc.TradeDocumentPresentation">
             <key-map field-name="presentationId"/>
         </relationship>
-        <relationship type="one" related="moqui.trade.importlc.ImportLetterOfCredit">
+        <relationship type="one" related="trade.importlc.ImportLetterOfCredit">
             <key-map field-name="instrumentId"/>
         </relationship>
     </entity>
 
-    <entity entity-name="DummyTestEntity" package="moqui.trade.importlc">
+    <view-entity entity-name="ImportLetterOfCreditView" package="trade.importlc">
+        <member-entity entity-alias="lc" entity-name="trade.importlc.ImportLetterOfCredit"/>
+        <member-entity entity-alias="inst" entity-name="trade.TradeInstrument" join-from-alias="lc">
+            <key-map field-name="instrumentId"/>
+        </member-entity>
+        <member-entity entity-alias="prio" entity-name="moqui.basic.Enumeration" join-from-alias="inst" join-optional="true">
+            <key-map field-name="priorityEnumId" related="enumId"/>
+        </member-entity>
+        <alias-all entity-alias="lc"/>
+        <alias-all entity-alias="inst"><exclude field="instrumentId"/><exclude field="businessStateId"/></alias-all>
+        <alias entity-alias="prio" name="prioritySequence" field="sequenceNum"/>
+    </view-entity>
+
+    <entity entity-name="DummyTestEntity" package="trade.importlc">
         <field name="dummyId" type="id" is-pk="true"/>
     </entity>
 </entities>

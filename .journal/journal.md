@@ -3,7 +3,7 @@
 ## 2026-04-22: API Integration Breakthrough
 
 ### Moqui View-Entity Resolution
-- **Insight**: Moqui's `view-entity` engine can be brittle when resolving joined fields (e.g., `productEnumId` from `TradeInstrument`) within complex hierarchies, especially across packages (`moqui.trade.instrument` vs `moqui.trade.importlc`).
+- **Insight**: Moqui's `view-entity` engine can be brittle when resolving joined fields (e.g., `productEnumId` from `TradeInstrument`) within complex hierarchies, especially across packages (`trade` vs `trade.importlc`).
 - **Solution**: Shifted to **Manual Groovy Joins** in `ImportLcServices.xml`. By performing sequential lookups and merging maps (`TI.getMap() + ILC.getMap()`), we eliminated all "field not found" and registry resolution errors. 
 - **Rule of Thumb**: For high-stakes API services, prefer the predictability of Groovy scripts over the magic of XML-defined view-entities.
 

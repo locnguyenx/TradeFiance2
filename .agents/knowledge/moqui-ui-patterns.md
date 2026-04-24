@@ -7,7 +7,7 @@
 ### Standard Find Screen List
 ```xml
 <form-list name="FindEntityList" list="entityList" skip-form="true" header-dialog="true">
-    <entity-find entity-name="moqui.trade.finance.LetterOfCredit" list="entityList" use-clone="true">
+    <entity-find entity-name="trade.LetterOfCredit" list="entityList" use-clone="true">
         <search-form-inputs default-order-by="-date"/>
         <econdition field-name="lcStatusId" operator="not-equals" value="LcCancelled"/>
     </entity-find>
@@ -87,7 +87,7 @@
 <actions>
     <set field="lcId" from="lcId ?: lcSeqId"/>
     <if condition="lcId">
-        <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+        <entity-find-one entity-name="trade.LetterOfCredit" value-field="lc"/>
     </if>
 </actions>
 
@@ -109,7 +109,7 @@
 <parameter name="lcId" required="true"/>
 
 <actions>
-    <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+    <entity-find-one entity-name="trade.LetterOfCredit" value-field="lc"/>
 </actions>
 ```
 
@@ -173,7 +173,7 @@
 ### Create Transition
 ```xml
 <transition name="createLc">
-    <service-call name="moqui.trade.finance.TradeFinanceServices.create#LetterOfCredit"/>
+    <service-call name="trade.TradeFinanceServices.create#LetterOfCredit"/>
     <default-response url="."/>
 </transition>
 ```
@@ -181,7 +181,7 @@
 ### Delete with Confirmation
 ```xml
 <transition name="deleteLc">
-    <service-call name="moqui.trade.finance.TradeFinanceServices.delete#LetterOfCredit"/>
+    <service-call name="trade.TradeFinanceServices.delete#LetterOfCredit"/>
     <default-response url="."/>
 </transition>
 
@@ -276,7 +276,7 @@ xmllint --noout runtime/component/TradeFinance/screen/.../Screen.xml
 ```xml
 <!-- template/lc/LcTransitions.xml -->
 <transition name="createLc">
-    <service-call name="moqui.trade.finance.TradeFinanceServices.create#LetterOfCredit"/>
+    <service-call name="trade.TradeFinanceServices.create#LetterOfCredit"/>
     <default-response url="../MainLC" parameter-map="[lcId:lcId]"/>
 </transition>
 ```

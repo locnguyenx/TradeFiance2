@@ -135,12 +135,12 @@ None.
 
 ### Backend Tests
 ```bash
-./gradlew reloadSave :runtime:component:TradeFinance:test --tests moqui.trade.finance.TradeFinanceLcProvisionCollectionSpec
+./gradlew reloadSave :runtime:component:TradeFinance:test --tests trade.TradeFinanceLcProvisionCollectionSpec
 ```
 
 ### Screen Tests
 ```bash
-./gradlew reloadSave :runtime:component:TradeFinance:test --tests moqui.trade.finance.TradeFinanceProvisionCollectionScreenSpec
+./gradlew reloadSave :runtime:component:TradeFinance:test --tests trade.TradeFinanceProvisionCollectionScreenSpec
 ```
 
 ### All Tests

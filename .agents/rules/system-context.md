@@ -84,8 +84,8 @@ TradeFinance/
 ├── MoquiConf.xml           # Screen registration
 ├── entity/
 │   └── TradeFinanceEntities.xml    # All entities (single file)
-├── service/
-│   └── moqui/trade/finance/     # All services
+├── service/        # only contains Rest API (*.rest.xml), SECAS services (*.secas.xml)
+│   └── trade/     # All common services
 │       ├── TradeFinanceServices.xml
 │       ├── AmendmentServices.xml
 │       ├── DrawingServices.xml
@@ -94,6 +94,7 @@ TradeFinance/
 │       ├── FinancialServices.xml
 │       ├── ProvisionCollectionServices.xml
 │       └── ...
+│       └── importlc/ # All Import LC module services
 ├── screen/
 │   └── TradeFinance/
 │       ├── ImportLc/
@@ -113,7 +114,6 @@ TradeFinance/
 │       ├── CreateAmendment.xml
 │       └── ...
 └── src/test/groovy/
-    └── moqui/trade/finance/
         ├── TradeFinanceSuite.groovy
         ├── TradeFinanceServicesSpec.groovy
         ├── TradeFinanceScreensSpec.groovy
@@ -250,3 +250,15 @@ xmllint --noout runtime/component/TradeFinance/screen/TradeFinance/ImportLc.xml
 - Relative paths: `../../Lc/MainLC` (no leading double-slash)
 - Back link: `${lastScreenUrl ?: '.'}`
 
+## 10. Package Convention
+* **serviceL**
+- service: only contains Rest API (*.rest.xml), SECAS services (*.secas.xml)
+- service/trade: all common module services, package = "trade"
+- service/trade/importlc: all import LC module services, package = "trade.importlc"
+
+* **entity:**
+- all moqui entities belong to "trade" package: "trade.*"
+- common entity package: 
+  - "trade.common.*" -> some common entities like Fee, Config
+  - "trade.*" -> other entities like TradeInstrument
+- import LC entities -> "trade.importlc.*"

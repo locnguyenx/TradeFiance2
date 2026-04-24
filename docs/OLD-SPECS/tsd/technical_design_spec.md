@@ -134,7 +134,7 @@ runtime/component/TradeFinance/
 ./gradlew cleanAll load runtime/component/TradeFinance:test
 
 # Specific test
-./gradlew cleanAll load runtime/component/TradeFinance:test --tests moqui.trade.finance.TradeFinanceScreensSpec
+./gradlew cleanAll load runtime/component/TradeFinance:test --tests trade.TradeFinanceScreensSpec
 
 # NEVER use: java -jar moqui.war
 ```
@@ -143,7 +143,7 @@ runtime/component/TradeFinance/
 
 ## 2. Entity Specification
 
-Package: `moqui.trade.finance`
+Package: `trade`
 
 ### 2.1 LetterOfCredit (Master Entity)
 
@@ -216,7 +216,7 @@ Package: `moqui.trade.finance`
 - `one` → `mantle.request.Request`
 - `one` → `moqui.basic.Uom` as `currency` (via `amountCurrencyUomId`)
 - `one` → `mantle.party.Party` (×4: Applicant, Beneficiary, IssuingBank, AdvisingBank)
-- `one` → `moqui.trade.finance.LcProduct`
+- `one` → `trade.LcProduct`
 - `one` → `moqui.basic.Enumeration` (×7: FormOfCredit, ApplicableRules, Availability, PartialShipment, Transhipment, Confirmation, ProductType)
 - `many` → LcHistory, LcAmendment, LcDrawing, LcCharge, LcProvision, LcDocument
 
@@ -389,7 +389,7 @@ Package: `moqui.trade.finance`
 
 ## 3. Service Specification
 
-Package: `moqui.trade.finance`
+Package: `trade`
 
 ### 3.1 TradeFinanceServices.xml
 
@@ -671,7 +671,7 @@ Package: `moqui.trade.finance`
 ```xml
 <moqui.service.job.ServiceJob jobName="TradeFinance_checkLcExpiry"
     description="Auto-expires overdue Letters of Credit"
-    serviceName="moqui.trade.finance.ScheduledServices.check#LcExpiry"
+    serviceName="trade.ScheduledServices.check#LcExpiry"
     cronExpression="0 0 1 * * ?"/>
 ```
 
@@ -740,7 +740,7 @@ Key features:
 <screen default-menu-title="Find LC">
     <transition name="lcDetail"><default-response url="../MainLC"/></transition>
     <actions>
-        <entity-find entity-name="moqui.trade.finance.LetterOfCredit" list="lcList">
+        <entity-find entity-name="trade.LetterOfCredit" list="lcList">
             <search-form-inputs/>
         </entity-find>
     </actions>
@@ -765,7 +765,7 @@ Key pattern — use `conditional-field` to toggle between edit and display mode:
 Transition guarding:
 ```xml
 <transition name="UpdateLc" condition="!isReadOnly">
-    <service-call name="moqui.trade.finance.TradeFinanceServices.update#LetterOfCredit"/>
+    <service-call name="trade.TradeFinanceServices.update#LetterOfCredit"/>
     <default-response url="."/>
 </transition>
 ```

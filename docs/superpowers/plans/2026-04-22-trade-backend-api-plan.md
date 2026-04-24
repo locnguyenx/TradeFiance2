@@ -22,7 +22,7 @@
 - [ ] **Step 1: Write the failing test**
 
 ```groovy
-package moqui.trade.finance
+package trade
 
 import org.moqui.Moqui
 import org.moqui.context.ExecutionContext
@@ -119,7 +119,7 @@ git commit -m "feat(backend): initialize TradeFinance REST API base framework st
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `gradlew :runtime:component:TradeFinance:test --tests moqui.trade.finance.RestApiEndpointsSpec`
+Run: `gradlew :runtime:component:TradeFinance:test --tests trade.RestApiEndpointsSpec`
 Expected: FAIL, does not contain "import-lc".
 
 - [ ] **Step 3: Write minimal implementation**
@@ -129,7 +129,7 @@ Expected: FAIL, does not contain "import-lc".
     <transition name="import-lc">
         <actions>
             <!-- A simplistic pass-through to existing services for POC mapping -->
-            <entity-find entity-name="moqui.trade.finance.ImportLetterOfCredit" list="lcList">
+            <entity-find entity-name="trade.ImportLetterOfCredit" list="lcList">
                 <search-form-inputs default-order-by="-issueDate"/>
             </entity-find>
             <script>ec.web.sendJsonResponse([data: lcList])</script>
@@ -140,7 +140,7 @@ Expected: FAIL, does not contain "import-lc".
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `gradlew :runtime:component:TradeFinance:test --tests moqui.trade.finance.RestApiEndpointsSpec`
+Run: `gradlew :runtime:component:TradeFinance:test --tests trade.RestApiEndpointsSpec`
 Expected: PASS
 
 - [ ] **Step 5: Commit**

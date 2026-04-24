@@ -12,7 +12,7 @@
 
 ```xml
 <!-- Entity XML design -->
-<entity entity-name="[EntityName]" package="moqui.trade.finance">
+<entity entity-name="[EntityName]" package="trade">
     <field name="[fieldName]" type="[type]" is-pk="true"/>
     <!-- Add fields and relationships -->
 </entity>

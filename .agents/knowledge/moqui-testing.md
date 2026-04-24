@@ -10,7 +10,7 @@
 ./gradlew reloadSave :runtime:component:TradeFinance:test
 
 # For specific test
-./gradlew reloadSave :runtime:component:TradeFinance:test --tests moqui.trade.finance.TradeFinanceScreensSpec
+./gradlew reloadSave :runtime:component:TradeFinance:test --tests trade.TradeFinanceScreensSpec
 ```
 
 ### Reset Patterns
@@ -30,7 +30,7 @@
 
 ### Standard Spec
 ```groovy
-package moqui.trade.finance
+package trade
 
 import moqui.Moqui
 import spock.lang.Specification
@@ -66,7 +66,7 @@ class TradeFinanceServicesSpec extends Specification {
 def "should create LetterOfCredit when valid data provided"() {
     when:
     def result = ec.service.sync()
-        .name("moqui.trade.finance.TradeFinanceServices.create#LetterOfCredit")
+        .name("trade.TradeFinanceServices.create#LetterOfCredit")
         .parameters([lcNumber: "DEMO-001", lcAmount: 10000])
         .call()
     
@@ -121,7 +121,7 @@ def "parent screen with ID does NOT render detail tabs"() {
 def setupSpec() {
     // ...
     // Set sequence to avoid collisions
-    ec.entity.tempSetSequencedIdPrimary("moqui.trade.finance.LetterOfCredit", 960000, 100)
+    ec.entity.tempSetSequencedIdPrimary("trade.LetterOfCredit", 960000, 100)
 }
 ```
 
@@ -142,7 +142,7 @@ def setup() {
 ### Cleanup Pattern
 ```groovy
 def cleanupProvision(String lcId) {
-    def provisions = ec.entity.find("moqui.trade.finance.LcProvision")
+    def provisions = ec.entity.find("trade.LcProvision")
         .condition("lcId", lcId)
         .list()
     provisions.each { it.delete() }
@@ -155,7 +155,7 @@ def cleanupProvision(String lcId) {
 ```groovy
 // Use full path
 ec.service.sync()
-    .name("moqui.trade.finance.TradeFinanceServices.create#LetterOfCredit")
+    .name("trade.TradeFinanceServices.create#LetterOfCredit")
     .call()
 
 // NOT short name
@@ -172,7 +172,7 @@ if (ec.message.hasError()) {
 ### Verify Database State
 ```groovy
 // After service call, verify persisted state
-def lc = ec.entity.find("moqui.trade.finance.LetterOfCredit")
+def lc = ec.entity.find("trade.LetterOfCredit")
     .condition("lcId", lcId)
     .one()
 assert lc.lcStatusId == "LcApproved"
@@ -184,7 +184,7 @@ def "status transition updates parent record"() {
     when:
     // Create LC
     def createResult = ec.service.sync()
-        .name("moqui.trade.finance.TradeFinanceServices.create#LetterOfCredit")
+        .name("trade.TradeFinanceServices.create#LetterOfCredit")
         .parameters([lcNumber: "DEMO-001"])
         .call()
     
@@ -192,13 +192,13 @@ def "status transition updates parent record"() {
     
     // Transition
     ec.service.sync()
-        .name("moqui.trade.finance.TradeFinanceServices.transition#Status")
+        .name("trade.TradeFinanceServices.transition#Status")
         .parameters([lcId: lcId, toStatusId: "LcApproved"])
         .call()
     
     then:
     // CRITICAL: Query fresh from DB, not from cache
-    def lc = ec.entity.find("moqui.trade.finance.LetterOfCredit")
+    def lc = ec.entity.find("trade.LetterOfCredit")
         .condition("lcId", lcId)
         .one()
     lc.lcStatusId == "LcApproved"
@@ -213,19 +213,19 @@ def "adding entry updates collected amount"() {
     when:
     // Create collection
     def createResult = ec.service.sync()
-        .name("moqui.trade.finance.ProvisionCollectionServices.create#Collection")
+        .name("trade.ProvisionCollectionServices.create#Collection")
         .call()
     def collectionId = createResult.collectionId
     
     // Add entry (this SHOULD populate collectedAmount)
     ec.service.sync()
-        .name("moqui.trade.finance.ProvisionCollectionServices.add#CollectionEntry")
+        .name("trade.ProvisionCollectionServices.add#CollectionEntry")
         .parameters([collectionId: collectionId, amount: 5000])
         .call()
     
     then:
     // CRITICAL: Verify DB state, not service output
-    def coll = ec.entity.find("moqui.trade.finance.LcProvisionCollection")
+    def coll = ec.entity.find("trade.LcProvisionCollection")
         .condition("collectionId", collectionId)
         .one()
     coll.collectedAmount == 5000

@@ -30,12 +30,21 @@ When the user says "finish session" or similar:
 **Update `NOTES_NEXT_SESSION.md`**
 : Write clear instructions for the "next you".
 
-If YOU (the Agent) don't know the location of these files, refer to @.agents/skills/session-memory-protocol/SKILL.md
-
 4.  
 **Cleanup**
 : Remove temp files or logs.
 5. Do **Self-Improvement**
+
+### Location
+`.agents/session-memory/` (at Root of the project)
+
+### Core Files
+1.  
+**`session-memory/core/current-state.md`**
+2.
+**`session-memory/core/progress.md`**
+3.  
+**`session-memory/NOTES_NEXT_SESSION.md`**
 
 # 🚀 Self-Improvement Directive (The "Gardener")
 

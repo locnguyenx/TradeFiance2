@@ -15,6 +15,13 @@
 | 2026-04-21 | Frontend SPA Skeleton & Basic Component TDD | ✅ |
 | 2026-04-22 | Phase 7: Backend REST API Hardening & Contract Tests | ✅ |
 | 2026-04-23 | Phase 8: Frontend Sync & Master Data Seed Preparation | ✅ |
+| 2026-04-24 | Trade Finance v3.0 Implementation (Phase 2) - In Progress | 🔄 |
+
+### Key Discovery (2026-04-24)
+
+**Root Cause 4:** Entity name format in Moqui uses package.entityName, not package.subpackage.entityName. Correct: `trade.TradeInstrument`, Incorrect: `trade.instrument.TradeInstrument`
+
+**Root Cause 5:** Services return null if entity not found before state update - use verbose logging to trace
 
 ### Key Discovery
 

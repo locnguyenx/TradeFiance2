@@ -21,7 +21,7 @@
          type="interface"
          location="moqui.service.sec.SimpleServices">
 ```
-- Use full package path: `moqui.trade.finance.TradeFinanceServices.create#LcDrawing`
+- Use full package path: `trade.TradeFinanceServices.create#LcDrawing`
 
 ## 2. Service Definition Structure
 
@@ -44,8 +44,8 @@
         </if>
         
         <!-- Create -->
-        <make-value entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
-        <set field="lc.lcId" from="ec.entity.generatePk('moqui.trade.finance.LetterOfCredit')"/>
+        <make-value entity-name="trade.LetterOfCredit" value-field="lc"/>
+        <set field="lc.lcId" from="ec.entity.generatePk('trade.LetterOfCredit')"/>
         <set field="lc.lcNumber" from="lcNumber"/>
         <set field="lc.lcAmount" from="lcAmount ?: 0"/>
         <set field="lc.lcStatusId" from="lcStatusId"/>
@@ -101,27 +101,27 @@
 
 ### Sync Call
 ```xml
-<service-call name="moqui.trade.finance.TradeFinanceServices.create#LcDrawing"
+<service-call name="trade.TradeFinanceServices.create#LcDrawing"
              in-map="[lcId:lcId, amount:drawingAmount]"
              out-map="/result"/>
 ```
 
 ### Async Call (Background)
 ```xml
-<service-call name="moqui.trade.finance.TradeFinanceServices.processAmendment"
+<service-call name="trade.TradeFinanceServices.processAmendment"
              transaction="async"/>
 ```
 
 ### Require New Transaction (Force Commit)
 ```xml
-<service-call name="moqui.trade.finance.AuditServices.log#StatusChange"
+<service-call name="trade.AuditServices.log#StatusChange"
              transaction="force"/>
 ```
 
 ### Groovy Service Call
 ```groovy
 def result = ec.service.sync()
-    .name("moqui.trade.finance.TradeFinanceServices.create#LcDrawing")
+    .name("trade.TradeFinanceServices.create#LcDrawing")
     .parameters([lcId: lcId, amount: amount])
     .call()
 
@@ -157,7 +157,7 @@ if (result.success) {
         <parameter name="toStatusId"/>
     </in-parameters>
     <actions>
-        <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+        <entity-find-one entity-name="trade.LetterOfCredit" value-field="lc"/>
         
         <!-- Auto-detect single valid transition -->
         <if condition="!toStatusId">
@@ -228,7 +228,7 @@ if (result.success) {
 
 ### Find-or-Create
 ```xml
-<entity-find entity-name="moqui.trade.finance.LcCharge" list="existing">
+<entity-find entity-name="trade.LcCharge" list="existing">
     <econdition field-name="lcId"/>
     <econdition field-name="chargeTypeEnumId"/>
 </entity-find>
@@ -236,7 +236,7 @@ if (result.success) {
 <if condition="existing">
     <set field="charge" from="existing[0]"/>
 <else>
-    <make-value entity-name="moqui.trade.finance.LcCharge" value-field="charge"/>
+    <make-value entity-name="trade.LcCharge" value-field="charge"/>
     <set field="charge.lcId" from="lcId"/>
     <entity-create value-field="charge"/>
 </else>
@@ -244,7 +244,7 @@ if (result.success) {
 
 ### Cascade Update
 ```xml
-<entity-find entity-name="moqui.trade.finance.LcCharge" list="charges">
+<entity-find entity-name="trade.LcCharge" list="charges">
     <econdition field-name="lcId"/>
 </entity-find>
 <iterate list="charges" entry="charge">
@@ -257,14 +257,14 @@ if (result.success) {
 ```xml
 <actions>
     <!-- Fetch -->
-    <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+    <entity-find-one entity-name="trade.LetterOfCredit" value-field="lc"/>
     
     <!-- Call service that modifies lc -->
-    <service-call name="moqui.trade.finance.TradeFinanceServices.transition#Status"
+    <service-call name="trade.TradeFinanceServices.transition#Status"
                   in-map="[lcId:lcId, toStatusId:'LcApproved']"/>
     
     <!-- RE-FETCH after child service -->
-    <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+    <entity-find-one entity-name="trade.LetterOfCredit" value-field="lc"/>
     
     <!-- Now safe to update -->
     <entity-update value-field="lc"/>
@@ -288,7 +288,7 @@ service/
 ### Full Path Required
 ```groovy
 // CORRECT
-ec.service.sync().name("moqui.trade.finance.TradeFinanceServices.create#LetterOfCredit")
+ec.service.sync().name("trade.TradeFinanceServices.create#LetterOfCredit")
 
 // MAY FAIL
 ec.service.sync().name("create#LetterOfCredit")

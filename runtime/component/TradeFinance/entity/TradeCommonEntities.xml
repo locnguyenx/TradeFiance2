@@ -3,10 +3,12 @@
 <entities xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/entity-definition-3.0.xsd">
 
-    <entity entity-name="TradeInstrument" package="moqui.trade.instrument">
+    <entity entity-name="TradeInstrument" package="trade">
         <field name="instrumentId" type="id" is-pk="true"/>
         <field name="transactionRef" type="text-short"/>
         <field name="lifecycleStatusId" type="id"/>
+        <field name="businessStateId" type="id"/>
+        <field name="previousBusinessStateId" type="id"/>
         <field name="instrumentTypeEnumId" type="id"/>
         <field name="productEnumId" type="id"/>
         <field name="amount" type="number-decimal"/>
@@ -32,7 +34,7 @@
         <field name="priorityEnumId" type="id"/>
     </entity>
 
-    <entity entity-name="CustomerFacility" package="moqui.trade.instrument">
+    <entity entity-name="CustomerFacility" package="trade">
         <field name="facilityId" type="id" is-pk="true"/>
         <field name="ownerPartyId" type="id"/>
         <field name="totalApprovedLimit" type="number-decimal"/>
@@ -41,7 +43,7 @@
         <field name="facilityExpiryDate" type="date"/>
     </entity>
 
-    <entity entity-name="TradeTransactionAudit" package="moqui.trade.instrument">
+    <entity entity-name="TradeTransactionAudit" package="trade">
         <field name="instrumentId" type="id" is-pk="true"/>
         <field name="auditId" type="id" is-pk="true"/>
         <field name="timestamp" type="date-time" default="ec.user.nowTimestamp"/>
@@ -55,21 +57,21 @@
         <field name="snapshotDeltaJSON" type="text-very-long"/>
     </entity>
 
-    <entity entity-name="TradeStandardClause" package="moqui.trade.common">
+    <entity entity-name="TradeStandardClause" package="trade.common">
         <field name="clauseId" type="id" is-pk="true"/>
         <field name="clauseTypeEnumId" type="id"/>
         <field name="clauseName" type="text-medium"/>
         <field name="clauseText" type="text-very-long"/>
     </entity>
 
-    <entity entity-name="TradeConfig" package="moqui.trade.common">
+    <entity entity-name="TradeConfig" package="trade.common">
         <field name="configId" type="id" is-pk="true"/>
         <field name="configKey" type="text-medium"/>
         <field name="configValue" type="text-medium"/>
         <field name="description" type="text-medium"/>
     </entity>
 
-    <entity entity-name="TradeAuditLog" package="moqui.trade.common">
+    <entity entity-name="TradeAuditLog" package="trade.common">
         <field name="auditLogId" type="id" is-pk="true"/>
         <field name="changedByUserId" type="id"/>
         <field name="timestamp" type="date-time" default-field-direct="true"/>
@@ -77,7 +79,7 @@
         <field name="deltaJson" type="text-very-long"/>
         <field name="transactionRef" type="text-medium"/>
     </entity>
-    <entity entity-name="TradeParty" package="moqui.trade.instrument">
+    <entity entity-name="TradeParty" package="trade">
         <field name="partyId" type="id" is-pk="true"/>
         <field name="partyName" type="text-medium"/>
         <field name="kycStatus" type="text-short"/> <!-- Active, Expired -->
@@ -89,7 +91,7 @@
         <field name="partyRoleEnumId" type="id"/>
     </entity>
     
-    <entity entity-name="FeeConfiguration" package="moqui.trade.instrument">
+    <entity entity-name="FeeConfiguration" package="trade">
         <field name="feeConfigId" type="id" is-pk="true"/>
         <field name="feeTypeEnumId" type="id"/>
         <field name="calculationMethodEnumId" type="id"/>
@@ -101,7 +103,7 @@
         <field name="isActive" type="text-indicator" default="'Y'"/>
     </entity>
 
-    <entity entity-name="TradeProductCatalog" package="moqui.trade.instrument">
+    <entity entity-name="TradeProductCatalog" package="trade">
         <field name="productCatalogId" type="id" is-pk="true"/>
         <field name="productName" type="text-medium"/>
         <field name="isActive" type="text-indicator" default="'Y'"/>
@@ -119,7 +121,7 @@
         <field name="defaultSwiftFormatEnumId" type="id"/>
     </entity>
 
-    <entity entity-name="UserAuthorityProfile" package="moqui.trade.instrument">
+    <entity entity-name="UserAuthorityProfile" package="trade">
         <field name="authorityProfileId" type="id" is-pk="true"/>
         <field name="userId" type="id"/>
         <field name="authorityTierEnumId" type="id"/>
@@ -128,14 +130,14 @@
         <field name="isSuspended" type="text-indicator" default="'N'"/>
     </entity>
 
-    <entity entity-name="TradeApprovalRecord" package="moqui.trade.instrument">
+    <entity entity-name="TradeApprovalRecord" package="trade">
         <field name="approvalRecordId" type="id" is-pk="true"/>
         <field name="instrumentId" type="id"/>
         <field name="approverUserId" type="id"/>
         <field name="approvalTimestamp" type="date-time" default="ec.user.nowTimestamp"/>
         <field name="approvalComments" type="text-long"/>
         <field name="versionSnapshot" type="number-integer"/>
-        <relationship type="one" related="moqui.trade.instrument.TradeInstrument" title="Instrument">
+        <relationship type="one" related="trade.TradeInstrument" title="Instrument">
             <key-map field-name="instrumentId"/>
         </relationship>
     </entity>

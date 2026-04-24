@@ -6,7 +6,7 @@ trigger: always_on
 
 ## Test Writing Standards
 * **Framework:** All tests MUST be written using the Spock framework (Groovy).
-* **Package Hygiene:** Ensure all Specs and Suites are placed in the correct package (e.g., `package moqui.trade.finance`).
+* **Package Hygiene:** Ensure all Specs and Suites are placed in the correct package (e.g., `package trade`).
 
 ## The Knowledge Base Pointer (CRITICAL)
 * Before writing or modifying any test assertions, UI screen tests, or mock data setups, you MUST read the exact testing patterns and traps defined in `.agents/knowledge/moqui-testing.md`.

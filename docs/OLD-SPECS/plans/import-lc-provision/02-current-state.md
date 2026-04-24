@@ -12,13 +12,13 @@
 
 | Entity | Path | Description |
 |--------|------|-------------|
-| LetterOfCredit | moqui.trade.finance.LetterOfCredit | Master LC entity with amount, currency, applicantPartyId |
-| LcProvision | moqui.trade.finance.LcProvision | Detail entity with provisionAmount, provisionCurrencyUomId, provisionRate, cbsHoldReference, provisionStatusId |
-| LcProduct | moqui.trade.finance.LcProduct | Product configuration with defaultProvisionRate |
-| LcProductCharge | moqui.trade.finance.LcProductCharge | Default charges per product |
-| LcCharge | moqui.trade.finance.LcCharge | LC charges with chargeAmount, chargeCurrencyUomId, cbsReference |
-| LcDrawing | moqui.trade.finance.LcDrawing | Drawing entity with drawingAmount, drawingCurrencyUomId |
-| CbsSimulatorState | moqui.trade.finance.CbsSimulatorState | Virtual CBS account state tracking |
+| LetterOfCredit | trade.LetterOfCredit | Master LC entity with amount, currency, applicantPartyId |
+| LcProvision | trade.LcProvision | Detail entity with provisionAmount, provisionCurrencyUomId, provisionRate, cbsHoldReference, provisionStatusId |
+| LcProduct | trade.LcProduct | Product configuration with defaultProvisionRate |
+| LcProductCharge | trade.LcProductCharge | Default charges per product |
+| LcCharge | trade.LcCharge | LC charges with chargeAmount, chargeCurrencyUomId, cbsReference |
+| LcDrawing | trade.LcDrawing | Drawing entity with drawingAmount, drawingCurrencyUomId |
+| CbsSimulatorState | trade.CbsSimulatorState | Virtual CBS account state tracking |
 
 ---
 
@@ -26,14 +26,14 @@
 
 | Service | Path | Description |
 |---------|------|-------------|
-| hold#LcProvision | moqui.trade.finance.FinancialServices | Places hold on single applicant account, calculates amount from LC amount and provision rate |
-| release#LcProvision | moqui.trade.finance.FinancialServices | Releases provisions via CBS |
-| calculate#LcChargesAndProvisions | moqui.trade.finance.FinancialServices | Calculates charges and provisions based on product defaults |
-| get#ExchangeRate | moqui.trade.finance.CbsIntegrationServices | Gets exchange rates (currently hardcoded USD/EUR only) |
-| hold#Funds | moqui.trade.finance.CbsIntegrationServices | Places hold on customer account (interface) |
-| release#Funds | moqui.trade.finance.CbsIntegrationServices | Releases fund holds (interface) |
-| hold#FundsMock | moqui.trade.finance.CbsMockServices | Mock implementation for CBS funds hold |
-| release#FundsMock | moqui.trade.finance.CbsMockServices | Mock implementation for CBS funds release |
+| hold#LcProvision | trade.FinancialServices | Places hold on single applicant account, calculates amount from LC amount and provision rate |
+| release#LcProvision | trade.FinancialServices | Releases provisions via CBS |
+| calculate#LcChargesAndProvisions | trade.FinancialServices | Calculates charges and provisions based on product defaults |
+| get#ExchangeRate | trade.CbsIntegrationServices | Gets exchange rates (currently hardcoded USD/EUR only) |
+| hold#Funds | trade.CbsIntegrationServices | Places hold on customer account (interface) |
+| release#Funds | trade.CbsIntegrationServices | Releases fund holds (interface) |
+| hold#FundsMock | trade.CbsMockServices | Mock implementation for CBS funds hold |
+| release#FundsMock | trade.CbsMockServices | Mock implementation for CBS funds release |
 
 ---
 

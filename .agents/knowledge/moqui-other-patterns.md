@@ -42,7 +42,7 @@ moqui -> d72023cb602fa4815410631f9d45a995
 
 ### Mock External Services
 ```xml
-<service verb="cbs" noun="SendPayment" location="moqui.trade.finance.CbsServices">
+<service verb="cbs" noun="SendPayment" location="trade.CbsServices">
     <!-- Mock implementation -->
     <script>
         // Return simulated response
@@ -88,13 +88,13 @@ expression 'formInstance' was null
 ```groovy
 // LIKE query
 import org.moqui.entity.EntityCondition
-ec.entity.find("moqui.trade.finance.LetterOfCredit")
+ec.entity.find("trade.LetterOfCredit")
     .condition("lcNumber", EntityCondition.LIKE, "DEMO%")
     .list()
 
 // IN query
 import org.moqui.entity.EntityCondition
-ec.entity.find("moqui.trade.finance.LetterOfCredit")
+ec.entity.find("trade.LetterOfCredit")
     .condition("statusId", EntityCondition.IN, ["LcDraft", "LcApproved"])
     .list()
 ```
@@ -102,13 +102,13 @@ ec.entity.find("moqui.trade.finance.LetterOfCredit")
 ### Cascade Delete
 ```groovy
 // Delete children first
-def children = ec.entity.find("moqui.trade.finance.LcHistory")
+def children = ec.entity.find("trade.LcHistory")
     .condition("lcId", lcId)
     .list()
 children.each { it.delete() }
 
 // Then parent
-def lc = ec.entity.find("moqui.trade.finance.LetterOfCredit")
+def lc = ec.entity.find("trade.LetterOfCredit")
     .condition("lcId", lcId)
     .one()
 lc.delete()
@@ -120,7 +120,7 @@ lc.delete()
 ```xml
 <transition name="getLcDetails" method="GET">
     <actions>
-        <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+        <entity-find-one entity-name="trade.LetterOfCredit" value-field="lc"/>
         <script>
             response."LcId" = lc.lcId
             response."LcNumber" = lc.lcNumber

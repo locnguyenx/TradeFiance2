@@ -524,7 +524,10 @@ businessStateId values:
   LC_SETTLED         → State 7
   LC_CLOSED          → State 8 (Closed)
   LC_CANCELLED       → State 8 (Cancelled)
+  LC_AMENDMENT_PENDING       → State 9 (Amendment Pending)
 ```
+
+**Note:** when LC is in `LC_AMENDMENT_PENDING`, not allow to create new amendment, but LC is still active same as `LC_ISSUED` status.
 
 **Permitted Transitions:**
 
@@ -547,6 +550,7 @@ businessStateId values:
 | `LC_SETTLED` | `LC_CLOSED` | Auto (triggered by settlement) | Fully drawn / within tolerance |
 | `LC_CLOSED` | *(none)* | — | Terminal state |
 | `LC_CANCELLED` | *(none)* | — | Terminal state |
+| `LC_AMENDMENT_PENDING` | `LC_ISSUED` | business Consent approved/rejected (beneficiaryConsentStatusId changed from PENDING to ACCEPTED/REJECTED)| Checker approves; MT xxx (to be defined) received |
 
 **State enforcement service [NEW]:** `ImportLcLifecycleServices.transition#BusinessState`
 * Input: `instrumentId`, `targetStateId`, `triggeredBy`
@@ -586,11 +590,15 @@ businessStateId values:
 2. Auto-categorize `isFinancial` based on fields changed (amount, tolerance, expiry)
 3. `newTotalAmount = originalAmount + amountAdjustment`
 4. `newMaxLiability = newTotalAmount × (1 + newTolerance)`
-5. If financial: route through `evaluate#MakerCheckerMatrix` using `newMaxLiability`
+5. If financial: 
+  - route through `evaluate#MakerCheckerMatrix` using `newMaxLiability`
+  - Transition `businessStateId` → LC_AMENDMENT_PENDING
 6. If non-financial: default to Tier 1
 7. Post-authorization: update facility delta, apply amendment fees
 8. `SwiftGenerationServices.generate#Mt707` **[NEW]** — dispatch MT 707
-9. Track `beneficiaryConsentStatusId` (PENDING → ACCEPTED/REJECTED)
+9. Track `beneficiaryConsentStatusId` (PENDING → ACCEPTED/REJECTED): 
+  - transition `businessStateId`: LC_AMENDMENT_PENDING → LC_ISSUED
+  - if ACCEPTED: update ImportLetterOfCredit values with amendment values from `TradeInstrument`
 
 **Gap closed:** G24.
 

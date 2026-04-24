@@ -13,7 +13,7 @@
 ### 1.1 LcProvisionCollection
 
 ```xml
-<entity entity-name="LcProvisionCollection" package="moqui.trade.finance">
+<entity entity-name="LcProvisionCollection" package="trade">
     <field name="collectionId" type="id" is-pk="true"/>
     <field name="lcId" type="id"/>
     <field name="targetProvisionAmount" type="currency-amount"/>
@@ -24,11 +24,11 @@
     <field name="collectedByUserId" type="id"/>
     <field name="remarks" type="text-medium"/>
     
-    <relationship type="one" related="moqui.trade.finance.LetterOfCredit"/>
+    <relationship type="one" related="trade.LetterOfCredit"/>
     <relationship type="one" title="CollectionStatus" related="moqui.basic.StatusItem">
         <key-map field-name="collectionStatusId" related="statusId"/>
     </relationship>
-    <relationship type="many" related="moqui.trade.finance.LcProvisionCollectionEntry">
+    <relationship type="many" related="trade.LcProvisionCollectionEntry">
         <key-map field-name="collectionId"/>
     </relationship>
 </entity>
@@ -37,7 +37,7 @@
 ### 1.2 LcProvisionCollectionEntry
 
 ```xml
-<entity entity-name="LcProvisionCollectionEntry" package="moqui.trade.finance">
+<entity entity-name="LcProvisionCollectionEntry" package="trade">
     <field name="collectionId" type="id" is-pk="true"/>
     <field name="entrySeqId" type="id" is-pk="true"/>
     <field name="partyId" type="id"/>
@@ -53,7 +53,7 @@
     <field name="cbsHoldDate" type="date-time"/>
     <field name="remarks" type="text-medium"/>
     
-    <relationship type="one" related="moqui.trade.finance.LcProvisionCollection"/>
+    <relationship type="one" related="trade.LcProvisionCollection"/>
     <relationship type="one" title="EntryStatus" related="moqui.basic.StatusItem">
         <key-map field-name="entryStatusId" related="statusId"/>
     </relationship>

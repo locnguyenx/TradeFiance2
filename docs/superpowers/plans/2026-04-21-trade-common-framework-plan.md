@@ -31,10 +31,10 @@ class TradeCommonEntitiesSpec extends Specification {
         given:
         ExecutionContext ec = ec
         when:
-        def instrument = ec.entity.makeValue("trade.finance.TradeInstrument")
+        def instrument = ec.entity.makeValue("trade.TradeInstrument")
         instrument.setAll([instrumentId: "1000", transactionRef: "TF-IMP-01", baseEquivalentAmount: 50000.0])
         instrument.create()
-        def found = ec.entity.find("trade.finance.TradeInstrument").condition("instrumentId", "1000").one()
+        def found = ec.entity.find("trade.TradeInstrument").condition("instrumentId", "1000").one()
         then:
         found.transactionRef == "TF-IMP-01"
     }
@@ -44,14 +44,14 @@ class TradeCommonEntitiesSpec extends Specification {
 - [x] **Step 2: Run test to verify it fails**
 
 Run: `gradle clean test --tests *TradeCommonEntitiesSpec*`
-Expected: FAIL, Entity trade.finance.TradeInstrument not found
+Expected: FAIL, Entity trade.TradeInstrument not found
 
 - [x] **Step 3: Write minimal implementation**
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <entities xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/entity-definition-3.xsd">
-    <entity entity-name="TradeInstrument" package="trade.finance">
+    <entity entity-name="TradeInstrument" package="trade">
         <field name="instrumentId" type="id" is-pk="true"/>
         <field name="transactionRef" type="text-short"/>
         <field name="lifecycleStatusId" type="id"/>
@@ -62,7 +62,7 @@ Expected: FAIL, Entity trade.finance.TradeInstrument not found
         <field name="customerFacilityId" type="id"/>
     </entity>
 
-    <entity entity-name="CustomerFacility" package="trade.finance">
+    <entity entity-name="CustomerFacility" package="trade">
         <field name="facilityId" type="id" is-pk="true"/>
         <field name="totalApprovedLimit" type="number-decimal"/>
         <field name="utilizedAmount" type="number-decimal"/>
@@ -102,10 +102,10 @@ class LimitServicesSpec extends Specification {
     def "BLOCK Facility Earmark Overdraft mathematically"() {
         given:
         ExecutionContext ec = ec
-        ec.entity.makeValue("trade.finance.CustomerFacility").setAll([facilityId: "FAC-1", totalApprovedLimit: 100000.0, utilizedAmount: 90000.0]).create()
+        ec.entity.makeValue("trade.CustomerFacility").setAll([facilityId: "FAC-1", totalApprovedLimit: 100000.0, utilizedAmount: 90000.0]).create()
         
         when:
-        ec.service.sync().name("trade.finance.LimitServices.calculateEarmark")
+        ec.service.sync().name("trade.LimitServices.calculateEarmark")
             .parameters([facilityId: "FAC-1", requestedAmount: 20000.0]).call()
             
         then:
@@ -130,7 +130,7 @@ Expected: FAIL, service missing
             <parameter name="requestedAmount" type="BigDecimal" required="true"/>
         </in-parameters>
         <actions>
-            <entity-find-one entity-name="trade.finance.CustomerFacility" value-field="facility">
+            <entity-find-one entity-name="trade.CustomerFacility" value-field="facility">
                 <field-map field-name="facilityId"/>
             </entity-find-one>
             <if condition="facility == null"><return error="true" message="Facility not found"/></if>

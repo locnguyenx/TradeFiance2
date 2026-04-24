@@ -28,7 +28,7 @@
     {
       "error": "No service with name add#CollectionEntry",
       "meaning": "Short service names don't resolve reliably. Need full service path.",
-      "fix": "Use full path: moqui.trade.finance.ProvisionCollectionServices.add#CollectionEntry instead of just add#CollectionEntry."
+      "fix": "Use full path: trade.ProvisionCollectionServices.add#CollectionEntry instead of just add#CollectionEntry."
     },
     {
       "error": "Service returns empty map [:]",

@@ -334,7 +334,7 @@ grepai_search "form list widget pattern Moqui"
 grepai_search "ExecutionContext usage patterns"
 
 # Trace service dependencies
-grepai_trace_callees "moqui.trade.finance.DrawingServices.create#LcDrawing"
+grepai_trace_callees "trade.DrawingServices.create#LcDrawing"
 ```
 **Tips for OpenCode:**
 No need to explicitly type grepai_search - just prompt naturally! The AI will use it automatically when relevant. For example:

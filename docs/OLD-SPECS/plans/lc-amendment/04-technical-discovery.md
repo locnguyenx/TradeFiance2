@@ -12,7 +12,7 @@
 
 ### 1.1 LcAmendmentBeneficiaryResponse
 ```xml
-<entity entity-name="LcAmendmentBeneficiaryResponse" package="moqui.trade.finance">
+<entity entity-name="LcAmendmentBeneficiaryResponse" package="trade">
     <field name="responseId" type="id" is-pk="true"/>
     <field name="lcId" type="id"/>
     <field name="amendmentSeqId" type="id"/>
@@ -25,7 +25,7 @@
     <field name="reason" type="text-medium"/>
     <field name="receivedByUserId" type="id"/>
     
-    <relationship type="one" related="moqui.trade.finance.LcAmendment">
+    <relationship type="one" related="trade.LcAmendment">
         <key-map field-name="lcId"/><key-map field-name="amendmentSeqId"/></relationship>
     <relationship type="one" title="ResponseType" related="moqui.basic.Enumeration">
         <key-map field-name="responseTypeEnumId"/></relationship>
@@ -38,7 +38,7 @@
 
 ### 1.2 LcAmendmentLock
 ```xml
-<entity entity-name="LcAmendmentLock" package="moqui.trade.finance">
+<entity entity-name="LcAmendmentLock" package="trade">
     <field name="lcId" type="id" is-pk="true"/>
     <field name="lockType" type="id" is-pk="true"/>
     <field name="lockedByUserId" type="id"/>
@@ -46,7 +46,7 @@
     <field name="lockExpiry" type="date-time"/>
     <field name="amendmentSeqId" type="id"/>
     
-    <relationship type="one" related="moqui.trade.finance.LetterOfCredit"/>
+    <relationship type="one" related="trade.LetterOfCredit"/>
     <relationship type="one" related="moqui.security.UserAccount">
         <key-map field-name="lockedByUserId" related="userId"/></relationship>
 </entity>
@@ -54,15 +54,15 @@
 
 ### 1.3 LcAmendmentFullDetailView
 ```xml
-<view-entity entity-name="LcAmendmentFullDetailView" package="moqui.trade.finance">
-    <member-entity entity-alias="AMND" entity-name="moqui.trade.finance.LcAmendment"/>
-    <member-entity entity-alias="LC" entity-name="moqui.trade.finance.LetterOfCredit" join-from-alias="AMND">
+<view-entity entity-name="LcAmendmentFullDetailView" package="trade">
+    <member-entity entity-alias="AMND" entity-name="trade.LcAmendment"/>
+    <member-entity entity-alias="LC" entity-name="trade.LetterOfCredit" join-from-alias="AMND">
         <key-map field-name="lcId"/></member-entity>
     <member-entity entity-alias="ST" entity-name="moqui.basic.StatusItem" join-from-alias="AMND">
         <key-map field-name="amendmentStatusId" related="statusId"/></member-entity>
     <member-entity entity-alias="CST" entity-name="moqui.basic.StatusItem" join-from-alias="AMND">
         <key-map field-name="confirmationStatusId" related="statusId"/></member-entity>
-    <member-entity entity-alias="RESP" entity-name="moqui.trade.finance.LcAmendmentBeneficiaryResponse" join-from-alias="AMND">
+    <member-entity entity-alias="RESP" entity-name="trade.LcAmendmentBeneficiaryResponse" join-from-alias="AMND">
         <key-map field-name="lcId"/><key-map field-name="amendmentSeqId"/></member-entity>
     
     <alias-all entity-alias="AMND"/>
@@ -76,9 +76,9 @@
 
 ### 1.4 LcAmendmentChangesView
 ```xml
-<view-entity entity-name="LcAmendmentChangesView" package="moqui.trade.finance">
-    <member-entity entity-alias="HIST" entity-name="moqui.trade.finance.LcHistory"/>
-    <member-entity entity-alias="LC" entity-name="moqui.trade.finance.LetterOfCredit" join-from-alias="HIST">
+<view-entity entity-name="LcAmendmentChangesView" package="trade">
+    <member-entity entity-alias="HIST" entity-name="trade.LcHistory"/>
+    <member-entity entity-alias="LC" entity-name="trade.LetterOfCredit" join-from-alias="HIST">
         <key-map field-name="lcId"/></member-entity>
     
     <alias-all entity-alias="HIST"/>

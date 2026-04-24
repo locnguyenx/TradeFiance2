@@ -13,7 +13,7 @@
 - Use exactly ONE `<field is-pk="true">` with `type="id"`
 - Set `primary-key-sequence="true"` for auto-increment:
   ```xml
-  <entity entity-name="TradeFinance.LetterOfCredit" package="moqui.trade.finance"
+  <entity entity-name="TradeFinance.LetterOfCredit" package="trade"
           primary-key-sequence="true">
       <field name="lcId" type="id" is-pk="true"/>
   ```
@@ -33,7 +33,7 @@
 
 ### Many-to-One (Foreign Key)
 ```xml
-<relationship type="many" related="moqui.trade.finance.LcAmendment">
+<relationship type="many" related="trade.LcAmendment">
     <key-map field-name="lcId"/>
 </relationship>
 ```
@@ -120,14 +120,14 @@ Services creating records can cause duplicates on retries.
     </in-parameters>
     <actions>
         <!-- Check if already exists -->
-        <entity-find entity-name="moqui.trade.finance.LcProvision" list="existing">
+        <entity-find entity-name="trade.LcProvision" list="existing">
             <econdition field-name="lcId"/>
         </entity-find>
         <if condition="existing">
             <return/>
         </if>
         <!-- Create new record -->
-        <make-value entity-name="moqui.trade.finance.LcProvision" value-field="prov"/>
+        <make-value entity-name="trade.LcProvision" value-field="prov"/>
         <set field="prov.lcId" from="lcId"/>
         <entity-create value-field="prov"/>
     </actions>
@@ -147,7 +147,7 @@ Modifying children after parent advances breaks audit trails.
         <parameter name="toStatusId"/>
     </in-parameters>
     <actions>
-        <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+        <entity-find-one entity-name="trade.LetterOfCredit" value-field="lc"/>
         
         <!-- Status Guard: Only allow changes in Draft state -->
         <if condition="lc.transactionStatusId != 'LcTxDraft'">
@@ -181,14 +181,14 @@ Calling child service modifies record, parent EntityValue becomes stale.
 ```xml
 <service verb="update" noun="LetterOfCredit">
     <actions>
-        <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+        <entity-find-one entity-name="trade.LetterOfCredit" value-field="lc"/>
         
         <!-- Call service that modifies lc -->
-        <service-call name="moqui.trade.finance.TradeFinanceServices.transition#Status"
+        <service-call name="trade.TradeFinanceServices.transition#Status"
                       parameter-map="[lcId:lcId, toStatusId:'LcApproved']"/>
         
         <!-- RE-FETCH after child service call -->
-        <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+        <entity-find-one entity-name="trade.LetterOfCredit" value-field="lc"/>
         
         <!-- Now safe to update -->
         <set field="lc.lastAmendmentDate" from="ec.user.nowTimestamp"/>

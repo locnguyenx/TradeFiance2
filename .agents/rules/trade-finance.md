@@ -8,16 +8,16 @@ paths:
 ## 1. Package & Directory Structure
 
 ### Service Package
-- **Package Name**: `moqui.trade.finance`
+- **Package Name**: `trade`
 - **Location**: `service/moqui/trade/finance/*.xml`
 - The directory path must match the package structure
 
 ### Entity Package
-- **Package Name**: `moqui.trade.finance`
+- **Package Name**: `trade`
 - **Location**: `entity/TradeFinanceEntities.xml` (single consolidated file)
 
 ### Test Package
-- **Package Name**: `moqui.trade.finance`
+- **Package Name**: `trade`
 - **Location**: `src/test/groovy/moqui/trade/finance/`
 
 ---

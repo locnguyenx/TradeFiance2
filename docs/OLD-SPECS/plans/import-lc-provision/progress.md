@@ -11,7 +11,7 @@ All phases completed successfully. The Import LC Provision Collection feature is
 
 ### Test Results
 ```
-./gradlew :runtime:component:TradeFinance:test --tests "moqui.trade.finance.TradeFinanceProvisionCollectionSpec"
+./gradlew :runtime:component:TradeFinance:test --tests "trade.TradeFinanceProvisionCollectionSpec"
 
 BUILD SUCCESSFUL
 8 tests completed, 0 failed
@@ -93,14 +93,14 @@ URL: /trade-finance/ImportLc/Lc/ProvisionCollection?lcId={lcId}
 
 ### Create Collection
 ```groovy
-ec.service.sync().name("moqui.trade.finance.ProvisionCollectionServices.create#LcProvisionCollection")
+ec.service.sync().name("trade.ProvisionCollectionServices.create#LcProvisionCollection")
     .parameters([lcId: "100123", targetProvisionAmount: 10000.00])
     .call()
 ```
 
 ### Add Entry
 ```groovy
-ec.service.sync().name("moqui.trade.finance.ProvisionCollectionServices.add#CollectionEntry")
+ec.service.sync().name("trade.ProvisionCollectionServices.add#CollectionEntry")
     .parameters([
         collectionId: "LCPC_abc...",
         partyId: "DEMO_ORG_ABC",
@@ -112,7 +112,7 @@ ec.service.sync().name("moqui.trade.finance.ProvisionCollectionServices.add#Coll
 
 ### Collect Funds
 ```groovy
-ec.service.sync().name("moqui.trade.finance.ProvisionCollectionServices.collect#ProvisionFunds")
+ec.service.sync().name("trade.ProvisionCollectionServices.collect#ProvisionFunds")
     .parameters([collectionId: "LCPC_abc..."])
     .call()
 ```

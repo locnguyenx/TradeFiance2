@@ -45,7 +45,7 @@
 
 **Current state of TradeInstrument (13 fields):**
 ```xml
-<entity entity-name="TradeInstrument" package="moqui.trade.instrument">
+<entity entity-name="TradeInstrument" package="trade">
     <field name="instrumentId" type="id" is-pk="true"/>
     <field name="transactionRef" type="text-short"/>
     <field name="lifecycleStatusId" type="id"/>
@@ -69,7 +69,7 @@ In `TradeCommonEntitiesSpec.groovy`, add a test that creates a TradeInstrument w
 ```groovy
 def "TradeInstrument persists transaction management fields"() {
     when:
-    ec.service.sync().name("create#moqui.trade.instrument.TradeInstrument").parameters([
+    ec.service.sync().name("create#trade.TradeInstrument").parameters([
         transactionRef: "TF-IMP-26-TEST",
         lifecycleStatusId: "INST_PRE_ISSUE",
         transactionStatusId: "TRANS_DRAFT",
@@ -87,7 +87,7 @@ def "TradeInstrument persists transaction management fields"() {
         issueDate: "2026-06-01",
         expiryDate: "2026-12-31"
     ]).call()
-    def instruments = ec.entity.find("moqui.trade.instrument.TradeInstrument")
+    def instruments = ec.entity.find("trade.TradeInstrument")
             .condition("transactionRef", "TF-IMP-26-TEST").list()
     def inst = instruments[0]
 
@@ -171,7 +171,7 @@ Ref: BDD-CMN-ENT-01, REQ-COM-ENT-01"
 ```groovy
 def "TradeParty persists SWIFT and compliance fields"() {
     when:
-    ec.service.sync().name("create#moqui.trade.instrument.TradeParty").parameters([
+    ec.service.sync().name("create#trade.TradeParty").parameters([
         partyId: "TEST_BANK_SWT",
         partyName: "Test Banking Corp",
         kycStatus: "Active",
@@ -182,7 +182,7 @@ def "TradeParty persists SWIFT and compliance fields"() {
         registeredAddress: "123 Main Street\nNew York NY 10001\nUSA",
         partyRoleEnumId: "ADVISING_BANK"
     ]).call()
-    def party = ec.entity.find("moqui.trade.instrument.TradeParty")
+    def party = ec.entity.find("trade.TradeParty")
             .condition("partyId", "TEST_BANK_SWT").one()
 
     then:
@@ -240,7 +240,7 @@ partyRoleEnumId. Ref: BDD-CMN-ENT-02, REQ-COM-ENT-02"
 
 Seed data update:
 ```xml
-<moqui.trade.instrument.CustomerFacility facilityId="FAC-ACME-001" partyId="ACME_CORP_001" totalApprovedLimit="10000000.00" utilizedAmount="2500000.00" facilityExpiryDate="2027-12-31"/>
+<trade.CustomerFacility facilityId="FAC-ACME-001" partyId="ACME_CORP_001" totalApprovedLimit="10000000.00" utilizedAmount="2500000.00" facilityExpiryDate="2027-12-31"/>
 ```
 
 - [x] **Step 4: Run test — expect PASS**
@@ -294,7 +294,7 @@ Seed data update:
 **FeeConfiguration:**
 ```xml
 <!-- Fee/tariff rule definitions, managed via Maker/Checker admin -->
-<entity entity-name="FeeConfiguration" package="moqui.trade.instrument">
+<entity entity-name="FeeConfiguration" package="trade">
     <field name="feeConfigId" type="id" is-pk="true"/>
     <field name="feeTypeEnumId" type="id"/> <!-- ISSUANCE_FEE, AMENDMENT_FEE, etc. -->
     <field name="calculationMethodEnumId" type="id"/> <!-- FLAT, PERCENTAGE, TIERED -->
@@ -310,7 +310,7 @@ Seed data update:
 **TradeProductCatalog:**
 ```xml
 <!-- Product configurations that drive LC behavior, validation rules, and feature flags -->
-<entity entity-name="TradeProductCatalog" package="moqui.trade.instrument">
+<entity entity-name="TradeProductCatalog" package="trade">
     <field name="productCatalogId" type="id" is-pk="true"/>
     <field name="productName" type="text-medium"/>
     <field name="productDescription" type="text-long"/>
@@ -331,7 +331,7 @@ Seed data update:
 **UserAuthorityProfile:**
 ```xml
 <!-- Authorization tier assignments for Maker/Checker governance -->
-<entity entity-name="UserAuthorityProfile" package="moqui.trade.instrument">
+<entity entity-name="UserAuthorityProfile" package="trade">
     <field name="authorityProfileId" type="id" is-pk="true"/>
     <field name="userId" type="id"/>
     <field name="authorityTierEnumId" type="id"/> <!-- TIER_1, TIER_2, TIER_3, TIER_4 -->
@@ -347,7 +347,7 @@ Seed data update:
 <?xml version="1.0" encoding="UTF-8"?>
 <entity-facade-xml>
     <!-- Standard Import LC Product -->
-    <moqui.trade.instrument.TradeProductCatalog productCatalogId="IMP_LC_STANDARD"
+    <trade.TradeProductCatalog productCatalogId="IMP_LC_STANDARD"
         productName="Standard Import LC" isActive="Y"
         allowedTenorEnumId="ALL" maxToleranceLimit="0.10"
         allowRevolving="N" allowAdvancePayment="N" isStandby="N" isTransferable="N"
@@ -410,17 +410,17 @@ Ref: BDD-CMN-MAS-01, BDD-CMN-PRD-01, BDD-CMN-AUTH-01"
 def "ImportLetterOfCredit persists effective values and new fields"() {
     when:
     // First create parent TradeInstrument
-    ec.service.sync().name("create#moqui.trade.instrument.TradeInstrument").parameters([
+    ec.service.sync().name("create#trade.TradeInstrument").parameters([
         transactionRef: "TF-EFF-TEST", lifecycleStatusId: "INST_PRE_ISSUE",
         transactionStatusId: "TRANS_DRAFT", amount: 500000,
         currencyUomId: "USD", outstandingAmount: 500000,
         issueDate: "2026-06-01", expiryDate: "2026-12-31",
         versionNumber: 1
     ]).call()
-    def inst = ec.entity.find("moqui.trade.instrument.TradeInstrument")
+    def inst = ec.entity.find("trade.TradeInstrument")
             .condition("transactionRef", "TF-EFF-TEST").one()
 
-    ec.service.sync().name("create#moqui.trade.importlc.ImportLetterOfCredit").parameters([
+    ec.service.sync().name("create#trade.importlc.ImportLetterOfCredit").parameters([
         instrumentId: inst.instrumentId,
         businessStateId: "LC_DRAFT",
         effectiveAmount: 500000,
@@ -438,7 +438,7 @@ def "ImportLetterOfCredit persists effective values and new fields"() {
         lcTypeEnumId: "IRREVOCABLE",
         productCatalogId: "IMP_LC_STANDARD"
     ]).call()
-    def lc = ec.entity.find("moqui.trade.importlc.ImportLetterOfCredit")
+    def lc = ec.entity.find("trade.importlc.ImportLetterOfCredit")
             .condition("instrumentId", inst.instrumentId).one()
 
     then:
@@ -479,7 +479,7 @@ def "ImportLetterOfCredit persists effective values and new fields"() {
 
 Also add relationship to TradeProductCatalog:
 ```xml
-<relationship type="one" related="moqui.trade.instrument.TradeProductCatalog">
+<relationship type="one" related="trade.TradeProductCatalog">
     <key-map field-name="productCatalogId"/>
 </relationship>
 ```
@@ -509,7 +509,7 @@ Also add relationship to TradeProductCatalog:
 **PresentationDiscrepancy:**
 ```xml
 <!-- Records individual discrepancy items found during document examination -->
-<entity entity-name="PresentationDiscrepancy" package="moqui.trade.importlc">
+<entity entity-name="PresentationDiscrepancy" package="trade.importlc">
     <field name="discrepancyId" type="id" is-pk="true"/>
     <field name="presentationId" type="id"/>
     <field name="discrepancyCode" type="text-short"/> <!-- ISBP standard code -->
@@ -517,7 +517,7 @@ Also add relationship to TradeProductCatalog:
     <field name="isWaived" type="text-indicator" default="'N'"/>
     <field name="waivedByUserId" type="id"/>
     <field name="waivedTimestamp" type="date-time"/>
-    <relationship type="one" related="moqui.trade.importlc.TradeDocumentPresentation">
+    <relationship type="one" related="trade.importlc.TradeDocumentPresentation">
         <key-map field-name="presentationId"/>
     </relationship>
 </entity>
@@ -526,7 +526,7 @@ Also add relationship to TradeProductCatalog:
 **ImportLcSettlement:**
 ```xml
 <!-- Settlement record for document presentation payments -->
-<entity entity-name="ImportLcSettlement" package="moqui.trade.importlc">
+<entity entity-name="ImportLcSettlement" package="trade.importlc">
     <field name="settlementId" type="id" is-pk="true"/>
     <field name="presentationId" type="id"/>
     <field name="instrumentId" type="id"/>
@@ -540,10 +540,10 @@ Also add relationship to TradeProductCatalog:
     <field name="netDebitAmount" type="number-decimal"/>
     <field name="chargesDetailEnumId" type="id"/> <!-- OUR, BEN, SHA -->
     <field name="maturityDate" type="date"/> <!-- For Usance LCs -->
-    <relationship type="one" related="moqui.trade.importlc.TradeDocumentPresentation">
+    <relationship type="one" related="trade.importlc.TradeDocumentPresentation">
         <key-map field-name="presentationId"/>
     </relationship>
-    <relationship type="one" related="moqui.trade.importlc.ImportLetterOfCredit">
+    <relationship type="one" related="trade.importlc.ImportLetterOfCredit">
         <key-map field-name="instrumentId"/>
     </relationship>
 </entity>
@@ -682,7 +682,7 @@ Also add relationship to TradeProductCatalog:
 - Modify: `runtime/component/TradeFinance/service/ImportLcValidationServices.xml`
 - Test: `src/test/groovy/moqui/trade/finance/ImportLcValidationServicesSpec.groovy`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```groovy
 def "validate#SwiftFields rejects invalid X-Character in goodsDescription"() {
@@ -701,9 +701,9 @@ def "validate#SwiftFields rejects invalid X-Character in goodsDescription"() {
 }
 ```
 
-- [ ] **Step 2: Run test — expect FAIL**
+- [x] **Step 2: Run test — expect FAIL**
 
-- [ ] **Step 3: Implement `validate#SwiftFields` service**
+- [x] **Step 3: Implement `validate#SwiftFields` service**
 
 The service scans all SWIFT-mapped fields against the X Character Set (`A-Z`, `a-z`, `0-9`, `- / ? : ( ) . , ' +` and space). It returns field-specific errors with the offending character and position. Key checks:
 - `transactionRef`: max 16 chars, no leading/trailing `/`, no `//`
@@ -756,8 +756,8 @@ The service scans all SWIFT-mapped fields against the X Character Set (`A-Z`, `a
 </service>
 ```
 
-- [ ] **Step 4: Run test — expect PASS**
-- [ ] **Step 5: Commit**
+- [x] **Step 4: Run test — expect PASS**
+- [x] **Step 5: Commit**
 
 ---
 
@@ -807,24 +807,24 @@ def "Amendment authorization updates ImportLetterOfCredit effective values"() {
     // ... authorize amendment ...
 
     then: "Effective values on ImportLetterOfCredit are updated"
-    def lc = ec.entity.find("moqui.trade.importlc.ImportLetterOfCredit")
+    def lc = ec.entity.find("trade.importlc.ImportLetterOfCredit")
             .condition("instrumentId", instrumentId).one()
     lc.effectiveAmount == 70000
     lc.effectiveOutstandingAmount == 70000
     lc.totalAmendmentCount == 1
 
     and: "TradeInstrument.amount remains unchanged (original snapshot)"
-    def inst = ec.entity.find("moqui.trade.instrument.TradeInstrument")
+    def inst = ec.entity.find("trade.TradeInstrument")
             .condition("instrumentId", instrumentId).one()
     inst.amount == 50000
     inst.versionNumber == 2
 }
 ```
 
-- [ ] **Step 2: Run test — expect FAIL**
-- [ ] **Step 3: Update `create#Amendment` to update effectiveAmount, effectiveOutstandingAmount, totalAmendmentCount, and versionNumber after authorization**
-- [ ] **Step 4: Run test — expect PASS**
-- [ ] **Step 5: Commit**
+- [x] **Step 2: Run test — expect FAIL**
+- [x] **Step 3: Update `create#Amendment` to update effectiveAmount, effectiveOutstandingAmount, totalAmendmentCount, and versionNumber after authorization**
+- [x] **Step 4: Run test — expect PASS**
+- [x] **Step 5: Commit**
 
 ---
 
@@ -840,10 +840,10 @@ def "Amendment authorization updates ImportLetterOfCredit effective values"() {
 - Modify: `runtime/component/TradeFinance/service/TradeAccountingServices.xml`
 - Test: `src/test/groovy/moqui/trade/finance/BddImportLcModuleSpec.groovy`
 
-- [ ] **Step 1: Write the failing test** for partial draw updating `effectiveOutstandingAmount` and `cumulativeDrawnAmount`
-- [ ] **Step 2: Run test — expect FAIL**
-- [ ] **Step 3: Update settle#Presentation — after settlement, update `effectiveOutstandingAmount -= claimAmount`, `cumulativeDrawnAmount += claimAmount`. If `effectiveOutstandingAmount == 0`, transition to LC_CLOSED. Otherwise, return to LC_ISSUED.**
-- [ ] **Step 4: Run test — expect PASS**
+- [x] **Step 1: Write the failing test** for partial draw updating `effectiveOutstandingAmount` and `cumulativeDrawnAmount`
+- [x] **Step 2: Run test — expect FAIL**
+- [x] **Step 3: Update settle#Presentation — after settlement, update `effectiveOutstandingAmount -= claimAmount`, `cumulativeDrawnAmount += claimAmount`. If `effectiveOutstandingAmount == 0`, transition to LC_CLOSED. Otherwise, return to LC_ISSUED.**
+- [x] **Step 4: Run test — expect PASS**
 - [ ] **Step 5: Write additional test for revolving LC reinstatement (BDD-IMP-VAL-03)**
 
 ```groovy
@@ -855,7 +855,7 @@ def "Revolving LC reinstates effectiveOutstandingAmount after full draw"() {
     // ... settle full amount ...
 
     then: "effectiveOutstandingAmount is reinstated back to effectiveAmount"
-    def lc = ec.entity.find("moqui.trade.importlc.ImportLetterOfCredit")
+    def lc = ec.entity.find("trade.importlc.ImportLetterOfCredit")
             .condition("instrumentId", instrumentId).one()
     lc.cumulativeDrawnAmount == 10000
     lc.effectiveOutstandingAmount == 10000  // Reinstated
@@ -863,10 +863,10 @@ def "Revolving LC reinstates effectiveOutstandingAmount after full draw"() {
 }
 ```
 
-- [ ] **Step 6: Run test — expect FAIL**
-- [ ] **Step 7: Add revolving logic to settle#Presentation — check `TradeProductCatalog.allowRevolving`. If `Y` and `effectiveOutstandingAmount == 0`, reinstate `effectiveOutstandingAmount = effectiveAmount` and return to LC_ISSUED instead of closing.**
-- [ ] **Step 8: Run test — expect PASS**
-- [ ] **Step 9: Commit**
+- [x] **Step 6: Run test — expect FAIL**
+- [x] **Step 7: Add revolving logic to settle#Presentation — check `TradeProductCatalog.allowRevolving`. If `Y` and `effectiveOutstandingAmount == 0`, reinstate `effectiveOutstandingAmount = effectiveAmount` and return to LC_ISSUED instead of closing.**
+- [x] **Step 8: Run test — expect PASS**
+- [x] **Step 9: Commit**
 
 ---
 
@@ -881,11 +881,11 @@ def "Revolving LC reinstates effectiveOutstandingAmount after full draw"() {
 - Modify: `runtime/component/TradeFinance/service/ImportLcServices.xml`
 - Test: `src/test/groovy/moqui/trade/finance/BddImportLcModuleSpec.groovy`
 
-- [ ] **Step 1: Write failing test** — after `update#PresentationWaiver` with `applicantDecisionEnumId = WAIVED`, verify `businessStateId` transitions from `LC_DISCREPANT` to `LC_ACCEPTED` and a SwiftMessage of type `MT752` is generated
-- [ ] **Step 2: Run test — expect FAIL**
-- [ ] **Step 3: Implement `update#PresentationWaiver` service**
-- [ ] **Step 4: Run test — expect PASS**
-- [ ] **Step 5: Commit**
+- [x] **Step 1: Write failing test** — after `update#PresentationWaiver` with `applicantDecisionEnumId = WAIVED`, verify `businessStateId` transitions from `LC_DISCREPANT` to `LC_ACCEPTED` and a SwiftMessage of type `MT752` is generated
+- [x] **Step 2: Run test — expect FAIL**
+- [x] **Step 3: Implement `update#PresentationWaiver` service**
+- [x] **Step 4: Run test — expect PASS**
+- [x] **Step 5: Commit**
 
 ---
 
@@ -900,11 +900,11 @@ def "Revolving LC reinstates effectiveOutstandingAmount after full draw"() {
 - Modify: `runtime/component/TradeFinance/service/ImportLcServices.xml`
 - Test: `src/test/groovy/moqui/trade/finance/BddImportLcModuleSpec.groovy`
 
-- [ ] **Step 1: Write failing test** — calling `transition#BusinessState(LC_DRAFT → LC_SETTLED)` should throw an error
-- [ ] **Step 2: Run test — expect FAIL**
-- [ ] **Step 3: Implement `transition#BusinessState` — validates proposed transition against `StatusValidChange` seed data before updating `businessStateId`**
-- [ ] **Step 4: Run test — expect PASS**
-- [ ] **Step 5: Commit**
+- [x] **Step 1: Write failing test** — calling `transition#BusinessState(LC_DRAFT → LC_SETTLED)` should throw an error
+- [x] **Step 2: Run test — expect FAIL**
+- [x] **Step 3: Implement `transition#BusinessState` — validates proposed transition against `StatusValidChange` seed data before updating `businessStateId`**
+- [x] **Step 4: Run test — expect PASS**
+- [x] **Step 5: Commit**
 
 ---
 
@@ -925,11 +925,11 @@ def "Revolving LC reinstates effectiveOutstandingAmount after full draw"() {
 - Modify: `runtime/component/TradeFinance/service/SwiftGenerationServices.xml`
 - Test: `src/test/groovy/moqui/trade/finance/BddImportLcModuleSpec.groovy`
 
-- [ ] **Step 1: Write the failing test** — generate MT 700 with `goodsDescription` > 6500 chars → should produce TWO SwiftMessage records (MT700 with Tag 27 = `1/2` + MT701 with Tag 27 = `2/2`)
-- [ ] **Step 2: Run test — expect FAIL**
-- [ ] **Step 3: In `generate#Mt700`, add overflow detection for Tags 45A/46A/47A. If any exceeds 100 lines × 65 chars, call new `generate#Mt701` service to produce the continuation message. Update Tag 27 on both.**
-- [ ] **Step 4: Run test — expect PASS**
-- [ ] **Step 5: Commit**
+- [x] **Step 1: Write the failing test** — generate MT 700 with `goodsDescription` > 6500 chars → should produce TWO SwiftMessage records (MT700 with Tag 27 = `1/2` + MT701 with Tag 27 = `2/2`)
+- [x] **Step 2: Run test — expect FAIL**
+- [x] **Step 3: In `generate#Mt700`, add overflow detection for Tags 45A/46A/47A. If any exceeds 100 lines × 65 chars, call new `generate#Mt701` service to produce the continuation message. Update Tag 27 on both.**
+- [x] **Step 4: Run test — expect PASS**
+- [x] **Step 5: Commit**
 
 ---
 
@@ -944,11 +944,11 @@ def "Revolving LC reinstates effectiveOutstandingAmount after full draw"() {
 - Modify: `runtime/component/TradeFinance/service/SwiftGenerationServices.xml`
 - Test: `src/test/groovy/moqui/trade/finance/BddImportLcModuleSpec.groovy`
 
-- [ ] **Step 1: Write failing test** — after amendment authorization, `generate#Mt707` produces a SwiftMessage with correct Tags 20, 30, 32B/33B, 34B, 31E
-- [ ] **Step 2: Run test — expect FAIL**
-- [ ] **Step 3: Implement `generate#Mt707` service reading from `ImportLcAmendment` and `TradeInstrument`**
-- [ ] **Step 4: Run test — expect PASS**
-- [ ] **Step 5: Commit**
+- [x] **Step 1: Write failing test** — after amendment authorization, `generate#Mt707` produces a SwiftMessage with correct Tags 20, 30, 32B/33B, 34B, 31E
+- [x] **Step 2: Run test — expect FAIL**
+- [x] **Step 3: Implement `generate#Mt707` service reading from `ImportLcAmendment` and `TradeInstrument`**
+- [x] **Step 4: Run test — expect PASS**
+- [x] **Step 5: Commit**
 
 ---
 
@@ -963,11 +963,11 @@ def "Revolving LC reinstates effectiveOutstandingAmount after full draw"() {
 - Modify: `runtime/component/TradeFinance/service/SwiftGenerationServices.xml`
 - Test: `src/test/groovy/moqui/trade/finance/BddImportLcModuleSpec.groovy`
 
-- [ ] **Step 1: Write failing tests** for each message type
-- [ ] **Step 2: Run tests — expect FAIL**
-- [ ] **Step 3: Implement `generate#Mt750`, `generate#Mt734`, `generate#Mt752` services**
-- [ ] **Step 4: Run tests — expect PASS**
-- [ ] **Step 5: Commit**
+- [x] **Step 1: Write failing tests** for each message type
+- [x] **Step 2: Run tests — expect FAIL**
+- [x] **Step 3: Implement `generate#Mt750`, `generate#Mt734`, `generate#Mt752` services**
+- [x] **Step 4: Run tests — expect PASS**
+- [x] **Step 5: Commit**
 
 ---
 
@@ -982,11 +982,11 @@ def "Revolving LC reinstates effectiveOutstandingAmount after full draw"() {
 - Modify: `runtime/component/TradeFinance/service/SwiftGenerationServices.xml`
 - Test: `src/test/groovy/moqui/trade/finance/BddImportLcModuleSpec.groovy`
 
-- [ ] **Step 1: Write failing test** — after usance acceptance, `generate#Mt732` produces a SwiftMessage with Tags 20, 21, 32B, 71B
-- [ ] **Step 2: Run test — expect FAIL**
-- [ ] **Step 3: Implement `generate#Mt732` — reads maturity date from settlement or acceptance, generates Tag 32B with the accepted amount**
-- [ ] **Step 4: Run test — expect PASS**
-- [ ] **Step 5: Commit**
+- [x] **Step 1: Write failing test** — after usance acceptance, `generate#Mt732` produces a SwiftMessage with Tags 20, 21, 32B, 71B
+- [x] **Step 2: Run test — expect FAIL**
+- [x] **Step 3: Implement `generate#Mt732` — reads maturity date from settlement or acceptance, generates Tag 32B with the accepted amount**
+- [x] **Step 4: Run test — expect PASS**
+- [x] **Step 5: Commit**
 
 ---
 
@@ -1001,11 +1001,11 @@ def "Revolving LC reinstates effectiveOutstandingAmount after full draw"() {
 - Modify: `runtime/component/TradeFinance/service/SwiftGenerationServices.xml`
 - Test: `src/test/groovy/moqui/trade/finance/BddImportLcModuleSpec.groovy`
 
-- [ ] **Step 1: Write failing tests**
-- [ ] **Step 2: Run tests — expect FAIL**
-- [ ] **Step 3: Implement `generate#Mt799`, `generate#Mt202`, `generate#Mt103`**
-- [ ] **Step 4: Run tests — expect PASS**
-- [ ] **Step 5: Commit**
+- [x] **Step 1: Write failing tests**
+- [x] **Step 2: Run tests — expect FAIL**
+- [x] **Step 3: Implement `generate#Mt799`, `generate#Mt202`, `generate#Mt103`**
+- [x] **Step 4: Run tests — expect PASS**
+- [x] **Step 5: Commit**
 
 ---
 
@@ -1024,11 +1024,11 @@ def "Revolving LC reinstates effectiveOutstandingAmount after full draw"() {
 - Modify: `runtime/component/TradeFinance/service/AuthorizationServices.xml`
 - Test: `src/test/groovy/moqui/trade/finance/AuthorizationServicesSpec.groovy`
 
-- [ ] **Step 1: Write failing test** — amendment tier uses `effectiveAmount` (new total), not the delta
-- [ ] **Step 2: Run test — expect FAIL**
-- [ ] **Step 3: Update `evaluate#MakerCheckerMatrix` to read `ImportLetterOfCredit.effectiveAmount` for tier routing. Add `priorityEnumId` ordering to the Checker queue query.**
-- [ ] **Step 4: Run test — expect PASS**
-- [ ] **Step 5: Commit**
+- [x] **Step 1: Write failing test** — amendment tier uses `effectiveAmount` (new total), not the delta
+- [x] **Step 2: Run test — expect FAIL**
+- [x] **Step 3: Update `evaluate#MakerCheckerMatrix` to read `ImportLetterOfCredit.effectiveAmount` for tier routing. Add `priorityEnumId` ordering to the Checker queue query.**
+- [x] **Step 4: Run test — expect PASS**
+- [x] **Step 5: Commit**
 
 ---
 
@@ -1044,11 +1044,11 @@ def "Revolving LC reinstates effectiveOutstandingAmount after full draw"() {
 - Modify: `runtime/component/TradeFinance/service/TradeComplianceServices.xml`
 - Test: `src/test/groovy/moqui/trade/finance/AuthorizationServicesSpec.groovy`
 
-- [ ] **Step 1: Write failing test** — `check#Sanctions` returning `isHit=true` sets `lifecycleStatusId = INST_HOLD`. `release#ComplianceHold` returns to `INST_PENDING_APPROVAL`. Only users with `TRADE_COMPLIANCE_OFFICER` role can invoke release.
-- [ ] **Step 2: Run test — expect FAIL**
-- [ ] **Step 3: Implement `release#ComplianceHold` service**
-- [ ] **Step 4: Run test — expect PASS**
-- [ ] **Step 5: Commit**
+- [x] **Step 1: Write failing test** — `check#Sanctions` returning `isHit=true` sets `lifecycleStatusId = INST_HOLD`. `release#ComplianceHold` returns to `INST_PENDING_APPROVAL`. Only users with `TRADE_COMPLIANCE_OFFICER` role can invoke release.
+- [x] **Step 2: Run test — expect FAIL**
+- [x] **Step 3: Implement `release#ComplianceHold` service**
+- [x] **Step 4: Run test — expect PASS**
+- [x] **Step 5: Commit**
 
 ---
 
@@ -1064,7 +1064,7 @@ def "Revolving LC reinstates effectiveOutstandingAmount after full draw"() {
 - Modify: `runtime/component/TradeFinance/entity/TradeCommonEntities.xml`
 - Test: `src/test/groovy/moqui/trade/finance/AuthorizationServicesSpec.groovy`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```groovy
 def "Tier 4 requires two distinct Checkers for authorization"() {
@@ -1075,34 +1075,34 @@ def "Tier 4 requires two distinct Checkers for authorization"() {
     ec.service.sync().name("TradeFinance.AuthorizationServices.authorize#Instrument").parameters([
         instrumentId: instrumentId
     ]).call()
-    def inst = ec.entity.find("moqui.trade.instrument.TradeInstrument")
+    def inst = ec.entity.find("trade.TradeInstrument")
             .condition("instrumentId", instrumentId).one()
     
     then: "Transaction is partially approved, not fully authorized"
     inst.lifecycleStatusId == "INST_PARTIAL_APPROVAL"
     
     and: "A TradeApprovalRecord is created"
-    def approvals = ec.entity.find("moqui.trade.instrument.TradeApprovalRecord")
+    def approvals = ec.entity.find("trade.TradeApprovalRecord")
             .condition("instrumentId", instrumentId).list()
     approvals.size() == 1
     approvals[0].approvalSequence == 1
 }
 ```
 
-- [ ] **Step 2: Run test — expect FAIL**
+- [x] **Step 2: Run test — expect FAIL**
 
-- [ ] **Step 3: Add `TradeApprovalRecord` entity and `INST_PARTIAL_APPROVAL` status**
+- [x] **Step 3: Add `TradeApprovalRecord` entity and `INST_PARTIAL_APPROVAL` status**
 
 ```xml
 <!-- Records individual approval actions for multi-approval workflows -->
-<entity entity-name="TradeApprovalRecord" package="moqui.trade.instrument">
+<entity entity-name="TradeApprovalRecord" package="trade">
     <field name="approvalRecordId" type="id" is-pk="true"/>
     <field name="instrumentId" type="id"/>
     <field name="approverUserId" type="id"/>
     <field name="approvalSequence" type="number-integer"/>
     <field name="approvalTimestamp" type="date-time"/>
     <field name="approvalDecisionEnumId" type="id"/> <!-- APPROVED, REJECTED -->
-    <relationship type="one" related="moqui.trade.instrument.TradeInstrument">
+    <relationship type="one" related="trade.TradeInstrument">
         <key-map field-name="instrumentId"/>
     </relationship>
 </entity>
@@ -1110,8 +1110,8 @@ def "Tier 4 requires two distinct Checkers for authorization"() {
 
 Update `authorize#Instrument` to check if current tier is TIER_4. If so, check how many `TradeApprovalRecord` entries exist. On first approval, set `lifecycleStatusId = INST_PARTIAL_APPROVAL` and create a record. On second approval (different user from Maker and first Checker), complete authorization.
 
-- [ ] **Step 4: Run test — expect PASS**
-- [ ] **Step 5: Commit**
+- [x] **Step 4: Run test — expect PASS**
+- [x] **Step 5: Commit**
 
 ---
 
