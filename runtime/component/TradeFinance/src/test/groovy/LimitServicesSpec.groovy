@@ -24,7 +24,7 @@ class LimitServicesSpec extends Specification {
             .setAll([facilityId:"FAC-1", totalApprovedLimit: 1000.0, utilizedAmount: 0.0]).create()
             
         then:
-        ec.service.sync().name("LimitServices.calculate#Earmark").parameters([facilityId:"FAC-1", amount: 500.0]).call().isAllowed == true
+        ec.service.sync().name("trade.LimitServices.calculate#Earmark").parameters([facilityId:"FAC-1", amount: 500.0]).call().isAllowed == true
         
         cleanup:
         ec.entity.find("trade.CustomerFacility").condition("facilityId", "FAC-1").deleteAll()

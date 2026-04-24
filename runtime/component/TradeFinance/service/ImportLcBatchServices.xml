@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ABOUTME: ImportLcBatchServices.xml provides batch jobs for Import LC auto-expiry and cleanup. -->
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.0.xsd">
+
+    <!-- Auto-Expiry Batch Job: Finds LCs where effectiveExpiryDate + gracePeriod < today, transitions to LC_CLOSED -->
+    <service verb="batch" noun="AutoExpiry" authenticate="false">
+        <in-parameters>
+            <parameter name="gracePeriodDays" type="Integer" default="7"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="expiredCount" type="Integer"/>
+            <parameter name="errorCount" type="Integer"/>
+        </out-parameters>
+        <actions>
+            <script>
+                import java.sql.Date
+                import java.util.Calendar
+                def cal = Calendar.getInstance()
+                cal.add(Calendar.DAY_OF_MONTH, -gracePeriodDays)
+                def cutoffDate = new Date(cal.getTimeInMillis())
+                context.expiredCount = 0
+                context.errorCount = 0
+            </script>
+
+            <entity-find entity-name="trade.importlc.ImportLetterOfCredit" list="expiredLcs">
+                <econd><field field-name="businessStateId" value="LC_ISSUED"/></econd>
+                <econd><field field-name="effectiveExpiryDate" operator="IS NOT NULL"/></econd>
+                <econd><field field-name="effectiveExpiryDate" operator="&lt;=" value="cutoffDate"/></econd>
+            </entity-find>
+
+            <iterate list="expiredLcs" entry="lc">
+                <try>
+                    <script>
+                        try {
+                            ec.service.sync().name("trade.TradeCommonServices.update#Cancellation")
+                                    .parameters([instrumentId: lc.instrumentId, cancellationReason: "Auto-Expiry"]).call()
+                            context.expiredCount = (context.expiredCount ?: 0) + 1
+                        } catch (Exception e) {
+                            ec.logger.error("Auto-Expiry failed for ${lc.instrumentId}: ${e.message}")
+                            context.errorCount = (context.errorCount ?: 0) + 1
+                        }
+                    </script>
+                </try>
+            </iterate>
+
+            <log level="info" message="Auto-Expiry completed: ${expiredCount} expired, ${errorCount} errors"/>
+        </actions>
+    </service>
+</services>

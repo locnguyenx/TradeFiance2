@@ -12,7 +12,7 @@
             <parameter name="isAllowed" type="Boolean"/>
         </out-parameters>
         <actions>
-            <entity-find-one entity-name="trade.instrument.CustomerFacility" value-field="facility">
+            <entity-find-one entity-name="trade.CustomerFacility" value-field="facility">
                 <field-map field-name="facilityId"/>
             </entity-find-one>
             
@@ -39,7 +39,7 @@
             <parameter name="amountDelta" type="BigDecimal" required="true"/> <!-- Positive to increment, negative to decrement -->
         </in-parameters>
         <actions>
-            <entity-find-one entity-name="trade.instrument.CustomerFacility" value-field="facility" for-update="true">
+            <entity-find-one entity-name="trade.CustomerFacility" value-field="facility" for-update="true">
                 <field-map field-name="facilityId"/>
             </entity-find-one>
             <if condition="!facility"><return error="true" message="Facility not found"/></if>
