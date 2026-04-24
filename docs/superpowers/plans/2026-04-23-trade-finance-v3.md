@@ -815,7 +815,7 @@ The service scans all SWIFT-mapped fields against the X Character Set (`A-Z`, `a
 - [x] **Step 2: Run test — expect FAIL**
 - [x] **Step 3: Update settle#Presentation — after settlement, update `effectiveOutstandingAmount -= claimAmount`, `cumulativeDrawnAmount += claimAmount`. If `effectiveOutstandingAmount == 0`, transition to LC_CLOSED. Otherwise, return to LC_ISSUED.**
 - [x] **Step 4: Run test — expect PASS**
-- [ ] **Step 5: Write additional test for revolving LC reinstatement (BDD-IMP-VAL-03)**
+- [x] **Step 5: Write additional test for revolving LC reinstatement (BDD-IMP-VAL-03)**
 
 ```groovy
 def "Revolving LC reinstates effectiveOutstandingAmount after full draw"() {

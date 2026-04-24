@@ -68,7 +68,7 @@
         </out-parameters>
         <actions>
             <log level="info" message="DEBUG: authorize context: ${context}"/>
-            <service-call name="AuthorizationServices.evaluate#MakerCheckerMatrix" in-map="context" out-map="evalOut"/>
+            <service-call name="trade.AuthorizationServices.evaluate#MakerCheckerMatrix" in-map="context" out-map="evalOut"/>
             <set field="isAuthorized" from="evalOut.isAuthorized"/>
             
             <if condition="isAuthorized">

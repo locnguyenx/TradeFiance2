@@ -201,6 +201,12 @@ class ImportLcServicesSpec extends Specification {
         assert createResult != null
         def instrumentId = createResult.instrumentId
 
+        // Transition LC to LC_ISSUED state before settlement
+        ec.service.sync().name("trade.TradeCommonServices.update#ImportLetterOfCredit").parameters([
+            instrumentId: instrumentId,
+            businessStateId: "LC_ISSUED"
+        ]).call()
+
         // Manually create a presentation record
         def presValue = ec.entity.makeValue("trade.importlc.TradeDocumentPresentation")
         presValue.setAll([instrumentId: instrumentId, claimAmount: 40000.0, presentationStatusId: "PRES_COMPLIANT"])

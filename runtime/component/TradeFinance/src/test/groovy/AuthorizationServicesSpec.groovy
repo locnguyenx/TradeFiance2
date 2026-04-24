@@ -62,7 +62,7 @@ class AuthorizationServicesSpec extends Specification {
             
         and: "Checker with Tier 1 limit (100k)"
         ec.entity.makeValue("trade.UserAuthorityProfile")
-            .setAll([authorityProfileId:"T1-01", userId:"tier1.user", authorityTierEnumId:"TIER_1", maxApprovalAmount:100000.0]).create()
+            .setAll([authorityProfileId:"T1-03", userId:"tier1.user", authorityTierEnumId:"TIER_1", maxApprovalAmount:100000.0]).create()
 
         when: "Tier 1 user tries to authorize a 150k effective amount"
         def result = ec.service.sync().name("trade.AuthorizationServices.evaluate#MakerCheckerMatrix")
@@ -72,7 +72,7 @@ class AuthorizationServicesSpec extends Specification {
         result.isAuthorized == false
         
         cleanup:
-        ec.entity.find("trade.UserAuthorityProfile").condition("authorityProfileId", "T1-01").deleteAll()
+        ec.entity.find("trade.UserAuthorityProfile").condition("authorityProfileId", "T1-03").deleteAll()
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "AUTH-AMD").deleteAll()
         ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", "AUTH-AMD").deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", "AUTH-AMD").deleteAll()

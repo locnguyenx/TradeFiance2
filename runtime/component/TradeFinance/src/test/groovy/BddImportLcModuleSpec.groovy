@@ -856,4 +856,55 @@ class BddImportLcModuleSpec extends Specification {
         msg.messageContent.contains(":34B:USD15000") // 10000 + 5000
         msg.messageContent.contains("Increase amount")
     }
+
+    def "BDD-IMP-VAL-03: Revolving LC reinstates effectiveOutstandingAmount after full draw"() {
+        given: "A revolving LC product and an LC with effectiveAmount = 10000"
+        def catalogId = "REV-TEST-" + System.currentTimeMillis()
+        ec.entity.makeValue("trade.TradeProductCatalog")
+            .setAll([productCatalogId: catalogId, catalogName: "Revolving Test", allowRevolving: "Y"]).create()
+        
+        def ref = "TF-REV-" + System.currentTimeMillis()
+        def createRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
+            .parameters([transactionRef: ref, lcAmount: 10000.0, lcCurrencyUomId: "USD", productCatalogId: catalogId]).call()
+        def instrumentId = createRes.instrumentId
+        
+        ec.service.sync().name("trade.TradeCommonServices.update#ImportLetterOfCredit")
+            .parameters([instrumentId: instrumentId, businessStateId: "LC_PENDING"]).call()
+        ec.service.sync().name("trade.TradeCommonServices.update#ImportLetterOfCredit")
+            .parameters([instrumentId: instrumentId, businessStateId: "LC_ISSUED"]).call()
+        
+        // Create presentation and settle full amount
+        def presValue = ec.entity.makeValue("trade.importlc.TradeDocumentPresentation")
+        presValue.setAll([instrumentId: instrumentId, claimAmount: 10000.0, presentationStatusId: "PRES_COMPLIANT"])
+        presValue.setSequencedIdPrimary()
+        presValue.create()
+        def presId = presValue.presentationId
+        
+        when: "Full draw of 10000 is settled"
+        ec.service.sync().name("trade.importlc.ImportLcServices.settle#Presentation").parameters([
+            presentationId: presId,
+            settlementAmount: 10000.0,
+            settlementTypeEnumId: "SIGHT_PAYMENT"
+        ]).call()
+        
+        then: "effectiveOutstandingAmount is reinstated back to effectiveAmount and LC is not closed"
+        def lc = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).one()
+        lc.cumulativeDrawnAmount == 10000.0
+        lc.effectiveOutstandingAmount == 10000.0
+        lc.businessStateId == "LC_ISSUED"
+        
+        cleanup:
+        if (instrumentId) {
+            def presList = ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", instrumentId).list()
+            def presIds = presList.collect{it.presentationId ?: ''}
+            ec.entity.find("trade.importlc.ImportLcSettlement").condition("presentationId", EntityCondition.IN, presIds).deleteAll()
+            ec.entity.find("trade.importlc.TradeDocumentPresentationItem").condition("presentationId", EntityCondition.IN, presIds).deleteAll()
+            ec.entity.find("trade.importlc.PresentationDiscrepancy").condition("presentationId", EntityCondition.IN, presIds).deleteAll()
+            ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", instrumentId).deleteAll()
+            ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", instrumentId).deleteAll()
+            ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).deleteAll()
+            ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).deleteAll()
+        }
+        if (catalogId) ec.entity.find("trade.TradeProductCatalog").condition("productCatalogId", catalogId).deleteAll()
+    }
 }

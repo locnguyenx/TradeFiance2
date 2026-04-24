@@ -13,6 +13,17 @@ class EndToEndImportLcSpec extends Specification {
         ec = Moqui.getExecutionContext()
         ec.user.internalLoginUser("trade.maker")
         ec.artifactExecution.disableAuthz()
+        
+        if (ec.entity.find("moqui.security.UserAccount").condition("username", "trade.maker").count() == 0) {
+            ec.entity.makeValue("moqui.security.UserAccount")
+                .setAll([userId: "trade.maker", username: "trade.maker", currentPassword: "trade123", firstName: "Trade", lastName: "Maker"])
+                .create()
+        }
+        if (ec.entity.find("trade.UserAuthorityProfile").condition("userId", "trade.maker").count() == 0) {
+            ec.entity.makeValue("trade.UserAuthorityProfile")
+                .setAll([authorityProfileId: "T1-E2E", userId: "trade.maker", authorityTierEnumId: "TIER_1", maxApprovalAmount: 1000000.00, currencyUomId: "USD"])
+                .create()
+        }
     }
     
     def cleanup() {
@@ -25,10 +36,10 @@ class EndToEndImportLcSpec extends Specification {
             .setAll([facilityId:"E2E-FAC-1", totalApprovedLimit: 100000.0, utilizedAmount: 0.0]).create()
             
         when: "1. Create Import LC"
-        def createResult = ec.service.sync().name("ImportLcServices.create#ImportLetterOfCredit").parameters([
+        def createResult = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
             transactionRef: "TF-E2E-001",
-            amount: 50000.0,
-            baseEquivalentAmount: 50000.0,
+            lcAmount: 50000.0,
+            lcCurrencyUomId: "USD",
             customerFacilityId: "E2E-FAC-1",
             businessStateId: "LC_DRAFT"
         ]).call()
@@ -39,13 +50,13 @@ class EndToEndImportLcSpec extends Specification {
         ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).one() != null
         
         when: "2. Update Limit Utilization"
-        ec.service.sync().name("LimitServices.update#Utilization").parameters([facilityId:"E2E-FAC-1", amountDelta: 50000.0]).call()
+        ec.service.sync().name("trade.LimitServices.update#Utilization").parameters([facilityId:"E2E-FAC-1", amountDelta: 50000.0]).call()
         
         then: "Facility utilization is updated"
         ec.entity.find("trade.CustomerFacility").condition("facilityId", "E2E-FAC-1").one().utilizedAmount == 50000.0
         
         when: "3. Generate SWIFT MT700"
-        def swiftResult = ec.service.sync().name("SwiftGenerationServices.generate#Mt700").parameters([instrumentId: instrumentId]).call()
+        def swiftResult = ec.service.sync().name("trade.SwiftGenerationServices.generate#Mt700").parameters([instrumentId: instrumentId]).call()
         
         then: "SWIFT message is created with correct content"
         swiftResult.swiftMessageId != null
