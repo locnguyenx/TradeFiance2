@@ -147,6 +147,12 @@ Cross-referencing the MT700 BRD (REQ-IMP-SWIFT-02/03), the MT-others spec, and t
 |:---|:---|:---|:---|:---|:---|
 | FR-ENT-19 | `documentDisposalEnumId` | `id` | 77B | HOLDING_DOCUMENTS, RETURNING_DOCUMENTS. Required when refusing discrepant docs | MT734 |
 
+### SwiftMessage — Enhanced Fields
+
+| Req ID | Field | Type | Purpose | Constraint |
+|:---|:---|:---|:---|:---|
+| FR-ENT-20 | `messageStatusId` | `id` | Message lifecycle status | `SWIFT_MSG_DRAFT` or `SWIFT_MSG_ACTIVE`. See Spec B FR-SWG-15 for lifecycle rules |
+
 ### Bank Configuration — New TradeConfig entries
 
 | Req ID | Config Key | Purpose | MT Messages |

@@ -68,6 +68,11 @@ The current SWIFT message generation services are skeletal stubs using raw strin
 **I want** every generated SWIFT message to be persisted in the `SwiftMessage` entity with type, content, and timestamp,
 **So that** the bank has a complete audit trail of all outbound SWIFT communications.
 
+### US-SWG-10: Message Lifecycle — DRAFT and ACTIVE Statuses
+**As a** Trade Operations Maker,
+**I want** to preview and generate SWIFT messages before transaction approval (as DRAFT), and have the system auto-generate final messages upon approval (as ACTIVE),
+**So that** I can verify message content during data entry, and the bank has immutable records of dispatched messages.
+
 ---
 
 ## REQ-SWG-03: Functional Requirements
@@ -99,8 +104,36 @@ Before assembling any message, the generation service must:
 
 ### FR-SWG-04: Message Persistence
 Every generated message must be persisted:
-- Create `SwiftMessage` record with `instrumentId`, `messageType`, `messageContent`, `generatedDate`
+- Create `SwiftMessage` record with `instrumentId`, `messageType`, `messageContent`, `generatedDate`, `messageStatusId`
+- `messageStatusId` is determined by the message lifecycle rules (FR-SWG-15)
 - Return `swiftMessageId` to caller for reference
+
+### FR-SWG-15: Message Lifecycle Rules
+SWIFT messages follow a DRAFT/ACTIVE lifecycle tied to the transaction approval status:
+
+**Pre-Approval Generation (DRAFT):**
+- When `TradeInstrument.transactionStatusId ≠ TRANS_APPROVED`, users may manually trigger message generation
+- Generated message is saved with `messageStatusId = SWIFT_MSG_DRAFT`
+- Users may regenerate at any time — the new DRAFT message **replaces** the existing one (update, not insert)
+- Purpose: allows Makers to preview and verify SWIFT output during data entry
+
+**Post-Approval Generation (ACTIVE):**
+- When `TradeInstrument.transactionStatusId = TRANS_APPROVED`, the system **auto-generates** the message
+- Generated message is saved with `messageStatusId = SWIFT_MSG_ACTIVE`
+- If auto-generation fails (e.g., system error), users may manually trigger generation — but only if no ACTIVE message exists for this `instrumentId` + `messageType` combination
+- Once an ACTIVE message exists, regeneration is **blocked** — the message is immutable
+- Purpose: ACTIVE messages represent dispatched SWIFT communications and must not be altered
+
+**State Transition:**
+
+| From Status | To Status | Trigger | Allowed? |
+|:---|:---|:---|:---|
+| (none) | DRAFT | Manual generation pre-approval | ✓ |
+| DRAFT | DRAFT | Re-generation pre-approval (replace) | ✓ |
+| DRAFT | ACTIVE | Transaction approved (auto-generate replaces DRAFT) | ✓ |
+| (none) | ACTIVE | Transaction approved (auto-generate, no prior DRAFT) | ✓ |
+| ACTIVE | ACTIVE | Re-generation attempt | ✗ Blocked |
+| ACTIVE | (any) | Any modification | ✗ Blocked |
 
 ### FR-SWG-05: MT700 Generation — Full Tag Mapping
 Service: `SwiftGenerationServices.generate#Mt700`
@@ -273,3 +306,4 @@ Each generation service is triggered by a specific lifecycle event. The calling 
 | US-SWG-07 | FR-SWG-13 (MT202), FR-SWG-14 (MT103) | MT202, MT103 |
 | US-SWG-08 | FR-SWG-03 (Layer 2) | All |
 | US-SWG-09 | FR-SWG-04 (Persistence) | All |
+| US-SWG-10 | FR-SWG-15 (Message Lifecycle) | All |

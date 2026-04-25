@@ -29,7 +29,12 @@
 | US-SWG-07 | FR-SWG-14 | BDD-SWG-103-01 | MT103: Customer Credit Transfer with Charges | Happy Path |
 | US-SWG-08 | FR-SWG-03 | BDD-SWG-L2V-01 | Layer 2: Generation Aborted on Invalid Data | Edge Case |
 | US-SWG-08 | FR-SWG-03 | BDD-SWG-L2V-02 | Layer 2: Auto-Conversion with Warning Log | Edge Case |
-| US-SWG-09 | FR-SWG-04 | BDD-SWG-PER-01 | Persistence: SwiftMessage Record Created | Happy Path |
+| US-SWG-09 | FR-SWG-04 | BDD-SWG-PER-01 | Persistence: SwiftMessage Record Created with Status | Happy Path |
+| US-SWG-10 | FR-SWG-15 | BDD-SWG-LCY-01 | Message Lifecycle: DRAFT Generation Pre-Approval | Happy Path |
+| US-SWG-10 | FR-SWG-15 | BDD-SWG-LCY-02 | Message Lifecycle: DRAFT Replacement on Regeneration | Happy Path |
+| US-SWG-10 | FR-SWG-15 | BDD-SWG-LCY-03 | Message Lifecycle: Auto-Activation on Approval | Happy Path |
+| US-SWG-10 | FR-SWG-15 | BDD-SWG-LCY-04 | Message Lifecycle: ACTIVE Regeneration Blocked | Edge Case |
+| US-SWG-10 | FR-SWG-15 | BDD-SWG-LCY-05 | Message Lifecycle: Manual Generation After Failed Auto-Generate | Edge Case |
 
 ---
 
@@ -370,12 +375,85 @@
 **Functional Requirement:** FR-SWG-04
 **Type:** Happy Path
 
-* **Given** a successful `generate#Mt700` execution
+* **Given** a successful `generate#Mt700` execution for an approved transaction
 * **When** the service completes
 * **Then** a `SwiftMessage` record exists with:
   | Field | Value |
   | `instrumentId` | Matches the source LC |
   | `messageType` | `MT700` |
   | `messageContent` | The full assembled SWIFT message text |
+  | `messageStatusId` | `SWIFT_MSG_ACTIVE` |
   | `generatedDate` | Current system timestamp |
 * **And** the service returns the `swiftMessageId` to the caller
+
+---
+
+### Feature: Message Lifecycle — DRAFT/ACTIVE Status Management (FR-SWG-15)
+
+#### Scenario BDD-SWG-LCY-01: Message Lifecycle — DRAFT Generation Pre-Approval
+**User Story:** US-SWG-10
+**Functional Requirement:** FR-SWG-15
+**Type:** Happy Path
+
+* **Given** a `TradeInstrument` with `transactionStatusId = TRANS_DRAFT` (not yet approved)
+* **And** all SWIFT-bound fields are populated with valid data
+* **And** no `SwiftMessage` exists for this `instrumentId` + `MT700`
+* **When** a user manually calls `generate#Mt700`
+* **Then** a `SwiftMessage` record is created with:
+  | Field | Value |
+  | `messageStatusId` | `SWIFT_MSG_DRAFT` |
+  | `messageType` | `MT700` |
+  | `messageContent` | Full assembled SWIFT message text |
+
+#### Scenario BDD-SWG-LCY-02: Message Lifecycle — DRAFT Replacement on Regeneration
+**User Story:** US-SWG-10
+**Functional Requirement:** FR-SWG-15
+**Type:** Happy Path
+
+* **Given** a `TradeInstrument` with `transactionStatusId = TRANS_DRAFT`
+* **And** an existing `SwiftMessage` with `messageStatusId = SWIFT_MSG_DRAFT` for `MT700`
+* **And** the user has since changed `goodsDescription` on the LC
+* **When** the user calls `generate#Mt700` again
+* **Then** the existing DRAFT `SwiftMessage` is **updated** (not a new record):
+  | Field | Value |
+  | `messageStatusId` | `SWIFT_MSG_DRAFT` |
+  | `messageContent` | Contains the **updated** goods description |
+  | `generatedDate` | Updated to current timestamp |
+* **And** only one `SwiftMessage` record exists for this `instrumentId` + `MT700`
+
+#### Scenario BDD-SWG-LCY-03: Message Lifecycle — Auto-Activation on Approval
+**User Story:** US-SWG-10
+**Functional Requirement:** FR-SWG-15
+**Type:** Happy Path
+
+* **Given** a `TradeInstrument` with a DRAFT `SwiftMessage` for `MT700`
+* **When** the Checker authorizes the transaction (`transactionStatusId → TRANS_APPROVED`)
+* **And** the system auto-generates the MT700 via `execute#IssuancePostAuth`
+* **Then** the existing `SwiftMessage` record is updated:
+  | Field | Before | After |
+  | `messageStatusId` | `SWIFT_MSG_DRAFT` | `SWIFT_MSG_ACTIVE` |
+  | `messageContent` | Previous draft content | Re-generated final content |
+  | `generatedDate` | Previous timestamp | Updated to approval timestamp |
+
+#### Scenario BDD-SWG-LCY-04: Message Lifecycle — ACTIVE Regeneration Blocked
+**User Story:** US-SWG-10
+**Functional Requirement:** FR-SWG-15
+**Type:** Edge Case
+
+* **Given** a `TradeInstrument` with `transactionStatusId = TRANS_APPROVED`
+* **And** an existing `SwiftMessage` with `messageStatusId = SWIFT_MSG_ACTIVE` for `MT700`
+* **When** a user attempts to call `generate#Mt700`
+* **Then** the service returns an error: `Cannot regenerate: ACTIVE message already exists for MT700 on this instrument`
+* **And** the existing ACTIVE `SwiftMessage` record is unchanged
+
+#### Scenario BDD-SWG-LCY-05: Message Lifecycle — Manual Generation After Failed Auto-Generate
+**User Story:** US-SWG-10
+**Functional Requirement:** FR-SWG-15
+**Type:** Edge Case
+
+* **Given** a `TradeInstrument` with `transactionStatusId = TRANS_APPROVED`
+* **And** auto-generation failed during `execute#IssuancePostAuth` (e.g., system error)
+* **And** no `SwiftMessage` exists with `messageStatusId = SWIFT_MSG_ACTIVE` for `MT700`
+* **When** a user manually calls `generate#Mt700`
+* **Then** the service generates and persists the message with `messageStatusId = SWIFT_MSG_ACTIVE`
+* **And** the `SwiftMessage` record is created successfully
