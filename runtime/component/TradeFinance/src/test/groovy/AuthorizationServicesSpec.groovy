@@ -27,7 +27,7 @@ class AuthorizationServicesSpec extends Specification {
         ec.entity.makeValue("trade.TradeTransactionAudit")
             .setAll([instrumentId:"AUTH-1", auditId:"1", actionEnumId:"MAKER_COMMIT", userId:"john.doe"]).create()
         ec.entity.makeValue("trade.UserAuthorityProfile")
-            .setAll([authorityProfileId:"T1-02", userId:"jane.doe", authorityTierEnumId:"TIER_1", maxApprovalAmount:100000.0]).create()
+            .setAll([userAuthorityId:"T1-02", userId:"jane.doe", delegationTierId:"TIER_1", customLimit:100000.0, makerCheckerFlag: "CHECKER"]).create()
             
         when: "Checker is the same user"
         def resultSame = ec.service.sync().name("trade.AuthorizationServices.evaluate#MakerCheckerMatrix")
@@ -44,7 +44,7 @@ class AuthorizationServicesSpec extends Specification {
         resultDiff.isAuthorized == true
         
         cleanup:
-        ec.entity.find("trade.UserAuthorityProfile").condition("authorityProfileId", "T1-02").deleteAll()
+        ec.entity.find("trade.UserAuthorityProfile").condition("userAuthorityId", "T1-02").deleteAll()
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "AUTH-1").deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", "AUTH-1").deleteAll()
     }
@@ -62,7 +62,7 @@ class AuthorizationServicesSpec extends Specification {
             
         and: "Checker with Tier 1 limit (100k)"
         ec.entity.makeValue("trade.UserAuthorityProfile")
-            .setAll([authorityProfileId:"T1-03", userId:"tier1.user", authorityTierEnumId:"TIER_1", maxApprovalAmount:100000.0]).create()
+            .setAll([userAuthorityId:"T1-03", userId:"tier1.user", delegationTierId:"TIER_1", customLimit:100000.0, makerCheckerFlag: "CHECKER"]).create()
 
         when: "Tier 1 user tries to authorize a 150k effective amount"
         def result = ec.service.sync().name("trade.AuthorizationServices.evaluate#MakerCheckerMatrix")
@@ -72,7 +72,7 @@ class AuthorizationServicesSpec extends Specification {
         result.isAuthorized == false
         
         cleanup:
-        ec.entity.find("trade.UserAuthorityProfile").condition("authorityProfileId", "T1-03").deleteAll()
+        ec.entity.find("trade.UserAuthorityProfile").condition("userAuthorityId", "T1-03").deleteAll()
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "AUTH-AMD").deleteAll()
         ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", "AUTH-AMD").deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", "AUTH-AMD").deleteAll()
@@ -88,7 +88,7 @@ class AuthorizationServicesSpec extends Specification {
         
         when: "Retrieving the list"
         def result = ec.service.sync().name("trade.importlc.ImportLcServices.get#ImportLetterOfCreditList").call()
-        def list = result.instrumentList
+        def list = result.lcList
         list.each { println "DEBUG_LIST: ID=${it.instrumentId}, Prio=${it.priorityEnumId}, Seq=${it.prioritySequence}" }
         
         then: "Urgent (PRIO-HIGH) should be before Low (PRIO-LOW)"

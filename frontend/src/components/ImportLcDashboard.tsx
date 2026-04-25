@@ -28,8 +28,8 @@ export const ImportLcDashboard: React.FC = () => {
     useEffect(() => {
         Promise.all([tradeApi.getImportLcs(), tradeApi.getKpis()])
             .then(([lcData, kpiData]) => {
-                setLcs(lcData.lcList);
-                setKpis(kpiData);
+                setLcs(lcData?.lcList || []);
+                setKpis(kpiData || null);
                 setLoading(false);
             })
             .catch(err => {
@@ -97,23 +97,23 @@ export const ImportLcDashboard: React.FC = () => {
                         <tbody>
                             {lcs.length > 0 ? (
                                     lcs.map(lc => {
-                                        const displayAmount = lc.effectiveAmount || lc.amount || 0;
-                                        const displayExpiry = lc.effectiveExpiryDate || lc.expiryDate || '---';
-                                        const isAmended = (lc.effectiveAmount && lc.effectiveAmount !== lc.amount) || 
-                                                         (lc.effectiveExpiryDate && lc.effectiveExpiryDate !== lc.expiryDate);
-                                        
-                                        return (
-                                            <tr key={lc.instrumentId}>
-                                                <td className="font-bold">{lc.transactionRef}</td>
-                                                <td>{lc.applicantName || '---'}</td>
-                                                <td>{lc.beneficiaryName || '---'}</td>
-                                                <td>{lc.currency || 'USD'}</td>
-                                                <td>
-                                                    {displayAmount.toLocaleString()}
-                                                    {isAmended && <span className="amended-indicator" title="Amended Value">★</span>}
-                                                </td>
-                                                <td>{(lc.effectiveOutstandingAmount || 0).toLocaleString()}</td>
-                                                <td>{(lc.cumulativeDrawnAmount || 0).toLocaleString()}</td>
+                                         const displayAmount = (lc.effectiveAmount || lc.amount || 0);
+                                         const displayExpiry = lc.effectiveExpiryDate || lc.expiryDate || '---';
+                                         const isAmended = (lc.effectiveAmount !== undefined && lc.effectiveAmount !== lc.amount) || 
+                                                          (lc.effectiveExpiryDate !== undefined && lc.effectiveExpiryDate !== lc.expiryDate);
+                                         
+                                         return (
+                                             <tr key={lc.instrumentId}>
+                                                 <td className="font-bold">{lc.transactionRef}</td>
+                                                 <td>{lc.applicantName || '---'}</td>
+                                                 <td>{lc.beneficiaryName || '---'}</td>
+                                                 <td>{lc.currency || 'USD'}</td>
+                                                 <td>
+                                                     {(displayAmount ?? 0).toLocaleString()}
+                                                     {isAmended && <span className="amended-indicator" title="Amended Value">★</span>}
+                                                 </td>
+                                                 <td>{(lc.effectiveOutstandingAmount ?? 0).toLocaleString()}</td>
+                                                 <td>{(lc.cumulativeDrawnAmount ?? 0).toLocaleString()}</td>
                                                 <td>
                                                     {displayExpiry}
                                                 </td>
@@ -125,8 +125,8 @@ export const ImportLcDashboard: React.FC = () => {
                                                         {isAmended && <span className="sub-status">Amended</span>}
                                                     </div>
                                                 </td>
-                                                <td className={lc.slaDaysRemaining && lc.slaDaysRemaining < 3 ? 'text-urgent' : ''}>
-                                                    {lc.slaDaysRemaining ? `${lc.slaDaysRemaining} days` : '---'}
+                                                <td className={(lc.slaDaysRemaining ?? 0) < 3 ? 'text-urgent' : ''}>
+                                                    {lc.slaDaysRemaining !== undefined && lc.slaDaysRemaining !== null ? `${lc.slaDaysRemaining} days` : '---'}
                                                 </td>
                                                 <td>
                                                     <div className="action-wrapper">
@@ -163,7 +163,7 @@ export const ImportLcDashboard: React.FC = () => {
                                     })
                                 ) : (
                                     <tr>
-                                        <td colSpan={9} className="empty-state">No active transactions found.</td>
+                                        <td colSpan={11} className="empty-state">No active transactions found.</td>
                                     </tr>
                                 )}
                             </tbody>

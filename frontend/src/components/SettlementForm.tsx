@@ -50,7 +50,7 @@ export const SettlementForm: React.FC<SettlementFormProps> = ({ instrumentId, pr
         setSubmitting(true);
         try {
             await tradeApi.settleLcPresentation(instrumentId, presentationId || 'AUTO_PRES', {
-                settlementAmount,
+                principalAmount: settlementAmount,
                 settlementDate,
                 currencyUomId: lc.currencyUomId
             });

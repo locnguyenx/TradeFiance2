@@ -59,7 +59,7 @@ class ImportLcEntitiesSpec extends Specification {
             latestShipmentDate: "2026-12-15",
             confirmationEnumId: "CONFIRMED",
             lcTypeEnumId: "IRREVOCABLE",
-            productCatalogId: "IMP_LC_STD"
+            productCatalogId: "PROD_IMP_LC"
         ]).call()
         def lc = ec.entity.find("trade.importlc.ImportLetterOfCredit")
                 .condition("instrumentId", "LC-MGMT-TEST").one()
@@ -130,10 +130,9 @@ class ImportLcEntitiesSpec extends Specification {
             settlementId: "SETTLE_TEST_01",
             presentationId: "PRES_TEST_01",
             instrumentId: "LC-MGMT-TEST",
-            settlementAmount: 250000.0G,
-            settlementDate: ec.user.nowTimestamp,
-            settlementTypeEnumId: "SIGHT_PAYMENT",
-            isPartialDraw: "Y"
+            principalAmount: 250000.0G,
+            valueDate: ec.user.nowTimestamp,
+            settlementTypeEnumId: "SIGHT_PAYMENT"
         ]).call()
         if (ec.message.hasError()) {
             System.err.println("DEBUG ERRORS: " + ec.message.getErrorsString())
@@ -144,8 +143,7 @@ class ImportLcEntitiesSpec extends Specification {
         then:
         !ec.message.hasError()
         settle != null
-        (settle.settlementAmount as BigDecimal) == 250000.0G
-        settle.isPartialDraw == "Y"
+        (settle.principalAmount as BigDecimal) == 250000.0G
 
         cleanup:
         ec.entity.find("trade.importlc.ImportLcSettlement")

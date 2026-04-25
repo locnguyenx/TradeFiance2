@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ABOUTME: MasterDataServices provides collection retrieval for parties, products, and fee configurations using pure XML actions to avoid session-level compilation issues. -->
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.0.xsd">
+
+    <service verb="get" noun="Parties" authenticate="false">
+        <in-parameters><parameter name="search"/></in-parameters>
+        <out-parameters>
+            <parameter name="partyList" type="List"><parameter name="party" type="Map"/></parameter>
+        </out-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find entity-name="trade.TradeParty" list="partyList">
+                <econdition field-name="partyName" operator="like" from="'%' + (search ?: '') + '%'" ignore-if-empty="true"/>
+                <order-by field-name="partyName"/>
+            </entity-find>
+            <script>ec.artifactExecution.enableAuthz()</script>
+        </actions>
+    </service>
+
+    <service verb="get" noun="FeeConfigurations" authenticate="false">
+        <out-parameters>
+            <parameter name="feeList" type="List"><parameter name="fee" type="Map"/></parameter>
+        </out-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find entity-name="trade.FeeConfiguration" list="feeList">
+                <order-by field-name="feeEventEnumId"/>
+            </entity-find>
+            <script>ec.artifactExecution.enableAuthz()</script>
+        </actions>
+    </service>
+
+    <service verb="get" noun="ProductCatalog" authenticate="false">
+        <out-parameters>
+            <parameter name="productList" type="List"><parameter name="product" type="Map"/></parameter>
+        </out-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find entity-name="trade.TradeProductCatalog" list="productList">
+                <order-by field-name="productName"/>
+            </entity-find>
+            <script>ec.artifactExecution.enableAuthz()</script>
+        </actions>
+    </service>
+
+    <service verb="get" noun="UserAuthorityProfiles" authenticate="false">
+        <out-parameters>
+            <parameter name="profileList" type="List"><parameter name="profile" type="Map"/></parameter>
+        </out-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find entity-name="trade.UserAuthorityProfile" list="profileList">
+                <order-by field-name="userId, delegationTierId"/>
+            </entity-find>
+            <script>ec.artifactExecution.enableAuthz()</script>
+        </actions>
+    </service>
+</services>

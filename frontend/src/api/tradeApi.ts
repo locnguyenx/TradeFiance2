@@ -15,6 +15,13 @@ export interface LcListResponse {
   lcListCount: number;
 }
 
+export class ApiError extends Error {
+  constructor(public status: number, public statusText: string, public body: any) {
+    super(`API Error ${status}: ${statusText}`);
+    this.name = 'ApiError';
+  }
+}
+
 export const tradeApi = {
   credentials: '',
 
@@ -31,11 +38,42 @@ export const tradeApi = {
 
   async _fetch(url: string, init?: RequestInit) {
     const headers = { ...init?.headers } as Record<string, string>;
+    
+    // Add Authorization header if credentials are set
     if (this.credentials) {
       headers['Authorization'] = `Basic ${this.credentials}`;
-      console.log(`DEBUG: Using Authorization header: ${headers['Authorization']}`);
     }
-    const res = await fetch(url, { ...init, headers });
+
+    // Moqui CSRF handling: send moquiSessionToken from cookies if it exists
+    if (typeof document !== 'undefined') {
+        const cookies = document.cookie.split(';');
+        const tokenCookie = cookies.find(c => c.trim().startsWith('moquiSessionToken='));
+        if (tokenCookie) {
+            const token = tokenCookie.split('=')[1];
+            if (token) headers['moquiSessionToken'] = token;
+        }
+    }
+
+    const res = await fetch(url, { 
+        ...init, 
+        headers,
+        credentials: 'include' // Always include cookies for session persistence
+    });
+    
+    if (!res.ok) {
+      let errorBody = null;
+      try {
+        errorBody = await res.json();
+      } catch (e) {
+        try {
+          errorBody = { message: await res.text() };
+        } catch (e2) {
+          errorBody = { message: 'Unknown error' };
+        }
+      }
+      throw new ApiError(res.status, res.statusText, errorBody);
+    }
+
     const resClone = res.clone();
     try {
       const json = await resClone.json();
@@ -93,11 +131,11 @@ export const tradeApi = {
     return res.json();
   },
 
-  async createLc(data: any): Promise<{ instrumentId: string; errors?: string[]; error?: string }> {
+  async createLc(params: any): Promise<{ instrumentId: string; transactionRef: string; errors?: string[]; error?: string }> {
     const res = await this._fetch(`${API_BASE}/import-lc`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      body: JSON.stringify(params),
     });
     return res.json();
   },
@@ -163,8 +201,8 @@ export const tradeApi = {
     return res.json();
   },
 
-  async updateProductCatalog(catalogId: string, data: Partial<TradeProductCatalog>): Promise<any> {
-    const res = await this._fetch(`${API_BASE}/product-catalog/${catalogId}`, {
+  async updateProductCatalog(productId: string, data: Partial<TradeProductCatalog>): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/product-catalog/${productId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -177,8 +215,8 @@ export const tradeApi = {
     return res.json();
   },
 
-  async updateFeeConfiguration(feeConfigId: string, data: Partial<FeeConfiguration>): Promise<any> {
-    const res = await this._fetch(`${API_BASE}/fee-configurations/${feeConfigId}`, {
+  async updateFeeConfiguration(feeConfigurationId: string, data: Partial<FeeConfiguration>): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/fee-configurations/${feeConfigurationId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -229,8 +267,8 @@ export const tradeApi = {
     return res.json();
   },
 
-  async updateUserAuthorityProfile(authorityProfileId: string, data: Partial<UserAuthorityProfile>): Promise<any> {
-    const res = await this._fetch(`${API_BASE}/authority-profiles/${authorityProfileId}`, {
+  async updateUserAuthorityProfile(userAuthorityId: string, data: Partial<UserAuthorityProfile>): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/authority-profiles/${userAuthorityId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -240,6 +278,11 @@ export const tradeApi = {
 
   async getExposureData(): Promise<any> {
     const res = await this._fetch(`${API_BASE}/exposure-data`);
+    return res.json();
+  },
+
+  async getFacilityDetail(facilityId: string): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/facilities?facilityId=${facilityId}`);
     return res.json();
   },
 };

@@ -49,4 +49,138 @@
             <entity-update value-field="facility"/>
         </actions>
     </service>
+    <service verb="get" noun="ExposureData" authenticate="false">
+        <out-parameters>
+            <parameter name="totalLimit" type="BigDecimal"/>
+            <parameter name="totalExposure" type="BigDecimal"/>
+            <parameter name="totalFirm" type="BigDecimal"/>
+            <parameter name="totalContingent" type="BigDecimal"/>
+            <parameter name="totalReserved" type="BigDecimal"/>
+            <parameter name="utilizationPercent" type="BigDecimal"/>
+            <parameter name="facilityBreakdown" type="List"><parameter name="facility" type="Map"/></parameter>
+        </out-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find entity-name="trade.CustomerFacility" list="facilityList"/>
+            
+            <set field="totalLimit" from="0.0" type="BigDecimal"/>
+            <set field="totalFirm" from="0.0" type="BigDecimal"/>
+            <set field="totalContingent" from="0.0" type="BigDecimal"/>
+            <set field="totalReserved" from="0.0" type="BigDecimal"/>
+            <set field="facilityBreakdown" from="[]"/>
+            
+            <iterate list="facilityList" entry="facility">
+                <set field="totalLimit" from="totalLimit + (facility.totalApprovedLimit ?: 0)"/>
+                
+                <entity-find entity-name="trade.TradeInstrument" list="instrumentList">
+                    <econdition field-name="customerFacilityId" from="facility.facilityId"/>
+                    <econdition field-name="transactionStatusId" operator="in" value="TX_DRAFT,TX_PENDING,TX_APPROVED"/>
+                </entity-find>
+                
+                <set field="fFirm" from="0.0" type="BigDecimal"/>
+                <set field="fContingent" from="0.0" type="BigDecimal"/>
+                <set field="fReserved" from="0.0" type="BigDecimal"/>
+                
+                <iterate list="instrumentList" entry="inst">
+                    <if condition="inst.transactionStatusId == 'TX_APPROVED'">
+                        <set field="fFirm" from="fFirm + (inst.baseEquivalentAmount ?: 0)"/>
+                    <else-if condition="inst.transactionStatusId == 'TX_PENDING'">
+                        <set field="fContingent" from="fContingent + (inst.baseEquivalentAmount ?: 0)"/>
+                    </else-if>
+                    <else-if condition="inst.transactionStatusId == 'TX_DRAFT'">
+                        <set field="fReserved" from="fReserved + (inst.baseEquivalentAmount ?: 0)"/>
+                    </else-if>
+                    </if>
+                </iterate>
+                
+                <set field="totalFirm" from="totalFirm + fFirm"/>
+                <set field="totalContingent" from="totalContingent + fContingent"/>
+                <set field="totalReserved" from="totalReserved + fReserved"/>
+
+                <entity-find-one entity-name="trade.TradeParty" value-field="party">
+                    <field-map field-name="partyId" from="facility.ownerPartyId"/>
+                </entity-find-one>
+                
+                <script>
+                    facilityBreakdown.add([
+                        facilityId: facility.facilityId,
+                        facilityName: party?.partyName ?: facility.facilityId,
+                        limit: facility.totalApprovedLimit,
+                        firm: fFirm,
+                        contingent: fContingent,
+                        reserved: fReserved,
+                        available: (facility.totalApprovedLimit ?: 0) - (fFirm + fContingent + fReserved)
+                    ])
+                </script>
+            </iterate>
+            
+            <set field="totalExposure" from="totalFirm + totalContingent + totalReserved" type="BigDecimal"/>
+            <set field="utilizationPercent" from="totalLimit > 0 ? (totalExposure / totalLimit) * 100 : 0"/>
+        </actions>
+    </service>
+
+    <service verb="get" noun="FacilityDetail" authenticate="false">
+        <in-parameters>
+            <parameter name="facilityId" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="facility" type="Map"/>
+            <parameter name="transactions" type="List"><parameter name="tran" type="Map"/></parameter>
+        </out-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find-one entity-name="trade.CustomerFacility" value-field="facilityField">
+                <field-map field-name="facilityId"/>
+            </entity-find-one>
+            
+            <if condition="!facilityField"><return error="true" message="Facility ${facilityId} not found"/></if>
+            
+            <entity-find entity-name="trade.TradeInstrument" list="instrumentList">
+                <econdition field-name="customerFacilityId" from="facilityId"/>
+                <econdition field-name="transactionStatusId" operator="in" value="TX_DRAFT,TX_PENDING,TX_APPROVED"/>
+                <order-by field-name="-transactionDate"/>
+            </entity-find>
+            
+            <set field="fFirm" from="0.0" type="BigDecimal"/>
+            <set field="fContingent" from="0.0" type="BigDecimal"/>
+            <set field="fReserved" from="0.0" type="BigDecimal"/>
+            <set field="transactions" from="[]"/>
+            
+            <iterate list="instrumentList" entry="inst">
+                <if condition="inst.transactionStatusId == 'TX_APPROVED'">
+                    <set field="fFirm" from="fFirm + (inst.baseEquivalentAmount ?: 0)"/>
+                <else-if condition="inst.transactionStatusId == 'TX_PENDING'">
+                    <set field="fContingent" from="fContingent + (inst.baseEquivalentAmount ?: 0)"/>
+                </else-if>
+                <else-if condition="inst.transactionStatusId == 'TX_DRAFT'">
+                    <set field="fReserved" from="fReserved + (inst.baseEquivalentAmount ?: 0)"/>
+                </else-if>
+                </if>
+                
+                <script>
+                    transactions.add([
+                        instrumentId: inst.instrumentId,
+                        transactionRef: inst.transactionRef,
+                        businessStateId: inst.lifecycleStatusId,
+                        effectiveOutstandingAmount: inst.baseEquivalentAmount,
+                        transactionDate: inst.transactionDate
+                    ])
+                </script>
+            </iterate>
+            
+            <entity-find-one entity-name="trade.TradeParty" value-field="party">
+                <field-map field-name="partyId" from="facilityField.ownerPartyId"/>
+            </entity-find-one>
+            
+            <set field="facility" from="[
+                facilityId: facilityField.facilityId,
+                facilityName: party?.partyName ?: facilityField.facilityId,
+                limit: facilityField.totalApprovedLimit,
+                firm: fFirm,
+                contingent: fContingent,
+                reserved: fReserved,
+                available: (facilityField.totalApprovedLimit ?: 0) - (fFirm + fContingent + fReserved)
+            ]"/>
+        </actions>
+    </service>
 </services>

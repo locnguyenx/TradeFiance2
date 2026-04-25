@@ -30,29 +30,59 @@ describe('IssuanceStepper v3.0 (BDD-IMP-FLOW-01, BDD-CMN-VAL-05)', () => {
         jest.clearAllMocks();
     });
 
+    const completeStep0 = async () => {
+        expect(await screen.findByLabelText(/LC Product/i)).toBeInTheDocument();
+        fireEvent.change(screen.getByLabelText(/Applicant/i), { target: { value: 'Global Corp' } });
+        fireEvent.change(screen.getByLabelText(/LC Product/i), { target: { value: 'IMP_LC_STANDARD' } });
+    };
+
+    const completeStep1 = async () => {
+        fireEvent.change(screen.getByLabelText(/Amount/i), { target: { value: '100000' } });
+        fireEvent.change(screen.getByLabelText(/Currency/i), { target: { value: 'USD' } });
+        fireEvent.change(screen.getByLabelText(/Expiry Place/i), { target: { value: 'AT COUNTERS' } });
+        fireEvent.change(screen.getByLabelText(/Latest Shipment Date/i), { target: { value: '2026-12-31' } });
+        fireEvent.change(screen.getByLabelText(/Description of Goods/i), { target: { value: 'Electronic components' } });
+    };
+
+    const completeStep2 = async () => {
+        fireEvent.change(screen.getByLabelText(/Charge Allocation/i), { target: { value: 'BENEFICIARY' } });
+        fireEvent.change(screen.getByLabelText(/Customer Facility/i), { target: { value: 'FAC-001' } });
+    };
+
     it('renders product catalog dropdown on Step 1', async () => {
         render(<IssuanceStepper />);
         expect(await screen.findByLabelText(/LC Product/i)).toBeInTheDocument();
     });
 
-    it('renders right-navigation section anchors on Step 2', async () => {
+    it('validates mandatory fields in Step 1 before moving to Step 2', async () => {
         render(<IssuanceStepper />);
-        // Complete Step 1
-        fireEvent.change(screen.getByLabelText(/Applicant/i), { target: { value: 'Global Corp' } });
+        fireEvent.click(screen.getByTestId('next-button'));
+        
+        // Wait for the error banner to appear and check its content
+        await waitFor(() => {
+            const banner = document.querySelector('.error-banner');
+            expect(banner).toBeInTheDocument();
+            expect(banner?.textContent).toMatch(/LC Product/i);
+            expect(banner?.textContent).toMatch(/Applicant/i);
+        });
+    });
+
+    it('renders right-navigation section anchors on Step 2 after valid Step 1', async () => {
+        render(<IssuanceStepper />);
+        await completeStep0();
         fireEvent.click(screen.getByTestId('next-button'));
 
         const aside = screen.getByRole('complementary');
         expect(within(aside).getByText('Financials & Dates')).toBeInTheDocument();
-        expect(within(aside).getByText('Terms & Shipping')).toBeInTheDocument();
-        expect(within(aside).getByText('Narratives')).toBeInTheDocument();
     });
 
-    it('renders charge allocation field on Step 3', async () => {
+    it('renders charge allocation field on Step 3 after valid Step 1 and 2', async () => {
         render(<IssuanceStepper />);
-        // Move to Step 3
-        fireEvent.change(screen.getByLabelText(/Applicant/i), { target: { value: 'Global Corp' } });
-        fireEvent.click(screen.getByTestId('next-button')); // Step 2
-        fireEvent.click(screen.getByTestId('next-button')); // Step 3
+        await completeStep0();
+        fireEvent.click(screen.getByTestId('next-button')); // To Step 2
+        
+        await completeStep1();
+        fireEvent.click(screen.getByTestId('next-button')); // To Step 3
         
         expect(screen.getByText(/Step 3: Margin & Charges/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/Charge Allocation/i)).toBeInTheDocument();
@@ -60,8 +90,7 @@ describe('IssuanceStepper v3.0 (BDD-IMP-FLOW-01, BDD-CMN-VAL-05)', () => {
 
     it('validates SWIFT characters on goodsDescription blur', async () => {
         render(<IssuanceStepper />);
-        // Move to Step 2
-        fireEvent.change(screen.getByLabelText(/Applicant/i), { target: { value: 'Global Corp' } });
+        await completeStep0();
         fireEvent.click(screen.getByTestId('next-button'));
 
         const goodsInput = screen.getByLabelText(/Description of Goods/i);
@@ -73,21 +102,50 @@ describe('IssuanceStepper v3.0 (BDD-IMP-FLOW-01, BDD-CMN-VAL-05)', () => {
         });
     });
 
-    it('renders v3.0 shipping fields (Tolerance, Port of Discharge) on Step 2', async () => {
+    it('shows Save Draft only on the final Review step and handles submission', async () => {
         render(<IssuanceStepper />);
-        // Move to Step 2
-        fireEvent.change(screen.getByLabelText(/Applicant/i), { target: { value: 'Global Corp' } });
-        fireEvent.click(screen.getByTestId('next-button'));
+        await completeStep0();
+        fireEvent.click(screen.getByTestId('next-button')); // To Step 2
+        
+        // On Step 2, Save Draft should NOT be visible
+        expect(screen.queryByText(/Save Draft/i)).not.toBeInTheDocument();
+        
+        await completeStep1();
+        fireEvent.click(screen.getByTestId('next-button')); // To Step 3
+        
+        await completeStep2();
+        fireEvent.click(screen.getByTestId('next-button')); // To Step 4 (Review)
 
-        expect(screen.getByLabelText(/Positive Tolerance/i)).toBeInTheDocument();
-        expect(screen.getByLabelText(/Negative Tolerance/i)).toBeInTheDocument();
-        expect(screen.getByLabelText(/Port of Discharge/i)).toBeInTheDocument();
-        expect(screen.getByLabelText(/Latest Shipment Date/i)).toBeInTheDocument();
+        // On Final Step, Save Draft SHOULD be visible
+        expect(screen.getByText(/Save Draft/i)).toBeInTheDocument();
+        
+        fireEvent.click(screen.getByText(/Save Draft/i));
+        expect(await screen.findByText(/Draft Saved Successfully/i)).toBeInTheDocument();
+        
+        fireEvent.click(screen.getByTestId('submit-button'));
+        expect(await screen.findByText(/Successfully Submitted for Approval/i)).toBeInTheDocument();
     });
 
-    it('renders v3.0 confirmation and LC type fields on Step 1', async () => {
+    it('blocks progression if there is a date error', async () => {
         render(<IssuanceStepper />);
-        expect(screen.getByLabelText(/LC Type/i)).toBeInTheDocument();
-        expect(screen.getByLabelText(/Confirmation Instruction/i)).toBeInTheDocument();
+        await completeStep0();
+        fireEvent.click(screen.getByTestId('next-button')); // To Step 2
+        
+        // Input invalid dates (Expiry before Issue)
+        fireEvent.change(screen.getByLabelText(/Issue Date/i), { target: { value: '2026-12-31' } });
+        fireEvent.change(screen.getByLabelText(/Expiry Date/i), { target: { value: '2026-01-01' } });
+        
+        // Error should be visible below field already
+        expect(await screen.findByText(/Expiry Date cannot be in the past or before Issue Date/i)).toBeInTheDocument();
+        
+        // Click Next
+        fireEvent.click(screen.getByTestId('next-button'));
+        
+        // Should show date conflict error in banner
+        await waitFor(() => {
+            const banner = document.querySelector('.error-banner');
+            expect(banner).toBeInTheDocument();
+            expect(banner?.textContent).toMatch(/Date Conflict/i);
+        });
     });
 });

@@ -11,10 +11,10 @@ jest.mock('../api/tradeApi');
 
 const mockProfiles: UserAuthorityProfile[] = [
   {
-    authorityProfileId: 'AUTH_001',
+    userAuthorityId: 'AUTH_001',
     userId: 'CHECKER_ALPHA',
-    authorityTierEnumId: 'TIER_3',
-    maxApprovalAmount: 5000000,
+    delegationTierId: 'TIER_3',
+    customLimit: 5000000,
     currencyUomId: 'USD',
     isSuspended: 'N'
   }
@@ -54,7 +54,7 @@ describe('UserAuthorityManager', () => {
     fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
     
     expect(tradeApi.updateUserAuthorityProfile).toHaveBeenCalledWith('AUTH_001', expect.objectContaining({
-      maxApprovalAmount: 6000000
+      customLimit: 6000000
     }));
   });
 });

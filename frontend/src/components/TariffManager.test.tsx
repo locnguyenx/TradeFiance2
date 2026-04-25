@@ -11,9 +11,9 @@ jest.mock('../api/tradeApi');
 
 const mockFees: FeeConfiguration[] = [
   {
-    feeConfigId: 'FEE_ISS_01',
-    feeTypeEnumId: 'ISSUANCE_FEE',
-    calculationMethodEnumId: 'PERCENTAGE',
+    feeConfigurationId: 'FEE_ISS_01',
+    feeEventEnumId: 'ISSUANCE_FEE',
+    calculationTypeEnumId: 'PERCENTAGE',
     ratePercent: 0.125,
     minFloorAmount: 50,
     maxCeilingAmount: 500,
@@ -30,7 +30,6 @@ describe('TariffManager', () => {
 
   it('renders fee type list in left navigation', async () => {
     render(<TariffManager />);
-    screen.debug();
     expect(await screen.findByText('Issuance Fee')).toBeInTheDocument();
   });
 

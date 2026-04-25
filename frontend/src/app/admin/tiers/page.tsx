@@ -1,10 +1,12 @@
-import { SystemAdminSettings } from '../../../components/SystemAdminSettings';
-import { GlobalShell } from '../../../components/GlobalShell';
+'use client';
 
-export default function TierAdminPage() {
+import { UserAuthorityManager } from '../../../components/UserAuthorityManager';
+
+export default function TiersPage() {
   return (
-    <GlobalShell>
-      <SystemAdminSettings activePanel="authority" />
-    </GlobalShell>
+    <div className="p-8">
+      <h1 className="text-2xl font-bold mb-6">User Authority Management</h1>
+      <UserAuthorityManager />
+    </div>
   );
 }

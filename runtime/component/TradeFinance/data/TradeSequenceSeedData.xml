@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-facade-xml>
+    <trade.common.NumberSequence sequenceId="IMP_LC_REF" prefix="TF-IMP" lastNumber="0" description="Import LC Transaction Reference Sequence"/>
+</entity-facade-xml>

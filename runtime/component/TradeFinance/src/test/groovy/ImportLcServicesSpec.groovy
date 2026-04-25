@@ -24,7 +24,17 @@ class ImportLcServicesSpec extends Specification {
         }
         if (ec.entity.find("trade.UserAuthorityProfile").condition("userId", "trade.admin").count() == 0) {
             ec.entity.makeValue("trade.UserAuthorityProfile")
-                .setAll([authorityProfileId: "T1-01", userId: "trade.admin", authorityTierEnumId: "TIER_1", maxApprovalAmount: 1000000.00, currencyUomId: "USD"])
+                .setAll([userAuthorityId: "T1-01", userId: "trade.admin", delegationTierId: "TIER_1", customLimit: 10000000.00, currencyUomId: "USD", makerCheckerFlag: "MAKER_CHECKER"])
+                .create()
+        }
+        if (ec.entity.find("moqui.security.UserAccount").condition("username", "trade.checker").count() == 0) {
+            ec.entity.makeValue("moqui.security.UserAccount")
+                .setAll([userId: "trade.checker", username: "trade.checker", currentPassword: "trade123", firstName: "Trade", lastName: "Checker"])
+                .create()
+        }
+        if (ec.entity.find("trade.UserAuthorityProfile").condition("userId", "trade.checker").count() == 0) {
+            ec.entity.makeValue("trade.UserAuthorityProfile")
+                .setAll([userAuthorityId: "T2-01", userId: "trade.checker", delegationTierId: "TIER_2", customLimit: 10000000.00, currencyUomId: "USD", makerCheckerFlag: "CHECKER"])
                 .create()
         }
         
@@ -35,6 +45,16 @@ class ImportLcServicesSpec extends Specification {
         ec.entity.find("trade.importlc.ImportLcAmendment").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
         ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+    }
+
+    def setup() {
+        ec.message.clearAll()
+        ec.user.loginUser("trade.admin", "trade123")
+    }
+
+    def cleanup() {
+        ec.user.popUser()
+        ec.message.clearAll()
     }
 
     def cleanupSpec() {
@@ -123,9 +143,10 @@ class ImportLcServicesSpec extends Specification {
         def instrumentId = createResult.instrumentId
 
         when:
+        ec.user.loginUser("trade.checker", "trade123")
         ec.service.sync().name("trade.importlc.ImportLcServices.approve#ImportLetterOfCredit").parameters([
             instrumentId: instrumentId,
-            approverUserId: "trade.admin",
+            approverUserId: "trade.checker",
             approvalComments: "Standard approval"
         ]).call()
         def instrumentLookup = ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).useCache(false).one()
@@ -135,7 +156,7 @@ class ImportLcServicesSpec extends Specification {
         !ec.message.hasError()
         instrumentLookup.transactionStatusId == "TX_APPROVED"
         approvalRecord != null
-        approvalRecord.approverUserId == "trade.admin"
+        approvalRecord.approverUserId == "trade.checker"
 
         cleanup:
         if (instrumentId) {
@@ -217,7 +238,7 @@ class ImportLcServicesSpec extends Specification {
         when:
         def setlResult = ec.service.sync().name("trade.importlc.ImportLcServices.settle#Presentation").parameters([
             presentationId: presId,
-            settlementAmount: 40000.0,
+            principalAmount: 40000.0,
             settlementTypeEnumId: "SIGHT_PAYMENT"
         ]).call()
 

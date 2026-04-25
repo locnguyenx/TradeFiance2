@@ -36,13 +36,13 @@ class DualApprovalSpec extends Specification {
             ec.entity.makeValue("moqui.security.UserAccount").setAll([userId: "trade.checker2", username: "trade.checker2"]).create()
 
             ec.entity.makeValue("trade.UserAuthorityProfile").setAll([
-                authorityProfileId: "PROFILE_MAKER", userId: "trade.maker", authorityTierEnumId: "TIER_1", maxApprovalAmount: 100000.0
+                userAuthorityId: "PROFILE_MAKER", userId: "trade.maker", delegationTierId: "TIER_1", customLimit: 100000.0, makerCheckerFlag: "MAKER"
             ]).create()
             ec.entity.makeValue("trade.UserAuthorityProfile").setAll([
-                authorityProfileId: "PROFILE_CK1", userId: "trade.checker1", authorityTierEnumId: "TIER_4", maxApprovalAmount: 10000000.0
+                userAuthorityId: "PROFILE_CK1", userId: "trade.checker1", delegationTierId: "TIER_4", customLimit: 10000000.0, makerCheckerFlag: "CHECKER"
             ]).create()
             ec.entity.makeValue("trade.UserAuthorityProfile").setAll([
-                authorityProfileId: "PROFILE_CK2", userId: "trade.checker2", authorityTierEnumId: "TIER_4", maxApprovalAmount: 10000000.0
+                userAuthorityId: "PROFILE_CK2", userId: "trade.checker2", delegationTierId: "TIER_4", customLimit: 10000000.0, makerCheckerFlag: "CHECKER"
             ]).create()
             
             ec.transaction.commit()

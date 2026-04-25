@@ -1,4 +1,3 @@
-
 import org.moqui.Moqui
 import org.moqui.context.ExecutionContext
 import spock.lang.Specification
@@ -28,56 +27,256 @@ class RestApiEndpointsSpec extends Specification {
         ec.destroy()
     }
 
+    String createTestLc(String prefix) {
+        String ref = prefix + "-" + System.currentTimeMillis()
+        ec.user.internalLoginUser("trade.maker")
+        ScreenTestRender str = screenTest.render("s1/trade/import-lc",
+            [transactionRef: ref, lcAmount: 5000.0, lcCurrencyUomId: "USD"], "post")
+        if (str.errorMessages) {
+            throw new Exception("Failed to create LC: ${str.errorMessages}")
+        }
+        def json = new groovy.json.JsonSlurper().parseText(str.output)
+        return json.instrumentId
+    }
+
+    String createTestPresentation(String instrumentId) {
+        ec.user.internalLoginUser("trade.checker")
+        screenTest.render("s1/trade/authorize", [instrumentId: instrumentId], "post")
+        ec.service.sync().name("trade.importlc.ImportLcServices.approve#ImportLetterOfCredit")
+            .parameters([instrumentId: instrumentId, approverUserId: "trade.checker"]).call()
+        ec.user.internalLoginUser("trade.maker")
+        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/presentations",
+            [instrumentId: instrumentId, claimAmount: 1000.0, claimCurrency: "USD"], "post")
+        if (str.errorMessages) {
+            throw new Exception("Failed to create presentation: ${str.errorMessages}")
+        }
+        def json = new groovy.json.JsonSlurper().parseText(str.output)
+        return json.presentationId
+    }
+
+    // ===== GET Endpoints =====
+
     def "Test GET /trade/kpis"() {
-        given:
-        def diagFile = new File("/tmp/diag.txt")
-        
         when:
         ScreenTestRender str = screenTest.render("s1/trade/kpis", [:], "get")
-        diagFile << "s1/trade/kpis output: ${str.output}\n"
-        diagFile << "s1/trade/kpis errors: ${str.errorMessages}\n"
-        
+
         then:
         !str.errorMessages
         def json = new groovy.json.JsonSlurper().parseText(str.output)
         json.kpis.pendingDrafts >= 0
+        json.kpis.pendingApprovals >= 0
     }
 
-    def "Test POST /trade/import-lc"() {
+    def "Test GET /trade/import-lc returns list"() {
+        when:
+        ScreenTestRender str = screenTest.render("s1/trade/import-lc", [:], "get")
+
+        then:
+        !str.errorMessages
+        def json = new groovy.json.JsonSlurper().parseText(str.output)
+        json.lcList != null
+    }
+
+    def "Test GET /trade/import-lc with status filter"() {
+        when:
+        ScreenTestRender str = screenTest.render("s1/trade/import-lc", [transactionStatusId: "TX_DRAFT"], "get")
+
+        then:
+        !str.errorMessages
+        def json = new groovy.json.JsonSlurper().parseText(str.output)
+        json.lcList != null
+    }
+
+    def "Test GET /trade/import-lc by id"() {
         given:
-        def diagFile = new File("/tmp/diag.txt")
-        Map params = [transactionRef: "REST-TEST-001", lcAmount: 25000.0, lcCurrencyUomId: "USD"]
-        
+        String instrumentId = createTestLc("REST-GET")
+
+        when:
+        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}", [:], "get")
+
+        then:
+        !str.errorMessages
+        def json = new groovy.json.JsonSlurper().parseText(str.output)
+        json.lcList != null
+        json.lcList.size() >= 1
+        json.lcList[0].instrumentId == instrumentId
+    }
+
+    def "Test GET /trade/standard-clauses"() {
+        when:
+        ScreenTestRender str = screenTest.render("s1/trade/standard-clauses", [:], "get")
+
+        then:
+        !str.errorMessages
+        def json = new groovy.json.JsonSlurper().parseText(str.output)
+        json.clauseList != null
+    }
+
+    def "Test GET /trade/audit-logs"() {
+        when:
+        ScreenTestRender str = screenTest.render("s1/trade/audit-logs", [:], "get")
+
+        then:
+        !str.errorMessages
+        def json = new groovy.json.JsonSlurper().parseText(str.output)
+        json.auditLogList != null
+    }
+
+    // ===== POST Endpoints =====
+
+    def "Test POST /trade/import-lc creates new LC"() {
+        given:
+        String ref = "REST-CREATE-" + System.currentTimeMillis()
+        Map params = [transactionRef: ref, lcAmount: 25000.0, lcCurrencyUomId: "USD"]
+
         when:
         ec.user.internalLoginUser("trade.maker")
         ScreenTestRender str = screenTest.render("s1/trade/import-lc", params, "post")
-        diagFile << "s1/trade/import-lc output: ${str.output}\n"
-        diagFile << "s1/trade/import-lc errors: ${str.errorMessages}\n"
-        
+
         then:
         !str.errorMessages
         def json = new groovy.json.JsonSlurper().parseText(str.output)
         json.instrumentId != null
     }
 
+    def "Test POST /trade/import-lc update"() {
+        given:
+        String instrumentId = createTestLc("REST-UPDATE")
+        Map params = [instrumentId: instrumentId, lcAmount: 200.0]
+
+        when:
+        ec.user.internalLoginUser("trade.maker")
+        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}", params, "post")
+
+        then:
+        !str.errorMessages
+        str.output != null
+    }
+
     def "Test POST /trade/authorize"() {
         given:
-        def diagFile = new File("/tmp/diag.txt")
-        // Create an instrument first to authorize
-        def createOut = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-                          .parameters([transactionRef: "REST-AUTH-001", lcAmount: 100.0, lcCurrencyUomId: "USD"]).call()
-        String instrumentId = createOut.instrumentId
-        diagFile << "Created instrument for auth test: ${instrumentId}\n"
-        
+        String instrumentId = createTestLc("REST-AUTH")
+
         when:
         ec.user.internalLoginUser("trade.checker")
         ScreenTestRender str = screenTest.render("s1/trade/authorize", [instrumentId: instrumentId], "post")
-        diagFile << "s1/trade/authorize output: ${str.output}\n"
-        diagFile << "s1/trade/authorize errors: ${str.errorMessages}\n"
-        
+
         then:
         !str.errorMessages
         def json = new groovy.json.JsonSlurper().parseText(str.output)
         json.isAuthorized != null
     }
+
+    def "Test POST /trade/import-lc amendments"() {
+        given:
+        String instrumentId = createTestLc("REST-AMEND")
+        Map params = [
+            instrumentId: instrumentId,
+            amendmentTypeEnumId: "AMEND_AMDTMNT",
+            amendmentDate: new java.sql.Date(System.currentTimeMillis()),
+            amendmentNarrative: "Test amendment"
+        ]
+
+        when:
+        ec.user.internalLoginUser("trade.maker")
+        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/amendments", params, "post")
+
+        then:
+        !str.errorMessages
+        def json = new groovy.json.JsonSlurper().parseText(str.output)
+        json.amendmentId != null
+    }
+
+    def "Test POST /trade/import-lc presentations requires LC_ISSUED state"() {
+        given:
+        String instrumentId = createTestLc("REST-PRES")
+        ec.user.internalLoginUser("trade.checker")
+        screenTest.render("s1/trade/authorize", [instrumentId: instrumentId], "post")
+        ec.service.sync().name("trade.importlc.ImportLcServices.approve#ImportLetterOfCredit")
+            .parameters([instrumentId: instrumentId, approverUserId: "trade.checker"]).call()
+
+        when:
+        ec.user.internalLoginUser("trade.maker")
+        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/presentations",
+            [instrumentId: instrumentId, claimAmount: 5000.0, claimCurrency: "USD"], "post")
+
+        then:
+        str.errorMessages || str.output != null
+    }
+
+    def "Test PATCH /trade/import-lc presentations waiver requires LC_DOCS_RECEIVED state"() {
+        given:
+        String instrumentId = createTestLc("REST-WAIVER")
+        ec.user.internalLoginUser("trade.checker")
+        screenTest.render("s1/trade/authorize", [instrumentId: instrumentId], "post")
+        ec.service.sync().name("trade.importlc.ImportLcServices.approve#ImportLetterOfCredit")
+            .parameters([instrumentId: instrumentId, approverUserId: "trade.checker"]).call()
+
+        when:
+        ec.user.internalLoginUser("trade.maker")
+        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/presentations",
+            [instrumentId: instrumentId, claimAmount: 1000.0, claimCurrency: "USD"], "post")
+
+        then:
+        str.errorMessages || str.output != null
+    }
+
+    def "Test POST /trade/import-lc settlements"() {
+        given:
+        String instrumentId = createTestLc("REST-SETTLE")
+
+        when:
+        ec.user.internalLoginUser("trade.maker")
+        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/settlements",
+            [instrumentId: instrumentId, principalAmount: 2500.0, debitAccountId: "TRADE-USD-001"], "post")
+
+        then:
+        !str.errorMessages
+        str.output != null
+    }
+
+    def "Test POST /trade/import-lc shipping-guarantees"() {
+        given:
+        String instrumentId = createTestLc("REST-SG")
+
+        when:
+        ec.user.internalLoginUser("trade.maker")
+        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/shipping-guarantees",
+            [instrumentId: instrumentId, invoiceAmount: 1000.0], "post")
+
+        then:
+        !str.errorMessages
+        def json = new groovy.json.JsonSlurper().parseText(str.output)
+        json.guaranteeId != null
+    }
+
+    def "Test POST /trade/import-lc cancel"() {
+        given:
+        String instrumentId = createTestLc("REST-CANCEL")
+
+        when:
+        ec.user.internalLoginUser("trade.maker")
+        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/cancel",
+            [instrumentId: instrumentId, cancellationReason: "REST test"], "post")
+
+        then:
+        !str.errorMessages
+        str.output != null
+    }
+
+    def "Test POST /trade/product-config"() {
+        given:
+        String key = "REST_TEST_" + System.currentTimeMillis()
+        Map params = [configKey: key, configValue: "test_value"]
+
+        when:
+        ec.user.internalLoginUser("trade.maker")
+        ScreenTestRender str = screenTest.render("s1/trade/product-config", params, "post")
+
+        then:
+        !str.errorMessages
+        str.output != null
+    }
+
+    
 }

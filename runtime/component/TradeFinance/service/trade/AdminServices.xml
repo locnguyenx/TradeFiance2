@@ -9,10 +9,12 @@
             <parameter name="auditLogList" type="List"><parameter name="log" type="Map"/></parameter>
         </out-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find entity-name="trade.common.TradeAuditLog" list="auditLogList">
                 <econdition field-name="transactionRef" from="transactionRef" ignore-if-empty="true"/>
                 <order-by field-name="-timestamp"/>
             </entity-find>
+            <script>ec.artifactExecution.enableAuthz()</script>
         </actions>
     </service>
 

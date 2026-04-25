@@ -41,7 +41,7 @@
             <entity-find entity-name="trade.UserAuthorityProfile" list="profiles">
                 <econdition field-name="userId"/>
                 <econdition field-name="isSuspended" operator="not-equals" value="Y"/>
-                <order-by field-name="maxApprovalAmount"/>
+                <order-by field-name="customLimit"/>
             </entity-find>
             <if condition="!profiles">
                 <set field="isAuthorized" from="false" type="Boolean"/>
@@ -50,9 +50,9 @@
             
             <set field="isAuthorized" value="false" type="Boolean"/>
             <iterate list="profiles" entry="profile">
-                <if condition="evaluationAmount &lt;= profile.maxApprovalAmount">
+                <if condition="evaluationAmount &lt;= profile.customLimit">
                     <set field="isAuthorized" value="true" type="Boolean"/>
-                    <set field="authorityTierEnumId" from="profile.authorityTierEnumId"/>
+                    <set field="authorityTierEnumId" from="profile.delegationTierId"/>
                     <break/>
                 </if>
             </iterate>

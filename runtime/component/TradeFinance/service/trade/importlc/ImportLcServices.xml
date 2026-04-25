@@ -7,7 +7,7 @@
         <in-parameters>
             <!-- TradeInstrument fields -->
             <auto-parameters entity-name="trade.TradeInstrument" include="nonpk"/>
-            <parameter name="transactionRef" required="true"/>
+            <parameter name="transactionRef"/>
             
             <!-- ImportLetterOfCredit fields -->
             <auto-parameters entity-name="trade.importlc.ImportLetterOfCredit" include="nonpk"/>
@@ -20,6 +20,10 @@
             <parameter name="instrumentId" required="true"/>
         </out-parameters>
         <actions>
+            <if condition="!transactionRef">
+                <service-call name="trade.TradeCommonServices.get#NextNumber" in-map="[sequenceId:'IMP_LC_REF', instrumentType:'IMP']" out-map="nextNumOut"/>
+                <set field="transactionRef" from="nextNumOut.nextNumberFormatted"/>
+            </if>
             <!-- 1. Create TradeInstrument -->
             <service-call name="create#trade.TradeInstrument" out-map="createInstOut"
                 in-map="[
@@ -45,7 +49,16 @@
                     effectiveOutstandingAmount: lcAmount,
                     effectiveExpiryDate: expiryDate,
                     effectiveShipmentDate: latestShipmentDate,
-                    effectiveCurrencyUomId: lcCurrencyUomId
+                    effectiveCurrencyUomId: lcCurrencyUomId,
+                    productEnumId: 'IMPORT_LC',
+                    applicantPartyId: applicantPartyId,
+                    currencyUomId: lcCurrencyUomId,
+                    amount: lcAmount,
+                    outstandingAmount: lcAmount,
+                    baseEquivalentAmount: lcAmount,
+                    issueDate: ec.user.nowTimestamp,
+                    expiryDate: expiryDate,
+                    customerFacilityId: customerFacilityId
                 ]"/>
             <set field="instrumentId" from="instrumentId"/>
         </actions>
@@ -321,7 +334,7 @@
     <service verb="settle" noun="Presentation" authenticate="false">
         <in-parameters>
             <parameter name="presentationId" type="String" required="true"/>
-            <parameter name="settlementAmount" type="BigDecimal" required="true"/>
+            <parameter name="principalAmount" type="BigDecimal" required="true"/>
             <parameter name="settlementTypeEnumId" type="String" required="true"/>
             <parameter name="isPartialDraw" type="String" default="Y"/>
         </in-parameters>
@@ -339,15 +352,15 @@
             <entity-update value-field="presentation"/>
 
             <!-- Drawdown LC Effective Values -->
-            <set field="lc.effectiveOutstandingAmount" from="lc.effectiveOutstandingAmount - settlementAmount"/>
-            <set field="lc.cumulativeDrawnAmount" from="(lc.cumulativeDrawnAmount ?: 0) + settlementAmount"/>
+            <set field="lc.effectiveOutstandingAmount" from="lc.effectiveOutstandingAmount - principalAmount"/>
+            <set field="lc.cumulativeDrawnAmount" from="(lc.cumulativeDrawnAmount ?: 0) + principalAmount"/>
             
             <!-- Task 2.4: Status Transition & Revolving Logic -->
             <set field="isZero" from="lc.effectiveOutstandingAmount == 0 || (lc.effectiveOutstandingAmount instanceof BigDecimal &amp;&amp; lc.effectiveOutstandingAmount.compareTo(BigDecimal.ZERO) == 0)"/>
             
             <if condition="isZero">
                 <entity-find-one entity-name="trade.TradeProductCatalog" value-field="catalog">
-                    <field-map field-name="productCatalogId" from="lc.productCatalogId"/>
+                    <field-map field-name="productId" from="lc.productCatalogId"/>
                 </entity-find-one>
                 <if condition="catalog?.allowRevolving == 'Y'">
                     <!-- Reinstate for Revolving LC -->
@@ -450,18 +463,22 @@
     </service>
     <service verb="get" noun="ImportLetterOfCreditList" authenticate="false">
         <in-parameters>
+            <parameter name="instrumentId"/>
             <parameter name="transactionStatusId"/>
             <parameter name="businessStateId"/>
         </in-parameters>
         <out-parameters>
-            <parameter name="instrumentList" type="List"><parameter name="instrument" type="Map"/></parameter>
+            <parameter name="lcList" type="List"><parameter name="instrument" type="Map"/></parameter>
         </out-parameters>
         <actions>
-            <entity-find entity-name="trade.importlc.ImportLetterOfCreditView" list="instrumentList">
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find entity-name="trade.importlc.ImportLetterOfCreditView" list="lcList">
+                <econdition field-name="instrumentId" from="instrumentId" ignore-if-empty="true"/>
                 <econdition field-name="transactionStatusId" from="transactionStatusId" ignore-if-empty="true"/>
                 <econdition field-name="businessStateId" from="businessStateId" ignore-if-empty="true"/>
                 <order-by field-name="prioritySequence, -instrumentId"/>
             </entity-find>
+            <script>ec.artifactExecution.enableAuthz()</script>
         </actions>
     </service>
 
@@ -470,6 +487,7 @@
             <parameter name="kpis" type="Map"/>
         </out-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find entity-name="trade.TradeInstrument" list="draftList">
                 <econdition field-name="transactionStatusId" value="TX_DRAFT"/>
             </entity-find>
@@ -477,6 +495,7 @@
                 <econdition field-name="transactionStatusId" value="TX_PENDING"/>
             </entity-find>
             <set field="kpis" from="[pendingDrafts: draftList.size(), pendingApprovals: pendingList.size()]"/>
+            <script>ec.artifactExecution.enableAuthz()</script>
         </actions>
     </service>
     <service verb="hold" noun="ImportLetterOfCredit" authenticate="false">

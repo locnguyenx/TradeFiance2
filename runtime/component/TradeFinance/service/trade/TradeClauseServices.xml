@@ -11,10 +11,12 @@
             <parameter name="clauseList" type="List"><parameter name="clause" type="Map"/></parameter>
         </out-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find entity-name="trade.common.TradeStandardClause" list="clauseList">
                 <econdition field-name="clauseTypeEnumId" from="clauseTypeEnumId" ignore-if-empty="true"/>
                 <order-by field-name="clauseName"/>
             </entity-find>
+            <script>ec.artifactExecution.enableAuthz()</script>
         </actions>
     </service>
 </services>

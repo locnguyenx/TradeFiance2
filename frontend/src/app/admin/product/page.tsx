@@ -1,10 +1,12 @@
-import { SystemAdminSettings } from '../../../components/SystemAdminSettings';
-import { GlobalShell } from '../../../components/GlobalShell';
+'use client';
 
-export default function ProductAdminPage() {
+import { ProductCatalogManager } from '../../../components/ProductCatalogManager';
+
+export default function ProductPage() {
   return (
-    <GlobalShell>
-      <SystemAdminSettings activePanel="product" />
-    </GlobalShell>
+    <div className="p-8">
+      <h1 className="text-2xl font-bold mb-6">Product Configuration Matrix</h1>
+      <ProductCatalogManager />
+    </div>
   );
 }

@@ -45,7 +45,7 @@ describe('SettlementForm', () => {
     fireEvent.click(screen.getByRole('button', { name: /confirm settlement/i }));
     
     expect(tradeApi.settleLcPresentation).toHaveBeenCalledWith('LC_100', expect.any(String), expect.objectContaining({
-      settlementAmount: 10000
+      principalAmount: 10000
     }));
   });
 });

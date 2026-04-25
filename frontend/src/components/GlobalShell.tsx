@@ -43,12 +43,12 @@ export const GlobalShell: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const navSections: NavSection[] = [
         { group: 'OPERATIONS', items: [
-            { id: 'dashboard', label: 'Operations Dashboard', icon: <LayoutDashboard size={18} />, path: '/import-lc' },
+            { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} />, path: '/import-lc' },
             { id: 'approvals', label: 'My Tasks', icon: <CheckCircle size={18} />, path: '/approvals' },
-            { id: 'issuance', label: 'New LC Issuance', icon: <PlusCircle size={18} />, path: '/issuance' },
             { id: 'documents', label: 'Document Examination', icon: <FileSearch size={18} />, path: '/import-lc/documents' },
         ]},
         { group: 'LIFECYCLE MANAGEMENT', items: [
+            { id: 'issuance', label: 'New LC Issuance', icon: <PlusCircle size={18} />, path: '/issuance' },
             { id: 'amendments', label: 'LC Amendments', icon: <FileEdit size={18} />, path: '/import-lc/amendments' },
             { id: 'presentations', label: 'Presentations', icon: <FileText size={18} />, path: '/import-lc/presentations' },
             { id: 'settlement', label: 'Settlements', icon: <CreditCard size={18} />, path: '/import-lc/settlement' },
@@ -56,14 +56,14 @@ export const GlobalShell: React.FC<{ children: ReactNode }> = ({ children }) => 
             { id: 'cancellations', label: 'Cancellations', icon: <XCircle size={18} />, path: '/import-lc/cancellations' },
         ]},
         { group: 'MASTER DATA', items: [
-            { id: 'parties', label: 'Counterparties', icon: <Users size={18} />, path: '/parties' },
-            { id: 'facilities', label: 'Import LC Facility Exposure', icon: <BarChart4 size={18} />, path: '/facilities' },
-            { id: 'tariffs', label: 'Tariff & Fee Mapping', icon: <Database size={18} />, path: '/tariffs' },
-            { id: 'product', label: 'Product Config', icon: <Settings2 size={18} />, path: '/admin/product' },
+            { id: 'parties', label: 'Party & KYC Directory', icon: <Users size={18} />, path: '/parties' },
+            { id: 'facilities', label: 'Credit Facilities (Limits)', icon: <BarChart4 size={18} />, path: '/facilities' },
+            { id: 'tariffs', label: 'Tariff & Fee Configuration', icon: <Database size={18} />, path: '/tariffs' },
+            { id: 'product', label: 'Product Configuration', icon: <Settings2 size={18} />, path: '/admin/product' },
         ]},
         { group: 'ADMINISTRATION', items: [
-            { id: 'tiers', label: 'Authority Tiers', icon: <ShieldCheck size={18} />, path: '/admin/tiers' },
-            { id: 'logs', label: 'System Audit Logs', icon: <History size={18} />, path: '/admin/logs' },
+            { id: 'tiers', label: 'User Authority Tiers', icon: <ShieldCheck size={18} />, path: '/admin/tiers' },
+            { id: 'logs', label: 'Audit Logs', icon: <History size={18} />, path: '/admin/logs' },
         ]}
     ];
 

@@ -21,9 +21,10 @@ export const PartyDirectory: React.FC = () => {
     const loadParties = async () => {
         try {
             const data = await tradeApi.getParties(search);
-            setParties(data.partyList);
-            if (data.partyList.length > 0 && !selectedParty) {
-                setSelectedParty(data.partyList[0]);
+            const partyList = data?.partyList || [];
+            setParties(partyList);
+            if (partyList.length > 0 && !selectedParty) {
+                setSelectedParty(partyList[0]);
             }
         } catch (err) {
             setError('Failed to load party directory');
@@ -33,7 +34,7 @@ export const PartyDirectory: React.FC = () => {
     };
 
     const handleSelectParty = (partyId: string) => {
-        const party = parties.find(p => p.partyId === partyId);
+        const party = (parties || []).find(p => p.partyId === partyId);
         if (party) setSelectedParty(party);
     };
 
@@ -53,7 +54,7 @@ export const PartyDirectory: React.FC = () => {
         }
     };
 
-    if (loading && parties.length === 0) return <div className="admin-loading">Loading directory...</div>;
+    if (loading && (parties?.length || 0) === 0) return <div className="admin-loading">Loading directory...</div>;
 
     return (
         <div className="party-directory-layout">
@@ -70,7 +71,7 @@ export const PartyDirectory: React.FC = () => {
                     </div>
                 </header>
                 <div className="party-items">
-                    {parties.map(p => (
+                    {(parties || []).map(p => (
                         <div 
                             key={p.partyId} 
                             className={`party-item ${selectedParty?.partyId === p.partyId ? 'active' : ''}`}

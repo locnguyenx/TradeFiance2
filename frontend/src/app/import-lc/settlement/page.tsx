@@ -25,10 +25,8 @@ function SettlementContent() {
 
 export default function SettlementPage() {
   return (
-    <GlobalShell>
-      <Suspense fallback={<div className="p-8 text-center">Loading Settlement Context...</div>}>
-        <SettlementContent />
-      </Suspense>
-    </GlobalShell>
+    <Suspense fallback={<div className="p-8 text-center">Loading Settlement Context...</div>}>
+      <SettlementContent />
+    </Suspense>
   );
 }

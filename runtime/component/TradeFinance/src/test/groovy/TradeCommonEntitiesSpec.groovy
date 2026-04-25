@@ -157,38 +157,42 @@ class TradeCommonEntitiesSpec extends Specification {
     def "FeeConfiguration persists correctly"() {
         when:
         ec.service.sync().name("create#trade.FeeConfiguration").parameters([
-            feeConfigId: "FEE_TEST_001",
-            feeTypeEnumId: "ISSUANCE_FEE",
-            calculationMethodEnumId: "PERCENTAGE",
+            feeConfigurationId: "FEE_TEST_001",
+            feeEventEnumId: "ISSUANCE_FEE",
+            calculationTypeEnumId: "PERCENTAGE",
+            baseValue: 0.25,
             ratePercent: 0.25,
             minFloorAmount: 100,
             currencyUomId: "USD",
-            isActive: "Y"
+            isActive: "Y",
+            statusId: "FEE_ACTIVE"
         ]).call()
         def fee = ec.entity.find("trade.FeeConfiguration")
-                .condition("feeConfigId", "FEE_TEST_001").one()
+                .condition("feeConfigurationId", "FEE_TEST_001").one()
 
         then:
         fee != null
-        fee.feeTypeEnumId == "ISSUANCE_FEE"
-        fee.ratePercent == 0.25
+        fee.feeEventEnumId == "ISSUANCE_FEE"
+        fee.baseValue == 0.25
 
         cleanup:
         ec.entity.find("trade.FeeConfiguration")
-            .condition("feeConfigId", "FEE_TEST_001").deleteAll()
+            .condition("feeConfigurationId", "FEE_TEST_001").deleteAll()
     }
 
     def "TradeProductCatalog persists correctly"() {
         when:
         ec.service.sync().name("create#trade.TradeProductCatalog").parameters([
-            productCatalogId: "PROD_TEST_001",
+            productId: "PROD_TEST_001",
+            productTypeEnumId: "PROD_IMP_LC",
             productName: "Test Product",
             isActive: "Y",
+            statusId: "PROD_ACTIVE",
             allowRevolving: "Y",
             documentExamSlaDays: 5
         ]).call()
         def prod = ec.entity.find("trade.TradeProductCatalog")
-                .condition("productCatalogId", "PROD_TEST_001").one()
+                .condition("productId", "PROD_TEST_001").one()
 
         then:
         prod != null
@@ -198,29 +202,29 @@ class TradeCommonEntitiesSpec extends Specification {
 
         cleanup:
         ec.entity.find("trade.TradeProductCatalog")
-            .condition("productCatalogId", "PROD_TEST_001").deleteAll()
+            .condition("productId", "PROD_TEST_001").deleteAll()
     }
 
     def "UserAuthorityProfile persists correctly"() {
         when:
         ec.service.sync().name("create#trade.UserAuthorityProfile").parameters([
-            authorityProfileId: "AUTH_TEST_001",
+            userAuthorityId: "AUTH_TEST_001",
             userId: "USER_001",
-            authorityTierEnumId: "TIER_4",
-            maxApprovalAmount: 5000000,
+            delegationTierId: "TIER_4",
+            customLimit: 5000000,
             currencyUomId: "USD",
             isSuspended: "N"
         ]).call()
         def auth = ec.entity.find("trade.UserAuthorityProfile")
-                .condition("authorityProfileId", "AUTH_TEST_001").one()
+                .condition("userAuthorityId", "AUTH_TEST_001").one()
 
         then:
         auth != null
-        auth.authorityTierEnumId == "TIER_4"
-        auth.maxApprovalAmount == 5000000
+        auth.delegationTierId == "TIER_4"
+        auth.customLimit == 5000000
 
         cleanup:
         ec.entity.find("trade.UserAuthorityProfile")
-            .condition("authorityProfileId", "AUTH_TEST_001").deleteAll()
+            .condition("userAuthorityId", "AUTH_TEST_001").deleteAll()
     }
 }

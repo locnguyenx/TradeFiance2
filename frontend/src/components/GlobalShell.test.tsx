@@ -19,11 +19,11 @@ describe('GlobalShell Modern Navigation Layout', () => {
         expect(screen.getByText('ADMINISTRATION')).toBeInTheDocument();
         
         // Items
-        expect(screen.getByText('Operations Dashboard')).toBeInTheDocument();
+        expect(screen.getByText('Dashboard')).toBeInTheDocument();
         expect(screen.getByText('New LC Issuance')).toBeInTheDocument();
-        expect(screen.getByText('Party Directory')).toBeInTheDocument();
-        expect(screen.getByText('Credit Facilities')).toBeInTheDocument();
-        expect(screen.getByText('Authority Tiers')).toBeInTheDocument();
+        expect(screen.getByText('Party & KYC Directory')).toBeInTheDocument();
+        expect(screen.getByText('Credit Facilities (Limits)')).toBeInTheDocument();
+        expect(screen.getByText('User Authority Tiers')).toBeInTheDocument();
         
         // User Profile
         expect(screen.getByText('Loc Nguyen')).toBeInTheDocument();

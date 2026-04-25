@@ -3,8 +3,6 @@ import { GlobalShell } from '../../components/GlobalShell';
 
 export default function PartiesPage() {
   return (
-    <GlobalShell>
-      <PartyDirectory />
-    </GlobalShell>
+    <PartyDirectory />
   );
 }

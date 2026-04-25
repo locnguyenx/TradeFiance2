@@ -6,11 +6,6 @@
             <service name="org.moqui.impl.UserServices.login#UserAccount"/>
         </method>
     </resource>
-    <resource name="auth-test">
-        <method type="get">
-            <service name="trade.importlc.ImportLcServices.get#AuthTest"/>
-        </method>
-    </resource>
     <resource name="kpis">
         <method type="get">
             <service name="trade.importlc.ImportLcServices.get#Kpis"/>
@@ -20,16 +15,16 @@
         <method type="get"><service name="trade.importlc.ImportLcServices.get#ImportLetterOfCreditList"/></method>
         <method type="post"><service name="trade.importlc.ImportLcServices.create#ImportLetterOfCredit"/></method>
         <id name="instrumentId">
-            <method type="get" require-authentication="false"><service name="trade.importlc.ImportLcServices.get#ImportLetterOfCredit"/></method>
+            <method type="get" require-authentication="false"><service name="trade.importlc.ImportLcServices.get#ImportLetterOfCreditList"/></method>
             <method type="post" require-authentication="false"><service name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit"/></method>
             <resource name="amendments">
-                <method type="post"><service name="trade.importlc.ImportLcServices.create#ImportLcAmendment"/></method>
+                <method type="post"><service name="trade.importlc.ImportLcServices.create#Amendment"/></method>
             </resource>
             <resource name="presentations">
-                <method type="post"><service name="trade.importlc.ImportLcServices.create#ImportLcPresentation"/></method>
+                <method type="post"><service name="trade.TradeCommonServices.create#Presentation"/></method>
                 <id name="presentationId">
                     <resource name="waiver">
-                        <method type="patch"><service name="trade.importlc.ImportLcServices.update#ImportLcPresentationWaiver"/></method>
+                        <method type="patch"><service name="trade.importlc.ImportLcServices.update#PresentationWaiver"/></method>
                     </resource>
                 </id>
             </resource>
@@ -37,10 +32,10 @@
                 <method type="post"><service name="trade.TradeAccountingServices.create#ImportLcSettlement"/></method>
             </resource>
             <resource name="shipping-guarantees">
-                <method type="post"><service name="trade.importlc.ImportLcServices.create#ShippingGuarantee"/></method>
+                <method type="post"><service name="trade.TradeCommonServices.create#ShippingGuarantee"/></method>
             </resource>
             <resource name="cancel">
-                <method type="post"><service name="trade.importlc.ImportLcServices.update#ImportLcCancel"/></method>
+                <method type="post"><service name="trade.TradeCommonServices.update#Cancellation"/></method>
             </resource>
         </id>
     </resource>
@@ -57,5 +52,30 @@
 
     <resource name="product-config">
         <method type="post"><service name="trade.AdminServices.update#TradeProductConfig"/></method>
+    </resource>
+
+    <resource name="fee-configurations">
+        <method type="get"><service name="trade.MasterDataServices.get#FeeConfigurations"/></method>
+    </resource>
+
+    <resource name="product-catalog">
+        <method type="get"><service name="trade.MasterDataServices.get#ProductCatalog"/></method>
+    </resource>
+
+    <resource name="parties">
+        <method type="get"><service name="trade.MasterDataServices.get#Parties"/></method>
+    </resource>
+
+    <resource name="authority-profiles">
+        <method type="get"><service name="trade.MasterDataServices.get#UserAuthorityProfiles"/></method>
+    </resource>
+
+    <resource name="exposure-data">
+        <method type="get"><service name="trade.LimitServices.get#ExposureData"/></method>
+    </resource>
+
+    <resource name="facilities">
+        <parameter name="facilityId"/>
+        <method type="get"><service name="trade.LimitServices.get#FacilityDetail"/></method>
     </resource>
 </resource>

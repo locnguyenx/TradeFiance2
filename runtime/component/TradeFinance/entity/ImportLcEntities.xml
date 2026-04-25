@@ -26,6 +26,17 @@
         <field name="confirmationEnumId" type="id"/>
         <field name="lcTypeEnumId" type="id"/>
         <field name="productCatalogId" type="id"/>
+
+        <!-- Replicated from TradeInstrument (Snapshot per improvement requirement) -->
+        <field name="productEnumId" type="id"/>
+        <field name="applicantPartyId" type="id"/>
+        <field name="currencyUomId" type="id"/>
+        <field name="amount" type="number-decimal"/>
+        <field name="outstandingAmount" type="number-decimal"/>
+        <field name="baseEquivalentAmount" type="number-decimal"/>
+        <field name="issueDate" type="date"/>
+        <field name="expiryDate" type="date"/>
+        <field name="customerFacilityId" type="id"/>
         
         <!-- Effective Values (Snapshot vs Last Effective Pattern) -->
         <field name="effectiveAmount" type="number-decimal"/>
@@ -40,6 +51,9 @@
 
         <relationship type="one" related="trade.TradeInstrument">
             <key-map field-name="instrumentId"/>
+        </relationship>
+        <relationship type="one" related="trade.TradeProductCatalog">
+            <key-map field-name="productCatalogId" related="productId"/>
         </relationship>
     </entity>
 
@@ -125,8 +139,8 @@
     <entity entity-name="PresentationDiscrepancy" package="trade.importlc">
         <field name="discrepancyId" type="id" is-pk="true"/>
         <field name="presentationId" type="id"/>
-        <field name="discrepancyCode" type="text-short"/>
-        <field name="discrepancyDescription" type="text-medium"/>
+        <field name="discrepancyCode" type="text-short"/> <!-- ISBP standard code -->
+        <field name="discrepancyDescription" type="text-long"/>
         <field name="isWaived" type="text-indicator" default="'N'"/>
         <field name="waivedByUserId" type="id"/>
         <field name="waivedTimestamp" type="date-time"/>
@@ -140,10 +154,19 @@
         <field name="settlementId" type="id" is-pk="true"/>
         <field name="presentationId" type="id"/>
         <field name="instrumentId" type="id"/>
-        <field name="settlementAmount" type="number-decimal"/>
-        <field name="settlementDate" type="date-time" default="ec.user.nowTimestamp"/>
-        <field name="settlementTypeEnumId" type="id"/>
-        <field name="isPartialDraw" type="text-indicator" default="'Y'"/>
+        <field name="principalAmount" type="number-decimal"/>
+        <field name="remittanceCurrency" type="id"/>
+        <field name="valueDate" type="date"/>
+        <field name="fxRate" type="number-decimal"/>
+        <field name="localEquivalent" type="number-decimal"/>
+        <field name="debitAccountId" type="text-medium"/>
+        <field name="appliedMarginAmount" type="number-decimal" default="0"/>
+        <field name="netDebitAmount" type="number-decimal"/>
+        <field name="chargesDetailEnumId" type="id"/> <!-- OUR, BEN, SHA -->
+        <field name="maturityDate" type="date"/> <!-- For Usance LCs -->
+        <field name="settlementTypeEnumId" type="id"/> <!-- SIGHT, DEFERRED, ACCEPTANCE -->
+        <field name="forwardContractRef" type="text-medium"/>
+        <field name="settlementStatusId" type="id" default="'SETTLE_PENDING'"/>
         
         <relationship type="one" related="trade.importlc.TradeDocumentPresentation">
             <key-map field-name="presentationId"/>

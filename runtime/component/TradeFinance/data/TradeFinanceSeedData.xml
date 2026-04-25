@@ -14,6 +14,9 @@
     <moqui.basic.EnumerationType enumTypeId="BeneficiaryConsentStatus" description="Beneficiary Consent Statuses"/>
     <moqui.basic.EnumerationType enumTypeId="TradePriority" description="Trade Instrument Priority Levels"/>
     <moqui.basic.EnumerationType enumTypeId="TradeLaunchAction" description="Trade Lifecycle Actions"/>
+    <moqui.basic.EnumerationType enumTypeId="TradeFeeFrequency" description="Fee Calculation Frequencies"/>
+    <moqui.basic.EnumerationType enumTypeId="TradeMakerCheckerFlag" description="Authority Profile Maker/Checker Flags"/>
+    <moqui.basic.EnumerationType enumTypeId="TradeProductType" description="Trade Product Types"/>
 
     <!-- Audit Action Enums -->
     <moqui.basic.Enumeration enumId="AUDIT_HOLD" enumTypeId="TradeLaunchAction" description="Compliance Hold Applied"/>
@@ -73,6 +76,22 @@
     <moqui.basic.Enumeration enumId="ACCEPTANCE" enumTypeId="TradeSettlementType" description="Acceptance"/>
     <moqui.basic.Enumeration enumId="NEGOTIATION" enumTypeId="TradeSettlementType" description="Negotiation"/>
 
+    <!-- Fee Frequencies -->
+    <moqui.basic.Enumeration enumId="FEE_ONCE" enumTypeId="TradeFeeFrequency" description="One-time Fee"/>
+    <moqui.basic.Enumeration enumId="FEE_MONTHLY" enumTypeId="TradeFeeFrequency" description="Monthly Recurring"/>
+    <moqui.basic.Enumeration enumId="FEE_QUARTERLY" enumTypeId="TradeFeeFrequency" description="Quarterly Recurring"/>
+
+    <!-- Maker/Checker Flags -->
+    <moqui.basic.Enumeration enumId="MAKER" enumTypeId="TradeMakerCheckerFlag" description="Maker Only"/>
+    <moqui.basic.Enumeration enumId="CHECKER" enumTypeId="TradeMakerCheckerFlag" description="Checker Only"/>
+    <moqui.basic.Enumeration enumId="MAKER_CHECKER" enumTypeId="TradeMakerCheckerFlag" description="Both Maker and Checker"/>
+    <moqui.basic.Enumeration enumId="DUAL_CHECKER" enumTypeId="TradeMakerCheckerFlag" description="Dual Checker Required"/>
+
+    <!-- Product Types -->
+    <moqui.basic.Enumeration enumId="PROD_IMP_LC" enumTypeId="TradeProductType" description="Import Letter of Credit"/>
+    <moqui.basic.Enumeration enumId="PROD_EXP_LC" enumTypeId="TradeProductType" description="Export Letter of Credit"/>
+    <moqui.basic.Enumeration enumId="PROD_SG" enumTypeId="TradeProductType" description="Shipping Guarantee"/>
+
     <!-- Instrument Types -->
     <moqui.basic.Enumeration enumId="IMPORT_LC" enumTypeId="TradeInstrumentType" description="Import Letter of Credit"/>
     <moqui.basic.Enumeration enumId="EXPORT_LC" enumTypeId="TradeInstrumentType" description="Export Letter of Credit"/>
@@ -90,6 +109,9 @@
     <moqui.basic.StatusType statusTypeId="TradeAmendmentBusinessState" description="Import LC Amendment Business States"/>
     <moqui.basic.StatusType statusTypeId="TradePresentationStatus" description="Document Presentation Statuses"/>
     <moqui.basic.StatusType statusTypeId="TradeGuaranteeStatus" description="Shipping Guarantee Statuses"/>
+    <moqui.basic.StatusType statusTypeId="TradeFeeStatus" description="Fee Configuration Statuses"/>
+    <moqui.basic.StatusType statusTypeId="TradeProductStatus" description="Product Configuration Statuses"/>
+    <moqui.basic.StatusType statusTypeId="TradeSettlementStatus" description="Settlement Transaction Statuses"/>
 
     <!-- Transaction Statuses (Maker/Checker) -->
     <moqui.basic.StatusItem statusId="TX_DRAFT" statusTypeId="TradeTransactionStatus" description="Transaction Draft"/>
@@ -130,6 +152,21 @@
     <moqui.basic.StatusItem statusId="SG_DRAFT" statusTypeId="TradeGuaranteeStatus" description="Draft"/>
     <moqui.basic.StatusItem statusId="SG_ISSUED" statusTypeId="TradeGuaranteeStatus" description="Issued"/>
     <moqui.basic.StatusItem statusId="SG_RETURNED" statusTypeId="TradeGuaranteeStatus" description="Returned/Cancelled"/>
+
+    <!-- Fee Configuration Statuses -->
+    <moqui.basic.StatusItem statusId="FEE_DRAFT" statusTypeId="TradeFeeStatus" description="Draft"/>
+    <moqui.basic.StatusItem statusId="FEE_ACTIVE" statusTypeId="TradeFeeStatus" description="Active"/>
+    <moqui.basic.StatusItem statusId="FEE_INACTIVE" statusTypeId="TradeFeeStatus" description="Inactive"/>
+
+    <!-- Product Configuration Statuses -->
+    <moqui.basic.StatusItem statusId="PROD_DRAFT" statusTypeId="TradeProductStatus" description="Draft"/>
+    <moqui.basic.StatusItem statusId="PROD_ACTIVE" statusTypeId="TradeProductStatus" description="Active"/>
+    <moqui.basic.StatusItem statusId="PROD_INACTIVE" statusTypeId="TradeProductStatus" description="Inactive"/>
+
+    <!-- Settlement Statuses -->
+    <moqui.basic.StatusItem statusId="SETTLE_PENDING" statusTypeId="TradeSettlementStatus" description="Pending Settlement"/>
+    <moqui.basic.StatusItem statusId="SETTLE_EXECUTED" statusTypeId="TradeSettlementStatus" description="Settlement Executed"/>
+    <moqui.basic.StatusItem statusId="SETTLE_FAILED" statusTypeId="TradeSettlementStatus" description="Settlement Failed"/>
 
     <!-- Status Flow for Import LC -->
     <moqui.basic.StatusFlow statusFlowId="ImportLcDefault" statusTypeId="TradeLcBusinessState" description="Import LC Default Flow"/>

@@ -11,7 +11,7 @@ jest.mock('../api/tradeApi');
 
 const mockProducts: TradeProductCatalog[] = [
   {
-    productCatalogId: 'IMP_LC_SIGHT',
+    productId: 'IMP_LC_SIGHT',
     productName: 'Sight Import LC',
     isActive: 'Y',
     allowedTenorEnumId: 'SIGHT',

@@ -84,49 +84,59 @@
         <field name="partyName" type="text-medium"/>
         <field name="kycStatus" type="text-short"/> <!-- Active, Expired -->
         <field name="kycExpiryDate" type="date"/>
-        <field name="sanctionsStatus" type="id"/>
-        <field name="countryOfRisk" type="text-short"/>
+        <field name="sanctionsStatus" type="text-short"/> <!-- Clear, Suspended, Blocked -->
+        <field name="countryOfRisk" type="id"/> <!-- ISO Country Code -->
         <field name="swiftBic" type="text-short"/>
-        <field name="registeredAddress" type="text-medium"/>
+        <field name="registeredAddress" type="text-long"/> <!-- 4x35 SWIFT format -->
         <field name="partyRoleEnumId" type="id"/>
     </entity>
     
     <entity entity-name="FeeConfiguration" package="trade">
-        <field name="feeConfigId" type="id" is-pk="true"/>
-        <field name="feeTypeEnumId" type="id"/>
-        <field name="calculationMethodEnumId" type="id"/>
-        <field name="ratePercent" type="number-decimal"/>
-        <field name="flatAmount" type="number-decimal"/>
+        <field name="feeConfigurationId" type="id" is-pk="true"/>
+        <field name="feeEventEnumId" type="id"/> <!-- ISSUANCE_FEE, AMENDMENT_FEE, etc. -->
+        <field name="calculationTypeEnumId" type="id"/> <!-- FLAT, PERCENTAGE, TIERED -->
+        <field name="baseValue" type="number-decimal"/> <!-- Unified rate or flat amt -->
+        <field name="ratePercent" type="number-decimal"/> <!-- Legacy field for back-compat if needed, migrating to baseValue -->
+        <field name="flatAmount" type="number-decimal"/> <!-- Legacy field -->
         <field name="minFloorAmount" type="number-decimal"/>
         <field name="maxCeilingAmount" type="number-decimal"/>
         <field name="currencyUomId" type="id"/>
+        <field name="frequencyEnumId" type="id"/> <!-- ONCE, MONTHLY, QUARTERLY -->
+        <field name="effectiveDate" type="date"/>
+        <field name="customerTierOverride" type="text-short"/>
+        <field name="statusId" type="id" default="'FEE_ACTIVE'"/> <!-- FEE_DRAFT, FEE_ACTIVE -->
         <field name="isActive" type="text-indicator" default="'Y'"/>
     </entity>
 
     <entity entity-name="TradeProductCatalog" package="trade">
-        <field name="productCatalogId" type="id" is-pk="true"/>
+        <field name="productId" type="id" is-pk="true"/>
+        <field name="productTypeEnumId" type="id"/> <!-- IMP_LC, EXP_LC, etc. -->
         <field name="productName" type="text-medium"/>
+        <field name="productDescription" type="text-long"/>
         <field name="isActive" type="text-indicator" default="'Y'"/>
+        <field name="statusId" type="id" default="'PROD_ACTIVE'"/>
         <!-- Common Constraints -->
         <field name="allowedTenorEnumId" type="id"/>
-        <field name="maxToleranceLimit" type="number-decimal"/>
+        <field name="maxToleranceLimit" type="number-integer"/> <!-- Percentage e.g. 10 for 10% -->
         <!-- Product Specific Flags -->
         <field name="allowRevolving" type="text-indicator" default="'N'"/>
         <field name="allowAdvancePayment" type="text-indicator" default="'N'"/>
         <field name="isStandby" type="text-indicator" default="'N'"/>
         <field name="isTransferable" type="text-indicator" default="'N'"/>
         <field name="accountingFrameworkEnumId" type="id"/>
-        <field name="mandatoryMarginPercent" type="number-decimal"/>
+        <field name="mandatoryMarginPercent" type="number-integer"/>
         <field name="documentExamSlaDays" type="number-integer" default="5"/>
         <field name="defaultSwiftFormatEnumId" type="id"/>
     </entity>
 
     <entity entity-name="UserAuthorityProfile" package="trade">
-        <field name="authorityProfileId" type="id" is-pk="true"/>
+        <field name="userAuthorityId" type="id" is-pk="true"/>
         <field name="userId" type="id"/>
-        <field name="authorityTierEnumId" type="id"/>
-        <field name="maxApprovalAmount" type="number-decimal"/>
+        <field name="makerCheckerFlag" type="id" default="'MAKER_CHECKER'"/> <!-- MAKER, CHECKER, DUAL -->
+        <field name="delegationTierId" type="id"/> <!-- TIER_1, TIER_2, etc. -->
+        <field name="customLimit" type="number-decimal"/>
         <field name="currencyUomId" type="id"/>
+        <field name="branchAccessList" type="text-long"/> <!-- JSON or CSV of allowed branch IDs -->
         <field name="isSuspended" type="text-indicator" default="'N'"/>
     </entity>
 
@@ -140,5 +150,12 @@
         <relationship type="one" related="trade.TradeInstrument" title="Instrument">
             <key-map field-name="instrumentId"/>
         </relationship>
+    </entity>
+
+    <entity entity-name="NumberSequence" package="trade.common">
+        <field name="sequenceId" type="id" is-pk="true"/>
+        <field name="prefix" type="text-short"/>
+        <field name="lastNumber" type="number-integer" default="0"/>
+        <field name="description" type="text-medium"/>
     </entity>
 </entities>

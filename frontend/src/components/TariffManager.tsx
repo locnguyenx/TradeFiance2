@@ -1,7 +1,5 @@
 'use client';
 
-'use client';
-
 import React, { useState, useEffect } from 'react';
 import { tradeApi } from '../api/tradeApi';
 import { FeeConfiguration } from '../api/types';
@@ -23,9 +21,10 @@ export const TariffManager: React.FC = () => {
     const loadFees = async () => {
         try {
             const data = await tradeApi.getFeeConfigurations();
-            setFees(data.feeList);
-            if (data.feeList.length > 0 && !selectedFee) {
-                setSelectedFee(data.feeList[0]);
+            const feeList = data?.feeList || [];
+            setFees(feeList);
+            if (feeList.length > 0 && !selectedFee) {
+                setSelectedFee(feeList[0]);
             }
         } catch (err) {
             setError('Failed to load fee configurations');
@@ -50,7 +49,7 @@ export const TariffManager: React.FC = () => {
         if (!selectedFee) return;
         setSaving(true);
         try {
-            await tradeApi.updateFeeConfiguration(selectedFee.feeConfigId, selectedFee);
+            await tradeApi.updateFeeConfiguration(selectedFee.feeConfigurationId, selectedFee);
             await loadFees();
         } catch (err) {
             setError('Failed to save tariff');
@@ -59,26 +58,26 @@ export const TariffManager: React.FC = () => {
         }
     };
 
-    const formatEnum = (id: string) => id.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+    const formatEnum = (id: string) => (id || '').replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
 
-    if (loading) return <div className="admin-loading">Loading tariffs...</div>;
+    if (loading && (fees?.length || 0) === 0) return <div className="admin-loading">Loading tariffs...</div>;
 
     return (
         <div className="tariff-manager-layout">
             <aside className="fee-list-pane">
                 <header className="pane-header">
-                    <h3>Tariff & Fee Configuration</h3>
+                    <h3>Tariff Matrix</h3>
                 </header>
                 <div className="fee-items">
-                    {fees.map(f => (
+                    {(fees || []).map(f => (
                         <div 
-                            key={f.feeConfigId} 
-                            className={`fee-item ${selectedFee?.feeConfigId === f.feeConfigId ? 'active' : ''}`}
+                            key={f.feeConfigurationId} 
+                            className={`fee-item ${selectedFee?.feeConfigurationId === f.feeConfigurationId ? 'active' : ''}`}
                             onClick={() => handleSelectFee(f)}
                         >
-                            <span className="fee-type">{f.feeTypeEnumId}</span>
-                            <span className="fee-description">{formatEnum(f.feeTypeEnumId)}</span>
-                            <span className="fee-id">{f.feeConfigId}</span>
+                            <span className="fee-type">{f.feeEventEnumId}</span>
+                            <span className="fee-description">{formatEnum(f.feeEventEnumId)}</span>
+                            <span className="fee-id">{f.feeConfigurationId}</span>
                         </div>
                     ))}
                 </div>
@@ -88,7 +87,7 @@ export const TariffManager: React.FC = () => {
                 {selectedFee ? (
                     <>
                         <header className="pane-header detail-header">
-                            <h2>{formatEnum(selectedFee.feeTypeEnumId)} Configuration</h2>
+                            <h2>{formatEnum(selectedFee.feeEventEnumId)} Configuration</h2>
                             <div className="action-bar">
                                 <button 
                                     className="secondary-btn" 
@@ -112,11 +111,11 @@ export const TariffManager: React.FC = () => {
                                 <h3>Calculation Method</h3>
                                 <div className="field-group">
                                     <div className="field">
-                                        <label htmlFor="calculationMethod">Method</label>
+                                        <label htmlFor="calculationType">Method</label>
                                         <select 
-                                            id="calculationMethod"
-                                            value={selectedFee.calculationMethodEnumId}
-                                            onChange={(e) => handleFieldChange('calculationMethodEnumId', e.target.value)}
+                                            id="calculationType"
+                                            value={selectedFee.calculationTypeEnumId}
+                                            onChange={(e) => handleFieldChange('calculationTypeEnumId', e.target.value)}
                                         >
                                             <option value="PERCENTAGE">Percentage</option>
                                             <option value="FLAT_RATE">Flat Rate</option>
@@ -147,7 +146,7 @@ export const TariffManager: React.FC = () => {
                                             step="0.001"
                                             value={selectedFee.ratePercent || 0}
                                             onChange={(e) => handleFieldChange('ratePercent', parseFloat(e.target.value))}
-                                            disabled={selectedFee.calculationMethodEnumId === 'FLAT_RATE'}
+                                            disabled={selectedFee.calculationTypeEnumId === 'FLAT_RATE'}
                                         />
                                     </div>
                                     <div className="field">
@@ -157,7 +156,7 @@ export const TariffManager: React.FC = () => {
                                             type="number" 
                                             value={selectedFee.flatAmount || 0}
                                             onChange={(e) => handleFieldChange('flatAmount', parseFloat(e.target.value))}
-                                            disabled={selectedFee.calculationMethodEnumId === 'PERCENTAGE'}
+                                            disabled={selectedFee.calculationTypeEnumId === 'PERCENTAGE'}
                                         />
                                     </div>
                                     <div className="field">
@@ -201,181 +200,33 @@ export const TariffManager: React.FC = () => {
             </main>
 
             <style jsx>{`
-                .tariff-manager-layout {
-                    display: grid;
-                    grid-template-columns: 320px 1fr;
-                    background: white;
-                    border-radius: 12px;
-                    border: 1px solid #e2e8f0;
-                    overflow: hidden;
-                    min-height: 700px;
-                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-                }
-
-                .pane-header {
-                    padding: 1.5rem;
-                    border-bottom: 1px solid #f1f5f9;
-                    background: #f8fafc;
-                }
-
-                .pane-header h3, .pane-header h2 {
-                    margin: 0;
-                    color: #1e293b;
-                    font-size: 1.125rem;
-                }
-
-                .fee-list-pane {
-                    border-right: 1px solid #f1f5f9;
-                    background: #f8fafc;
-                }
-
-                .fee-items {
-                    padding: 1rem;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 0.5rem;
-                }
-
-                .fee-item {
-                    padding: 1rem;
-                    border-radius: 8px;
-                    cursor: pointer;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 0.25rem;
-                    transition: all 0.2s;
-                    border: 1px solid transparent;
-                }
-
-                .fee-item:hover {
-                    background: #f1f5f9;
-                }
-
-                .fee-item.active {
-                    background: white;
-                    border-color: #2563eb;
-                    box-shadow: 0 1px 3px rgba(37, 99, 235, 0.1);
-                }
-
-                .fee-type {
-                    font-weight: 600;
-                    color: #1e293b;
-                }
-
-                .fee-id {
-                    font-size: 0.75rem;
-                    color: #64748b;
-                }
-
-                .fee-detail-pane {
-                    background: white;
-                    display: flex;
-                    flex-direction: column;
-                }
-
-                .detail-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    background: white;
-                }
-
-                .action-bar {
-                    display: flex;
-                    gap: 1rem;
-                }
-
-                .config-form {
-                    padding: 2rem;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 2.5rem;
-                    overflow-y: auto;
-                }
-
-                .form-section h3 {
-                    margin: 0 0 1.25rem 0;
-                    font-size: 0.875rem;
-                    text-transform: uppercase;
-                    letter-spacing: 0.05em;
-                    color: #64748b;
-                    border-bottom: 1px solid #f1f5f9;
-                    padding-bottom: 0.5rem;
-                }
-
-                .field-group {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                    gap: 2rem;
-                }
-
-                .field {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 0.5rem;
-                }
-
-                .field label {
-                    font-size: 0.875rem;
-                    font-weight: 600;
-                    color: #475569;
-                }
-
-                .field input, .field select {
-                    padding: 0.625rem;
-                    border: 1px solid #e2e8f0;
-                    border-radius: 6px;
-                    font-size: 0.875rem;
-                    outline: none;
-                    transition: border-color 0.2s;
-                }
-
-                .field input:focus, .field select:focus {
-                    border-color: #2563eb;
-                }
-
-                .field input:disabled {
-                    background: #f1f5f9;
-                    cursor: not-allowed;
-                }
-
-                .toggle-field {
-                    display: flex;
-                    align-items: center;
-                    gap: 1rem;
-                    padding: 1rem;
-                    background: #f8fafc;
-                    border-radius: 8px;
-                    border: 1px solid #f1f5f9;
-                }
-
-                .toggle-field label {
-                    font-weight: 500;
-                    color: #334155;
-                    cursor: pointer;
-                }
-
-                .primary-btn {
-                    background: #2563eb;
-                    color: white;
-                    border: none;
-                    padding: 0.625rem 1.25rem;
-                    border-radius: 6px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    transition: background 0.2s;
-                }
-
+                /* ... styles as seen in original ... */
+                .tariff-manager-layout { display: grid; grid-template-columns: 320px 1fr; background: white; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; min-height: 700px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+                .pane-header { padding: 1.5rem; border-bottom: 1px solid #f1f5f9; background: #f8fafc; }
+                .pane-header h3, .pane-header h2 { margin: 0; color: #1e293b; font-size: 1.125rem; }
+                .fee-list-pane { border-right: 1px solid #f1f5f9; background: #f8fafc; }
+                .fee-items { padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+                .fee-item { padding: 1rem; border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; gap: 0.25rem; transition: all 0.2s; border: 1px solid transparent; }
+                .fee-item:hover { background: #f1f5f9; }
+                .fee-item.active { background: white; border-color: #2563eb; box-shadow: 0 1px 3px rgba(37, 99, 235, 0.1); }
+                .fee-type { font-weight: 600; color: #1e293b; }
+                .fee-id { font-size: 0.75rem; color: #64748b; }
+                .fee-detail-pane { background: white; display: flex; flex-direction: column; }
+                .detail-header { display: flex; justify-content: space-between; align-items: center; background: white; }
+                .action-bar { display: flex; gap: 1rem; }
+                .config-form { padding: 2rem; display: flex; flex-direction: column; gap: 2.5rem; overflow-y: auto; }
+                .form-section h3 { margin: 0 0 1.25rem 0; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.5rem; }
+                .field-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; }
+                .field { display: flex; flex-direction: column; gap: 0.5rem; }
+                .field label { font-size: 0.875rem; font-weight: 600; color: #475569; }
+                .field input, .field select { padding: 0.625rem; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.875rem; outline: none; transition: border-color 0.2s; }
+                .field input:focus, .field select:focus { border-color: #2563eb; }
+                .field input:disabled { background: #f1f5f9; cursor: not-allowed; }
+                .toggle-field { display: flex; align-items: center; gap: 1rem; padding: 1rem; background: #f8fafc; border-radius: 8px; border: 1px solid #f1f5f9; }
+                .toggle-field label { font-weight: 500; color: #334155; cursor: pointer; }
+                .primary-btn { background: #2563eb; color: white; border: none; padding: 0.625rem 1.25rem; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
                 .primary-btn:hover { background: #1d4ed8; }
-                .secondary-btn {
-                    background: white;
-                    color: #475569;
-                    border: 1px solid #e2e8f0;
-                    padding: 0.625rem 1.25rem;
-                    border-radius: 6px;
-                    font-weight: 600;
-                    cursor: pointer;
-                }
+                .secondary-btn { background: white; color: #475569; border: 1px solid #e2e8f0; padding: 0.625rem 1.25rem; border-radius: 6px; font-weight: 600; cursor: pointer; }
                 .admin-loading { padding: 2rem; text-align: center; color: #64748b; }
             `}</style>
         </div>

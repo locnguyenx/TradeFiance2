@@ -201,7 +201,7 @@
         <out-parameters><parameter name="swiftMessageId" type="id"/></out-parameters>
         <actions>
             <entity-find-one entity-name="trade.importlc.ImportLcSettlement" value-field="settlement"/>
-            <set field="msgText" value="{1:F01...}{2:I202...}{4:\n:20:${settlement.settlementId}\n:21:NONREF\n:32A:${ec.user.nowTimestamp.format('yyMMdd')}USD${settlement.settlementAmount}\n-}"/>
+            <set field="msgText" value="{1:F01...}{2:I202...}{4:\n:20:${settlement.settlementId}\n:21:NONREF\n:32A:${ec.user.nowTimestamp.format('yyMMdd')}USD${settlement.principalAmount}\n-}"/>
             <service-call name="create#trade.importlc.SwiftMessage" in-map="[instrumentId:settlement.instrumentId, messageType:'MT202', messageContent:msgText]" out-map="createOut"/>
             <set field="swiftMessageId" from="createOut.swiftMessageId"/>
         </actions>
@@ -212,7 +212,7 @@
         <out-parameters><parameter name="swiftMessageId" type="id"/></out-parameters>
         <actions>
             <entity-find-one entity-name="trade.importlc.ImportLcSettlement" value-field="settlement"/>
-            <set field="msgText" value="{1:F01...}{2:I103...}{4:\n:20:${settlement.settlementId}\n:32A:${ec.user.nowTimestamp.format('yyMMdd')}USD${settlement.settlementAmount}\n:50K:/APPLICANT ACCOUNT\n:59:/BENEFICIARY ACCOUNT\n-}"/>
+            <set field="msgText" value="{1:F01...}{2:I103...}{4:\n:20:${settlement.settlementId}\n:32A:${ec.user.nowTimestamp.format('yyMMdd')}USD${settlement.principalAmount}\n:50K:/APPLICANT ACCOUNT\n:59:/BENEFICIARY ACCOUNT\n-}"/>
             <service-call name="create#trade.importlc.SwiftMessage" in-map="[instrumentId:settlement.instrumentId, messageType:'MT103', messageContent:msgText]" out-map="createOut"/>
             <set field="swiftMessageId" from="createOut.swiftMessageId"/>
         </actions>

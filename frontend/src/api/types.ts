@@ -88,7 +88,7 @@ export interface TradeParty {
 }
 
 export interface TradeProductCatalog {
-  productCatalogId: string;
+  productId: string;
   productName: string;
   isActive: string;
   allowedTenorEnumId?: string;
@@ -104,22 +104,39 @@ export interface TradeProductCatalog {
 }
 
 export interface FeeConfiguration {
-  feeConfigId: string;
-  feeTypeEnumId: string;
-  calculationMethodEnumId: string;
+  feeConfigurationId: string;
+  feeEventEnumId: string;
+  calculationTypeEnumId: string;
   ratePercent?: number;
   flatAmount?: number;
   minFloorAmount?: number;
   maxCeilingAmount?: number;
   currencyUomId?: string;
   isActive: string;
+  description?: string;
+}
+
+export interface ImportLcSettlement {
+  settlementId: string;
+  presentationId: string;
+  instrumentId: string;
+  principalAmount: number;
+  settlementCurrencyUomId: string;
+  fxRate?: number;
+  localEquivalent?: number;
+  valueDate: string;
+  debitAccountId?: string;
+  marginApplied?: number;
+  netDebitAmount?: number;
+  chargesDetailEnumId?: string;
+  maturityDate?: string;
 }
 
 export interface UserAuthorityProfile {
-  authorityProfileId: string;
+  userAuthorityId: string;
   userId: string;
-  authorityTierEnumId: string;
-  maxApprovalAmount: number;
+  delegationTierId: string;
+  customLimit: number;
   currencyUomId: string;
   isSuspended: string;
 }
