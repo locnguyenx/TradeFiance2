@@ -10,13 +10,13 @@ test.describe('Navigation Integrity (BDD-IMP-FLOW-*, BDD-CMN-WF-01)', () => {
   test('BDD-IMP-FLOW-02: New LC Issuance navigation from sidebar', async ({ page }) => {
     await page.getByRole('link', { name: 'New LC Issuance' }).click();
     await expect(page).toHaveURL(/\/issuance/);
-    await expect(page.getByText('Step 1: Parties & Limits')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Step 1: Parties & Limits' })).toBeVisible();
   });
 
   test('BDD-CMN-AUTH-02: Global Checker Queue (My Tasks) navigation', async ({ page }) => {
     await page.getByRole('link', { name: 'My Tasks' }).click();
     await expect(page).toHaveURL(/\/approvals/);
-    await expect(page.getByText('Global Checker Queue')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Global Checker Queue' })).toBeVisible();
   });
 
   test('BDD-IMP-FLOW-03: LC Amendments navigation from sidebar', async ({ page }) => {
@@ -28,13 +28,13 @@ test.describe('Navigation Integrity (BDD-IMP-FLOW-*, BDD-CMN-WF-01)', () => {
   test('BDD-IMP-SET-01: Settlements navigation from sidebar', async ({ page }) => {
     await page.getByRole('link', { name: 'Settlements' }).click();
     await expect(page).toHaveURL(/.*settlement/);
-    await expect(page.getByText('Initiate LC Settlement')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Initiate LC Settlement' })).toBeVisible();
   });
 
   test('BDD-IMP-SG-01: Shipping Guarantees navigation from sidebar', async ({ page }) => {
     await page.getByRole('link', { name: 'Shipping Guarantees' }).click();
     await expect(page).toHaveURL(/.*shipping-guarantees/);
-    await expect(page.getByText('Issue Shipping Guarantee')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Issue Shipping Guarantee' })).toBeVisible();
   });
 
   test('BDD-CMN-AUTH-01: Authority Tiers navigation from sidebar', async ({ page }) => {
@@ -52,13 +52,13 @@ test.describe('Navigation Integrity (BDD-IMP-FLOW-*, BDD-CMN-WF-01)', () => {
   test('BDD-CMN-MAS-03: Party Directory navigation from sidebar', async ({ page }) => {
     await page.getByRole('link', { name: 'Counterparties' }).click();
     await expect(page).toHaveURL(/\/parties/);
-    await expect(page.getByText('Counterparties')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Counterparties' })).toBeVisible();
   });
 
   test('BDD-CMN-EXP-01: Credit Facilities navigation from sidebar', async ({ page }) => {
-    await page.getByRole('link', { name: 'Credit Facilities' }).click();
+    await page.getByRole('link', { name: 'Import LC Facility Exposure' }).click();
     await expect(page).toHaveURL(/\/facilities/);
-    await expect(page.getByText('Exposure & Credit Facilities')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Import LC Facility Exposure' })).toBeVisible();
   });
 
   test('BDD-CMN-TRF-01: Tariff & Fee Mapping navigation from sidebar', async ({ page }) => {
@@ -77,6 +77,6 @@ test.describe('Navigation Integrity (BDD-IMP-FLOW-*, BDD-CMN-WF-01)', () => {
     await page.getByRole('link', { name: 'LC Amendments' }).click();
     await page.getByRole('link', { name: 'Operations Dashboard' }).click();
     await expect(page).toHaveURL(/\/import-lc/);
-    await expect(page.getByText('Active Transaction Data Table')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Active Transaction Data Table' })).toBeVisible();
   });
 });

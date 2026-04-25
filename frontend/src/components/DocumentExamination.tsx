@@ -20,7 +20,10 @@ interface Discrepancy {
     isWaived: boolean;
 }
 
-export const DocumentExamination: React.FC = () => {
+export const DocumentExamination: React.FC<{ instrument?: any, presentationDate?: string }> = ({ 
+    instrument = { amount: 500000, expiryDate: '2027-01-15', positiveTolerance: '5' },
+    presentationDate = new Date().toISOString().split('T')[0]
+}) => {
     const [decision, setDecision] = useState<'Accept' | 'Discrepant' | null>(null);
     const [docs, setDocs] = useState<DocRow[]>([
         { id: '1', name: 'Commercial Invoice', originals: 3, copies: 3 },
@@ -52,6 +55,11 @@ export const DocumentExamination: React.FC = () => {
             setDiscrepancies(discrepancies.map(d => d.id === id ? { ...d, isWaived: true } : d));
         }
     };
+    
+    // v3.0 logic: Regulatory deadline is 5 business days (simplified to 5 calendar days for now)
+    const deadline = new Date(presentationDate);
+    deadline.setDate(deadline.getDate() + 5);
+    const deadlineStr = deadline.toISOString().split('T')[0];
 
     return (
         <div className="exam-workspace">
@@ -64,9 +72,11 @@ export const DocumentExamination: React.FC = () => {
                     <details open>
                         <summary>Financials & Dates</summary>
                         <div className="ctx-content">
-                            <p><strong>Amount:</strong> USD 500,000.00</p>
-                            <p><strong>Expiry:</strong> 2027-01-15</p>
-                            <p><strong>Tolerance:</strong> +/- 5%</p>
+                            <p><strong>Amount:</strong> USD {(instrument.amount || 0).toLocaleString()}</p>
+                            <p><strong>Expiry:</strong> {instrument.expiryDate || '---'}</p>
+                            <p><strong>Tolerance:</strong> +/- {instrument.positiveTolerance || '0'}%</p>
+                            <p><strong>Presentation Date:</strong> {presentationDate}</p>
+                            <p className="text-urgent"><strong>Regulatory Deadline:</strong> {deadlineStr}</p>
                         </div>
                     </details>
                     <details>
@@ -202,6 +212,7 @@ export const DocumentExamination: React.FC = () => {
                 
                 .primary-btn { background: #2563eb; color: white; padding: 0.75rem 2rem; border-radius: 6px; font-weight: 700; border: none; cursor: pointer; }
                 .primary-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+                .text-urgent { color: #dc2626; font-weight: 700; }
             `}</style>
         </div>
     );

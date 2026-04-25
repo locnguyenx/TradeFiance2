@@ -1,0 +1,1492 @@
+{
+  "config": {
+    "configFile": "/Users/me/myprojects/moqui-trade/frontend/playwright.config.ts",
+    "rootDir": "/Users/me/myprojects/moqui-trade/frontend/e2e",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 4
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/Users/me/myprojects/moqui-trade/frontend/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 4
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/me/myprojects/moqui-trade/frontend/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.59.1",
+    "workers": 4,
+    "webServer": {
+      "command": "npm run dev -- -p 3001",
+      "url": "http://localhost:3001/import-lc",
+      "reuseExistingServer": true,
+      "timeout": 300000
+    }
+  },
+  "suites": [
+    {
+      "title": "AdminConfiguration.spec.ts",
+      "file": "AdminConfiguration.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Admin Configuration (Phase FE-3)",
+          "file": "AdminConfiguration.spec.ts",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should allow navigating and viewing product matrix",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 1559,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Import Letter of Credit')\nExpected: visible\nError: strict mode violation: getByText('Import Letter of Credit') resolved to 2 elements:\n    1) <span class=\"jsx-14c31f8428e4cb58 product-name\">Import Letter of Credit</span> aka getByText('Import Letter of Credit', { exact: true })\n    2) <h2 class=\"jsx-14c31f8428e4cb58\">Import Letter of Credit Configuration</h2> aka getByRole('heading', { name: 'Import Letter of Credit' })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Import Letter of Credit')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Import Letter of Credit')\nExpected: visible\nError: strict mode violation: getByText('Import Letter of Credit') resolved to 2 elements:\n    1) <span class=\"jsx-14c31f8428e4cb58 product-name\">Import Letter of Credit</span> aka getByText('Import Letter of Credit', { exact: true })\n    2) <h2 class=\"jsx-14c31f8428e4cb58\">Import Letter of Credit Configuration</h2> aka getByRole('heading', { name: 'Import Letter of Credit' })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Import Letter of Credit')\u001b[22m\n\n    at /Users/me/myprojects/moqui-trade/frontend/e2e/AdminConfiguration.spec.ts:11:61",
+                        "location": {
+                          "file": "/Users/me/myprojects/moqui-trade/frontend/e2e/AdminConfiguration.spec.ts",
+                          "column": 61,
+                          "line": 11
+                        },
+                        "snippet": "   9 |     await page.goto('/admin/product');\n  10 |     await expect(page.getByText('Product Configuration Matrix')).toBeVisible();\n> 11 |     await expect(page.getByText('Import Letter of Credit')).toBeVisible();\n     |                                                             ^\n  12 |   });\n  13 |\n  14 |   test('should allow navigating and viewing tariff configuration', async ({ page }) => {"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/me/myprojects/moqui-trade/frontend/e2e/AdminConfiguration.spec.ts",
+                            "column": 61,
+                            "line": 11
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Import Letter of Credit')\nExpected: visible\nError: strict mode violation: getByText('Import Letter of Credit') resolved to 2 elements:\n    1) <span class=\"jsx-14c31f8428e4cb58 product-name\">Import Letter of Credit</span> aka getByText('Import Letter of Credit', { exact: true })\n    2) <h2 class=\"jsx-14c31f8428e4cb58\">Import Letter of Credit Configuration</h2> aka getByRole('heading', { name: 'Import Letter of Credit' })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Import Letter of Credit')\u001b[22m\n\n\n   9 |     await page.goto('/admin/product');\n  10 |     await expect(page.getByText('Product Configuration Matrix')).toBeVisible();\n> 11 |     await expect(page.getByText('Import Letter of Credit')).toBeVisible();\n     |                                                             ^\n  12 |   });\n  13 |\n  14 |   test('should allow navigating and viewing tariff configuration', async ({ page }) => {\n    at /Users/me/myprojects/moqui-trade/frontend/e2e/AdminConfiguration.spec.ts:11:61"
+                        }
+                      ],
+                      "stdout": [
+                        {
+                          "text": "BROWSER [info]: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: [HMR] connected\n"
+                        },
+                        {
+                          "text": "Mocking product-catalog\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/product-catalog -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/audit-logs -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: [Fast Refresh] rebuilding\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-24T09:56:01.225Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/me/myprojects/moqui-trade/frontend/test-results/AdminConfiguration-Admin-C-18849--and-viewing-product-matrix-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/me/myprojects/moqui-trade/frontend/e2e/AdminConfiguration.spec.ts",
+                        "column": 61,
+                        "line": 11
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "8d93549a536ae1ee8122-5fd1498c2878b9b2f372",
+              "file": "AdminConfiguration.spec.ts",
+              "line": 8,
+              "column": 7
+            },
+            {
+              "title": "should allow navigating and viewing tariff configuration",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 1549,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "BROWSER [info]: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: [HMR] connected\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/fee-configurations -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/audit-logs -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: [Fast Refresh] rebuilding\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-24T09:56:01.224Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "8d93549a536ae1ee8122-0f548221c5ccd954e281",
+              "file": "AdminConfiguration.spec.ts",
+              "line": 14,
+              "column": 7
+            },
+            {
+              "title": "should allow navigating and viewing party directory with KYC",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 1532,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "BROWSER [info]: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: [HMR] connected\n"
+                        },
+                        {
+                          "text": "Mocking parties\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/parties -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: [Fast Refresh] rebuilding\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-24T09:56:01.223Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "8d93549a536ae1ee8122-ca1bb2e570817909a7bd",
+              "file": "AdminConfiguration.spec.ts",
+              "line": 20,
+              "column": 7
+            },
+            {
+              "title": "should show exposure alerts in facilities dashboard",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 1534,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "BROWSER [info]: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: [HMR] connected\n"
+                        },
+                        {
+                          "text": "Mocking exposure-data\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/exposure-data -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: [Fast Refresh] rebuilding\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-24T09:56:01.223Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "8d93549a536ae1ee8122-2fb1a6e02f074a609770",
+              "file": "AdminConfiguration.spec.ts",
+              "line": 27,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "AuthorizationsFlow.spec.ts",
+      "file": "AuthorizationsFlow.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Authorizations Lifecycle",
+          "file": "AuthorizationsFlow.spec.ts",
+          "line": 3,
+          "column": 6,
+          "specs": [
+            {
+              "title": "checker should see pending transactions and perform authorization",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "timedOut",
+                      "duration": 30161,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/me/myprojects/moqui-trade/frontend/e2e/AuthorizationsFlow.spec.ts",
+                            "column": 45,
+                            "line": 15
+                          },
+                          "message": "Error: locator.click: Test timeout of 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByTestId('submit-button')\u001b[22m\n\n\n  13 |     await page.getByTestId('next-button').click(); // to Step 4\n  14 |     await page.getByTestId('next-button').click(); // to Step 5\n> 15 |     await page.getByTestId('submit-button').click();\n     |                                             ^\n  16 |     await expect(page.getByText('Successfully Submitted for Approval')).toBeVisible();\n  17 |\n  18 |     // 2. Checker navigates to approvals\n    at /Users/me/myprojects/moqui-trade/frontend/e2e/AuthorizationsFlow.spec.ts:15:45"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-24T09:56:04.611Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/me/myprojects/moqui-trade/frontend/test-results/AuthorizationsFlow-Authori-5065e-s-and-perform-authorization-chromium/error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "5e7a2d6f7c3e83494d54-c60aab71b1fece72c7f2",
+              "file": "AuthorizationsFlow.spec.ts",
+              "line": 4,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "DashboardKPIs.spec.ts",
+      "file": "DashboardKPIs.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Dashboard Functions",
+          "file": "DashboardKPIs.spec.ts",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should display KPI widgets with expected labels",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 692,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "BROWSER [info]: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: [HMR] connected\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/kpis -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: [Fast Refresh] rebuilding\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/kpis -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: [Fast Refresh] done in 111ms\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-24T09:56:04.611Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9e242f54c0d8a11f0ac1-822dc027de23e312348d",
+              "file": "DashboardKPIs.spec.ts",
+              "line": 16,
+              "column": 7
+            },
+            {
+              "title": "should load active transaction data table",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 667,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "BROWSER [info]: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: [HMR] connected\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/kpis -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/kpis -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: [Fast Refresh] rebuilding\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: [Fast Refresh] done in 110ms\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-24T09:56:04.629Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9e242f54c0d8a11f0ac1-77640a4c1e97340cb3f3",
+              "file": "DashboardKPIs.spec.ts",
+              "line": 22,
+              "column": 7
+            },
+            {
+              "title": "should filter transactions by reference",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 469,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "BROWSER [info]: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: [HMR] connected\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/kpis -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/kpis -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-24T09:56:05.725Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9e242f54c0d8a11f0ac1-a7d00286a90301aa89f6",
+              "file": "DashboardKPIs.spec.ts",
+              "line": 29,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "IssuanceFlow.spec.ts",
+      "file": "IssuanceFlow.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Issuance Lifecycle E2E",
+          "file": "IssuanceFlow.spec.ts",
+          "line": 3,
+          "column": 6,
+          "specs": [
+            {
+              "title": "completes a full LC issuance from dashboard to submission",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "failed",
+                      "duration": 5455,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Active Transaction Data Table')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Active Transaction Data Table')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Active Transaction Data Table')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Active Transaction Data Table')\u001b[22m\n\n    at /Users/me/myprojects/moqui-trade/frontend/e2e/IssuanceFlow.spec.ts:7:67",
+                        "location": {
+                          "file": "/Users/me/myprojects/moqui-trade/frontend/e2e/IssuanceFlow.spec.ts",
+                          "column": 67,
+                          "line": 7
+                        },
+                        "snippet": "   5 |     // 1. Navigate to Dashboard\n   6 |     await page.goto('/import-lc'); // Hardcore dashboard path\n>  7 |     await expect(page.getByText('Active Transaction Data Table')).toBeVisible();\n     |                                                                   ^\n   8 |\n   9 |     // 2. Start New Issuance (via Sidebar)\n  10 |     await page.getByRole('link', { name: 'New LC Issuance' }).click();"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/me/myprojects/moqui-trade/frontend/e2e/IssuanceFlow.spec.ts",
+                            "column": 67,
+                            "line": 7
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Active Transaction Data Table')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Active Transaction Data Table')\u001b[22m\n\n\n   5 |     // 1. Navigate to Dashboard\n   6 |     await page.goto('/import-lc'); // Hardcore dashboard path\n>  7 |     await expect(page.getByText('Active Transaction Data Table')).toBeVisible();\n     |                                                                   ^\n   8 |\n   9 |     // 2. Start New Issuance (via Sidebar)\n  10 |     await page.getByRole('link', { name: 'New LC Issuance' }).click();\n    at /Users/me/myprojects/moqui-trade/frontend/e2e/IssuanceFlow.spec.ts:7:67"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-24T09:56:05.314Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/me/myprojects/moqui-trade/frontend/test-results/IssuanceFlow-Issuance-Life-07bcb-rom-dashboard-to-submission-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/me/myprojects/moqui-trade/frontend/e2e/IssuanceFlow.spec.ts",
+                        "column": 67,
+                        "line": 7
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "85af44a21c0191c451f7-9ab1789ea298450a4b09",
+              "file": "IssuanceFlow.spec.ts",
+              "line": 4,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "NavigationIntegrity.spec.ts",
+      "file": "NavigationIntegrity.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Navigation Integrity (BDD-IMP-FLOW-*, BDD-CMN-WF-01)",
+          "file": "NavigationIntegrity.spec.ts",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "BDD-IMP-FLOW-02: New LC Issuance navigation from sidebar",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "failed",
+                      "duration": 5675,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Step 1: Parties & Limits')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Step 1: Parties & Limits')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Step 1: Parties & Limits')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Step 1: Parties & Limits')\u001b[22m\n\n    at /Users/me/myprojects/moqui-trade/frontend/e2e/NavigationIntegrity.spec.ts:13:62",
+                        "location": {
+                          "file": "/Users/me/myprojects/moqui-trade/frontend/e2e/NavigationIntegrity.spec.ts",
+                          "column": 62,
+                          "line": 13
+                        },
+                        "snippet": "  11 |     await page.getByRole('link', { name: 'New LC Issuance' }).click();\n  12 |     await expect(page).toHaveURL(/\\/issuance/);\n> 13 |     await expect(page.getByText('Step 1: Parties & Limits')).toBeVisible();\n     |                                                              ^\n  14 |   });\n  15 |\n  16 |   test('BDD-CMN-AUTH-02: Global Checker Queue (My Tasks) navigation', async ({ page }) => {"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/me/myprojects/moqui-trade/frontend/e2e/NavigationIntegrity.spec.ts",
+                            "column": 62,
+                            "line": 13
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Step 1: Parties & Limits')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Step 1: Parties & Limits')\u001b[22m\n\n\n  11 |     await page.getByRole('link', { name: 'New LC Issuance' }).click();\n  12 |     await expect(page).toHaveURL(/\\/issuance/);\n> 13 |     await expect(page.getByText('Step 1: Parties & Limits')).toBeVisible();\n     |                                                              ^\n  14 |   });\n  15 |\n  16 |   test('BDD-CMN-AUTH-02: Global Checker Queue (My Tasks) navigation', async ({ page }) => {\n    at /Users/me/myprojects/moqui-trade/frontend/e2e/NavigationIntegrity.spec.ts:13:62"
+                        }
+                      ],
+                      "stdout": [
+                        {
+                          "text": "BROWSER [info]: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: [HMR] connected\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/kpis -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/kpis -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "Mocking product-catalog\n"
+                        },
+                        {
+                          "text": "Mocking product-catalog\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/product-catalog -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/product-catalog -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-24T09:56:05.318Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/me/myprojects/moqui-trade/frontend/test-results/NavigationIntegrity-Naviga-cbcce-nce-navigation-from-sidebar-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/me/myprojects/moqui-trade/frontend/e2e/NavigationIntegrity.spec.ts",
+                        "column": 62,
+                        "line": 13
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "0af15d99e59b864681a3-ee6ed392ec85de4a6c1a",
+              "file": "NavigationIntegrity.spec.ts",
+              "line": 10,
+              "column": 7
+            },
+            {
+              "title": "BDD-CMN-AUTH-02: Global Checker Queue (My Tasks) navigation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 459,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "BROWSER [info]: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: [HMR] connected\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/kpis -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/kpis -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/approvals -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/approvals -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-24T09:56:06.629Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0af15d99e59b864681a3-9d6dae2e068e3aef475c",
+              "file": "NavigationIntegrity.spec.ts",
+              "line": 16,
+              "column": 7
+            },
+            {
+              "title": "BDD-IMP-FLOW-03: LC Amendments navigation from sidebar",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 540,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "BROWSER [info]: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: [HMR] connected\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/kpis -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/kpis -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc/NEW -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc/NEW -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-24T09:56:07.101Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0af15d99e59b864681a3-b86badfeb13b0b918880",
+              "file": "NavigationIntegrity.spec.ts",
+              "line": 22,
+              "column": 7
+            },
+            {
+              "title": "BDD-IMP-SET-01: Settlements navigation from sidebar",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 5448,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Initiate LC Settlement')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Initiate LC Settlement')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Initiate LC Settlement')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Initiate LC Settlement')\u001b[22m\n\n    at /Users/me/myprojects/moqui-trade/frontend/e2e/NavigationIntegrity.spec.ts:31:60",
+                        "location": {
+                          "file": "/Users/me/myprojects/moqui-trade/frontend/e2e/NavigationIntegrity.spec.ts",
+                          "column": 60,
+                          "line": 31
+                        },
+                        "snippet": "  29 |     await page.getByRole('link', { name: 'Settlements' }).click();\n  30 |     await expect(page).toHaveURL(/.*settlement/);\n> 31 |     await expect(page.getByText('Initiate LC Settlement')).toBeVisible();\n     |                                                            ^\n  32 |   });\n  33 |\n  34 |   test('BDD-IMP-SG-01: Shipping Guarantees navigation from sidebar', async ({ page }) => {"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/me/myprojects/moqui-trade/frontend/e2e/NavigationIntegrity.spec.ts",
+                            "column": 60,
+                            "line": 31
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Initiate LC Settlement')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Initiate LC Settlement')\u001b[22m\n\n\n  29 |     await page.getByRole('link', { name: 'Settlements' }).click();\n  30 |     await expect(page).toHaveURL(/.*settlement/);\n> 31 |     await expect(page.getByText('Initiate LC Settlement')).toBeVisible();\n     |                                                            ^\n  32 |   });\n  33 |\n  34 |   test('BDD-IMP-SG-01: Shipping Guarantees navigation from sidebar', async ({ page }) => {\n    at /Users/me/myprojects/moqui-trade/frontend/e2e/NavigationIntegrity.spec.ts:31:60"
+                        }
+                      ],
+                      "stdout": [
+                        {
+                          "text": "BROWSER [info]: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: [HMR] connected\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: [Fast Refresh] rebuilding\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: [Fast Refresh] done in 117ms\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-24T09:56:07.650Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/me/myprojects/moqui-trade/frontend/test-results/NavigationIntegrity-Naviga-92eab-nts-navigation-from-sidebar-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/me/myprojects/moqui-trade/frontend/e2e/NavigationIntegrity.spec.ts",
+                        "column": 60,
+                        "line": 31
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "0af15d99e59b864681a3-9fb02dda28daf7282086",
+              "file": "NavigationIntegrity.spec.ts",
+              "line": 28,
+              "column": 7
+            },
+            {
+              "title": "BDD-IMP-SG-01: Shipping Guarantees navigation from sidebar",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 896,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "BROWSER [info]: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: [HMR] connected\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/kpis -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/kpis -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: [Fast Refresh] rebuilding\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: [Fast Refresh] done in 116ms\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-24T09:56:11.261Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0af15d99e59b864681a3-fa74abdeb4cdb76a1a33",
+              "file": "NavigationIntegrity.spec.ts",
+              "line": 34,
+              "column": 7
+            },
+            {
+              "title": "BDD-CMN-AUTH-01: Authority Tiers navigation from sidebar",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 646,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "BROWSER [info]: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: [HMR] connected\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/kpis -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/kpis -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/audit-logs -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/audit-logs -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-24T09:56:11.322Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0af15d99e59b864681a3-90899707954b5baf31e8",
+              "file": "NavigationIntegrity.spec.ts",
+              "line": 40,
+              "column": 7
+            },
+            {
+              "title": "BDD-CMN-MAS-04: System Audit Logs navigation from sidebar",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 533,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "BROWSER [info]: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: [HMR] connected\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/kpis -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/kpis -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/audit-logs -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/audit-logs -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-24T09:56:12.067Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0af15d99e59b864681a3-832e5f6bceafcc3d1505",
+              "file": "NavigationIntegrity.spec.ts",
+              "line": 46,
+              "column": 7
+            },
+            {
+              "title": "BDD-CMN-MAS-03: Party Directory navigation from sidebar",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 1,
+                      "status": "timedOut",
+                      "duration": 30044,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/me/myprojects/moqui-trade/frontend/e2e/NavigationIntegrity.spec.ts",
+                            "column": 62,
+                            "line": 53
+                          },
+                          "message": "Error: locator.click: Test timeout of 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('link', { name: 'Counterparties' })\u001b[22m\n\n\n  51 |\n  52 |   test('BDD-CMN-MAS-03: Party Directory navigation from sidebar', async ({ page }) => {\n> 53 |     await page.getByRole('link', { name: 'Counterparties' }).click();\n     |                                                              ^\n  54 |     await expect(page).toHaveURL(/\\/parties/);\n  55 |     await expect(page.getByText('Counterparties')).toBeVisible();\n  56 |   });\n    at /Users/me/myprojects/moqui-trade/frontend/e2e/NavigationIntegrity.spec.ts:53:62"
+                        }
+                      ],
+                      "stdout": [
+                        {
+                          "text": "BROWSER [info]: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: [HMR] connected\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/kpis -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/kpis -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-24T09:56:12.266Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/me/myprojects/moqui-trade/frontend/test-results/NavigationIntegrity-Naviga-8140e-ory-navigation-from-sidebar-chromium/error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "0af15d99e59b864681a3-8d9a3938ff07728d89b7",
+              "file": "NavigationIntegrity.spec.ts",
+              "line": 52,
+              "column": 7
+            },
+            {
+              "title": "BDD-CMN-EXP-01: Credit Facilities navigation from sidebar",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 602,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "BROWSER [info]: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: [HMR] connected\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/kpis -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/kpis -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "Mocking exposure-data\n"
+                        },
+                        {
+                          "text": "Mocking exposure-data\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/exposure-data -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/exposure-data -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-24T09:56:12.612Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0af15d99e59b864681a3-561a8f79fa6fef649d53",
+              "file": "NavigationIntegrity.spec.ts",
+              "line": 58,
+              "column": 7
+            },
+            {
+              "title": "BDD-CMN-TRF-01: Tariff & Fee Mapping navigation from sidebar",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 735,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "BROWSER [info]: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: [HMR] connected\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/kpis -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/kpis -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/fee-configurations -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/audit-logs -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/fee-configurations -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/audit-logs -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-24T09:56:14.448Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0af15d99e59b864681a3-bcd20ee5431136fe1969",
+              "file": "NavigationIntegrity.spec.ts",
+              "line": 64,
+              "column": 7
+            },
+            {
+              "title": "BDD-CMN-PRD-01: Product Config navigation from sidebar",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 625,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "BROWSER [info]: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: [HMR] connected\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/kpis -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/kpis -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "Mocking product-catalog\n"
+                        },
+                        {
+                          "text": "Mocking product-catalog\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/product-catalog -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/audit-logs -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/product-catalog -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/audit-logs -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-24T09:56:13.229Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0af15d99e59b864681a3-0a3a40a73eb2784382f0",
+              "file": "NavigationIntegrity.spec.ts",
+              "line": 70,
+              "column": 7
+            },
+            {
+              "title": "BDD-CMN-WF-01: Operations Dashboard (Return from Navigation)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 761,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "BROWSER [info]: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: [HMR] connected\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/kpis -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/kpis -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc/NEW -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc/NEW -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/kpis -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/import-lc -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        },
+                        {
+                          "text": "BROWSER [log]: DEBUG: fetch GET /rest/s1/trade/kpis -> 200 {requestBody: undefined, responseBody: Object}\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-24T09:56:13.865Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0af15d99e59b864681a3-506d761f1380f61284ac",
+              "file": "NavigationIntegrity.spec.ts",
+              "line": 76,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-04-24T09:55:57.942Z",
+    "duration": 44501.134,
+    "expected": 15,
+    "skipped": 0,
+    "unexpected": 6,
+    "flaky": 0
+  }
+}

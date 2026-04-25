@@ -19,7 +19,7 @@ export const CancellationRequest: React.FC<CancellationRequestProps> = ({ instru
     return (
         <div className="cancellation-container premium-card">
             <header className="header-box">
-                <h2 className="title">Request LC Cancellation</h2>
+                <h2 className="title">LC Cancellation Request</h2>
                 <p className="subtitle">Instrument: {instrumentId}</p>
             </header>
 

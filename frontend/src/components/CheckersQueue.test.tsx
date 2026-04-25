@@ -1,5 +1,12 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within, waitFor } from '@testing-library/react';
 import { CheckersQueue } from './CheckersQueue';
+import { tradeApi } from '../api/tradeApi';
+
+jest.mock('../api/tradeApi', () => ({
+    tradeApi: {
+        getApprovals: jest.fn().mockResolvedValue({ approvalsList: [] })
+    }
+}));
 
 const mockItem = {
     instrumentId: '1',
@@ -19,10 +26,8 @@ describe('CheckersQueue v3.0 (REQ-UI-CMN-02)', () => {
             { ...mockItem, id: '1', transactionRef: 'TX-A', priorityEnumId: 'NORMAL' },
             { ...mockItem, id: '2', transactionRef: 'TX-B', priorityEnumId: 'URGENT' },
         ];
-        // @ts-ignore - CheckersQueue doesn't accept items prop yet
         render(<CheckersQueue items={items} />);
         const rows = screen.getAllByRole('row');
-        // Header + 2 data rows. URGENT (TX-B) should appear first.
         expect(within(rows[1]).getByText('TX-B')).toBeInTheDocument();
         expect(within(rows[2]).getByText('TX-A')).toBeInTheDocument();
     });
@@ -31,14 +36,23 @@ describe('CheckersQueue v3.0 (REQ-UI-CMN-02)', () => {
         const items = [
             { ...mockItem, id: '1', lifecycleStatusId: 'INST_PARTIAL_APPROVAL' },
         ];
-        // @ts-ignore
         render(<CheckersQueue items={items} />);
         expect(screen.getByText(/PARTIAL APPROVAL/i)).toBeInTheDocument();
     });
 
     it('renders tier indicator in KPI banner', () => {
-        // @ts-ignore
         render(<CheckersQueue items={[]} userTier="TIER_3" />);
         expect(screen.getByText(/Your Authority: TIER 3/i)).toBeInTheDocument();
+    });
+
+    it('fetches data from API if no items provided', async () => {
+        const mockApprovals = [{ ...mockItem, transactionRef: 'API-REF' }];
+        (tradeApi.getApprovals as jest.Mock).mockResolvedValue({ approvalsList: mockApprovals });
+        
+        render(<CheckersQueue />);
+        
+        await waitFor(() => {
+            expect(screen.getByText('API-REF')).toBeInTheDocument();
+        });
     });
 });

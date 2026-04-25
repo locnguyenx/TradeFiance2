@@ -8,17 +8,17 @@ import { ClauseSelector } from './ClauseSelector';
 // ABOUTME: Maps state to BDD sequences: BDD-IMP-FLOW-01 (Draft) and BDD-IMP-FLOW-02 (Submit).
 
 const steps = [
-    'Step 1: Basic Information',
-    'Step 2: Main LC Information',
-    'Step 3: Margin & Charges',
-    'Step 4: Review & Submit',
+    'Parties & Limits',
+    'Main LC Information',
+    'Margin & Charges',
+    'Review & Submit'
 ];
 
 const sectionsPerStep = [
     ['Parties & Limits'],
     ['Financials & Dates', 'Terms & Shipping', 'Narratives'],
     ['Margin', 'Charges'],
-    ['Summary', 'Validations']
+    ['Review & Submit']
 ];
 
 export const IssuanceStepper: React.FC = () => {
@@ -94,7 +94,7 @@ export const IssuanceStepper: React.FC = () => {
 
     const handleNext = () => {
         setErrorMessage('');
-        setStepIndex(prev => Math.min(prev + 1, 4));
+        setStepIndex(prev => Math.min(prev + 1, 3));
     }
     const handleBack = () => setStepIndex(prev => Math.max(prev - 1, 0));
 
@@ -106,8 +106,8 @@ export const IssuanceStepper: React.FC = () => {
                 ...formData, 
                 amount: parseFloat(formData.amount) || 0,
                 businessStateId: 'LC_DRAFT',
-                applicantPartyId: 'ACME_CORP_001', // Example: Map to real ID
-                customerFacilityId: 'FAC-ACME-001' // Example: Map to real facility
+                applicantPartyId: 'ACME_CORP_001',
+                customerFacilityId: 'FAC-ACME-001'
             });
             if (result.errors || result.error) {
                 setErrorMessage(result.errors?.[0] || result.error || 'Failed to save draft');
@@ -173,7 +173,11 @@ export const IssuanceStepper: React.FC = () => {
             </div>
 
             <main className="stepper-content">
+                <header className="step-header mb-4">
+                    <h3 className="text-xl font-bold">Step {stepIndex + 1}: {steps[stepIndex]}</h3>
+                </header>
                 {errorMessage && <div className="error-banner mb-2">{errorMessage}</div>}
+                
                 {stepIndex === 0 && (
                     <section className="form-grid">
                         <div className="field-group">
@@ -253,6 +257,10 @@ export const IssuanceStepper: React.FC = () => {
                             <div className="field-group">
                                 <label htmlFor="portOfLoading">Port of Loading</label>
                                 <input id="portOfLoading" value={formData.portOfLoading} onChange={e => setFormData({...formData, portOfLoading: e.target.value})} />
+                            </div>
+                            <div className="field-group">
+                                <label htmlFor="portOfDischarge">Port of Discharge</label>
+                                <input id="portOfDischarge" value={formData.portOfDischarge} onChange={e => setFormData({...formData, portOfDischarge: e.target.value})} />
                             </div>
                         </section>
 
@@ -352,7 +360,7 @@ export const IssuanceStepper: React.FC = () => {
                 </div>
                 <div className="right-actions">
                     {stepIndex > 0 && <button data-testid="back-button" onClick={handleBack}>Back</button>}
-                    {stepIndex < 4 ? (
+                    {stepIndex < 3 ? (
                         <button 
                             data-testid="next-button" 
                             className="primary-btn" 

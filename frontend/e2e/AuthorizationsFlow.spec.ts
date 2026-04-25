@@ -1,6 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { setupApiMocks } from './helpers/api-mock';
 
 test.describe('Authorizations Lifecycle', () => {
+  test.beforeEach(async ({ page }) => {
+    await setupApiMocks(page);
+  });
+
   test('checker should see pending transactions and perform authorization', async ({ page }) => {
     // 1. Maker creates a transaction
     await page.goto('/issuance');
@@ -11,7 +16,6 @@ test.describe('Authorizations Lifecycle', () => {
     await page.locator('#amount').fill('100000');
     await page.getByTestId('next-button').click(); // to Step 3
     await page.getByTestId('next-button').click(); // to Step 4
-    await page.getByTestId('next-button').click(); // to Step 5
     await page.getByTestId('submit-button').click();
     await expect(page.getByText('Successfully Submitted for Approval')).toBeVisible();
 

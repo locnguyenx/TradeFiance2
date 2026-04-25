@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { CheckerAuthorization } from './CheckerAuthorization';
 import { QueueItem } from '../api/types';
+import { tradeApi } from '../api/tradeApi';
 
 // ABOUTME: Global Checker Queue implementing REQ-UI-CMN-02.
 // ABOUTME: Central inbox for second-pair-of-eyes authorization across all Trade modules.
@@ -12,8 +13,27 @@ interface CheckersQueueProps {
     userTier?: string;
 }
 
-export const CheckersQueue: React.FC<CheckersQueueProps> = ({ items = [], userTier = 'TIER_1' }) => {
+export const CheckersQueue: React.FC<CheckersQueueProps> = ({ items: initialItems, userTier = 'TIER_1' }) => {
+    const [items, setItems] = useState<QueueItem[]>(initialItems || []);
+    const [loading, setLoading] = useState(!initialItems);
+    const [filter, setFilter] = useState<'ALL' | 'HIGH' | 'SLA'>('ALL');
     const [selectedInstrumentId, setSelectedInstrumentId] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!initialItems) {
+            setLoading(true);
+            tradeApi.getApprovals().then(res => {
+                setItems(res.approvalsList || []);
+                setLoading(false);
+            });
+        }
+    }, [initialItems]);
+
+    const filteredItems = items.filter(item => {
+        if (filter === 'HIGH') return item.priorityEnumId === 'URGENT' || item.priorityEnumId === 'EXPRESS';
+        if (filter === 'SLA') return (item.timeInQueue || '').includes('h') && parseInt(item.timeInQueue || '0') > 4;
+        return true;
+    });
 
     const priorityWeight: Record<string, number> = {
         'URGENT': 3,
@@ -21,14 +41,16 @@ export const CheckersQueue: React.FC<CheckersQueueProps> = ({ items = [], userTi
         'NORMAL': 1
     };
 
-    const sortedItems = [...items].sort((a, b) => {
+    const sortedItems = [...filteredItems].sort((a, b) => {
         const weightA = priorityWeight[a.priorityEnumId] || 0;
         const weightB = priorityWeight[b.priorityEnumId] || 0;
         if (weightB !== weightA) return weightB - weightA;
-        return (b.timeInQueue || '').localeCompare(a.timeInQueue || ''); // Simplified sort for time
+        return (b.timeInQueue || '').localeCompare(a.timeInQueue || '');
     });
 
-    const slaAlertCount = items.filter(item => (item.timeInQueue || '').includes('h') && parseInt(item.timeInQueue || '0') > 4).length; // Dummy logic for SLA
+    const slaAlertCount = items.filter(item => (item.timeInQueue || '').includes('h') && parseInt(item.timeInQueue || '0') > 4).length;
+
+    if (loading) return <div className="p-8 text-center">Loading Approvals Queue...</div>;
 
     return (
         <div className="queue-container">
@@ -41,9 +63,9 @@ export const CheckersQueue: React.FC<CheckersQueueProps> = ({ items = [], userTi
                     </div>
                 </div>
                 <div className="queue-filters">
-                    <button className="filter-chip active">All Modules</button>
-                    <button className="filter-chip">High Priority</button>
-                    <button className="filter-chip">SLA Alerts</button>
+                    <button className={`filter-chip ${filter === 'ALL' ? 'active' : ''}`} onClick={() => setFilter('ALL')}>All Modules</button>
+                    <button className={`filter-chip ${filter === 'HIGH' ? 'active' : ''}`} onClick={() => setFilter('HIGH')}>High Priority</button>
+                    <button className={`filter-chip ${filter === 'SLA' ? 'active' : ''}`} onClick={() => setFilter('SLA')}>SLA Alerts</button>
                 </div>
             </header>
 

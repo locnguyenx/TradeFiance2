@@ -47,7 +47,7 @@ export const FacilityDashboard: React.FC = () => {
     return (
         <div className="facility-dashboard">
             <header className="dashboard-header">
-                <h2>Exposure & Credit Facilities</h2>
+                <h2>Import LC Facility Exposure</h2>
                 {isHighUtilization && (
                     <div className="warning-badge">HIGH UTILIZATION</div>
                 )}

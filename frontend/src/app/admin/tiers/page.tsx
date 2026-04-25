@@ -4,7 +4,7 @@ import { GlobalShell } from '../../../components/GlobalShell';
 export default function TierAdminPage() {
   return (
     <GlobalShell>
-      <SystemAdminSettings activePanel="user" />
+      <SystemAdminSettings activePanel="authority" />
     </GlobalShell>
   );
 }

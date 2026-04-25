@@ -125,4 +125,27 @@ describe('ImportLcDashboard (REQ-UI-IMP-02)', () => {
             expect(screen.getByText('2026-05-30')).toBeInTheDocument();
         });
     });
+
+    it('v3.0: displays Effective Outstanding Balance and Cumulative Drawn columns', async () => {
+        const { tradeApi } = require('../api/tradeApi');
+        tradeApi.getImportLcs.mockResolvedValue({
+            lcList: [{ 
+                instrumentId: '4', 
+                transactionRef: 'LC-2026-004', 
+                effectiveAmount: 100000,
+                effectiveOutstandingAmount: 60000,
+                cumulativeDrawnAmount: 40000,
+                businessStateId: 'LC_ISSUED',
+                expiryDate: '2026-12-31'
+            }],
+            lcListCount: 1
+        });
+
+        render(<ImportLcDashboard />);
+        
+        await waitFor(() => {
+            expect(screen.getByText('60,000')).toBeInTheDocument();
+            expect(screen.getByText('40,000')).toBeInTheDocument();
+        });
+    });
 });

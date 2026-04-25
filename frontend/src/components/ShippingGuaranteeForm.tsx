@@ -24,7 +24,7 @@ export const ShippingGuaranteeForm: React.FC<ShippingGuaranteeFormProps> = ({ in
         <div className="sg-container premium-card">
             <header className="header-flex">
                 <div>
-                    <h2 className="title">Shipping Guarantee Request</h2>
+                    <h2 className="title">Issue Shipping Guarantee</h2>
                     <p className="subtitle">Linked to Parent LC: {instrumentId}</p>
                 </div>
                 <div className="limit-calc-box">

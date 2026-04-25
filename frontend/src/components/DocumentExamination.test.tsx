@@ -10,10 +10,23 @@ describe('DocumentExamination (BDD-IMP-FLOW-04,05,06 / BDD-IMP-VAL-02)', () => {
         expect(screen.getByText(/Presentation Matrix/i)).toBeInTheDocument();
     });
 
-    it('BDD-IMP-VAL-02: displays accordion sections for LC terms (Expiry & Dates check)', () => {
-        render(<DocumentExamination />);
+    it('BDD-IMP-VAL-02: displays accordion sections for LC terms with dynamic values', () => {
+        const lc = { amount: 100000, expiryDate: '2026-12-31', positiveTolerance: '10' };
+        // @ts-ignore
+        render(<DocumentExamination instrument={lc} />);
         expect(screen.getByText(/Financials & Dates/i)).toBeInTheDocument();
-        expect(screen.getByText(/Documents Required/i)).toBeInTheDocument();
+        expect(screen.getByText(/100,000/)).toBeInTheDocument();
+        expect(screen.getByText(/2026-12-31/)).toBeInTheDocument();
+        expect(screen.getByText(/\+\/\- 10%/)).toBeInTheDocument();
+    });
+
+    it('v3.0: displays regulatory deadline (5 days from presentation)', () => {
+        const presentationDate = '2026-05-01';
+        // @ts-ignore
+        render(<DocumentExamination presentationDate={presentationDate} />);
+        expect(screen.getByText(/Regulatory Deadline/i)).toBeInTheDocument();
+        // 2026-05-01 + 5 days = 2026-05-06
+        expect(screen.getByText(/2026-05-06/)).toBeInTheDocument();
     });
 
     it('BDD-IMP-FLOW-04: contains a document matrix with inputs for originals/copies', () => {

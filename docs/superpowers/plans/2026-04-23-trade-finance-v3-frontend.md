@@ -706,98 +706,51 @@ describe('ImportLcDashboard v3.0', () => {
 
 ---
 
-## Phase FE-3: New Admin Screens
+# Phase FE-3: New Admin Screens
 
-> Implement the admin management UIs from the Common Module wireframes.
+Implement the administrative configuration screens for governance and product management.
 
----
+## User Review Required
 
-### Task FE-3.1: Implement Product Configuration Matrix Screen
+> [!IMPORTANT]
+> The admin screens will use a Master-Detail layout pattern as specified in REQ-UI-CMN-03/05/06.
+> "Publish" actions will require Maker/Checker approval at the entity level (backend), but the UI will provide the trigger buttons.
 
-**BDD Scenarios:** BDD-CMN-PRD-01 to PRD-11
-**BRD Requirements:** REQ-UI-CMN-06
+## Proposed Changes
 
-**User-Facing:** YES
+### [Product Configuration Matrix]
 
-**Files:**
-- Modify: `src/app/admin/product/page.tsx`
-- Create: `src/components/ProductCatalogManager.tsx`
-- Create: `src/components/ProductCatalogManager.test.tsx`
+#### [NEW] [ProductCatalogManager.tsx](file:///Users/me/myprojects/moqui-trade/frontend/src/components/ProductCatalogManager.tsx)
+- Master-Detail layout with Left Pane (product list) and Right Pane (config form).
+- Toggles and inputs for all `TradeProductCatalog` fields.
+- [Save Draft] and [Publish] functionality.
 
-- [ ] **Step 1: Write the failing test**
+#### [NEW] [ProductCatalogManager.test.tsx](file:///Users/me/myprojects/moqui-trade/frontend/src/components/ProductCatalogManager.test.tsx)
+- Tests for rendering list, selecting products, and submitting changes.
 
-```typescript
-describe('ProductCatalogManager', () => {
-  it('renders product list in left navigation', () => {
-    const products = [
-      { productCatalogId: 'IMP_LC_STANDARD', productName: 'Standard Import LC', isActive: 'Y' },
-    ];
-    render(<ProductCatalogManager products={products} />);
-    expect(screen.getByText('Standard Import LC')).toBeInTheDocument();
-  });
+### [Tariff & Fee Configuration]
 
-  it('renders all configuration toggles for selected product', () => {
-    render(<ProductCatalogManager products={[mockProduct]} selectedId="IMP_LC_STANDARD" />);
-    expect(screen.getByLabelText(/allow revolving/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/allow advance payment/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/is standby/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/is transferable/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/accounting framework/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/document exam sla days/i)).toBeInTheDocument();
-  });
+#### [NEW] [TariffManager.tsx](file:///Users/me/myprojects/moqui-trade/frontend/src/components/TariffManager.tsx)
+- Master-Detail layout for Fee Types.
+- Configuration for calculation method, rates, and floor/ceiling.
 
-  it('shows Save Draft and Publish buttons', () => {
-    render(<ProductCatalogManager products={[mockProduct]} selectedId="IMP_LC_STANDARD" />);
-    expect(screen.getByRole('button', { name: /save draft/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /publish/i })).toBeInTheDocument();
-  });
-});
-```
+#### [NEW] [TariffManager.test.tsx](file:///Users/me/myprojects/moqui-trade/frontend/src/components/TariffManager.test.tsx)
+- Tests for fee config display and updates.
 
-- [ ] **Step 2: Run test — expect FAIL**
-- [ ] **Step 3: Implement ProductCatalogManager** — Left nav lists products, main area shows configuration toggle switches + number inputs per field from `TradeProductCatalog`. Save Draft / Publish via `tradeApi.updateProductCatalog()`.
-- [ ] **Step 4: Run test — expect PASS**
-- [ ] **Step 5: Commit**
+### [Shared Admin Shell]
 
----
+#### [MODIFY] [SystemAdminSettings.tsx](file:///Users/me/myprojects/moqui-trade/frontend/src/components/SystemAdminSettings.tsx)
+- Refactor to host the new `ProductCatalogManager` and `TariffManager` components.
 
-### Task FE-3.2: Implement Tariff & Fee Configuration Screen
+## Verification Plan
 
-**BDD Scenarios:** BDD-CMN-MAS-01, BDD-CMN-MAS-02
-**BRD Requirements:** REQ-UI-CMN-05
+### Automated Tests
+- `npm run test src/components/ProductCatalogManager.test.tsx`
+- `npm run test src/components/TariffManager.test.tsx`
 
-**User-Facing:** YES
-
-**Files:**
-- Modify: `src/app/tariffs/page.tsx`
-- Create: `src/components/TariffManager.tsx`
-- Create: `src/components/TariffManager.test.tsx`
-
-- [ ] **Step 1: Write the failing test**
-
-```typescript
-describe('TariffManager', () => {
-  it('renders fee type list in left navigation', () => {
-    const fees = [
-      { feeConfigId: '1', feeTypeEnumId: 'ISSUANCE_FEE', calculationMethodEnumId: 'PERCENTAGE' },
-    ];
-    render(<TariffManager fees={fees} />);
-    expect(screen.getByText(/issuance/i)).toBeInTheDocument();
-  });
-
-  it('renders minFloorAmount field', () => {
-    render(<TariffManager fees={[mockFee]} selectedId="1" />);
-    expect(screen.getByLabelText(/minimum charge/i)).toBeInTheDocument();
-  });
-});
-```
-
-- [ ] **Step 2: Run test — expect FAIL**
-- [ ] **Step 3: Implement TariffManager** — Left nav: fee types. Main area: base rule set (calculation method, rate, floor/ceiling) + exception grid for customer tier overrides. Calls `tradeApi.updateFeeConfiguration()`.
-- [ ] **Step 4: Run test — expect PASS**
-- [ ] **Step 5: Commit**
-
----
+### Manual Verification
+- Verify the Master-Detail layout responsiveness.
+- Verify that saving a configuration triggers the correct API calls.
 
 ### Task FE-3.3: Update Party & KYC Directory with SWIFT BIC and Sanctions
 

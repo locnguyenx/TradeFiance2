@@ -200,6 +200,18 @@ ${delta.newExpiryDate ? `:31E: ${delta.newExpiryDate}` : ''}`}
                                 Advise Beneficiary Consent Required
                             </label>
                         </div>
+                        {delta.beneficiaryConsentRequired && (
+                            <div className="status-badge consent-pending mt-4">
+                                <span className="pulse-dot"></span>
+                                Awaiting Beneficiary Consent (Conditional on Approval)
+                            </div>
+                        )}
+                        {parseFloat(delta.amountAdjustment) > 500000 && (
+                            <div className="warning-banner mt-4">
+                                <strong>⚠️ TIER 4 AUTHORIZATION REQUIRED</strong>
+                                <p>Amendment increases liability by {instrument.currencyUomId} {parseFloat(delta.amountAdjustment).toLocaleString()}, triggering Tier 4 compliance threshold.</p>
+                            </div>
+                        )}
                     </section>
                 )}
             </main>
@@ -254,6 +266,14 @@ ${delta.newExpiryDate ? `:31E: ${delta.newExpiryDate}` : ''}`}
                 .primary-btn { background: #2563eb; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; font-weight: 600; cursor: pointer; }
                 .primary-btn:disabled { opacity: 0.5; cursor: not-allowed; }
                 .secondary-btn { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; padding: 0.75rem 1.5rem; border-radius: 6px; font-weight: 600; cursor: pointer; }
+                
+                .consent-pending { display: flex; align-items: center; gap: 0.75rem; background: #fffbeb; color: #92400e; border: 1px solid #fef3c7; padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.8125rem; font-weight: 700; width: fit-content; }
+                .pulse-dot { width: 8px; height: 8px; background: #d97706; border-radius: 50%; display: inline-block; animation: pulse 2s infinite; }
+                @keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(217, 119, 6, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(217, 119, 6, 0); } }
+                
+                .warning-banner { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; padding: 1rem; border-radius: 6px; font-size: 0.875rem; }
+                .warning-banner p { margin: 0.25rem 0 0 0; font-size: 0.8125rem; opacity: 0.9; }
+                .mt-4 { margin-top: 1rem; }
             `}</style>
         </div>
     );

@@ -66,7 +66,7 @@ export const ProductCatalogManager: React.FC = () => {
         <div className="product-manager-layout">
             <aside className="product-list-pane">
                 <header className="pane-header">
-                    <h3>Products</h3>
+                    <h3>Product Configuration Matrix</h3>
                 </header>
                 <div className="product-items">
                     {products.map(p => (

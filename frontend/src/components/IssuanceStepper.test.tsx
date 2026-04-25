@@ -72,4 +72,22 @@ describe('IssuanceStepper v3.0 (BDD-IMP-FLOW-01, BDD-CMN-VAL-05)', () => {
             expect(screen.getByText(/invalid SWIFT character/i)).toBeInTheDocument();
         });
     });
+
+    it('renders v3.0 shipping fields (Tolerance, Port of Discharge) on Step 2', async () => {
+        render(<IssuanceStepper />);
+        // Move to Step 2
+        fireEvent.change(screen.getByLabelText(/Applicant/i), { target: { value: 'Global Corp' } });
+        fireEvent.click(screen.getByTestId('next-button'));
+
+        expect(screen.getByLabelText(/Positive Tolerance/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/Negative Tolerance/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/Port of Discharge/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/Latest Shipment Date/i)).toBeInTheDocument();
+    });
+
+    it('renders v3.0 confirmation and LC type fields on Step 1', async () => {
+        render(<IssuanceStepper />);
+        expect(screen.getByLabelText(/LC Type/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/Confirmation Instruction/i)).toBeInTheDocument();
+    });
 });

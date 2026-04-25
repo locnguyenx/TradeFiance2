@@ -67,7 +67,7 @@ export const TariffManager: React.FC = () => {
         <div className="tariff-manager-layout">
             <aside className="fee-list-pane">
                 <header className="pane-header">
-                    <h3>Fee Types</h3>
+                    <h3>Tariff & Fee Configuration</h3>
                 </header>
                 <div className="fee-items">
                     {fees.map(f => (
@@ -76,7 +76,8 @@ export const TariffManager: React.FC = () => {
                             className={`fee-item ${selectedFee?.feeConfigId === f.feeConfigId ? 'active' : ''}`}
                             onClick={() => handleSelectFee(f)}
                         >
-                            <span className="fee-type">{formatEnum(f.feeTypeEnumId)}</span>
+                            <span className="fee-type">{f.feeTypeEnumId}</span>
+                            <span className="fee-description">{formatEnum(f.feeTypeEnumId)}</span>
                             <span className="fee-id">{f.feeConfigId}</span>
                         </div>
                     ))}

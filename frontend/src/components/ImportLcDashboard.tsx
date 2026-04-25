@@ -86,6 +86,8 @@ export const ImportLcDashboard: React.FC = () => {
                                 <th>Beneficiary</th>
                                 <th>CCY</th>
                                 <th>Amount</th>
+                                <th>Outstanding</th>
+                                <th>Drawn</th>
                                 <th>Expiry Date</th>
                                 <th>Status</th>
                                 <th>SLA Timer</th>
@@ -110,6 +112,8 @@ export const ImportLcDashboard: React.FC = () => {
                                                     {displayAmount.toLocaleString()}
                                                     {isAmended && <span className="amended-indicator" title="Amended Value">★</span>}
                                                 </td>
+                                                <td>{(lc.effectiveOutstandingAmount || 0).toLocaleString()}</td>
+                                                <td>{(lc.cumulativeDrawnAmount || 0).toLocaleString()}</td>
                                                 <td>
                                                     {displayExpiry}
                                                 </td>

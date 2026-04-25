@@ -7,7 +7,7 @@ export default async function ShippingGuaranteesPage({ searchParams }: any) {
     
     return (
         <div style={{ padding: '2rem' }}>
-            <h1>Issue Shipping Guarantee</h1>
+
             <ShippingGuaranteeForm instrumentId={id} />
         </div>
     );
