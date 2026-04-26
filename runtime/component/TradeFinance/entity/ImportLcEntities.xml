@@ -123,6 +123,8 @@
         <field name="claimCurrency" type="id"/>
         <field name="regulatoryDeadline" type="date"/>
         <field name="documentDisposalEnumId" type="id"/> <!-- Tag 77B: HOLDING_DOCUMENTS or RETURNING_DOCUMENTS -->
+        <field name="chargesDeducted" type="text-long"/> <!-- Tag 73 -->
+        <field name="senderToReceiverPresentationInfo" type="text-long"/> <!-- Tag 72Z -->
         
         <relationship type="one" related="trade.importlc.ImportLetterOfCredit">
             <key-map field-name="instrumentId"/>
@@ -209,9 +211,17 @@
         <member-entity entity-alias="prio" entity-name="moqui.basic.Enumeration" join-from-alias="inst" join-optional="true">
             <key-map field-name="priorityEnumId" related="enumId"/>
         </member-entity>
+        <member-entity entity-alias="aparty" entity-name="trade.TradeParty" join-from-alias="inst" join-optional="true">
+            <key-map field-name="applicantPartyId" related="partyId"/>
+        </member-entity>
+        <member-entity entity-alias="bparty" entity-name="trade.TradeParty" join-from-alias="inst" join-optional="true">
+            <key-map field-name="beneficiaryPartyId" related="partyId"/>
+        </member-entity>
         <alias-all entity-alias="lc"/>
         <alias-all entity-alias="inst"><exclude field="instrumentId"/><exclude field="businessStateId"/></alias-all>
         <alias entity-alias="prio" name="prioritySequence" field="sequenceNum"/>
+        <alias entity-alias="aparty" name="applicantPartyName" field="partyName"/>
+        <alias entity-alias="bparty" name="beneficiaryPartyName" field="partyName"/>
     </view-entity>
 
     <entity entity-name="DummyTestEntity" package="trade.importlc">

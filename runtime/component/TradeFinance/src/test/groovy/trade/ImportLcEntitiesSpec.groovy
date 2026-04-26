@@ -353,4 +353,13 @@ class ImportLcEntitiesSpec extends Specification {
         ec.entity.find("trade.TradeInstrument")
             .condition("instrumentId", "LC-SG-EXT").deleteAll()
     }
+    
+    def "Entity has missing presentation fields"() {
+        given:
+        def presentation = ec.entity.makeValue("trade.importlc.TradeDocumentPresentation")
+        
+        expect:
+        presentation.set("chargesDeducted", "test") == presentation
+        presentation.set("senderToReceiverPresentationInfo", "test") == presentation
+    }
 }
