@@ -52,8 +52,8 @@ class ComplianceServicesSpec extends Specification {
         inst.previousBusinessStateId == "LC_ISSUED"
 
         when: "Try to transition (e.g., Receive Documents)"
-        ec.service.sync().name("trade.importlc.ImportLcValidationServices.transition#BusinessState")
-            .parameters([instrumentId: lcId, toStateId: 'LC_DOCS_RECEIVED']).call()
+        ec.service.sync().name("trade.importlc.ImportLcValidationServices.validate#BusinessStateTransition")
+            .parameters([instrumentId: lcId, toStateId: 'LC_DOC_RECEIVED']).call()
 
         then: "Transition fails with error message"
         ec.message.hasError()
@@ -70,8 +70,8 @@ class ComplianceServicesSpec extends Specification {
         instReleased.previousBusinessStateId == null
 
         when: "Try to transition now (Receive Documents)"
-        ec.service.sync().name("trade.importlc.ImportLcValidationServices.transition#BusinessState")
-            .parameters([instrumentId: lcId, toStateId: 'LC_DOCS_RECEIVED']).call()
+        ec.service.sync().name("trade.importlc.ImportLcValidationServices.validate#BusinessStateTransition")
+            .parameters([instrumentId: lcId, toStateId: 'LC_DOC_RECEIVED']).call()
 
         then: "Transition succeeds"
         !ec.message.hasError()

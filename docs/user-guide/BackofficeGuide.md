@@ -63,6 +63,13 @@ This guide provides exhaustive, step-by-step instructions for Administrative and
 
 ---
 
-## 4. Advanced Features
-- **Send Message**: From any Party detail view, click **Communicate** to trigger an internal SWIFT-formatted message.
-- **Print Template**: Use the **Print** icon on any Facility view to generate a PDF snapshot of current utilization for management reporting.
+### D. Compliance Holds & Release
+1.  **Enforcement**: Transactions triggering sanctions flags (e.g., matching SDN entities) are automatically placed on **Compliance Hold**.
+2.  **Release**: A specialized **Compliance Officer** must review and call the `validate#BusinessStateTransition` service with `holdReleased=true` to unblock the instrument.
+
+---
+
+## 5. Security & Risk Controls
+- **Dual Checker Enforcement**: Tier 4 transactions (High Risk/High Value) automatically require two independent authorizations before execution.
+- **Role Isolation**: Makers cannot authorize their own transactions.
+- **Audit Traceability**: Every state transition is recorded in the `TradeInstrumentHistory` log with a timestamped user ID.

@@ -183,4 +183,21 @@
             ]"/>
         </actions>
     </service>
+    <service verb="reverse" noun="Limit">
+        <in-parameters><parameter name="instrumentId" required="true"/></in-parameters>
+        <actions>
+            <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc"/>
+            <if condition="!lc"><return/></if>
+            <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument"/>
+            
+            <if condition="instrument.customerFacilityId">
+                <!-- Decrement utilization by remaining outstanding amount -->
+                <script>
+                    def amount = lc.effectiveOutstandingAmount ?: 0.0
+                    ec.service.sync().name("trade.LimitServices.update#Utilization")
+                        .parameters([facilityId: instrument.customerFacilityId, amountDelta: -amount]).call()
+                </script>
+            </if>
+        </actions>
+    </service>
 </services>

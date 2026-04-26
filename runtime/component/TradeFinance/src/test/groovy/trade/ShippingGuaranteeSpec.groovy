@@ -1,3 +1,5 @@
+package trade
+
 
 import spock.lang.Specification
 import org.moqui.Moqui
@@ -24,12 +26,12 @@ class ShippingGuaranteeSpec extends Specification {
         ec.entity.makeValue("trade.CustomerFacility")
             .setAll([facilityId:"SG-FAC-1", totalApprovedLimit: 120.0, utilizedAmount: 0.0]).create()
         ec.entity.makeValue("trade.TradeInstrument")
-            .setAll([instrumentId:"SG-LC-1", customerFacilityId: "SG-FAC-1"]).create()
+            .setAll([instrumentId:"SG-LC-1", customerFacilityId: "SG-FAC-1", amount: 1000.0, currencyUomId: 'USD']).create()
         ec.entity.makeValue("trade.importlc.ImportLetterOfCredit")
-            .setAll([instrumentId:"SG-LC-1"]).create()
+            .setAll([instrumentId:"SG-LC-1", effectiveAmount: 1000.0, effectiveCurrencyUomId: 'USD']).create()
             
         when: "1. Create SG within limit (Invoice 100 * 110% = 110, limit 120)"
-        def resultOk = ec.service.sync().name("trade.TradeCommonServices.create#ShippingGuarantee").parameters([
+        def resultOk = ec.service.sync().name("trade.importlc.ImportLcServices.create#ShippingGuarantee").parameters([
             instrumentId: "SG-LC-1",
             invoiceAmount: 100.0,
             liabilityMultiplierRequired: 110,
@@ -42,7 +44,7 @@ class ShippingGuaranteeSpec extends Specification {
         ec.entity.find("trade.CustomerFacility").condition("facilityId", "SG-FAC-1").one().utilizedAmount == 110.0
         
         when: "2. Create SG exceeding limit (remaining 10, need 22)"
-        ec.service.sync().name("trade.TradeCommonServices.create#ShippingGuarantee").parameters([
+        ec.service.sync().name("trade.importlc.ImportLcServices.create#ShippingGuarantee").parameters([
             instrumentId: "SG-LC-1",
             invoiceAmount: 20.0,
             liabilityMultiplierRequired: 110

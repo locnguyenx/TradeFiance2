@@ -149,6 +149,11 @@ export const tradeApi = {
     return res.json();
   },
 
+  async validateLcSwiftFields(instrumentId: string, entityType: string): Promise<{ errors: { fieldName: string; message: string; violationType: string }[] }> {
+    const res = await this._fetch(`${API_BASE}/import-lc/${instrumentId}/validate?entityType=${entityType}`);
+    return res.json();
+  },
+
   async getStandardClauses(type?: string): Promise<any[]> {
     const query = type ? `?clauseTypeEnumId=${type}` : '';
     const res = await this._fetch(`${API_BASE}/standard-clauses${query}`);

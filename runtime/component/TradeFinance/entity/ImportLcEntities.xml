@@ -14,6 +14,8 @@
         <field name="portOfLoading" type="text-medium"/>
         <field name="portOfDischarge" type="text-medium"/>
         <field name="expiryPlace" type="text-medium"/>
+        <field name="applicantName" type="text-long"/> <!-- Tag 50 -->
+        <field name="beneficiaryName" type="text-long"/> <!-- Tag 59 -->
         <field name="goodsDescription" type="text-very-long"/>
         <field name="documentsRequired" type="text-very-long"/>
         <field name="additionalConditions" type="text-very-long"/>
@@ -46,8 +48,29 @@
         <field name="effectiveTolerancePositive" type="number-decimal"/>
         <field name="effectiveToleranceNegative" type="number-decimal"/>
         <field name="effectiveOutstandingAmount" type="number-decimal"/>
+        <field name="isRevolving" type="text-indicator" default="'N'"/>
         <field name="cumulativeDrawnAmount" type="number-decimal" default="0"/>
         <field name="totalAmendmentCount" type="number-integer" default="0"/>
+        
+        <field name="receiptPlace" type="text-medium"/> <!-- Tag 44A: max 65, X charset -->
+        <field name="finalDeliveryPlace" type="text-medium"/> <!-- Tag 44B: max 65, X charset -->
+        <field name="shipmentPeriodText" type="text-medium"/> <!-- Tag 44D: max 65, X charset. Mutually exclusive with latestShipmentDate -->
+        <field name="maxCreditAmountFlag" type="text-indicator"/> <!-- Tag 39B: Y/N. Mutually exclusive with tolerance -->
+        <field name="additionalAmountsText" type="text-long"/> <!-- Tag 39C: max 4x35, X charset -->
+        <field name="mixedPaymentDetails" type="text-long"/> <!-- Tag 42M: required if tenor=MIXED -->
+        <field name="deferredPaymentDetails" type="text-long"/> <!-- Tag 42P: required if tenor=DEF_PAYMENT/NEGOTIATION -->
+        <field name="usanceBaseDate" type="text-medium"/> <!-- Tag 42C: required if tenor!=SIGHT -->
+        <field name="bankToBankInstructions" type="text-very-long"/> <!-- Tag 78: max 12x65, X charset -->
+        <field name="presentationPeriodDays" type="number-integer"/> <!-- Tag 48 -->
+        <field name="chargeAllocationText" type="text-long"/> <!-- Tag 71D: max 6x35, X charset -->
+
+        <!-- BIC Addressing -->
+        <field name="advisingBankBic" type="text-short"/> <!-- Tag 57A -->
+        <field name="advisingThroughBankBic" type="text-short"/> <!-- Tag 58A -->
+        <field name="issuingBankBic" type="text-short"/> <!-- Override for Tag 51A/52A -->
+        <field name="availableWithBic" type="text-short"/> <!-- Tag 41A -->
+        <field name="availableWithName" type="text-medium"/> <!-- Tag 41D -->
+        <field name="draweeBankBic" type="text-short"/> <!-- Tag 42a -->
 
         <relationship type="one" related="trade.TradeInstrument">
             <key-map field-name="instrumentId"/>
@@ -63,6 +86,7 @@
         <field name="messageType" type="text-short"/> <!-- e.g., MT700 -->
         <field name="messageContent" type="text-very-long"/>
         <field name="generatedDate" type="date-time" default="ec.user.nowTimestamp"/>
+        <field name="messageStatusId" type="id"/> <!-- SWIFT_MSG_DRAFT or SWIFT_MSG_ACTIVE -->
         
         <relationship type="one" related="trade.TradeInstrument">
             <key-map field-name="instrumentId"/>
@@ -98,6 +122,7 @@
         <field name="presentingBankRef" type="text-medium"/>
         <field name="claimCurrency" type="id"/>
         <field name="regulatoryDeadline" type="date"/>
+        <field name="documentDisposalEnumId" type="id"/> <!-- Tag 77B: HOLDING_DOCUMENTS or RETURNING_DOCUMENTS -->
         
         <relationship type="one" related="trade.importlc.ImportLetterOfCredit">
             <key-map field-name="instrumentId"/>

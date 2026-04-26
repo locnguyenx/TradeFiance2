@@ -1,3 +1,5 @@
+package trade
+
 import spock.lang.*
 import org.moqui.Moqui
 import org.moqui.context.ExecutionContext
@@ -153,7 +155,7 @@ ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrument
             .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: 'USD']).call()
             
         when:
-        ec.service.sync().name("trade.TradeCommonServices.update#ImportLetterOfCredit")
+        ec.service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit")
             .parameters([instrumentId: createRes.instrumentId, businessStateId: "LC_PENDING"]).call()
             
         then:
@@ -293,11 +295,11 @@ ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrument
         def ref = "TF-IMM-" + System.currentTimeMillis()
         def createRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: 'USD']).call()
-        ec.service.sync().name("trade.TradeCommonServices.update#ImportLetterOfCredit")
+        ec.service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit")
             .parameters([instrumentId: createRes.instrumentId, businessStateId: "LC_ISSUED"]).call()
             
         when:
-        ec.service.sync().name("trade.TradeCommonServices.update#ImportLetterOfCredit")
+        ec.service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit")
             .parameters([instrumentId: createRes.instrumentId, amount: 2000.0]).call()
             
         then:

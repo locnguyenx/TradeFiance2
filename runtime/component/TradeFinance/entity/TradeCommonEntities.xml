@@ -32,6 +32,14 @@
         <field name="versionNumber" type="number-integer"/>
         <field name="lastUpdateTimestamp" type="date-time"/>
         <field name="priorityEnumId" type="id"/>
+        
+        <field name="reimbursingBankBic" type="text-short"/> <!-- Tag 53A: valid 8/11 BIC -->
+        <field name="reimbursingBankName" type="text-long"/> <!-- Tag 53D: max 4x35, X charset. Alt to BIC -->
+        <field name="adviseThroughBankBic" type="text-short"/> <!-- Tag 57A: valid 8/11 BIC -->
+        <field name="adviseThroughBankName" type="text-long"/> <!-- Tag 57D: max 4x35, X charset. Alt to BIC -->
+        <field name="preAdviceRef" type="text-short"/> <!-- Tag 23: max 16, X charset, slash rules -->
+        <field name="senderToReceiverInfo" type="text-long"/> <!-- Tag 72Z: max 6x35, X charset -->
+        <field name="beneficiaryName" type="text-long"/> <!-- Tag 59: max 4x35, X charset -->
     </entity>
 
     <entity entity-name="CustomerFacility" package="trade">

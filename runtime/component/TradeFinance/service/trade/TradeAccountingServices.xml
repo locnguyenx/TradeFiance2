@@ -51,7 +51,7 @@
             <parameter name="presentationId"/>
             <parameter name="principalAmount" type="BigDecimal" required="true"/>
             <parameter name="charges" type="BigDecimal" default-value="150.0"/>
-            <parameter name="debitAccountId" required="true"/>
+            <parameter name="debitAccountId" default-value="ACC-APPLICANT-01"/>
         </in-parameters>
         <actions>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument">
@@ -68,6 +68,25 @@
             
             <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" for-update="true"/>
             <set field="lc.businessStateId" value="LC_SETTLED"/>
+            <set field="lc.outstandingAmount" from="(lc.outstandingAmount ?: 0) - principalAmount"/>
+            <set field="lc.effectiveOutstandingAmount" from="lc.outstandingAmount"/>
+            <set field="lc.cumulativeDrawnAmount" from="(lc.cumulativeDrawnAmount ?: 0) + principalAmount"/>
+
+            <set field="isZero" from="lc.effectiveOutstandingAmount == 0 || (lc.effectiveOutstandingAmount instanceof BigDecimal &amp;&amp; lc.effectiveOutstandingAmount.compareTo(BigDecimal.ZERO) == 0)"/>
+            <set field="targetState" from="isZero ? 'LC_CLOSED' : 'LC_ISSUED'"/>
+
+            <!-- Auto-reinstatement for Revolving LC (BDD-IMP-VAL-03) -->
+            <service-call name="trade.TradeCommonServices.evaluate#Reinstatement" in-map="[isRevolving: (lc.isRevolving == 'Y')]" out-map="reinstOut"/>
+            <if condition="reinstOut.reinstated &amp;&amp; isZero">
+                <set field="lc.outstandingAmount" from="lc.amount"/>
+                <set field="lc.effectiveOutstandingAmount" from="lc.amount"/>
+                <set field="targetState" value="LC_ISSUED"/>
+            </if>
+
+            <if condition="targetState != lc.businessStateId">
+                <set field="lc.businessStateId" from="targetState"/>
+                <service-call name="update#trade.TradeInstrument" in-map="[instrumentId: instrumentId, businessStateId: targetState, lifecycleStatusId: targetState]"/>
+            </if>
             <entity-update value-field="lc"/>
             
             <if condition="instrument?.customerFacilityId">

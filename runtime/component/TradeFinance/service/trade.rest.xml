@@ -37,6 +37,9 @@
             <resource name="cancel">
                 <method type="post"><service name="trade.TradeCommonServices.update#Cancellation"/></method>
             </resource>
+            <resource name="validate">
+                <method type="get"><service name="trade.ImportLcValidationServices.validate#SwiftFields"/></method>
+            </resource>
         </id>
     </resource>
     <resource name="authorize">

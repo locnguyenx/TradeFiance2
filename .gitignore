@@ -6,6 +6,11 @@ build
 # build generated files
 /moqui*.war
 /Save*.zip
+*.class
+
+# log & test file
+*.log
+test*.txt
 
 # ignore moqui framework
 /framework

@@ -1,3 +1,5 @@
+package trade
+
 
 import org.moqui.Moqui
 import org.moqui.context.ExecutionContext
@@ -13,6 +15,7 @@ class ImportLcValidationServicesSpec extends Specification {
 
     def setupSpec() {
         ec = Moqui.getExecutionContext()
+        ec.artifactExecution.disableAuthz()
     }
 
     def cleanupSpec() {
@@ -20,13 +23,15 @@ class ImportLcValidationServicesSpec extends Specification {
     }
 
     def "validate#SwiftFields rejects invalid X-Character in goodsDescription"() {
+        given:
+        def ref = "TF-SWIFT-BAD-" + System.currentTimeMillis()
+        ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
+            .parameters([transactionRef: ref, goodsDescription: "Steel Rods @ 50mm diameter", lcAmount: 1000.0, lcCurrencyUomId: 'USD']).call()
+        def lc = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("goodsDescription", "Steel Rods @ 50mm diameter").one()
+
         when:
         ec.service.sync().name("trade.importlc.ImportLcValidationServices.validate#SwiftFields")
-            .parameters([
-                goodsDescription: "Steel Rods @ 50mm diameter",
-                transactionRef: "TF-IMP-26-0001",
-                portOfLoading: "Ho Chi Minh City"
-            ]).call()
+            .parameters([entityType: 'ImportLetterOfCredit', entityId: lc.instrumentId]).call()
 
         then:
         ec.message.hasError()
@@ -38,13 +43,15 @@ class ImportLcValidationServicesSpec extends Specification {
     }
 
     def "validate#SwiftFields accepts valid characters"() {
+        given:
+        def ref = "TF-SWIFT-GOOD-" + System.currentTimeMillis()
+        ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
+            .parameters([transactionRef: ref, goodsDescription: "Steel Rods - 50mm diameter (standard)", lcAmount: 1000.0, lcCurrencyUomId: 'USD']).call()
+        def lc = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("goodsDescription", "Steel Rods - 50mm diameter (standard)").one()
+
         when:
         ec.service.sync().name("trade.importlc.ImportLcValidationServices.validate#SwiftFields")
-            .parameters([
-                goodsDescription: "Steel Rods - 50mm diameter (standard)",
-                transactionRef: "TF-IMP-26-0002",
-                portOfLoading: "HO CHI MINH CITY"
-            ]).call()
+            .parameters([entityType: 'ImportLetterOfCredit', entityId: lc.instrumentId]).call()
 
         then:
         !ec.message.hasError()
@@ -53,12 +60,12 @@ class ImportLcValidationServicesSpec extends Specification {
         ec.message.clearAll()
     }
 
-    def "transition#BusinessState rejects invalid transition"() {
+    def "validate#BusinessStateTransition rejects invalid transition"() {
         given:
         ec.artifactExecution.disableAuthz()
 
         when:
-        ec.service.sync().name("trade.importlc.ImportLcValidationServices.transition#BusinessState")
+        ec.service.sync().name("trade.importlc.ImportLcValidationServices.validate#BusinessStateTransition")
             .parameters([
                 instrumentId: "123", 
                 fromStateId: "LC_DRAFT",
@@ -67,7 +74,7 @@ class ImportLcValidationServicesSpec extends Specification {
 
         then:
         ec.message.hasError()
-        ec.message.errorsString.contains("Transition from LC_DRAFT to LC_CLOSED is not allowed")
+        ec.message.errorsString.contains("Invalid Business State transition from LC_DRAFT to LC_CLOSED")
 
         cleanup:
         ec.artifactExecution.enableAuthz()

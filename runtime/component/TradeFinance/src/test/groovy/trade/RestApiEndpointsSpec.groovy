@@ -1,3 +1,5 @@
+package trade
+
 import org.moqui.Moqui
 import org.moqui.context.ExecutionContext
 import spock.lang.Specification

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ABOUTME: TradeFinanceSeca automates lifecycle side-effects like SWIFT generation and accounting triggers. -->
+<service-eca xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-eca-3.0.xsd">
+
+    <!-- Lifecycle Transition Guard -->
+    <seca service="trade.importlc.ImportLcServices.update#ImportLetterOfCredit" when="pre-service">
+        <service-call name="trade.importlc.ImportLcValidationServices.validate#BusinessStateTransition" in-map="context"/>
+    </seca>
+
+    <!-- Presentation Validation -->
+    <seca service="trade.TradeCommonServices.create#Presentation" when="pre-service">
+        <service-call name="trade.importlc.ImportLcValidationServices.validate#Presentation" in-map="context"/>
+    </seca>
+
+    <!-- Request 5: system autogenerate the message when TradeInstrument is approved (TX_APPROVED) -->
+    <seca service="update#trade.TradeInstrument" when="post-service">
+        <condition>
+            <expression>transactionStatusId == 'TX_APPROVED' &amp;&amp; oldValueMap?.transactionStatusId != 'TX_APPROVED'</expression>
+        </condition>
+        <actions>
+            <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc">
+                <field-map field-name="instrumentId"/>
+            </entity-find-one>
+            <if condition="lc">
+                <service-call name="trade.SwiftGenerationServices.generate#Mt700" in-map="[instrumentId: instrumentId]"/>
+            </if>
+        </actions>
+    </seca>
+
+    <!-- Request 5: system autogenerate the message when Amendment is approved -->
+    <seca service="update#trade.importlc.ImportLcAmendment" when="post-service">
+        <condition>
+            <expression>amendmentBusinessStateId == 'AMEND_APPROVED' &amp;&amp; oldValueMap?.amendmentBusinessStateId != 'AMEND_APPROVED'</expression>
+        </condition>
+        <actions>
+            <service-call name="trade.SwiftGenerationServices.generate#Mt707" in-map="[amendmentId: amendmentId]"/>
+        </actions>
+    </seca>
+
+    <!-- SWIFT Advice: MT750 on Discrepancy Authorization -->
+    <seca service="trade.importlc.ImportLcServices.authorize#Presentation" when="post-service">
+        <if condition="ec.entity.find('trade.importlc.PresentationDiscrepancy').condition('presentationId', presentationId).count() &gt; 0">
+            <service-call name="trade.SwiftGenerationServices.generate#Mt750" in-map="[presentationId: presentationId]"/>
+        </if>
+    </seca>
+
+    <!-- SWIFT Advice: MT752 on Discrepancy Waiver -->
+    <seca service="trade.importlc.ImportLcServices.update#PresentationWaiver" when="post-service">
+        <condition><expression>applicantDecisionEnumId == 'WAIVED'</expression></condition>
+        <actions>
+            <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="pres"/>
+            <service-call name="trade.SwiftGenerationServices.generate#Mt752" in-map="[presentationId: presentationId]"/>
+        </actions>
+    </seca>
+</service-eca>

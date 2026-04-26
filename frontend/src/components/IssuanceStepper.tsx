@@ -60,7 +60,12 @@ export const IssuanceStepper: React.FC = () => {
         charges: [
             { type: 'Issuance Commission', rate: '0.125', amount: '0', account: '' }
         ],
-        instrumentId: ''
+        instrumentId: '',
+        advisingBankBic: '',
+        advisingThroughBankBic: '',
+        issuingBankBic: '',
+        availableWithBic: '',
+        draweeBankBic: ''
     });
     const [swiftErrors, setSwiftErrors] = useState<Record<string, string>>({});
 
@@ -99,7 +104,7 @@ export const IssuanceStepper: React.FC = () => {
         }
     };
 
-    const handleNext = () => {
+    const handleNext = async () => {
         setErrorMessage('');
         
         const missingFields = [];
@@ -126,6 +131,40 @@ export const IssuanceStepper: React.FC = () => {
         if (missingFields.length > 0) {
             setErrorMessage(`Please complete required fields: ${missingFields.join(', ')}`);
             return;
+        }
+
+        // Logic for Step-Level Persistence and Backend Validation
+        if (stepIndex === 0) {
+            setLoading(true);
+            try {
+                // Persistent Save as Draft to obtain instrumentId
+                const success = await handleSaveDraft();
+                if (!success) return; 
+            } catch (e) {
+                return;
+            } finally {
+                setLoading(false);
+            }
+        } else if (stepIndex === 1 && formData.instrumentId) {
+            setLoading(true);
+            try {
+                // Call backend validation for Spec A
+                const res = await tradeApi.validateLcSwiftFields(formData.instrumentId, 'ImportLetterOfCredit');
+                const newErrors: Record<string, string> = {};
+                res.errors?.forEach(err => {
+                    newErrors[err.fieldName] = err.message;
+                });
+                setSwiftErrors(newErrors);
+                
+                if (res.errors && res.errors.length > 0) {
+                    setErrorMessage(`SWIFT Validation: ${res.errors.length} violation(s) detected. Please check flagged fields.`);
+                    return; // Block transition to ensure user sees errors
+                }
+            } catch (e) {
+                console.error('Validation Error:', e);
+            } finally {
+                setLoading(false);
+            }
         }
 
         setStepIndex(prev => Math.min(prev + 1, 3));
@@ -155,30 +194,27 @@ export const IssuanceStepper: React.FC = () => {
         return e.message || 'An unexpected error occurred';
     };
 
-    const handleSaveDraft = async () => {
+    const handleSaveDraft = async (): Promise<boolean> => {
         setErrorMessage('');
         
         // Comprehensive Validation across all steps for final Save Draft
         const missingFields = [];
         // Step 0
         if (!formData.productCatalogId) missingFields.push('LC Product');
-        if (!formData.amount || parseFloat(formData.amount) <= 0) missingFields.push('LC Amount');
-        if (!formData.currency) missingFields.push('Currency');
         if (!formData.applicant) missingFields.push('Applicant');
-        if (formData.lcTypeEnumId === 'USANCE' && !formData.usanceDays) missingFields.push('Usance Days');
         
-        // Step 1
-        if (!formData.expiryPlace) missingFields.push('Expiry Place');
-        if (!formData.latestShipmentDate) missingFields.push('Latest Shipment Date');
-        if (!formData.goodsDescription) missingFields.push('Goods Description');
-        
-        // Step 2
-        if (!formData.chargeAllocationEnumId) missingFields.push('Charge Allocation');
-        if (!formData.customerFacilityId) missingFields.push('Customer Facility');
+        // If it's a final save, we expect more, but for step transition we are lenient
+        if (stepIndex > 0) {
+            if (!formData.amount || parseFloat(formData.amount) <= 0) missingFields.push('LC Amount');
+            if (!formData.currency) missingFields.push('Currency');
+            if (!formData.expiryPlace) missingFields.push('Expiry Place');
+            if (!formData.latestShipmentDate) missingFields.push('Latest Shipment Date');
+            if (!formData.goodsDescription) missingFields.push('Goods Description');
+        }
         
         if (missingFields.length > 0) {
             setErrorMessage(`Validation Error: ${missingFields.join(', ')} is required.`);
-            return;
+            return false;
         }
 
         setLoading(true);
@@ -190,7 +226,6 @@ export const IssuanceStepper: React.FC = () => {
                 businessStateId: 'LC_DRAFT',
                 applicantPartyId: formData.applicantPartyId,
                 customerFacilityId: formData.customerFacilityId,
-                // Do not send transactionRef if it's empty, let backend generate it
                 transactionRef: formData.transactionRef || undefined 
             });
             
@@ -201,12 +236,15 @@ export const IssuanceStepper: React.FC = () => {
                     transactionRef: result.transactionRef || prev.transactionRef
                 }));
                 setStatus('DRAFT');
+                return true;
             } else {
                 setErrorMessage(result.errors?.[0] || result.error || 'Failed to save draft');
+                return false;
             }
         } catch (e: any) {
             console.error('Save Draft Detail:', e);
             setErrorMessage(`Save Draft Failed: ${extractErrorMessage(e)}`);
+            return false;
         } finally {
             setLoading(false);
         }
@@ -329,10 +367,12 @@ export const IssuanceStepper: React.FC = () => {
                                 <label htmlFor="transactionRef">Transaction Reference</label>
                                 <input 
                                     id="transactionRef"
+                                    className={swiftErrors.transactionRef ? 'is-invalid' : ''}
                                     value={formData.transactionRef}
                                     onChange={e => setFormData({...formData, transactionRef: e.target.value})}
                                     placeholder="e.g., IMLC/2026/001"
                                 />
+                                {swiftErrors.transactionRef && <p className="error-text text-xs mt-1">{swiftErrors.transactionRef}</p>}
                             </div>
                             <div className="field-group">
                                 <label htmlFor="applicant" className="required-label">Applicant</label>
@@ -351,14 +391,37 @@ export const IssuanceStepper: React.FC = () => {
                                 </div>
                             </div>
                             <div className="field-group">
-                                <label htmlFor="beneficiary">Beneficiary</label>
+                                <label htmlFor="advisingThroughBankBic">Advising Through Bank BIC (Tag 58A)</label>
+                                <input 
+                                    id="advisingThroughBankBic"
+                                    className={swiftErrors.advisingThroughBankBic ? 'is-invalid' : ''}
+                                    value={formData.advisingThroughBankBic}
+                                    onChange={e => setFormData({...formData, advisingThroughBankBic: e.target.value.toUpperCase()})}
+                                />
+                                {swiftErrors.advisingThroughBankBic && <p className="error-text text-xs mt-1">{swiftErrors.advisingThroughBankBic}</p>}
+                            </div>
+                            <div className="field-group">
+                                <label htmlFor="beneficiary" className="required-label">Beneficiary (Tag 59)</label>
                                 <textarea 
                                     id="beneficiary"
+                                    className={swiftErrors.beneficiary ? 'is-invalid' : ''}
                                     rows={3}
                                     value={formData.beneficiary}
                                     onChange={e => setFormData({...formData, beneficiary: e.target.value})}
                                     placeholder="Multi-line Beneficiary details..."
                                 />
+                                {swiftErrors.beneficiary && <p className="error-text text-xs mt-1">{swiftErrors.beneficiary}</p>}
+                            </div>
+                            <div className="field-group">
+                                <label htmlFor="advisingBankBic">Advising Bank BIC (Tag 57A)</label>
+                                <input 
+                                    id="advisingBankBic"
+                                    className={swiftErrors.advisingBankBic ? 'is-invalid' : ''}
+                                    value={formData.advisingBankBic}
+                                    onChange={e => setFormData({...formData, advisingBankBic: e.target.value.toUpperCase()})}
+                                    placeholder="e.g., ABIC US 33"
+                                />
+                                {swiftErrors.advisingBankBic && <p className="error-text text-xs mt-1">{swiftErrors.advisingBankBic}</p>}
                             </div>
                         </section>
                     )}
@@ -416,6 +479,26 @@ export const IssuanceStepper: React.FC = () => {
                                         <input id="usanceDays" type="number" value={formData.usanceDays} onChange={e => setFormData({...formData, usanceDays: parseInt(e.target.value) || 0})} />
                                     </div>
                                 )}
+                                <div className="field-group">
+                                    <label htmlFor="availableWithBic">Available With BIC (Tag 41A)</label>
+                                    <input 
+                                        id="availableWithBic"
+                                        className={swiftErrors.availableWithBic ? 'is-invalid' : ''}
+                                        value={formData.availableWithBic}
+                                        onChange={e => setFormData({...formData, availableWithBic: e.target.value.toUpperCase()})}
+                                    />
+                                    {swiftErrors.availableWithBic && <p className="error-text text-xs mt-1">{swiftErrors.availableWithBic}</p>}
+                                </div>
+                                <div className="field-group">
+                                    <label htmlFor="draweeBankBic">Drawee Bank BIC (Tag 42A)</label>
+                                    <input 
+                                        id="draweeBankBic"
+                                        className={swiftErrors.draweeBankBic ? 'is-invalid' : ''}
+                                        value={formData.draweeBankBic}
+                                        onChange={e => setFormData({...formData, draweeBankBic: e.target.value.toUpperCase()})}
+                                    />
+                                    {swiftErrors.draweeBankBic && <p className="error-text text-xs mt-1">{swiftErrors.draweeBankBic}</p>}
+                                </div>
                             </section>
 
                             <section id="terms-&-shipping" className="form-grid section-divider">
@@ -449,24 +532,41 @@ export const IssuanceStepper: React.FC = () => {
                                 <h3 className="section-title">Narratives</h3>
                                 <div className="field-group full-width">
                                     <div className="flex justify-between items-center mb-1">
-                                        <label htmlFor="goodsDescription" className="required-label">Description of Goods</label>
+                                        <label htmlFor="goodsDescription" className="required-label">Description of Goods (Tag 45A)</label>
                                         <button className="helper-link" onClick={() => setActiveClauseType('GOODS')}>+ Standard Clauses</button>
                                     </div>
                                     <textarea 
                                         id="goodsDescription" 
+                                        className={swiftErrors.goodsDescription ? 'is-invalid' : ''}
                                         rows={4} 
                                         value={formData.goodsDescription} 
                                         onChange={e => setFormData({...formData, goodsDescription: e.target.value})} 
-                                        onBlur={e => validateSwift('goodsDescription', e.target.value)}
                                     />
-                                    {swiftErrors.goodsDescription && <p className="error-text">{swiftErrors.goodsDescription}</p>}
+                                    {swiftErrors.goodsDescription && <p className="error-text text-xs mt-1">{swiftErrors.goodsDescription}</p>}
                                 </div>
                                 <div className="field-group full-width">
                                     <div className="flex justify-between items-center mb-1">
-                                        <label htmlFor="documentsRequired">Documents Required</label>
+                                        <label htmlFor="documentsRequired">Documents Required (Tag 46A)</label>
                                         <button className="helper-link" onClick={() => setActiveClauseType('DOCUMENTS')}>+ Standard Clauses</button>
                                     </div>
-                                    <textarea id="documentsRequired" rows={4} value={formData.documentsRequired} onChange={e => setFormData({...formData, documentsRequired: e.target.value})} />
+                                    <textarea 
+                                        id="documentsRequired" 
+                                        className={swiftErrors.documentsRequired ? 'is-invalid' : ''}
+                                        rows={4} 
+                                        value={formData.documentsRequired} 
+                                        onChange={e => setFormData({...formData, documentsRequired: e.target.value})} 
+                                    />
+                                    {swiftErrors.documentsRequired && <p className="error-text text-xs mt-1">{swiftErrors.documentsRequired}</p>}
+                                </div>
+                                <div className="field-group">
+                                    <label htmlFor="issuingBankBic">Issuing Bank BIC (Tag 51A)</label>
+                                    <input 
+                                        id="issuingBankBic"
+                                        className={swiftErrors.issuingBankBic ? 'is-invalid' : ''}
+                                        value={formData.issuingBankBic}
+                                        onChange={e => setFormData({...formData, issuingBankBic: e.target.value.toUpperCase()})}
+                                    />
+                                    {swiftErrors.issuingBankBic && <p className="error-text text-xs mt-1">{swiftErrors.issuingBankBic}</p>}
                                 </div>
                             </section>
                         </div>

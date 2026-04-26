@@ -17,6 +17,8 @@
     <moqui.basic.EnumerationType enumTypeId="TradeFeeFrequency" description="Fee Calculation Frequencies"/>
     <moqui.basic.EnumerationType enumTypeId="TradeMakerCheckerFlag" description="Authority Profile Maker/Checker Flags"/>
     <moqui.basic.EnumerationType enumTypeId="TradeProductType" description="Trade Product Types"/>
+    <moqui.basic.EnumerationType enumTypeId="SwiftMessageStatus" description="SWIFT Message Processing Statuses"/>
+    <moqui.basic.EnumerationType enumTypeId="DocumentDisposal" description="Document Disposal Options (Tag 77B)"/>
 
     <!-- Audit Action Enums -->
     <moqui.basic.Enumeration enumId="AUDIT_HOLD" enumTypeId="TradeLaunchAction" description="Compliance Hold Applied"/>
@@ -103,6 +105,18 @@
     <moqui.basic.Enumeration enumId="ACCEPTED" enumTypeId="BeneficiaryConsentStatus" description="Accepted"/>
     <moqui.basic.Enumeration enumId="REJECTED" enumTypeId="BeneficiaryConsentStatus" description="Rejected"/>
 
+    <!-- SWIFT Message Status -->
+    <moqui.basic.Enumeration enumId="SWIFT_MSG_DRAFT" description="Draft" enumTypeId="SwiftMessageStatus"/>
+    <moqui.basic.Enumeration enumId="SWIFT_MSG_ACTIVE" description="Active" enumTypeId="SwiftMessageStatus"/>
+
+    <!-- Document Disposal (Tag 77B) -->
+    <moqui.basic.Enumeration enumId="HOLDING_DOCUMENTS" description="Holding Documents" enumTypeId="DocumentDisposal"/>
+    <moqui.basic.Enumeration enumId="RETURNING_DOCUMENTS" description="Returning Documents" enumTypeId="DocumentDisposal"/>
+
+    <!-- Bank Configuration -->
+    <trade.common.TradeConfig configId="ISSUING_BANK_BIC" configValue="VIETBANK1XXX" description="Issuing bank SWIFT BIC for message headers"/>
+    <trade.common.TradeConfig configId="NOSTRO_ACCOUNT_USD" configValue="001-234567-USD" description="USD Nostro account for MT202 routing"/>
+
     <!-- Status Types -->
     <moqui.basic.StatusType statusTypeId="TradeTransactionStatus" description="System/Transaction Processing States"/>
     <moqui.basic.StatusType statusTypeId="TradeLcBusinessState" description="Import LC Business Lifecycle States"/>
@@ -123,7 +137,7 @@
     <moqui.basic.StatusItem statusId="LC_DRAFT" statusTypeId="TradeLcBusinessState" description="Draft"/>
     <moqui.basic.StatusItem statusId="LC_PENDING" statusTypeId="TradeLcBusinessState" description="Pending Approval"/>
     <moqui.basic.StatusItem statusId="LC_ISSUED" statusTypeId="TradeLcBusinessState" description="Issued/Active"/>
-    <moqui.basic.StatusItem statusId="LC_DOCS_RECEIVED" statusTypeId="TradeLcBusinessState" description="Documents Received"/>
+    <moqui.basic.StatusItem statusId="LC_DOC_RECEIVED" statusTypeId="TradeLcBusinessState" description="Documents Received"/>
     <moqui.basic.StatusItem statusId="LC_DISCREPANT" statusTypeId="TradeLcBusinessState" description="Discrepant"/>
     <moqui.basic.StatusItem statusId="LC_ACCEPTED" statusTypeId="TradeLcBusinessState" description="Accepted/Clean"/>
     <moqui.basic.StatusItem statusId="LC_SETTLED" statusTypeId="TradeLcBusinessState" description="Settled"/>
@@ -176,11 +190,11 @@
     <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_DRAFT" toStatusId="LC_PENDING" transitionName="Submit for Approval"/>
     <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_PENDING" toStatusId="LC_ISSUED" transitionName="Authorize/Issue"/>
     <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_PENDING" toStatusId="LC_DRAFT" transitionName="Return to Draft"/>
-    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_ISSUED" toStatusId="LC_DOCS_RECEIVED" transitionName="Receive Documents"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_ISSUED" toStatusId="LC_DOC_RECEIVED" transitionName="Receive Documents"/>
     <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_ISSUED" toStatusId="LC_EXPIRED" transitionName="Expire LC"/>
     <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_ISSUED" toStatusId="LC_CLOSED" transitionName="Close LC"/>
-    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_DOCS_RECEIVED" toStatusId="LC_DISCREPANT" transitionName="Flag Discrepancy"/>
-    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_DOCS_RECEIVED" toStatusId="LC_ACCEPTED" transitionName="Accept Documents"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_DOC_RECEIVED" toStatusId="LC_DISCREPANT" transitionName="Flag Discrepancy"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_DOC_RECEIVED" toStatusId="LC_ACCEPTED" transitionName="Accept Documents"/>
     <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_DISCREPANT" toStatusId="LC_ACCEPTED" transitionName="Waive Discrepancy"/>
     <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_ACCEPTED" toStatusId="LC_SETTLED" transitionName="Settle"/>
     <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_ACCEPTED" toStatusId="LC_ISSUED" transitionName="Revert to Issued on Partial Settlement"/>
@@ -188,6 +202,15 @@
     <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_SETTLED" toStatusId="LC_ISSUED" transitionName="Reinstate After Partial Settlement"/>
     <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_ISSUED" toStatusId="LC_AMENDMENT_PENDING" transitionName="Request Amendment"/>
     <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_AMENDMENT_PENDING" toStatusId="LC_ISSUED" transitionName="Complete Amendment"/>
+    
+    <!-- Cancellation & Expiry Transitions -->
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_DRAFT" toStatusId="LC_CANCELLED" transitionName="Cancel Draft"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_PENDING" toStatusId="LC_CANCELLED" transitionName="Cancel Pending"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_ISSUED" toStatusId="LC_CANCELLED" transitionName="Cancel Issued LC"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_DOC_RECEIVED" toStatusId="LC_CANCELLED" transitionName="Cancel After Docs Received"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_ACCEPTED" toStatusId="LC_CANCELLED" transitionName="Cancel Accepted LC"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_ISSUED" toStatusId="LC_CLOSED" transitionName="Close Issued LC"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_DOC_RECEIVED" toStatusId="LC_CLOSED" transitionName="Close After Docs Received"/>
     
     <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="AMEND_DRAFT" toStatusId="AMEND_PENDING_APPROVAL" transitionName="Submit for Approval"/>
     <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="AMEND_PENDING_APPROVAL" toStatusId="AMEND_APPROVED" transitionName="Approve Amendment"/>

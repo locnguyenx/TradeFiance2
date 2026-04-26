@@ -1,3 +1,5 @@
+package trade
+
 import org.moqui.context.ExecutionContext
 import org.moqui.Moqui
 import spock.lang.Specification
@@ -8,6 +10,7 @@ class DraftLcSpec extends Specification {
     def setup() {
         ec = Moqui.getExecutionContext()
         ec.user.loginUser("john.doe", "moqui")
+        ec.artifactExecution.disableAuthz()
     }
     
     def cleanup() {
@@ -20,14 +23,16 @@ class DraftLcSpec extends Specification {
             .parameters([
                 lcAmount: 50000,
                 lcCurrencyUomId: 'USD',
-                applicantPartyId: 'ACME_CORP',
-                beneficiaryPartyId: 'GLOBAL_TRADE',
-                customerFacilityId: 'FAC_001',
-                productCatalogId: 'IMP_LC_USANCE'
+                applicantPartyId: 'ACME_CORP_001',
+                beneficiaryPartyId: 'GLOBAL_EXP_002',
+                customerFacilityId: 'FAC-ACME-001',
+                productCatalogId: 'PROD_IMP_LC'
             ]).call()
             
-        then: "It should fail because transactionRef is required"
-        thrown(org.moqui.service.ServiceException)
+        then: "It should succeed and auto-generate transactionRef"
+        result.instrumentId != null
+        def autoInst = ec.entity.find("trade.TradeInstrument").condition("instrumentId", result.instrumentId).one()
+        autoInst.transactionRef != null
         
         when: "Creating a draft LC with random transactionRef"
         def ref = "DRAFT-" + System.currentTimeMillis()
@@ -36,10 +41,10 @@ class DraftLcSpec extends Specification {
                 transactionRef: ref,
                 lcAmount: 50000,
                 lcCurrencyUomId: 'USD',
-                applicantPartyId: 'ACME_CORP',
-                beneficiaryPartyId: 'GLOBAL_TRADE',
-                customerFacilityId: 'FAC_001',
-                productCatalogId: 'IMP_LC_USANCE'
+                applicantPartyId: 'ACME_CORP_001',
+                beneficiaryPartyId: 'GLOBAL_EXP_002',
+                customerFacilityId: 'FAC-ACME-001',
+                productCatalogId: 'PROD_IMP_LC'
             ]).call()
         def instrumentId = createResult.instrumentId
         

@@ -1,3 +1,5 @@
+package trade
+
 
 import spock.lang.Specification
 import spock.lang.Shared
@@ -50,6 +52,7 @@ class ImportLcServicesSpec extends Specification {
     def setup() {
         ec.message.clearAll()
         ec.user.loginUser("trade.admin", "trade123")
+        ec.artifactExecution.disableAuthz()
     }
 
     def cleanup() {
@@ -222,8 +225,12 @@ class ImportLcServicesSpec extends Specification {
         assert createResult != null
         def instrumentId = createResult.instrumentId
 
-        // Transition LC to LC_ISSUED state before settlement
-        ec.service.sync().name("trade.TradeCommonServices.update#ImportLetterOfCredit").parameters([
+        // Transition LC to LC_PENDING then LC_ISSUED state before settlement
+        ec.service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit").parameters([
+            instrumentId: instrumentId,
+            businessStateId: "LC_PENDING"
+        ]).call()
+        ec.service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit").parameters([
             instrumentId: instrumentId,
             businessStateId: "LC_ISSUED"
         ]).call()

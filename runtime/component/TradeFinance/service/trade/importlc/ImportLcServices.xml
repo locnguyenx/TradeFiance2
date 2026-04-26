@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.0.xsd">
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" package="trade.importlc" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.0.xsd">
 
     <!-- ABOUTME: ImportLcServices manages the lifecycle of Import Letters of Credit, including creation, versioning, and status transitions. -->
 
@@ -15,6 +15,7 @@
             <parameter name="lcCurrencyUomId" required="true"/>
             <parameter name="expiryDate" type="Date"/>
             <parameter name="latestShipmentDate" type="Date"/>
+            <parameter name="isRevolving" default-value="N"/>
         </in-parameters>
         <out-parameters>
             <parameter name="instrumentId" required="true"/>
@@ -36,6 +37,7 @@
                     amount: lcAmount,
                     currencyUomId: lcCurrencyUomId,
                     expiryDate: expiryDate,
+                    baseEquivalentAmount: lcAmount,
                     versionNumber: 1
                 ]"/>
             <set field="instrumentId" from="createInstOut.instrumentId"/>
@@ -57,6 +59,7 @@
                     outstandingAmount: lcAmount,
                     baseEquivalentAmount: lcAmount,
                     issueDate: ec.user.nowTimestamp,
+                    isRevolving: isRevolving ?: 'N',
                     expiryDate: expiryDate,
                     customerFacilityId: customerFacilityId
                 ]"/>
@@ -95,21 +98,29 @@
             <if condition="lcAmount != null">
                 <set field="lc.effectiveAmount" from="lcAmount"/>
                 <set field="lc.effectiveOutstandingAmount" from="lcAmount"/>
+                <set field="lc.outstandingAmount" from="lcAmount"/>
             </if>
             <if condition="lcCurrencyUomId != null"><set field="lc.effectiveCurrencyUomId" from="lcCurrencyUomId"/></if>
             <if condition="expiryDate != null"><set field="lc.effectiveExpiryDate" from="expiryDate"/></if>
             <if condition="latestShipmentDate != null"><set field="lc.effectiveShipmentDate" from="latestShipmentDate"/></if>
             <if condition="businessStateId != null &amp;&amp; businessStateId != lc.businessStateId">
-                <service-call name="trade.importlc.ImportLcValidationServices.transition#BusinessState" 
-                              in-map="[instrumentId:instrumentId, fromStateId:lc.businessStateId, toStateId:businessStateId]"/>
+                 <service-call name="trade.importlc.ImportLcValidationServices.validate#BusinessStateTransition" 
+                               in-map="[instrumentId:instrumentId, fromStateId:lc.businessStateId, toStateId:businessStateId]"/>
                 <set field="lc.businessStateId" from="businessStateId"/>
                 
                 <!-- Sync with TradeInstrument -->
-                <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument" for-update="true"/>
                 <if condition="instrument">
-                    <set field="instrument.businessStateId" from="businessStateId"/>
-                    <entity-update value-field="instrument"/>
+                    <set field="updateInstMap" from="[instrumentId: instrumentId, businessStateId: businessStateId, lifecycleStatusId: businessStateId]"/>
+                    <if condition="businessStateId == 'LC_CANCELLED' || businessStateId == 'LC_CLOSED' || businessStateId == 'LC_EXPIRED'">
+                        <set field="updateInstMap.transactionStatusId" value="TX_APPROVED"/>
+                    </if>
+                    <service-call name="update#trade.TradeInstrument" in-map="updateInstMap"/>
                 </if>
+                <set field="lc.businessStateId" from="businessStateId"/>
+                <if condition="outstandingAmount != null"><set field="lc.effectiveOutstandingAmount" from="outstandingAmount"/></if>
+            </if>
+            <if condition="businessStateId == 'LC_CANCELLED'">
+                <service-call name="trade.LimitServices.reverse#Limit" in-map="[instrumentId: instrumentId]"/>
             </if>
             <entity-update value-field="lc"/>
         </actions>
@@ -121,7 +132,6 @@
             <parameter name="approvalComments"/>
         </in-parameters>
         <actions>
-            <log level="info" message="DEBUG: Entering approve#ImportLetterOfCredit for instrument ${instrumentId} by user ${approverUserId ?: ec.user.userId}"/>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument" for-update="true"/>
             <if condition="!instrument"><return error="true" message="Instrument not found with ID ${instrumentId}"/></if>
 
@@ -172,7 +182,6 @@
                 <service-call name="update#trade.TradeInstrument"
                     in-map="[instrumentId: instrumentId, transactionStatusId: 'TX_APPROVED', 
                              checkerUserId: approverUserId, checkerTimestamp: ec.user.nowTimestamp]"/>
-                <log level="info" message="DEBUG: Status updated to TX_APPROVED for ${instrumentId}"/>
             </if>
             <else>
                 <!-- Keep status as is (presumably TX_PENDING) -->
@@ -214,6 +223,12 @@
             <!-- Default status logic -->
             <set field="amendmentBusinessStateId" value="AMEND_DRAFT"/>
             <if condition="isFinancial == 'Y'"><set field="beneficiaryConsentStatusId" value="PENDING"/></if>
+
+            <entity-find entity-name="trade.importlc.ImportLcAmendment" list="existingAmds">
+                <econdition field-name="instrumentId"/>
+                <econdition field-name="amendmentBusinessStateId" operator="in" value="AMEND_DRAFT,AMEND_PENDING_APPROVAL,AMEND_APPROVED"/>
+            </entity-find>
+            <if condition="existingAmds"><return error="true" message="Concurrent amendment in progress for LC ${instrumentId}"/></if>
 
             <service-call name="create#trade.importlc.ImportLcAmendment" out-map="amdOut"
                 in-map="context + [amendmentBusinessStateId:amendmentBusinessStateId, amendmentNumber:amendmentNumber, beneficiaryConsentStatusId:beneficiaryConsentStatusId]"/>
@@ -339,57 +354,17 @@
             <parameter name="isPartialDraw" type="String" default="Y"/>
         </in-parameters>
         <actions>
-            <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="presentation"/>
+            <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="presentation" for-update="true"/>
             <if condition="!presentation"><return error="true" message="Presentation ${presentationId} not found"/></if>
             <set field="instrumentId" from="presentation.instrumentId"/>
 
             <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" for-update="true"/>
             
-            <service-call name="create#trade.importlc.ImportLcSettlement" in-map="context"/>
-
+            <service-call name="trade.TradeAccountingServices.create#ImportLcSettlement" in-map="context"/>
+            
             <!-- Update Presentation Status -->
             <set field="presentation.presentationStatusId" value="PRES_SETTLED"/>
             <entity-update value-field="presentation"/>
-
-            <!-- Drawdown LC Effective Values -->
-            <set field="lc.effectiveOutstandingAmount" from="lc.effectiveOutstandingAmount - principalAmount"/>
-            <set field="lc.cumulativeDrawnAmount" from="(lc.cumulativeDrawnAmount ?: 0) + principalAmount"/>
-            
-            <!-- Task 2.4: Status Transition & Revolving Logic -->
-            <set field="isZero" from="lc.effectiveOutstandingAmount == 0 || (lc.effectiveOutstandingAmount instanceof BigDecimal &amp;&amp; lc.effectiveOutstandingAmount.compareTo(BigDecimal.ZERO) == 0)"/>
-            
-            <if condition="isZero">
-                <entity-find-one entity-name="trade.TradeProductCatalog" value-field="catalog">
-                    <field-map field-name="productId" from="lc.productCatalogId"/>
-                </entity-find-one>
-                <if condition="catalog?.allowRevolving == 'Y'">
-                    <!-- Reinstate for Revolving LC -->
-                    <set field="lc.effectiveOutstandingAmount" from="lc.effectiveAmount"/>
-                    <set field="targetState" value="LC_ISSUED"/>
-                    <else>
-                        <set field="targetState" value="LC_CLOSED"/>
-                    </else>
-                </if>
-                <else>
-                    <set field="targetState" value="LC_ISSUED"/>
-                </else>
-            </if>
-
-            <if condition="targetState">
-                <!-- Validate transition -->
-                <service-call name="trade.importlc.ImportLcValidationServices.transition#BusinessState" 
-                              in-map="[instrumentId:lc.instrumentId, fromStateId:lc.businessStateId, toStateId:targetState]"/>
-                <set field="lc.businessStateId" from="targetState"/>
-                
-                <!-- Sync with TradeInstrument -->
-                <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument" for-update="true"/>
-                <if condition="instrument">
-                    <set field="instrument.businessStateId" from="targetState"/>
-                    <entity-update value-field="instrument"/>
-                </if>
-            </if>
-            
-            <entity-update value-field="lc"/>
         </actions>
     </service>
     <service verb="examine" noun="Documents" authenticate="false">
@@ -537,6 +512,38 @@
                           in-map="[instrumentId: instrumentId, actionEnumId: 'AUDIT_RELEASE', 
                                   changedFieldName: 'businessStateId', oldValue: oldState, 
                                   newValue: newState, justificationRootText: 'Compliance Hold released']"/>
+        </actions>
+    </service>
+    <service verb="create" noun="ShippingGuarantee" authenticate="false">
+        <in-parameters>
+            <parameter name="instrumentId" required="true"/>
+            <parameter name="invoiceAmount" type="BigDecimal" required="true"/>
+            <parameter name="liabilityMultiplierRequired" type="BigDecimal" default="110"/>
+            <parameter name="transportDocReference"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="guaranteeId" required="true"/>
+        </out-parameters>
+        <actions>
+            <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument"/>
+            <if condition="!instrument"><return error="true" message="Instrument ${instrumentId} not found"/></if>
+            
+            <set field="earmarkAmount" from="invoiceAmount * (liabilityMultiplierRequired / 100)"/>
+            
+            <service-call name="trade.LimitServices.calculate#Earmark" 
+                          in-map="[facilityId: instrument.customerFacilityId, amount: earmarkAmount]" out-map="earmarkOut"/>
+            
+            <if condition="ec.message.hasError()">
+                <return error="true" message="Failed to earmark facility for Shipping Guarantee: ${ec.message.getErrorsString()}"/>
+            </if>
+            
+            <!-- Update utilization -->
+            <service-call name="trade.LimitServices.update#Utilization" 
+                          in-map="[facilityId: instrument.customerFacilityId, amountDelta: earmarkAmount]"/>
+            
+            <service-call name="create#trade.importlc.ImportLcShippingGuarantee" out-map="sgOut"
+                          in-map="context + [earmarkAmount: earmarkAmount, guaranteeStatusId: 'SG_ACTIVE']"/>
+            <set field="guaranteeId" from="sgOut.guaranteeId"/>
         </actions>
     </service>
 </services>

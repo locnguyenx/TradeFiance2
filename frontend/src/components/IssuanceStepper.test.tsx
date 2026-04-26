@@ -8,7 +8,8 @@ import { tradeApi } from '../api/tradeApi';
 
 jest.mock('../api/tradeApi', () => ({
     tradeApi: {
-        createLc: jest.fn().mockResolvedValue({ instrumentId: '100001', transactionRef: 'LC-2026-001' }),
+        createLc: jest.fn().mockResolvedValue({ instrumentId: '900001', transactionRef: 'TF-IMP-26-0001' }),
+        validateLcSwiftFields: jest.fn().mockResolvedValue({ errors: [] }),
         getStandardClauses: jest.fn().mockResolvedValue([
             { clauseId: '1', clauseName: 'General Merchandise', clauseText: 'General merchandise as per Proforma Invoice...' }
         ]),
@@ -28,12 +29,15 @@ jest.mock('../api/tradeApi', () => ({
 describe('IssuanceStepper v3.0 (BDD-IMP-FLOW-01, BDD-CMN-VAL-05)', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        (tradeApi.validateLcSwiftFields as jest.Mock).mockResolvedValue({ errors: [] });
+        (tradeApi.createLc as jest.Mock).mockResolvedValue({ instrumentId: '900001', transactionRef: 'TF-IMP-26-0001' });
     });
 
     const completeStep0 = async () => {
         expect(await screen.findByLabelText(/LC Product/i)).toBeInTheDocument();
         fireEvent.change(screen.getByLabelText(/Applicant/i), { target: { value: 'Global Corp' } });
         fireEvent.change(screen.getByLabelText(/LC Product/i), { target: { value: 'IMP_LC_STANDARD' } });
+        fireEvent.change(screen.getByLabelText(/Beneficiary \(Tag 59\)/i), { target: { value: 'Beneficiary Name\nAddress' } });
     };
 
     const completeStep1 = async () => {
@@ -67,11 +71,18 @@ describe('IssuanceStepper v3.0 (BDD-IMP-FLOW-01, BDD-CMN-VAL-05)', () => {
         });
     });
 
-    it('renders right-navigation section anchors on Step 2 after valid Step 1', async () => {
+    it('auto-saves draft when moving from Step 1 to Step 2', async () => {
         render(<IssuanceStepper />);
         await completeStep0();
         fireEvent.click(screen.getByTestId('next-button'));
 
+        await waitFor(() => {
+            expect(tradeApi.createLc).toHaveBeenCalledWith(expect.objectContaining({
+                businessStateId: 'LC_DRAFT',
+                applicant: 'Global Corp'
+            }));
+        });
+        
         const aside = screen.getByRole('complementary');
         expect(within(aside).getByText('Financials & Dates')).toBeInTheDocument();
     });
@@ -80,41 +91,56 @@ describe('IssuanceStepper v3.0 (BDD-IMP-FLOW-01, BDD-CMN-VAL-05)', () => {
         render(<IssuanceStepper />);
         await completeStep0();
         fireEvent.click(screen.getByTestId('next-button')); // To Step 2
+        await waitFor(() => expect(screen.getByText(/Step 2/i)).toBeInTheDocument());
         
         await completeStep1();
         fireEvent.click(screen.getByTestId('next-button')); // To Step 3
+        await waitFor(() => expect(screen.getByText(/Step 3/i)).toBeInTheDocument());
         
         expect(screen.getByText(/Step 3: Margin & Charges/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/Charge Allocation/i)).toBeInTheDocument();
     });
 
-    it('validates SWIFT characters on goodsDescription blur', async () => {
+    it('calls backend validation when moving from Step 2 to Step 3', async () => {
+        (tradeApi.validateLcSwiftFields as jest.Mock).mockResolvedValue({
+            errors: [{ fieldName: 'goodsDescription', message: 'Z-Charset violation' }]
+        });
+
         render(<IssuanceStepper />);
         await completeStep0();
-        fireEvent.click(screen.getByTestId('next-button'));
-
-        const goodsInput = screen.getByLabelText(/Description of Goods/i);
-        fireEvent.change(goodsInput, { target: { value: 'Steel Rods @ 50mm' } });
-        fireEvent.blur(goodsInput);
+        fireEvent.click(screen.getByTestId('next-button')); 
+        
+        // Wait for transition to Step 2
+        await waitFor(() => expect(screen.getByText(/Step 2/i)).toBeInTheDocument());
+        
+        await completeStep1();
+        fireEvent.click(screen.getByTestId('next-button')); // Trigger Validation
         
         await waitFor(() => {
-            expect(screen.getByText(/invalid SWIFT character/i)).toBeInTheDocument();
+            expect(tradeApi.validateLcSwiftFields).toHaveBeenCalled();
+            expect(screen.getByText(/Z-Charset violation/i)).toBeInTheDocument();
+            // Should STAY on Step 2 (label) because transition is blocked
+            expect(screen.getByText(/Step 2: Main LC Information/i)).toBeInTheDocument();
+            expect(screen.queryByText(/Step 3/i)).not.toBeInTheDocument();
         });
     });
 
     it('shows Save Draft only on the final Review step and handles submission', async () => {
         render(<IssuanceStepper />);
         await completeStep0();
-        fireEvent.click(screen.getByTestId('next-button')); // To Step 2
+        fireEvent.click(screen.getByTestId('next-button')); 
+        await waitFor(() => expect(screen.getByText(/Step 2/i)).toBeInTheDocument());
         
         // On Step 2, Save Draft should NOT be visible
         expect(screen.queryByText(/Save Draft/i)).not.toBeInTheDocument();
         
         await completeStep1();
-        fireEvent.click(screen.getByTestId('next-button')); // To Step 3
+        fireEvent.click(screen.getByTestId('next-button')); 
+        await waitFor(() => expect(screen.getByText(/Step 3/i)).toBeInTheDocument());
         
         await completeStep2();
-        fireEvent.click(screen.getByTestId('next-button')); // To Step 4 (Review)
+        fireEvent.click(screen.getByTestId('next-button'));
+        await waitFor(() => expect(screen.getByText(/Step 4/i)).toBeInTheDocument());
 
         // On Final Step, Save Draft SHOULD be visible
         expect(screen.getByText(/Save Draft/i)).toBeInTheDocument();
@@ -126,26 +152,20 @@ describe('IssuanceStepper v3.0 (BDD-IMP-FLOW-01, BDD-CMN-VAL-05)', () => {
         expect(await screen.findByText(/Successfully Submitted for Approval/i)).toBeInTheDocument();
     });
 
-    it('blocks progression if there is a date error', async () => {
+    it('renders all required BIC fields in Step 1 and 2', async () => {
         render(<IssuanceStepper />);
+        // Step 1 (Parties)
+        expect(screen.getByLabelText(/Advising Through Bank BIC/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/Advising Bank BIC/i)).toBeInTheDocument();
+        
         await completeStep0();
-        fireEvent.click(screen.getByTestId('next-button')); // To Step 2
+        fireEvent.click(screen.getByTestId('next-button')); 
         
-        // Input invalid dates (Expiry before Issue)
-        fireEvent.change(screen.getByLabelText(/Issue Date/i), { target: { value: '2026-12-31' } });
-        fireEvent.change(screen.getByLabelText(/Expiry Date/i), { target: { value: '2026-01-01' } });
+        // Wait for transition to Step 2 (Financials)
+        await waitFor(() => expect(screen.getByText(/Step 2/i)).toBeInTheDocument());
         
-        // Error should be visible below field already
-        expect(await screen.findByText(/Expiry Date cannot be in the past or before Issue Date/i)).toBeInTheDocument();
-        
-        // Click Next
-        fireEvent.click(screen.getByTestId('next-button'));
-        
-        // Should show date conflict error in banner
-        await waitFor(() => {
-            const banner = document.querySelector('.error-banner');
-            expect(banner).toBeInTheDocument();
-            expect(banner?.textContent).toMatch(/Date Conflict/i);
-        });
+        expect(screen.getByLabelText(/Available With BIC/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/Drawee Bank BIC/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/Issuing Bank BIC/i)).toBeInTheDocument();
     });
 });

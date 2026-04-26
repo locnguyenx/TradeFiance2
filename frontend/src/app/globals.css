@@ -255,6 +255,18 @@ tr:hover td { background: #f8fafc; }
   transition: border-color 0.2s;
 }
 .field-group input:focus { border-color: #2563eb; outline: none; }
+.field-group input.is-invalid, .field-group textarea.is-invalid, .field-group select.is-invalid {
+  border-color: var(--urgent);
+  background-color: #fff1f2;
+}
+.error-text {
+  color: var(--urgent);
+  font-size: 0.75rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
 
 .helper-box { 
   padding: 1.25rem; 
