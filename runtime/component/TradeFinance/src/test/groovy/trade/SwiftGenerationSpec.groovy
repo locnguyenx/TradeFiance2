@@ -155,4 +155,27 @@ class SwiftGenerationSpec extends Specification {
         genRes.messageContent.contains(":32B:USD5000,00")
         genRes.messageContent.contains("INCREASE AMOUNT")
     }
+
+    def "MT700 contains Tags 40A, 41a, 49"() {
+        given: "An LC with new mandatory fields"
+        def ref = "TF-TAGS-" + System.currentTimeMillis()
+        def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
+            .parameters([transactionRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD",
+                         lcTypeEnumId: "IRREVOCABLE",
+                         availableByEnumId: "NEGOTIATION",
+                         availableWithBic: "AVAILXXX",
+                         confirmationEnumId: "CONFIRMED",
+                         advisingBankBic: "ADVISXXX"]).call()
+
+        when: "generate#Mt700 is called"
+        def genRes = ec.service.sync().name("trade.SwiftGenerationServices.generate#Mt700")
+            .parameters([instrumentId: res.instrumentId]).call()
+
+        then: "Generated content contains 40A, 41A, 49 mappings"
+        genRes.messageContent != null
+        genRes.messageContent.contains(":40A:IRREVOCABLE")
+        genRes.messageContent.contains(":41A:AVAILXXX")
+        genRes.messageContent.contains(":41a:NEGOTIATION") || genRes.messageContent.contains("NEGOTIATION")
+        genRes.messageContent.contains(":49:CONFIRMED")
+    }
 }

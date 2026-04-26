@@ -3,7 +3,7 @@
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.0.xsd">
 
-    <service verb="generate" noun="Mt700">
+    <service verb="generate" noun="Mt700" authenticate="false">
         <description>Generates MT700 (Issue of a Documentary Credit). Implements FR-SWG-10 lifecycle rules.</description>
         <in-parameters>
             <parameter name="instrumentId" required="true"/>
@@ -14,6 +14,7 @@
             <parameter name="messageContent"/>
         </out-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument"/>
             <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc"/>
             <if condition="!lc"><return error="true" message="Instrument ${instrumentId} is not an Import LC"/></if>
@@ -70,11 +71,16 @@
                     builder.addField("39B", "MAXIMUM")
                 }
                 
-                builder.addField("41A", (lc.availableWithBic ?: "ANY BANK"))
-                builder.addField("41D", builder.formatValue(lc.availableWithName, 4, 35))
+                // FR-SGC-04: Available With... By... (Tag 41a)
+                def availableBy = lc.availableByEnumId ?: "SIGHT"
+                if (lc.availableWithBic || !lc.availableWithName) {
+                    builder.addField("41A", (lc.availableWithBic ?: "ANY BANK") + "\r\nBY " + availableBy)
+                } else {
+                    builder.addField("41D", builder.formatValue(lc.availableWithName, 4, 35) + "\r\nBY " + availableBy)
+                }
                 
                 if (lc.tenorTypeId == 'SIGHT') builder.addField("42C", "AT SIGHT")
-                else builder.addField("42C", builder.formatValue(lc.usanceBaseDate, 3, 35))
+                else if (lc.usanceBaseDate) builder.addField("42C", builder.formatValue(lc.usanceBaseDate, 3, 35))
                 
                 builder.addField("42a", lc.draweeBankBic ?: "DRAWEE BANK")
                 builder.addField("43P", lc.partialShipmentEnumId ?: "ALLOWED")
@@ -86,7 +92,7 @@
                 builder.addField("44B", builder.formatValue(lc.finalDeliveryPlace))
                 
                 if (lc.latestShipmentDate) builder.addField("44C", lc.latestShipmentDate.format("yyMMdd"))
-                else builder.addField("44D", builder.formatValue(lc.shipmentPeriodText))
+                else if (lc.shipmentPeriodText) builder.addField("44D", builder.formatValue(lc.shipmentPeriodText))
                 
                 builder.addField("45A", builder.formatValue(lc.goodsDescription, 100, 65))
                 builder.addField("46A", builder.formatValue(lc.documentsRequired, 100, 65))
@@ -121,7 +127,7 @@
         </actions>
     </service>
 
-    <service verb="generate" noun="Mt701">
+    <service verb="generate" noun="Mt701" authenticate="false">
         <description>Generates MT701 (Issue of a Documentary Credit Continuation). Used for large fields (45B, 46B, 47B).</description>
         <in-parameters>
             <parameter name="instrumentId" required="true"/>
@@ -131,6 +137,7 @@
             <parameter name="messageContent"/>
         </out-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument"/>
             <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc"/>
             <script package="trade"><![CDATA[
@@ -150,7 +157,7 @@
         </actions>
     </service>
 
-    <service verb="generate" noun="Mt707">
+    <service verb="generate" noun="Mt707" authenticate="false">
         <description>Generates MT707 (Amendment). Implements FR-SWG-10 lifecycle.</description>
         <in-parameters>
             <parameter name="amendmentId" required="true"/>
@@ -161,6 +168,7 @@
             <parameter name="messageContent"/>
         </out-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.importlc.ImportLcAmendment" value-field="amendment"/>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument">
                 <field-map field-name="instrumentId" from="amendment.instrumentId"/>
@@ -214,7 +222,7 @@
         </actions>
     </service>
 
-    <service verb="generate" noun="Mt750">
+    <service verb="generate" noun="Mt750" authenticate="false">
         <description>Advice of Discrepancy</description>
         <in-parameters><parameter name="presentationId" required="true"/></in-parameters>
         <out-parameters>
@@ -222,6 +230,7 @@
             <parameter name="messageContent"/>
         </out-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="pres"/>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="inst"><field-map field-name="instrumentId" from="pres.instrumentId"/></entity-find-one>
             <script package="trade"><![CDATA[
@@ -242,7 +251,7 @@
         </actions>
     </service>
 
-    <service verb="generate" noun="Mt734">
+    <service verb="generate" noun="Mt734" authenticate="false">
         <description>Advice of Refusal</description>
         <in-parameters><parameter name="presentationId" required="true"/></in-parameters>
         <out-parameters>
@@ -250,6 +259,7 @@
             <parameter name="messageContent"/>
         </out-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="pres"/>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="inst"><field-map field-name="instrumentId" from="pres.instrumentId"/></entity-find-one>
             <script package="trade"><![CDATA[
@@ -267,7 +277,7 @@
         </actions>
     </service>
 
-    <service verb="generate" noun="Mt752">
+    <service verb="generate" noun="Mt752" authenticate="false">
         <description>Authorisation to Pay, Accept or Negotiate</description>
         <in-parameters><parameter name="presentationId" required="true"/></in-parameters>
         <out-parameters>
@@ -275,6 +285,7 @@
             <parameter name="messageContent"/>
         </out-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="pres"/>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="inst"><field-map field-name="instrumentId" from="pres.instrumentId"/></entity-find-one>
             <script package="trade"><![CDATA[
@@ -292,7 +303,7 @@
         </actions>
     </service>
 
-    <service verb="generate" noun="Mt732">
+    <service verb="generate" noun="Mt732" authenticate="false">
         <description>Advice of Discharge</description>
         <in-parameters><parameter name="presentationId" required="true"/></in-parameters>
         <out-parameters>
@@ -300,6 +311,7 @@
             <parameter name="messageContent"/>
         </out-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="pres"/>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="inst"><field-map field-name="instrumentId" from="pres.instrumentId"/></entity-find-one>
             <script package="trade"><![CDATA[
@@ -316,7 +328,7 @@
         </actions>
     </service>
 
-    <service verb="generate" noun="Mt799">
+    <service verb="generate" noun="Mt799" authenticate="false">
         <description>Free Format Message</description>
         <in-parameters>
             <parameter name="instrumentId" required="true"/>
@@ -327,6 +339,7 @@
             <parameter name="messageContent"/>
         </out-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="inst"/>
             <script package="trade"><![CDATA[
                 import trade.SwiftMessageBuilder
@@ -341,7 +354,7 @@
         </actions>
     </service>
 
-    <service verb="generate" noun="Mt103">
+    <service verb="generate" noun="Mt103" authenticate="false">
         <description>Single Customer Credit Transfer (Settlement)</description>
         <in-parameters><parameter name="instrumentId" required="true"/></in-parameters>
         <out-parameters>
@@ -349,6 +362,7 @@
             <parameter name="messageContent"/>
         </out-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="inst"/>
             <script package="trade"><![CDATA[
                 import trade.SwiftMessageBuilder
@@ -367,7 +381,7 @@
         </actions>
     </service>
 
-    <service verb="generate" noun="Mt202">
+    <service verb="generate" noun="Mt202" authenticate="false">
         <description>Financial Institution Transfer</description>
         <in-parameters><parameter name="instrumentId" required="true"/></in-parameters>
         <out-parameters>
@@ -375,6 +389,7 @@
             <parameter name="messageContent"/>
         </out-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="inst"/>
             <script package="trade"><![CDATA[
                 import trade.SwiftMessageBuilder
@@ -390,13 +405,14 @@
             <set field="swiftMessageId" from="createRes.swiftMessageId"/>
         </actions>
     </service>
-    <service verb="format" noun="Tag">
+    <service verb="format" noun="Tag" authenticate="false">
         <in-parameters>
             <parameter name="tag" required="true"/>
             <parameter name="instrumentId"/>
         </in-parameters>
         <out-parameters><parameter name="swText" required="true"/></out-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument"/>
             <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc"/>
             
@@ -434,7 +450,7 @@
         </actions>
     </service>
 
-    <service verb="split" noun="Rows">
+    <service verb="split" noun="Rows" authenticate="false">
         <in-parameters><parameter name="text" required="true"/></in-parameters>
         <out-parameters><parameter name="rows" type="List" required="true"/></out-parameters>
         <actions>
