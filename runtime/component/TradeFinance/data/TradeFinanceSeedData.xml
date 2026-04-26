@@ -19,6 +19,7 @@
     <moqui.basic.EnumerationType enumTypeId="TradeProductType" description="Trade Product Types"/>
     <moqui.basic.EnumerationType enumTypeId="SwiftMessageStatus" description="SWIFT Message Processing Statuses"/>
     <moqui.basic.EnumerationType enumTypeId="DocumentDisposal" description="Document Disposal Options (Tag 77B)"/>
+    <moqui.basic.EnumerationType enumTypeId="TradeAvailableBy" description="LC Availability Methods (Tag 41a)"/>
 
     <!-- Audit Action Enums -->
     <moqui.basic.Enumeration enumId="AUDIT_HOLD" enumTypeId="TradeLaunchAction" description="Compliance Hold Applied"/>
@@ -49,6 +50,8 @@
     <moqui.basic.Enumeration enumId="IRREVOCABLE" enumTypeId="TradeLcType" description="Irrevocable"/>
     <moqui.basic.Enumeration enumId="REVOCABLE" enumTypeId="TradeLcType" description="Revocable (Legacy/Special)"/>
     <moqui.basic.Enumeration enumId="STANDBY" enumTypeId="TradeLcType" description="Standby LC"/>
+    <moqui.basic.Enumeration enumId="IRREVOCABLE_TRANSFERABLE" enumTypeId="TradeLcType" description="Irrevocable Transferable"/>
+    <moqui.basic.Enumeration enumId="REVOCABLE_TRANSFERABLE" enumTypeId="TradeLcType" description="Revocable Transferable"/>
 
     <!-- Amendment Type Enums -->
     <moqui.basic.Enumeration enumId="AMEND_INCREASE" enumTypeId="TradeAmendmentType" description="Increase Amount"/>
@@ -77,6 +80,13 @@
     <moqui.basic.Enumeration enumId="DEFERRED_PAYMENT" enumTypeId="TradeSettlementType" description="Deferred Payment"/>
     <moqui.basic.Enumeration enumId="ACCEPTANCE" enumTypeId="TradeSettlementType" description="Acceptance"/>
     <moqui.basic.Enumeration enumId="NEGOTIATION" enumTypeId="TradeSettlementType" description="Negotiation"/>
+
+    <!-- Available By Enums (Tag 41a) -->
+    <moqui.basic.Enumeration enumId="SIGHT" enumTypeId="TradeAvailableBy" description="BY PAYMENT"/>
+    <moqui.basic.Enumeration enumId="ACCEPTANCE" enumTypeId="TradeAvailableBy" description="BY ACCEPTANCE"/>
+    <moqui.basic.Enumeration enumId="NEGOTIATION" enumTypeId="TradeAvailableBy" description="BY NEGOTIATION"/>
+    <moqui.basic.Enumeration enumId="DEF_PAYMENT" enumTypeId="TradeAvailableBy" description="BY DEF PAYMENT"/>
+    <moqui.basic.Enumeration enumId="MIXED_PAYMENT" enumTypeId="TradeAvailableBy" description="BY MIXED PAYMENT"/>
 
     <!-- Fee Frequencies -->
     <moqui.basic.Enumeration enumId="FEE_ONCE" enumTypeId="TradeFeeFrequency" description="One-time Fee"/>

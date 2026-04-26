@@ -243,6 +243,9 @@
                 def discText = discList ? discList.collect { "${it.discrepancyCode}: ${it.discrepancyDescription}" }.join("\n") : "NO DISCREPANCIES RECORDED"
                 builder.addField("77J", builder.formatValue(discText, 70, 50))
                 
+                if (pres.chargesDeducted) builder.addField("73", builder.formatValue(pres.chargesDeducted, 6, 35))
+                if (pres.senderToReceiverPresentationInfo) builder.addField("72Z", builder.formatValue(pres.senderToReceiverPresentationInfo, 6, 35))
+                
                 messageContent = builder.build()
             ]]></script>
             <service-call name="create#trade.importlc.SwiftMessage" out-map="createRes"
@@ -270,6 +273,7 @@
                 builder.addField("32A", valDate + (pres.claimCurrency ?: "USD") + String.format("%.2f", pres.claimAmount ?: 0).replace(".", ","))
                 builder.addField("77J", builder.formatValue("DOCUMENTS REFUSED DUE TO DISCREPANCIES", 70, 50))
                 builder.addField("77B", "DOCUMENTS HELD AT YOUR DISPOSAL")
+                if (pres.senderToReceiverPresentationInfo) builder.addField("72Z", builder.formatValue(pres.senderToReceiverPresentationInfo, 6, 35))
                 messageContent = builder.build()
             ]]></script>
             <service-call name="create#trade.importlc.SwiftMessage" out-map="createRes"
@@ -296,6 +300,7 @@
                 builder.addField("23", "FURTHER TO YOUR MT750")
                 builder.addField("32B", (pres.claimCurrency ?: "USD") + String.format("%.2f", pres.claimAmount ?: 0).replace(".", ","))
                 builder.addField("71B", "DETAILS OF CHARGES: ALL CHARGES PAID")
+                if (pres.senderToReceiverPresentationInfo) builder.addField("72Z", builder.formatValue(pres.senderToReceiverPresentationInfo, 6, 35))
                 messageContent = builder.build()
             ]]></script>
             <service-call name="create#trade.importlc.SwiftMessage" out-map="createRes"
@@ -321,6 +326,7 @@
                     .setReceiverBic(pres.presentingBankBic ?: "BENEBANK").setSenderRef(inst.transactionRef)
                 builder.addField("30", ec.user.nowTimestamp.format("yyMMdd"))
                 builder.addField("32B", (pres.claimCurrency ?: "USD") + String.format("%.2f", pres.claimAmount ?: 0).replace(".", ","))
+                if (pres.senderToReceiverPresentationInfo) builder.addField("72Z", builder.formatValue(pres.senderToReceiverPresentationInfo, 6, 35))
                 messageContent = builder.build()
             ]]></script>
             <service-call name="create#trade.importlc.SwiftMessage" out-map="createRes"
