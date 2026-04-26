@@ -280,4 +280,21 @@ class SwiftValidationSpec extends Specification {
         result.errors.any { it.fieldName == "availableByEnumId" && it.message.contains("Required") }
         result.errors.any { it.fieldName == "confirmationEnumId" && it.message.contains("Required") }
     }
+
+    def "MEX-02: Mutual exclusion - shipment period vs latest shipment date"() {
+        given: "An LC with both shipmentPeriodText and latestShipmentDate"
+        def ref = "TF-MEX2-" + System.currentTimeMillis()
+        def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
+            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
+                         latestShipmentDate: "2026-12-31", shipmentPeriodText: "DURING DECEMBER",
+                         lcTypeEnumId: "IRREVOCABLE", availableByEnumId: "SIGHT", confirmationEnumId: "WITHOUT"]).call()
+
+        when: "validate#SwiftFields is called"
+        def result = ec.service.sync().name("trade.importlc.ImportLcValidationServices.validate#SwiftFields")
+            .parameters([entityType: "ImportLetterOfCredit", entityId: res.instrumentId]).call()
+
+        then: "Error for mutual exclusion"
+        result.errors != null
+        result.errors.any { it.message.contains("mutually exclusive") }
+    }
 }

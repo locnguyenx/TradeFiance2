@@ -193,6 +193,11 @@
                             if (!lc.usanceDays) addError("usanceDays", "Required for USANCE tenor", "CONDITIONAL")
                             if (!lc.usanceBaseDate) addError("usanceBaseDate", "Required for USANCE tenor", "CONDITIONAL")
                         }
+                        
+                        // Mutual Exclusion: Shipment Period vs Latest Shipment Date
+                        if (lc.shipmentPeriodText && lc.latestShipmentDate) {
+                            addError("shipmentPeriodText", "Shipment Period and Latest Shipment Date are mutually exclusive", "LOGIC")
+                        }
                     }
                 } else if (entityType == "ImportLcAmendment") {
                     def amd = ec.entity.find("trade.importlc.ImportLcAmendment").condition("amendmentId", entityId).one()
