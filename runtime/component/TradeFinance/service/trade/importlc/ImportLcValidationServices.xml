@@ -10,6 +10,7 @@
             <parameter name="claimAmount" type="BigDecimal" required="true"/>
         </in-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc">
                 <field-map field-name="instrumentId"/>
             </entity-find-one>
@@ -39,6 +40,7 @@
             <parameter name="discrepancyMessage" type="String"/>
         </out-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument">
                 <field-map field-name="instrumentId"/>
             </entity-find-one>
@@ -69,6 +71,7 @@
             <parameter name="toStateId" type="String" required="true"/>
         </in-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument">
                 <field-map field-name="instrumentId"/>
             </entity-find-one>
@@ -103,6 +106,7 @@
             <parameter name="errors" type="List"/>
         </out-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <set field="errors" from="[]"/>
             <script package="trade.importlc"><![CDATA[
                 def X_PATTERN = /^[A-Za-z0-9\/ \-\?\:\(\)\.\,\'\+\r\n]*$/
@@ -173,6 +177,11 @@
                         
                         validateBic("issuingBankBic", lc.issuingBankBic)
                         validateBic("advisingBankBic", lc.advisingBankBic)
+                        
+                        // Mandatory Fields for MT700
+                        if (!lc.lcTypeEnumId) addError("lcTypeEnumId", "Required (SWIFT Tag 40A)", "MANDATORY")
+                        if (!lc.availableByEnumId) addError("availableByEnumId", "Required (SWIFT Tag 41a)", "MANDATORY")
+                        if (!lc.confirmationEnumId) addError("confirmationEnumId", "Required (SWIFT Tag 49)", "MANDATORY")
                         
                         // Mutual Exclusion: Tolerance vs Max Credit Amount
                         if (lc.maxCreditAmountFlag == 'Y' && (lc.tolerancePositive || lc.toleranceNegative)) {

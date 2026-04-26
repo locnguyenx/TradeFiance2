@@ -27,6 +27,7 @@
         <field name="latestShipmentDate" type="date"/>
         <field name="confirmationEnumId" type="id"/>
         <field name="lcTypeEnumId" type="id"/>
+        <field name="availableByEnumId" type="id"/>
         <field name="productCatalogId" type="id"/>
 
         <!-- Replicated from TradeInstrument (Snapshot per improvement requirement) -->

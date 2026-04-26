@@ -247,6 +247,9 @@ class SwiftValidationSpec extends Specification {
                          portOfLoading: "HO CHI MINH CITY",
                          portOfDischarge: "TOKYO, JAPAN",
                          expiryPlace: "VIETNAM",
+                         lcTypeEnumId: "IRREVOCABLE",
+                         availableByEnumId: "SIGHT",
+                         confirmationEnumId: "WITHOUT",
                          applicantName: "VIETNAM IMPORT EXPORT CORP\nNO 1 LE LOI STREET\nHO CHI MINH CITY",
                          beneficiaryName: "GLOBAL STEEL TRADING LTD\n123 MAIN ROAD\nLONDON, UK"]).call()
 
@@ -256,5 +259,25 @@ class SwiftValidationSpec extends Specification {
 
         then: "No errors"
         result.errors == null || result.errors.size() == 0
+    }
+
+    def "Validate mandatory SWIFT fields (40A, 41a, 49)"() {
+        given: "An LC missing mandatory SWIFT fields"
+        def ref = "TF-MAND-" + System.currentTimeMillis()
+        def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
+            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD"]).call()
+        
+        def lc = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", res.instrumentId).one()
+        lc.setAll([lcTypeEnumId: null, availableByEnumId: null, confirmationEnumId: null]).update()
+
+        when: "validate#SwiftFields is called"
+        def result = ec.service.sync().name("trade.importlc.ImportLcValidationServices.validate#SwiftFields")
+            .parameters([entityType: "ImportLetterOfCredit", entityId: res.instrumentId]).call()
+
+        then: "Errors for 40A, 41a, 49"
+        result.errors != null
+        result.errors.any { it.fieldName == "lcTypeEnumId" && it.message.contains("Required") }
+        result.errors.any { it.fieldName == "availableByEnumId" && it.message.contains("Required") }
+        result.errors.any { it.fieldName == "confirmationEnumId" && it.message.contains("Required") }
     }
 }
