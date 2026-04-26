@@ -266,7 +266,8 @@
                 import trade.SwiftMessageBuilder
                 def builder = new SwiftMessageBuilder(ec).setMessageType("734").setSenderBic("ISSUERXX")
                     .setReceiverBic(pres.presentingBankBic ?: "BENEBANK").setSenderRef(inst.transactionRef)
-                builder.addField("32A", (pres.claimCurrency ?: "USD") + String.format("%.2f", pres.claimAmount ?: 0).replace(".", ","))
+                def valDate = (pres.presentationDate ?: ec.user.nowTimestamp).format("yyMMdd")
+                builder.addField("32A", valDate + (pres.claimCurrency ?: "USD") + String.format("%.2f", pres.claimAmount ?: 0).replace(".", ","))
                 builder.addField("77J", builder.formatValue("DOCUMENTS REFUSED DUE TO DISCREPANCIES", 70, 50))
                 builder.addField("77B", "DOCUMENTS HELD AT YOUR DISPOSAL")
                 messageContent = builder.build()

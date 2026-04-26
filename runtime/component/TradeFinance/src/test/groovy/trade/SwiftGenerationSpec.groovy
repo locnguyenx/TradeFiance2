@@ -178,4 +178,23 @@ class SwiftGenerationSpec extends Specification {
         genRes.messageContent.contains(":41a:NEGOTIATION") || genRes.messageContent.contains("NEGOTIATION")
         genRes.messageContent.contains(":49:CONFIRMED")
     }
+
+    def "MT734 contains Tag 32A Value Date"() {
+        given: "A presentation for an LC"
+        def ref = "TF-LC-734-" + System.currentTimeMillis()
+        def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
+            .parameters([transactionRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD"]).call()
+        
+        def presRes = ec.service.sync().name("create#trade.importlc.TradeDocumentPresentation")
+            .parameters([instrumentId: res.instrumentId, claimAmount: 50000.0, claimCurrency: "USD",
+                         presentationDate: "2026-05-10"]).call()
+
+        when: "generate#Mt734 is called"
+        def genRes = ec.service.sync().name("trade.SwiftGenerationServices.generate#Mt734")
+            .parameters([presentationId: presRes.presentationId]).call()
+
+        then: "Generated content contains Tag 32A with correct date"
+        genRes.messageContent != null
+        genRes.messageContent.contains(":32A:260510USD50000,00")
+    }
 }
