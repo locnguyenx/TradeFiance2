@@ -5,7 +5,15 @@
 
     <!-- Lifecycle Transition Guard -->
     <seca service="trade.importlc.ImportLcServices.update#ImportLetterOfCredit" when="pre-service">
-        <service-call name="trade.importlc.ImportLcValidationServices.validate#BusinessStateTransition" in-map="context"/>
+        <!-- Transition Guard -->
+        <service-call name="trade.importlc.ImportLcValidationServices.validate#BusinessStateTransition" 
+                      in-map="context + [toStateId: businessStateId]"/>
+        
+        <!-- SWIFT Validation Guard on Submission -->
+        <if condition="businessStateId == 'LC_PENDING'">
+            <service-call name="trade.importlc.ImportLcValidationServices.validate#SwiftFields" 
+                          in-map="[entityType: 'ImportLetterOfCredit', entityId: instrumentId]"/>
+        </if>
     </seca>
 
     <!-- Presentation Validation -->

@@ -81,36 +81,21 @@ def "Validate mandatory Form of Credit (40A)"() {
 
 ---
 
-### Task 3: Implement Mutual Exclusion (Tolerance vs Max Credit)
+### Task 3: Implement Mutual Exclusion (Tolerance vs Max Credit & Shipment Period vs Latest Shipment)
 
-**BDD Scenarios:** Mutual Exclusion: Max Credit blocks Tolerance
-**BRD Requirements:** FR-SGC-07
+**BDD Scenarios:** Mutual Exclusion: Max Credit blocks Tolerance, Mutual Exclusion: Shipment Period blocks Latest Shipment
+**BRD Requirements:** FR-SGC-07, FR-SGC-08
 **User-Facing:** NO
 
 **Files:**
 - Modify: `runtime/component/TradeFinance/service/trade/importlc/ImportLcValidationServices.xml`
 - Test: `runtime/component/TradeFinance/src/test/groovy/trade/SwiftValidationSpec.groovy`
 
-- [ ] **Step 1: Write failing test for mutual exclusion**
-```groovy
-def "Max Credit blocks Tolerance"() {
-    given: "An LC with maxCreditAmountFlag='Y' and tolerance=0.10"
-    def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-        .parameters([transactionRef: "TF-MEX", lcAmount: 1000.0, lcCurrencyUomId: "USD",
-                     maxCreditAmountFlag: "Y", tolerancePositive: 0.10]).call()
-
-    when: "validate#SwiftFields is called"
-    def result = ec.service.sync().name("trade.importlc.ImportLcValidationServices.validate#SwiftFields")
-        .parameters([entityType: "ImportLetterOfCredit", entityId: res.instrumentId]).call()
-
-    then: "Error or reset logic triggered"
-    result.errors.any { it.message.contains("mutually exclusive") }
-}
-```
-- [ ] **Step 2: Run test to verify failure**
-- [ ] **Step 3: Implement mutual exclusion logic**
-- [ ] **Step 4: Run test to verify success**
-- [ ] **Step 5: Commit**
+- [x] **Step 1: Write failing test for mutual exclusion**
+- [x] **Step 2: Run test to verify failure**
+- [x] **Step 3: Implement mutual exclusion logic**
+- [x] **Step 4: Run test to verify success**
+- [x] **Step 5: Commit**
 
 ---
 
@@ -124,7 +109,7 @@ def "Max Credit blocks Tolerance"() {
 - Modify: `runtime/component/TradeFinance/service/trade/SwiftGenerationServices.xml`
 - Test: `runtime/component/TradeFinance/src/test/groovy/trade/SwiftGenerationSpec.groovy`
 
-- [ ] **Step 1: Write failing test for tag mappings**
+- [/] **Step 1: Write failing test for tag mappings**
 ```groovy
 def "MT700 contains Tags 40A, 41a, 49"() {
     given: "An approved LC with 40A, 41A, 49 fields"

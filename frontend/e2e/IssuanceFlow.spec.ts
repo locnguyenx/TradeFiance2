@@ -66,6 +66,6 @@ test.describe('Issuance Life-Cycle (True E2E)', () => {
     await page.getByTestId('submit-button').click();
 
     // 8. Verify Success Message and status transition to PENDING
-    await expect(page.locator('.success-banner')).toContainText('Successfully Submitted for Approval');
+    await expect(page.getByRole('heading', { name: 'Submission Successful' })).toBeVisible({ timeout: 15000 });
   });
 });

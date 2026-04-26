@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { CheckerAuthorization } from './CheckerAuthorization';
 import { tradeApi } from '../api/tradeApi';
 
@@ -37,10 +37,15 @@ describe('CheckerAuthorization v3.0 (REQ-UI-IMP-05)', () => {
 
     it('displays Effective vs Snapshot values side-by-side for tiers', async () => {
         render(<CheckerAuthorization instrumentId="IMLC/2026/001" />);
+        await screen.findByText(/Instrument: IMLC\/2026\/001/i);
         
-        // Check for Snapshot (Old) and Effective (New) values
-        expect(await screen.findByText(/USD 450,000.00/i)).toBeInTheDocument();
-        expect(screen.getByText(/USD 600,000.00/i)).toBeInTheDocument();
+        // Check for Snapshot (Old) in delta-notice
+        const deltaNotice = await screen.findByText(/Amendment Snapshot/i);
+        expect(within(deltaNotice.parentElement!).getByText(/450,000/i)).toBeInTheDocument();
+        
+        // Check for Effective (New) in the details panel
+        // Since USD 600,000 appears in multiple places, we just verify it exists at least once for new value
+        expect(screen.getAllByText(/600,000/i).length).toBeGreaterThan(0);
     });
 
     it('renders second-checker requirement indicator for Tier 4', async () => {

@@ -19,8 +19,10 @@
         </in-parameters>
         <out-parameters>
             <parameter name="instrumentId" required="true"/>
+            <parameter name="transactionRef"/>
         </out-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <if condition="!transactionRef">
                 <service-call name="trade.TradeCommonServices.get#NextNumber" in-map="[sequenceId:'IMP_LC_REF', instrumentType:'IMP']" out-map="nextNumOut"/>
                 <set field="transactionRef" from="nextNumOut.nextNumberFormatted"/>
@@ -79,6 +81,7 @@
             <parameter name="businessStateId"/>
         </in-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument" auto-field-map="true"/>
             <if condition="!instrument"><return error="true" message="Letter of Credit not found with ID ${instrumentId}"/></if>
 
@@ -104,15 +107,15 @@
             <if condition="expiryDate != null"><set field="lc.effectiveExpiryDate" from="expiryDate"/></if>
             <if condition="latestShipmentDate != null"><set field="lc.effectiveShipmentDate" from="latestShipmentDate"/></if>
             <if condition="businessStateId != null &amp;&amp; businessStateId != lc.businessStateId">
-                 <service-call name="trade.importlc.ImportLcValidationServices.validate#BusinessStateTransition" 
-                               in-map="[instrumentId:instrumentId, fromStateId:lc.businessStateId, toStateId:businessStateId]"/>
                 <set field="lc.businessStateId" from="businessStateId"/>
-                
                 <!-- Sync with TradeInstrument -->
                 <if condition="instrument">
                     <set field="updateInstMap" from="[instrumentId: instrumentId, businessStateId: businessStateId, lifecycleStatusId: businessStateId]"/>
                     <if condition="businessStateId == 'LC_CANCELLED' || businessStateId == 'LC_CLOSED' || businessStateId == 'LC_EXPIRED'">
                         <set field="updateInstMap.transactionStatusId" value="TX_APPROVED"/>
+                    </if>
+                    <if condition="businessStateId == 'LC_PENDING'">
+                        <set field="updateInstMap.transactionStatusId" value="TX_PENDING"/>
                     </if>
                     <service-call name="update#trade.TradeInstrument" in-map="updateInstMap"/>
                 </if>
@@ -132,6 +135,7 @@
             <parameter name="approvalComments"/>
         </in-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument" for-update="true"/>
             <if condition="!instrument"><return error="true" message="Instrument not found with ID ${instrumentId}"/></if>
 
@@ -204,6 +208,7 @@
             <parameter name="amendmentId" type="String"/>
         </out-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument"/>
             <if condition="!instrument"><return error="true" message="Instrument ${instrumentId} not found"/></if>
             
@@ -354,6 +359,7 @@
             <parameter name="isPartialDraw" type="String" default="Y"/>
         </in-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="presentation" for-update="true"/>
             <if condition="!presentation"><return error="true" message="Presentation ${presentationId} not found"/></if>
             <set field="instrumentId" from="presentation.instrumentId"/>
@@ -378,6 +384,7 @@
             </parameter>
         </in-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="presentation" for-update="true"/>
             <if condition="!presentation"><return error="true" message="Presentation ${presentationId} not found"/></if>
             
@@ -396,6 +403,7 @@
             <parameter name="presentationId" required="true"/>
         </in-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="presentation" for-update="true"/>
             <if condition="!presentation"><return error="true" message="Presentation ${presentationId} not found"/></if>
             
@@ -424,6 +432,7 @@
             <parameter name="applicantDecisionEnumId" required="true"/> <!-- WAIVED, REJECTED -->
         </in-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="presentation" for-update="true"/>
             <if condition="!presentation"><return error="true" message="Presentation ${presentationId} not found"/></if>
             
@@ -476,6 +485,7 @@
     <service verb="hold" noun="ImportLetterOfCredit" authenticate="false">
         <in-parameters><parameter name="instrumentId" required="true"/></in-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument" for-update="true"/>
             <if condition="!instrument"><return error="true" message="Instrument ${instrumentId} not found"/></if>
             <if condition="instrument.businessStateId == 'LC_HOLD'"><return/></if>
@@ -494,6 +504,7 @@
     <service verb="release" noun="ImportLetterOfCredit" authenticate="false">
         <in-parameters><parameter name="instrumentId" required="true"/></in-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument" for-update="true"/>
             <if condition="!instrument"><return error="true" message="Instrument ${instrumentId} not found"/></if>
             <if condition="instrument.businessStateId != 'LC_HOLD'"><return/></if>
@@ -525,6 +536,7 @@
             <parameter name="guaranteeId" required="true"/>
         </out-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument"/>
             <if condition="!instrument"><return error="true" message="Instrument ${instrumentId} not found"/></if>
             

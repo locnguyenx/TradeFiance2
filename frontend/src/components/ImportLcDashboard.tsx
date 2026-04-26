@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { tradeApi, Kpis } from '../api/tradeApi';
 import { TradeInstrument, ImportLetterOfCredit } from '../api/types';
+import { useRouter } from 'next/navigation';
 
 // ABOUTME: Import LC Dashboard implementing REQ-UI-IMP-02.
 // ABOUTME: High-density data grid for operational tracking with SLA timer and KPI cards.
@@ -12,7 +13,9 @@ export const ImportLcDashboard: React.FC = () => {
     const [kpis, setKpis] = useState<Kpis | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const router = useRouter();
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+    const [filterStatus, setFilterStatus] = useState<string>('');
 
     const toggleMenu = (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
@@ -26,7 +29,11 @@ export const ImportLcDashboard: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        Promise.all([tradeApi.getImportLcs(), tradeApi.getKpis()])
+        setLoading(true);
+        const params: any = {};
+        if (filterStatus) params.businessStateId = filterStatus;
+
+        Promise.all([tradeApi.getImportLcs(params), tradeApi.getKpis()])
             .then(([lcData, kpiData]) => {
                 setLcs(lcData?.lcList || []);
                 setKpis(kpiData || null);
@@ -37,7 +44,7 @@ export const ImportLcDashboard: React.FC = () => {
                 setError("System Temporarily Unavailable. Please contact Trade Support.");
                 setLoading(false);
             });
-    }, []);
+    }, [filterStatus]);
 
     if (loading) return (
         <div className="skeleton-dashboard">
@@ -69,11 +76,17 @@ export const ImportLcDashboard: React.FC = () => {
                 <header className="table-header">
                     <h2>Active Transaction Data Table</h2>
                     <div className="table-filters">
-                        <select aria-label="Status Filter" className="filter-select">
-                            <option>Status: All</option>
-                            <option>Draft</option>
-                            <option>Issued</option>
-                            <option>Docs Received</option>
+                        <select 
+                            aria-label="Status Filter" 
+                            className="filter-select"
+                            value={filterStatus}
+                            onChange={(e) => setFilterStatus(e.target.value)}
+                        >
+                            <option value="">Status: All</option>
+                            <option value="LC_DRAFT">Draft</option>
+                            <option value="LC_PENDING">Pending Approval</option>
+                            <option value="LC_ISSUED">Issued</option>
+                            <option value="LC_DOC_RECEIVED">Docs Received</option>
                         </select>
                     </div>
                 </header>
@@ -104,10 +117,10 @@ export const ImportLcDashboard: React.FC = () => {
                                                           (lc.effectiveExpiryDate !== undefined && lc.effectiveExpiryDate !== lc.expiryDate);
                                          
                                          return (
-                                             <tr key={lc.instrumentId}>
+                                             <tr key={lc.instrumentId} className="clickable-row" onClick={() => router.push(`/import-lc/details?id=${lc.instrumentId}`)}>
                                                  <td className="font-bold">{lc.transactionRef}</td>
-                                                 <td>{lc.applicantName || '---'}</td>
-                                                 <td>{lc.beneficiaryName || '---'}</td>
+                                                 <td>{lc.applicantPartyName || lc.applicantName || '---'}</td>
+                                                 <td>{lc.beneficiaryPartyName || lc.beneficiaryName || '---'}</td>
                                                  <td>{lc.currency || 'USD'}</td>
                                                  <td>
                                                      {(displayAmount ?? 0).toLocaleString()}
@@ -140,6 +153,15 @@ export const ImportLcDashboard: React.FC = () => {
                                                         </button>
                                                         {openMenuId === lc.instrumentId && (
                                                             <div className="dropdown-menu premium-card">
+                                                                {lc.businessStateId === 'LC_DRAFT' && (
+                                                                    <button className="menu-item font-bold text-primary" onClick={(e) => { e.stopPropagation(); router.push(`/issuance?id=${lc.instrumentId}`); }}>
+                                                                        Edit Draft
+                                                                    </button>
+                                                                )}
+                                                                <button className="menu-item" onClick={(e) => { e.stopPropagation(); router.push(`/import-lc/details?id=${lc.instrumentId}`); }}>
+                                                                    View Details
+                                                                </button>
+                                                                <hr style={{ margin: '0.25rem 0', border: 'none', borderTop: '1px solid #f1f5f9' }} />
                                                                 <button className="menu-item" onClick={() => window.location.href=`/import-lc/amendments?id=${lc.instrumentId}`}>
                                                                     New Amendment
                                                                 </button>
@@ -185,9 +207,13 @@ export const ImportLcDashboard: React.FC = () => {
                     .table-header { display: flex; justify-content: space-between; align-items: center; padding: 1.5rem; border-bottom: 1px solid #f1f5f9; }
                     .table-header h2 { font-size: 1.25rem; font-weight: 700; color: #1e293b; }
                     
-                    .trade-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+                    .transaction-section { overflow: hidden; }
+                    .table-responsive { overflow-x: auto; width: 100%; border-radius: 0 0 12px 12px; }
+                    .trade-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; min-width: 1000px; }
                     .trade-table th { background: #f8fafc; text-align: left; padding: 1rem; color: #475569; font-weight: 600; }
                     .trade-table td { padding: 1rem; border-bottom: 1px solid #f1f5f9; color: #334155; }
+                    .clickable-row { cursor: pointer; transition: background 0.1s; }
+                    .clickable-row:hover { background: #f8fafc !important; }
                     .font-bold { font-weight: 600; color: #2563eb; }
                     
                     .status-container { display: flex; flex-direction: column; gap: 0.25rem; }

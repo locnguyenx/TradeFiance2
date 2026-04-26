@@ -33,3 +33,11 @@ Add all fields with values taken from TradeInstrument (Instrument & Financial Da
 - expiryDate
 - customerFacilityId
 
+### Updated business rules for existing fields
+
+#### Missing Fields of Block C: Financials & Terms
+
+| SWIFT Tag | Description | M/O | System Source / Data Extraction Logic |
+| :--- | :--- | :--- | :--- |
+| **41a** | Available With ... By ... | M | Logic: Determine the "Available With" bank (Often `ANY BANK` or a specific Advising Bank BIC). Append the `ImportLc.tenorTypeEnumId` mapped to SWIFT codes: `BY PAYMENT`, `BY ACCEPTANCE`, `BY NEGOTIATION`, or `BY DEF PAYMENT`. |
+| **42A** | Drawee | O | Typically the Issuing Bank. Extracted from the bank's own system profile. |

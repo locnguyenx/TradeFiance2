@@ -3,7 +3,7 @@
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.0.xsd">
 
-    <service verb="post" noun="TradeEntry">
+    <service verb="post" noun="TradeEntry" authenticate="false">
         <in-parameters>
             <parameter name="instrumentId" required="true"/>
             <parameter name="entryTypeEnumId" required="true"/> <!-- e.g., LC_ISSUANCE_FEE -->
@@ -12,6 +12,7 @@
             <parameter name="useLiveRate" type="Boolean" default="false"/>
         </in-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument">
                 <field-map field-name="instrumentId"/>
             </entity-find-one>
@@ -45,7 +46,7 @@
             ]]></script>
         </actions>
     </service>
-    <service verb="create" noun="ImportLcSettlement">
+    <service verb="create" noun="ImportLcSettlement" authenticate="false">
         <in-parameters>
             <parameter name="instrumentId" required="true"/>
             <parameter name="presentationId"/>
@@ -54,6 +55,7 @@
             <parameter name="debitAccountId" default-value="ACC-APPLICANT-01"/>
         </in-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument">
                 <field-map field-name="instrumentId"/>
             </entity-find-one>
@@ -95,7 +97,7 @@
             </if>
         </actions>
     </service>
-    <service verb="calculate" noun="Fees">
+    <service verb="calculate" noun="Fees" authenticate="false">
         <in-parameters>
             <parameter name="baseAmount" type="BigDecimal" required="true"/>
             <parameter name="minCharge" type="BigDecimal" default-value="50.0"/>

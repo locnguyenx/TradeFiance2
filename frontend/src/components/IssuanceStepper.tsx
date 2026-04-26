@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { tradeApi } from '../api/tradeApi';
 import { ClauseSelector } from './ClauseSelector';
 
@@ -37,6 +38,7 @@ export const IssuanceStepper: React.FC = () => {
         expiryDate: '',
         positiveTolerance: '0',
         negativeTolerance: '0',
+        maxCreditAmountFlag: 'N',
         partialShipment: 'Allowed',
         transhipment: 'Allowed',
         portOfLoading: '',
@@ -66,15 +68,77 @@ export const IssuanceStepper: React.FC = () => {
         advisingBankBic: '',
         advisingThroughBankBic: '',
         issuingBankBic: '',
+        availableByEnumId: 'SIGHT',
         availableWithBic: '',
-        draweeBankBic: ''
+        availableWithName: '',
+        draweeBankBic: '',
+        shipmentPeriodText: ''
     });
     const [swiftErrors, setSwiftErrors] = useState<Record<string, string>>({});
+
+    const searchParams = useSearchParams();
+    const queryId = searchParams.get('id');
 
     useEffect(() => {
         tradeApi.getProductCatalog().then(res => setProducts(res.productList || []));
         tradeApi.getParties().then(res => setParties(res.partyList || []));
     }, []);
+
+    // Load existing draft if ID is provided
+    useEffect(() => {
+        if (queryId) {
+            setLoading(true);
+            tradeApi.getImportLc(queryId).then(lc => {
+                setFormData(prev => ({
+                    ...prev,
+                    instrumentId: lc.instrumentId,
+                    transactionRef: lc.transactionRef,
+                    productCatalogId: lc.productCatalogId || '',
+                    applicantPartyId: lc.applicantPartyId || '',
+                    beneficiaryPartyId: lc.beneficiaryPartyId || '',
+                    applicant: lc.applicantName || lc.applicantPartyName || '',
+                    beneficiary: lc.beneficiaryName || lc.beneficiaryPartyName || '',
+                    amount: (lc.amount || 0).toString(),
+                    currency: lc.currencyUomId || 'USD',
+                    issueDate: lc.issueDate || '',
+                    expiryDate: lc.expiryDate || '',
+                    positiveTolerance: (lc.tolerancePositive || 0).toString(),
+                    negativeTolerance: (lc.toleranceNegative || 0).toString(),
+                    portOfLoading: lc.portOfLoading || '',
+                    portOfDischarge: lc.portOfDischarge || '',
+                    goodsDescription: lc.goodsDescription || '',
+                    documentsRequired: lc.documentsRequired || '',
+                    additionalConditions: lc.additionalConditions || '',
+                    customerFacilityId: lc.customerFacilityId || '',
+                    chargeAllocationEnumId: lc.chargeAllocationEnumId || 'APPLICANT',
+                    confirmationEnumId: lc.confirmationEnumId || 'WITHOUT',
+                    latestShipmentDate: lc.latestShipmentDate || '',
+                    lcTypeEnumId: lc.lcTypeEnumId || 'SIGHT',
+                    usanceDays: lc.usanceDays || 0,
+                    expiryPlace: lc.expiryPlace || '',
+                    partialShipmentEnumId: lc.partialShipmentEnumId || 'ALLOWED',
+                    transhipmentEnumId: lc.transhipmentEnumId || 'ALLOWED',
+                    marginType: lc.marginType || 'None',
+                    marginPercentage: lc.marginPercentage || '100',
+                    marginAmount: lc.marginAmount || '0',
+                    marginDebitAccount: lc.marginDebitAccount || '',
+                    issuingBankBic: lc.issuingBankBic || '',
+                    advisingBankBic: lc.advisingBankBic || '',
+                    advisingThroughBankBic: lc.advisingThroughBankBic || '',
+                    availableByEnumId: lc.availableByEnumId || 'SIGHT',
+                    availableWithBic: lc.availableWithBic || '',
+                    availableWithName: lc.availableWithName || '',
+                    draweeBankBic: lc.draweeBankBic || '',
+                    shipmentPeriodText: lc.shipmentPeriodText || ''
+                }));
+                setLoading(false);
+            }).catch(err => {
+                console.error("Failed to load draft:", err);
+                setErrorMessage("Failed to load draft details.");
+                setLoading(false);
+            });
+        }
+    }, [queryId]);
     const [activeClauseType, setActiveClauseType] = useState<'GOODS' | 'DOCUMENTS' | 'CONDITIONS' | null>(null);
     
     const [status, setStatus] = useState<'DRAFT' | 'SUBMITTED' | 'IDLE'>('IDLE');
@@ -93,6 +157,39 @@ export const IssuanceStepper: React.FC = () => {
             }
         }
     }, [formData.issueDate, formData.expiryDate]);
+    
+    // Mutual Exclusion Logic for SWIFT Tags
+    useEffect(() => {
+        if (formData.maxCreditAmountFlag === 'Y' && (formData.positiveTolerance !== '0' || formData.negativeTolerance !== '0')) {
+            setFormData(prev => ({ ...prev, positiveTolerance: '0', negativeTolerance: '0' }));
+        }
+    }, [formData.maxCreditAmountFlag]);
+
+    useEffect(() => {
+        if (formData.latestShipmentDate && formData.shipmentPeriodText) {
+            setFormData(prev => ({ ...prev, latestShipmentDate: '' }));
+        }
+    }, [formData.shipmentPeriodText]);
+
+    useEffect(() => {
+        if (formData.latestShipmentDate && formData.shipmentPeriodText) {
+            setFormData(prev => ({ ...prev, shipmentPeriodText: '' }));
+        }
+    }, [formData.latestShipmentDate]);
+
+    // Proactively fetch facilities whenever applicant changes (essential for drafts)
+    useEffect(() => {
+        if (formData.applicantPartyId) {
+            tradeApi.getCustomerFacilities(formData.applicantPartyId).then(res => {
+                setFacilities(res.facilityList || []);
+            }).catch(e => {
+                console.error('Failed to fetch facilities:', e);
+                setFacilities([]);
+            });
+        } else {
+            setFacilities([]);
+        }
+    }, [formData.applicantPartyId]);
 
     const validateSwift = (field: string, value: string) => {
         const swiftRegex = /^[a-zA-Z0-9/\-?:().,'+ \n\r]*$/;
@@ -224,8 +321,9 @@ export const IssuanceStepper: React.FC = () => {
         try {
             const payload = {
                 ...formData,
-                lcAmount: parseFloat(formData.amount) || 0,
-                lcCurrencyUomId: formData.currency || 'USD',
+                applicantName: formData.applicant,
+                lcAmount: Number(formData.amount),
+                lcCurrencyUomId: formData.currency,
                 amount: parseFloat(formData.amount) || 0,
                 currencyUomId: formData.currency || 'USD',
                 issueDate: formData.issueDate || new Date().toISOString().split('T')[0],
@@ -267,22 +365,29 @@ export const IssuanceStepper: React.FC = () => {
 
         setLoading(true);
         try {
-            const result = await tradeApi.createLc({ 
+            const payload = { 
                 ...formData, 
-                lcAmount: parseFloat(formData.amount) || 0,
+                applicantName: formData.applicant,
+                lcAmount: Number(formData.amount),
                 lcCurrencyUomId: formData.currency,
-                businessStateId: 'LC_PENDING_APPROVAL',
+                businessStateId: 'LC_PENDING',
                 applicantPartyId: formData.applicantPartyId,
                 customerFacilityId: formData.customerFacilityId,
                 transactionRef: formData.transactionRef || undefined
-            });
+            };
+
+            const result = formData.instrumentId 
+                ? await tradeApi.updateLc(formData.instrumentId, payload)
+                : await tradeApi.createLc(payload);
             
-            if (result.instrumentId) {
-                setFormData(prev => ({ 
-                    ...prev, 
-                    instrumentId: result.instrumentId,
-                    transactionRef: result.transactionRef || prev.transactionRef
-                }));
+            if (result.instrumentId || result.transactionRef) {
+                if (result.instrumentId) {
+                    setFormData(prev => ({ 
+                        ...prev, 
+                        instrumentId: result.instrumentId,
+                        transactionRef: result.transactionRef || prev.transactionRef
+                    }));
+                }
                 setStatus('SUBMITTED');
             } else {
                 setErrorMessage(result.errors?.[0] || result.error || 'Failed to submit for approval');
@@ -321,14 +426,34 @@ export const IssuanceStepper: React.FC = () => {
                         </div>
                     )}
                     {(status === 'SUBMITTED' || status === 'DRAFT') && (
-                        <div className="success-banner">
-                            {status === 'SUBMITTED' ? 'Successfully Submitted for Approval' : 'Draft Saved Successfully'}
-                            <button className="ml-4 opacity-70 hover:opacity-100" onClick={() => setStatus('IDLE')}>✕</button>
+                        <div className="success-banner flex justify-between items-center">
+                            {status === 'SUBMITTED' ? (
+                                <div className="success-banner premium-card mb-6" style={{ backgroundColor: '#dcfce7', borderColor: '#166534', padding: '1.5rem', borderRadius: '12px', border: '1px solid' }}>
+                                    <h3 style={{ color: '#166534', fontWeight: 700, marginBottom: '0.5rem' }}>✓ Submission Successful</h3>
+                                    <p style={{ color: '#166534', marginBottom: '1rem' }}>
+                                        Letter of Credit has been submitted for approval.
+                                        <br />
+                                        <strong>Transaction Ref: {formData.transactionRef || 'Generating...'}</strong>
+                                        <br />
+                                        <small>Instrument ID: {formData.instrumentId}</small>
+                                    </p>
+                                    <div style={{ display: 'flex', gap: '1rem' }}>
+                                        <a href="/import-lc" style={{ color: '#166534', fontWeight: 600, textDecoration: 'underline' }}>Back to Dashboard</a>
+                                        <span>|</span>
+                                        <a href="/approvals" style={{ color: '#166534', fontWeight: 600, textDecoration: 'underline' }}>View Approvals Queue</a>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div>
+                                    Draft Saved Successfully
+                                    <button className="ml-4 opacity-70 hover:opacity-100" onClick={() => setStatus('IDLE')}>✕</button>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
 
-                <main className="stepper-content">
+                <main className="stepper-content" style={status === 'SUBMITTED' ? { pointerEvents: 'none', opacity: 0.8 } : {}}>
                     <header className="step-header mb-4">
                         <h3 className="text-xl font-bold">Step {stepIndex + 1}: {steps[stepIndex]}</h3>
                     </header>
@@ -340,6 +465,7 @@ export const IssuanceStepper: React.FC = () => {
                                 <label htmlFor="lcTypeEnumId" className="required-label">LC Type</label>
                                 <select 
                                     id="lcTypeEnumId"
+                                    disabled={status === 'SUBMITTED'}
                                     value={formData.lcTypeEnumId}
                                     onChange={e => setFormData({...formData, lcTypeEnumId: e.target.value})}
                                 >
@@ -351,6 +477,7 @@ export const IssuanceStepper: React.FC = () => {
                                 <label htmlFor="confirmationEnumId">Confirmation Instruction</label>
                                 <select 
                                     id="confirmationEnumId"
+                                    disabled={status === 'SUBMITTED'}
                                     value={formData.confirmationEnumId}
                                     onChange={e => setFormData({...formData, confirmationEnumId: e.target.value})}
                                 >
@@ -363,6 +490,7 @@ export const IssuanceStepper: React.FC = () => {
                                 <label htmlFor="productCatalogId" className="required-label">LC Product</label>
                                 <select 
                                     id="productCatalogId"
+                                    disabled={status === 'SUBMITTED'}
                                     value={formData.productCatalogId}
                                     onChange={e => setFormData({...formData, productCatalogId: e.target.value})}
                                 >
@@ -389,14 +517,6 @@ export const IssuanceStepper: React.FC = () => {
                                     onChange={e => {
                                         const party = parties.find(p => p.partyId === e.target.value);
                                         setFormData({...formData, applicantPartyId: e.target.value, applicant: party?.partyName || ''});
-                                        // Fetch real facilities for this party
-                                        if (e.target.value) {
-                                            tradeApi.getCustomerFacilities(e.target.value).then(res => {
-                                                setFacilities(res.facilityList || []);
-                                            });
-                                        } else {
-                                            setFacilities([]);
-                                        }
                                     }}
                                 >
                                     <option value="">Select Applicant...</option>
@@ -471,7 +591,18 @@ export const IssuanceStepper: React.FC = () => {
                                 </div>
                                 <div className="field-group">
                                     <label htmlFor="negativeTolerance">Negative Tolerance (%)</label>
-                                    <input id="negativeTolerance" type="number" value={formData.negativeTolerance} onChange={e => setFormData({...formData, negativeTolerance: e.target.value})} />
+                                    <input id="negativeTolerance" type="number" disabled={formData.maxCreditAmountFlag === 'Y'} value={formData.negativeTolerance} onChange={e => setFormData({...formData, negativeTolerance: e.target.value})} />
+                                </div>
+                                <div className="field-group mt-6">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input 
+                                            id="maxCreditAmountFlag"
+                                            type="checkbox" 
+                                            checked={formData.maxCreditAmountFlag === 'Y'} 
+                                            onChange={e => setFormData({...formData, maxCreditAmountFlag: e.target.checked ? 'Y' : 'N'})} 
+                                        />
+                                        <span className="font-semibold text-sm">Maximum Credit Amount (Tag 39B)</span>
+                                    </label>
                                 </div>
                                 <div className="field-group">
                                     <label htmlFor="issueDate">Issue Date</label>
@@ -487,8 +618,12 @@ export const IssuanceStepper: React.FC = () => {
                                     <input id="expiryPlace" value={formData.expiryPlace} onChange={e => setFormData({...formData, expiryPlace: e.target.value})} placeholder="e.g., AT COUNTERS OF ISSUING BANK" />
                                 </div>
                                 <div className="field-group">
-                                    <label htmlFor="latestShipmentDate" className="required-label">Latest Shipment Date</label>
-                                    <input id="latestShipmentDate" type="date" value={formData.latestShipmentDate} onChange={e => setFormData({...formData, latestShipmentDate: e.target.value})} />
+                                    <label htmlFor="latestShipmentDate">Latest Shipment Date (Tag 44C)</label>
+                                    <input id="latestShipmentDate" type="date" disabled={!!formData.shipmentPeriodText} value={formData.latestShipmentDate} onChange={e => setFormData({...formData, latestShipmentDate: e.target.value})} />
+                                </div>
+                                <div className="field-group">
+                                    <label htmlFor="shipmentPeriodText">Shipment Period (Tag 44D)</label>
+                                    <input id="shipmentPeriodText" disabled={!!formData.latestShipmentDate} value={formData.shipmentPeriodText} onChange={e => setFormData({...formData, shipmentPeriodText: e.target.value})} placeholder="e.g. SHIPMENT WITHIN 30 DAYS" />
                                 </div>
                                 {formData.lcTypeEnumId === 'USANCE' && (
                                     <div className="field-group">
@@ -497,14 +632,41 @@ export const IssuanceStepper: React.FC = () => {
                                     </div>
                                 )}
                                 <div className="field-group">
+                                    <label htmlFor="availableByEnumId" className="required-label">Available By (Tag 41a)</label>
+                                    <select 
+                                        id="availableByEnumId"
+                                        value={formData.availableByEnumId}
+                                        onChange={e => setFormData({...formData, availableByEnumId: e.target.value})}
+                                    >
+                                        <option value="SIGHT">By Sight</option>
+                                        <option value="ACCEPTANCE">By Acceptance</option>
+                                        <option value="NEGOTIATION">By Negotiation</option>
+                                        <option value="DEF_PAYMENT">By Deferred Payment</option>
+                                        <option value="MIXED_PAYMENT">By Mixed Payment</option>
+                                    </select>
+                                </div>
+                                <div className="field-group">
                                     <label htmlFor="availableWithBic">Available With BIC (Tag 41A)</label>
                                     <input 
                                         id="availableWithBic"
                                         className={swiftErrors.availableWithBic ? 'is-invalid' : ''}
                                         value={formData.availableWithBic}
                                         onChange={e => setFormData({...formData, availableWithBic: e.target.value.toUpperCase()})}
+                                        placeholder="BIC of the bank"
                                     />
                                     {swiftErrors.availableWithBic && <p className="error-text text-xs mt-1">{swiftErrors.availableWithBic}</p>}
+                                </div>
+                                <div className="field-group">
+                                    <label htmlFor="availableWithName">Available With Name (Tag 41D)</label>
+                                    <textarea 
+                                        id="availableWithName"
+                                        className={swiftErrors.availableWithName ? 'is-invalid' : ''}
+                                        rows={2}
+                                        value={formData.availableWithName}
+                                        onChange={e => setFormData({...formData, availableWithName: e.target.value})}
+                                        placeholder="Name and address if BIC not available..."
+                                    />
+                                    {swiftErrors.availableWithName && <p className="error-text text-xs mt-1">{swiftErrors.availableWithName}</p>}
                                 </div>
                                 <div className="field-group">
                                     <label htmlFor="draweeBankBic">Drawee Bank BIC (Tag 42A)</label>
@@ -674,11 +836,12 @@ export const IssuanceStepper: React.FC = () => {
                         )}
                     </div>
                     <div className="right-actions">
-                        {stepIndex > 0 && <button data-testid="back-button" onClick={handleBack}>Back</button>}
+                        {stepIndex > 0 && <button data-testid="back-button" disabled={status === 'SUBMITTED'} onClick={handleBack}>Back</button>}
                         {stepIndex < 3 ? (
                             <button 
                                 data-testid="next-button" 
                                 className="primary-btn" 
+                                disabled={status === 'SUBMITTED'}
                                 onClick={handleNext}
                             >
                                 Next
@@ -687,9 +850,10 @@ export const IssuanceStepper: React.FC = () => {
                             <button 
                                 data-testid="submit-button" 
                                 className="primary-btn" 
+                                disabled={status === 'SUBMITTED'}
                                 onClick={handleSubmit}
                             >
-                                Submit for Approval
+                                {status === 'SUBMITTED' ? 'Submitted' : 'Submit for Approval'}
                             </button>
                         )}
                     </div>

@@ -3,7 +3,7 @@
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.0.xsd">
 
-    <service verb="get" noun="StandardClauses">
+    <service verb="get" noun="StandardClauses" authenticate="false">
         <in-parameters>
             <parameter name="clauseTypeEnumId"/>
         </in-parameters>

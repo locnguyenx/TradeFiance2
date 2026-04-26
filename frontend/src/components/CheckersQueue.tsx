@@ -1,9 +1,10 @@
 'use client';
-
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { CheckerAuthorization } from './CheckerAuthorization';
 import { QueueItem } from '../api/types';
 import { tradeApi } from '../api/tradeApi';
+import { useRouter } from 'next/navigation';
 
 // ABOUTME: Global Checker Queue implementing REQ-UI-CMN-02.
 // ABOUTME: Central inbox for second-pair-of-eyes authorization across all Trade modules.
@@ -17,9 +18,12 @@ export const CheckersQueue: React.FC<CheckersQueueProps> = ({ items: initialItem
     const [items, setItems] = useState<QueueItem[]>(initialItems || []);
     const [loading, setLoading] = useState(!initialItems);
     const [filter, setFilter] = useState<'ALL' | 'HIGH' | 'SLA'>('ALL');
-    const [selectedInstrumentId, setSelectedInstrumentId] = useState<string | null>(null);
+    const [selectedAuthId, setSelectedAuthId] = useState<string | null>(null);
+    const [mounted, setMounted] = useState(false);
+    const router = useRouter();
 
     useEffect(() => {
+        setMounted(true);
         if (!initialItems) {
             setLoading(true);
             tradeApi.getApprovals().then(res => {
@@ -80,12 +84,13 @@ export const CheckersQueue: React.FC<CheckersQueueProps> = ({ items: initialItem
                             <th>Amount</th>
                             <th>Maker</th>
                             <th>Time in Queue</th>
+                            <th>Details</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {sortedItems.map(item => (
-                            <tr key={item.instrumentId} className="clickable-row" onClick={() => setSelectedInstrumentId(item.instrumentId)}>
+                            <tr key={item.instrumentId} className="clickable-row" onClick={() => setSelectedAuthId(item.instrumentId)}>
                                 <td>
                                     <span className={`priority-badge ${(item.priorityEnumId || 'normal').toLowerCase()}`}>
                                         {item.priorityEnumId}
@@ -108,8 +113,17 @@ export const CheckersQueue: React.FC<CheckersQueueProps> = ({ items: initialItem
                                 </td>
                                 <td>
                                     <button 
+                                        className="btn-icon secondary"
+                                        title="View Details"
+                                        onClick={(e) => { e.stopPropagation(); router.push(`/import-lc/details?id=${item.instrumentId}`); }}
+                                    >
+                                        👁️
+                                    </button>
+                                </td>
+                                <td>
+                                    <button 
                                         className="authorize-btn"
-                                        onClick={(e) => { e.stopPropagation(); setSelectedInstrumentId(item.instrumentId); }}
+                                        onClick={(e) => { e.stopPropagation(); setSelectedAuthId(item.instrumentId); }}
                                     >
                                         Authorize
                                     </button>
@@ -120,13 +134,14 @@ export const CheckersQueue: React.FC<CheckersQueueProps> = ({ items: initialItem
                 </table>
             </section>
 
-            {selectedInstrumentId && (
-                <div className="auth-modal-overlay">
-                    <div className="auth-modal-content premium-card">
-                        <button className="close-modal" onClick={() => setSelectedInstrumentId(null)}>×</button>
-                        <CheckerAuthorization instrumentId={selectedInstrumentId} />
+            {mounted && selectedAuthId && createPortal(
+                <div className="auth-modal-overlay" onClick={() => setSelectedAuthId(null)}>
+                    <div className="auth-modal-content premium-card" onClick={e => e.stopPropagation()}>
+                        <button className="close-modal" onClick={() => setSelectedAuthId(null)}>✕</button>
+                        <CheckerAuthorization instrumentId={selectedAuthId} />
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             <style jsx>{`
@@ -143,7 +158,7 @@ export const CheckersQueue: React.FC<CheckersQueueProps> = ({ items: initialItem
                 .filter-chip:hover { border-color: #cbd5e1; background: #f8fafc; }
                 .filter-chip.active { background: #1e293b; color: white; border-color: #1e293b; }
 
-                .queue-table-wrapper { overflow: hidden; background: white; }
+                .queue-table-wrapper { overflow-x: auto; background: white; border-radius: 12px; }
                 .queue-table { width: 100%; border-collapse: collapse; }
                 .queue-table th { text-align: left; background: #f8fafc; padding: 1rem 1.5rem; font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; }
                 .queue-table td { padding: 1.25rem 1.5rem; border-bottom: 1px solid #f1f5f9; font-size: 0.875rem; color: #1e293b; }
@@ -166,11 +181,15 @@ export const CheckersQueue: React.FC<CheckersQueueProps> = ({ items: initialItem
 
                 .sla-timer { font-weight: 700; color: #475569; }
 
-                .authorize-btn { background: #2563eb; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+                .authorize-btn { background: #2563eb; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.2s; white-space: nowrap; }
                 .authorize-btn:hover { background: #1d4ed8; }
 
-                .auth-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 2rem; }
-                .auth-modal-content { position: relative; width: 100%; max-width: 1200px; max-height: 90vh; overflow: hidden; background: white; }
+                .btn-icon { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.5rem; cursor: pointer; font-size: 1rem; transition: all 0.2s; }
+                .btn-icon:hover { background: #e2e8f0; border-color: #cbd5e1; }
+                .btn-icon.secondary { color: #64748b; }
+
+                .auth-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 2rem; width: 100vw; height: 100vh; }
+                .auth-modal-content { position: relative; width: 100%; max-width: 1200px; max-height: 90vh; overflow: hidden; background: white; display: flex; flex-direction: column; }
                 .close-modal { position: absolute; top: 1rem; right: 1rem; z-index: 1001; background: none; border: none; font-size: 2rem; color: #94a3b8; cursor: pointer; line-height: 1; }
                 .close-modal:hover { color: #1e293b; }
 

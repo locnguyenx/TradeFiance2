@@ -12,7 +12,9 @@ export default function IssuancePage() {
           ← Back to Dashboard
         </button>
       </Link>
-      <IssuanceStepper />
+      <React.Suspense fallback={<div>Loading Step Context...</div>}>
+        <IssuanceStepper />
+      </React.Suspense>
     </div>
   );
 }

@@ -45,6 +45,9 @@
     <resource name="authorize">
         <method type="post"><service name="trade.AuthorizationServices.authorize#Instrument"/></method>
     </resource>
+    <resource name="reject">
+        <method type="post"><service name="trade.AuthorizationServices.reject#Instrument"/></method>
+    </resource>
     <resource name="approvals">
         <method type="get"><service name="trade.AuthorizationServices.get#PendingApprovals"/></method>
     </resource>
@@ -86,5 +89,10 @@
         <resource name="customer">
             <method type="get"><service name="trade.LimitServices.get#CustomerFacilities"/></method>
         </resource>
+    </resource>
+    <resource name="instrument">
+        <id name="instrumentId">
+            <method type="get"><service name="trade.TradeCommonServices.get#Instrument"/></method>
+        </id>
     </resource>
 </resource>

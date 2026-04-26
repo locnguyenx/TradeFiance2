@@ -15,6 +15,8 @@ export const PresentationLodgement: React.FC<PresentationLodgementProps> = ({ in
         presentationDate: new Date().toISOString().split('T')[0],
         claimAmount: '',
         currency: 'USD',
+        chargesDeducted: '',
+        senderToReceiverPresentationInfo: '',
     });
 
     const [docs, setDocs] = useState([
@@ -101,6 +103,25 @@ export const PresentationLodgement: React.FC<PresentationLodgementProps> = ({ in
                                 placeholder="e.g. 150000"
                             />
                         </div>
+                    </div>
+                    <div className="field-group">
+                        <label htmlFor="chargesDeducted">Charges Deducted (Tag 73)</label>
+                        <input 
+                            id="chargesDeducted"
+                            value={formData.chargesDeducted}
+                            onChange={e => setFormData({...formData, chargesDeducted: e.target.value})}
+                            placeholder="e.g. ADVISING FEES USD 50"
+                        />
+                    </div>
+                    <div className="field-group">
+                        <label htmlFor="senderToReceiverPresentationInfo">Sender to Receiver Info (Tag 72Z)</label>
+                        <textarea 
+                            id="senderToReceiverPresentationInfo"
+                            rows={2}
+                            value={formData.senderToReceiverPresentationInfo}
+                            onChange={e => setFormData({...formData, senderToReceiverPresentationInfo: e.target.value})}
+                            placeholder="Special instructions or information..."
+                        />
                     </div>
                 </section>
 

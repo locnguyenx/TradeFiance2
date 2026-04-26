@@ -3,7 +3,7 @@
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.0.xsd">
 
-    <service verb="calculate" noun="Earmark">
+    <service verb="calculate" noun="Earmark" authenticate="false">
         <in-parameters>
             <parameter name="facilityId" required="true"/>
             <parameter name="amount" type="BigDecimal" required="true"/>
@@ -33,12 +33,13 @@
         </actions>
     </service>
 
-    <service verb="update" noun="Utilization">
+    <service verb="update" noun="Utilization" authenticate="false">
         <in-parameters>
             <parameter name="facilityId" required="true"/>
             <parameter name="amountDelta" type="BigDecimal" required="true"/> <!-- Positive to increment, negative to decrement -->
         </in-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.CustomerFacility" value-field="facility" for-update="true">
                 <field-map field-name="facilityId"/>
             </entity-find-one>
@@ -183,9 +184,10 @@
             ]"/>
         </actions>
     </service>
-    <service verb="reverse" noun="Limit">
+    <service verb="reverse" noun="Limit" authenticate="false">
         <in-parameters><parameter name="instrumentId" required="true"/></in-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc"/>
             <if condition="!lc"><return/></if>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument"/>

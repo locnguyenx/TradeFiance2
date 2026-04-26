@@ -9,6 +9,7 @@ import { tradeApi } from '../api/tradeApi';
 jest.mock('../api/tradeApi', () => ({
     tradeApi: {
         createLc: jest.fn().mockResolvedValue({ instrumentId: '900001', transactionRef: 'TF-IMP-26-0001' }),
+        updateLc: jest.fn().mockResolvedValue({ instrumentId: '900001', transactionRef: 'TF-IMP-26-0001' }),
         validateLcSwiftFields: jest.fn().mockResolvedValue({ errors: [] }),
         getStandardClauses: jest.fn().mockResolvedValue([
             { clauseId: '1', clauseName: 'General Merchandise', clauseText: 'General merchandise as per Proforma Invoice...' }
@@ -57,7 +58,7 @@ describe('IssuanceStepper v3.0 (BDD-IMP-FLOW-01, BDD-CMN-VAL-05)', () => {
     };
 
     const completeStep1 = async () => {
-        fireEvent.change(screen.getByLabelText(/Amount/i), { target: { value: '100000' } });
+        fireEvent.change(screen.getByLabelText('Amount'), { target: { value: '100000' } });
         fireEvent.change(screen.getByLabelText(/Currency/i), { target: { value: 'USD' } });
         fireEvent.change(screen.getByLabelText(/Expiry Place/i), { target: { value: 'AT COUNTERS' } });
         fireEvent.change(screen.getByLabelText(/Latest Shipment Date/i), { target: { value: '2026-12-31' } });
@@ -165,7 +166,7 @@ describe('IssuanceStepper v3.0 (BDD-IMP-FLOW-01, BDD-CMN-VAL-05)', () => {
         expect(await screen.findByText(/Draft Saved Successfully/i)).toBeInTheDocument();
         
         fireEvent.click(screen.getByTestId('submit-button'));
-        expect(await screen.findByText(/Successfully Submitted for Approval/i)).toBeInTheDocument();
+        expect(await screen.findByText(/Submission Successful/i)).toBeInTheDocument();
     });
 
     it('renders all required BIC fields in Step 1 and 2', async () => {

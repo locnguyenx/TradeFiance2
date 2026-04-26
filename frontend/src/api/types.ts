@@ -56,9 +56,23 @@ export interface ImportLetterOfCredit {
   confirmationEnumId?: string;
   lcTypeEnumId?: string;
   productCatalogId?: string;
+  issuingBankBic?: string;
+  advisingBankBic?: string;
+  advisingThroughBankBic?: string;
+  availableWithBic?: string;
+  draweeBankBic?: string;
+  marginType?: string;
+  marginPercentage?: string;
+  marginAmount?: string;
+  marginDebitAccount?: string;
+  availableByEnumId?: string;
+  availableWithName?: string;
+  shipmentPeriodText?: string;
   // UI Friendly fields
   applicantName?: string;
+  applicantPartyName?: string;
   beneficiaryName?: string;
+  beneficiaryPartyName?: string;
   currency?: string;
   slaDaysRemaining?: number;
   // v3.0 effective values

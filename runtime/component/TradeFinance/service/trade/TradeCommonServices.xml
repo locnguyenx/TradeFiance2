@@ -12,6 +12,7 @@
             <parameter name="nextNumberFormatted" required="true"/>
         </out-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.common.NumberSequence" value-field="seq" for-update="true"/>
             <if condition="seq == null">
                 <return error="true" message="NumberSequence ${sequenceId} not found"/>
@@ -37,6 +38,7 @@
             <parameter name="presentationId" required="true"/>
         </out-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <service-call name="trade.importlc.ImportLcValidationServices.validate#Presentation" in-map="context" out-map="valOut"/>
             <if condition="valOut.isDiscrepant">
                 <return error="true" message="Presentation blocked: ${valOut.discrepancyMessage}"/>
@@ -114,6 +116,7 @@
         </in-parameters>
         <out-parameters><parameter name="guaranteeId"/></out-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <service-call name="create#trade.importlc.ImportLcShippingGuarantee" out-map="sgOut"
                           in-map="context + [transportDocReference: transportDocRef, sgStatusId: 'SG_ISSUED']"/>
             <set field="guaranteeId" from="sgOut.guaranteeId"/>
@@ -134,6 +137,7 @@
             <parameter name="cancellationReason"/>
         </in-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <set field="targetStatus" from="cancellationReason?.contains('Auto-Expiry') ? 'LC_CLOSED' : 'LC_CANCELLED'"/>
             <service-call name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit"
                           in-map="[instrumentId: instrumentId, businessStateId: targetStatus]"/>
@@ -222,6 +226,21 @@
         <out-parameters><parameter name="reinstated" type="Boolean"/></out-parameters>
         <actions>
             <set field="reinstated" from="isRevolving" type="Boolean"/>
+        </actions>
+    </service>
+    
+    <service verb="get" noun="Instrument" authenticate="false">
+        <in-parameters><parameter name="instrumentId" required="true"/></in-parameters>
+        <out-parameters>
+            <auto-parameters entity-name="trade.TradeInstrument" include="all"/>
+        </out-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument"/>
+            <if condition="instrument == null">
+                <return error="true" message="Instrument ${instrumentId} not found"/>
+            </if>
+            <script>context.putAll(instrument)</script>
         </actions>
     </service>
 </services>

@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { tradeApi } from '../api/tradeApi';
-import { TradeInstrument } from '../api/types';
+import { TradeInstrument, ImportLetterOfCredit } from '../api/types';
+import { InstrumentDetails } from './InstrumentDetails';
 
 // ABOUTME: High-fidelity Checker Authorization Workspace (REQ-UI-IMP-05).
 // ABOUTME: Features "Exposure Widget" progress bars and "Compliance Deck" for risk analysis.
@@ -12,7 +13,7 @@ interface Props {
 }
 
 export const CheckerAuthorization: React.FC<Props> = ({ instrumentId }) => {
-    const [instrument, setInstrument] = useState<TradeInstrument | null>(null);
+    const [instrument, setInstrument] = useState<(TradeInstrument & ImportLetterOfCredit) | null>(null);
     const [authResult, setAuthResult] = useState<boolean | null>(null);
     const [showRejectionModal, setShowRejectionModal] = useState(false);
     const [rejectionReason, setRejectionReason] = useState('');
@@ -21,7 +22,7 @@ export const CheckerAuthorization: React.FC<Props> = ({ instrumentId }) => {
     useEffect(() => {
         setLoading(true);
         tradeApi.getInstrument(instrumentId).then(data => {
-            setInstrument(data);
+            setInstrument(data as any);
             setLoading(false);
         });
     }, [instrumentId]);
@@ -33,7 +34,7 @@ export const CheckerAuthorization: React.FC<Props> = ({ instrumentId }) => {
             setAuthResult(result.isAuthorized);
             // Re-fetch instrument to see updated status (e.g. from PARTIAL to ISSUED)
             const updated = await tradeApi.getInstrument(instrumentId);
-            setInstrument(updated);
+            setInstrument(updated as any);
             if (result.isAuthorized) {
                 alert(updated.lifecycleStatusId === 'INST_ISSUED' 
                     ? 'Final Authorization Complete. Instrument Issued.' 
@@ -137,37 +138,27 @@ export const CheckerAuthorization: React.FC<Props> = ({ instrumentId }) => {
 
                 <main className="details-pane">
                     <header className="sub-header">
-                        <h4>Instrument Data (Highlighting Deltas)</h4>
+                        <h4>Instrument Details & Delta Analysis</h4>
                     </header>
-                    <div className="data-grid">
-                        <div className="data-field">
-                            <label>Applicant</label>
-                            <p>Global Corp, New York</p>
-                        </div>
-                        <div className="data-field delta">
-                            <label>Amount</label>
-                            <div className="delta-box">
-                                <span className="old-val">USD {(instrument.snapshotAmount || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
-                                <span className="arrow">→</span>
-                                <span className="new-val">USD {(instrument.effectiveAmount || instrument.baseEquivalentAmount || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                    <div className="details-scroll-content">
+                        {instrument.snapshotAmount && (
+                            <div className="delta-notice mb-4">
+                                <strong>Amendment Snapshot:</strong> Showing changes from previous version.
+                                <div className="snapshot-grid mt-2">
+                                    <div className="snap-field">
+                                        <label>Previous Amount</label>
+                                        <p>{instrument.currencyUomId} {instrument.snapshotAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
+                                    </div>
+                                    {instrument.snapshotExpiryDate && (
+                                        <div className="snap-field">
+                                            <label>Previous Expiry</label>
+                                            <p>{instrument.snapshotExpiryDate}</p>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                        <div className="data-field">
-                            <label>Beneficiary</label>
-                            <p>Export Ltd, Singapore</p>
-                        </div>
-                        <div className="data-field delta">
-                            <label>Expiry Date</label>
-                            <div className="delta-box">
-                                <span className="old-val">{instrument.snapshotExpiryDate || 'N/A'}</span>
-                                <span className="arrow">→</span>
-                                <span className="new-val">{instrument.effectiveExpiryDate || 'N/A'}</span>
-                            </div>
-                        </div>
-                        <div className="data-field">
-                            <label>Port of Loading</label>
-                            <p>Port of New York, USA</p>
-                        </div>
+                        )}
+                        <InstrumentDetails instrument={instrument} />
                     </div>
                 </main>
             </div>
@@ -224,14 +215,13 @@ export const CheckerAuthorization: React.FC<Props> = ({ instrumentId }) => {
                 .compliance-detail { font-size: 0.65rem; color: #94a3b8; line-height: 1.4; border-top: 1px solid #f1f5f9; padding-top: 0.75rem; }
 
                 /* Data Grid & Delta */
-                .data-grid { padding: 2rem; display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; overflow-y: auto; }
-                .data-field label { display: block; font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.5rem; }
-                .data-field p { font-size: 0.9375rem; color: #1e293b; font-weight: 500; }
-                .delta { grid-column: span 2; background: #fffbeb; padding: 1rem; border-radius: 8px; border-left: 4px solid #f59e0b; }
-                .delta-box { display: flex; align-items: center; gap: 1rem; }
-                .old-val { color: #94a3b8; text-decoration: line-through; }
-                .arrow { color: #f59e0b; font-weight: 800; }
                 .new-val { color: #1e293b; font-weight: 800; }
+
+                .details-scroll-content { flex: 1; overflow-y: auto; padding: 1.5rem; }
+                .delta-notice { background: #fffbeb; padding: 0.75rem 1rem; border-radius: 6px; border-left: 4px solid #f59e0b; font-size: 0.8125rem; color: #92400e; }
+                .snapshot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid rgba(245, 158, 11, 0.2); }
+                .snap-field label { display: block; font-size: 0.65rem; font-weight: 700; color: #b45309; text-transform: uppercase; margin-bottom: 0.125rem; }
+                .snap-field p { font-size: 0.8125rem; font-weight: 700; color: #92400e; }
 
                 /* Buttons */
                 .btn { padding: 0.6rem 1.25rem; border-radius: 6px; font-weight: 700; font-size: 0.8125rem; cursor: pointer; border: none; }

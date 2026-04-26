@@ -148,4 +148,17 @@ describe('ImportLcDashboard (REQ-UI-IMP-02)', () => {
             expect(screen.getByText('40,000')).toBeInTheDocument();
         });
     });
+
+    it('filters data table by status when selected (REQ-UI-IMP-02)', async () => {
+        const { fireEvent } = await import('@testing-library/react');
+        render(<ImportLcDashboard />);
+        await waitFor(() => screen.getByLabelText(/Status Filter/i));
+        
+        const filter = screen.getByLabelText(/Status Filter/i);
+        fireEvent.change(filter, { target: { value: 'LC_ISSUED' } });
+
+        await waitFor(() => {
+            expect(tradeApi.getImportLcs).toHaveBeenCalledWith({ businessStateId: 'LC_ISSUED' });
+        });
+    });
 });
