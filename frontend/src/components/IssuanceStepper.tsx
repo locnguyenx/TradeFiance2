@@ -24,6 +24,8 @@ const sectionsPerStep = [
 export const IssuanceStepper: React.FC = () => {
     const [stepIndex, setStepIndex] = useState(0);
     const [products, setProducts] = useState<any[]>([]);
+    const [parties, setParties] = useState<any[]>([]);
+    const [facilities, setFacilities] = useState<any[]>([]);
     const [formData, setFormData] = useState({
         transactionRef: '',
         productCatalogId: '',
@@ -71,6 +73,7 @@ export const IssuanceStepper: React.FC = () => {
 
     useEffect(() => {
         tradeApi.getProductCatalog().then(res => setProducts(res.productList || []));
+        tradeApi.getParties().then(res => setParties(res.partyList || []));
     }, []);
     const [activeClauseType, setActiveClauseType] = useState<'GOODS' | 'DOCUMENTS' | 'CONDITIONS' | null>(null);
     
@@ -219,15 +222,19 @@ export const IssuanceStepper: React.FC = () => {
 
         setLoading(true);
         try {
-            const result = await tradeApi.createLc({ 
-                ...formData, 
+            const payload = {
+                ...formData,
                 lcAmount: parseFloat(formData.amount) || 0,
-                lcCurrencyUomId: formData.currency,
-                businessStateId: 'LC_DRAFT',
-                applicantPartyId: formData.applicantPartyId,
-                customerFacilityId: formData.customerFacilityId,
-                transactionRef: formData.transactionRef || undefined 
-            });
+                lcCurrencyUomId: formData.currency || 'USD',
+                amount: parseFloat(formData.amount) || 0,
+                currencyUomId: formData.currency || 'USD',
+                issueDate: formData.issueDate || new Date().toISOString().split('T')[0],
+                expiryDate: formData.expiryDate || undefined,
+                latestShipmentDate: formData.latestShipmentDate || undefined,
+                businessStateId: 'LC_DRAFT'
+            };
+            
+            const result = await tradeApi.createLc(payload);
             
             if (result.instrumentId) {
                 setFormData(prev => ({ 
@@ -360,7 +367,7 @@ export const IssuanceStepper: React.FC = () => {
                                     onChange={e => setFormData({...formData, productCatalogId: e.target.value})}
                                 >
                                     <option value="">Select Product...</option>
-                                    {products.map(p => <option key={p.productCatalogId} value={p.productCatalogId}>{p.productName}</option>)}
+                                    {products.map(p => <option key={p.productId} value={p.productId}>{p.productName}</option>)}
                                 </select>
                             </div>
                             <div className="field-group">
@@ -376,15 +383,25 @@ export const IssuanceStepper: React.FC = () => {
                             </div>
                             <div className="field-group">
                                 <label htmlFor="applicant" className="required-label">Applicant</label>
-                                <input 
+                                <select 
                                     id="applicant"
-                                    value={formData.applicant}
+                                    value={formData.applicantPartyId}
                                     onChange={e => {
-                                        // Mocking Applicant selection for now, typically would be a searchable dropdown
-                                        setFormData({...formData, applicant: e.target.value, applicantPartyId: 'PARTY-' + e.target.value.toUpperCase()})
+                                        const party = parties.find(p => p.partyId === e.target.value);
+                                        setFormData({...formData, applicantPartyId: e.target.value, applicant: party?.partyName || ''});
+                                        // Fetch real facilities for this party
+                                        if (e.target.value) {
+                                            tradeApi.getCustomerFacilities(e.target.value).then(res => {
+                                                setFacilities(res.facilityList || []);
+                                            });
+                                        } else {
+                                            setFacilities([]);
+                                        }
                                     }}
-                                    placeholder="Search Applicant..."
-                                />
+                                >
+                                    <option value="">Select Applicant...</option>
+                                    {parties.map(p => <option key={p.partyId} value={p.partyId}>{p.partyName}</option>)}
+                                </select>
                                 <div className="helper-box">
                                     <p>Available Facility Limit: $1,000,000</p>
                                     <p>KYC Status: <span className="text-success">VERIFIED</span></p>
@@ -613,8 +630,11 @@ export const IssuanceStepper: React.FC = () => {
                                         onChange={e => setFormData({...formData, customerFacilityId: e.target.value})}
                                     >
                                         <option value="">Select Facility...</option>
-                                        <option value="FAC-001">Working Capital Facility - $1M</option>
-                                        <option value="FAC-002">Trade Line - $500K</option>
+                                        {facilities.map(f => (
+                                            <option key={f.facilityId} value={f.facilityId}>
+                                                {f.description || f.facilityId} - ${f.limitAmount?.toLocaleString()}
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
                                 <div className="helper-box">

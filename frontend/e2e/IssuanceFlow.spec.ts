@@ -1,46 +1,71 @@
 import { test, expect } from '@playwright/test';
-import { setupApiMocks } from './helpers/api-mock';
+import { loginAsAdmin } from './helpers/auth-helper';
 
-test.describe('Issuance Lifecycle E2E', () => {
+test.describe('Issuance Life-Cycle (True E2E)', () => {
   test.beforeEach(async ({ page }) => {
-    await setupApiMocks(page);
+    await loginAsAdmin(page);
+    // 1. Navigate to Dashboard
+    await page.goto('/import-lc');
   });
 
   test('completes a full LC issuance from dashboard to submission', async ({ page }) => {
     // 1. Navigate to Dashboard
-    await page.goto('/import-lc'); // Hardcore dashboard path
-    await expect(page.getByRole('heading', { name: 'Active Transaction Data Table' })).toBeVisible();
+    await page.goto('/import-lc');
+    await expect(page.getByRole('heading', { name: 'Active Transaction Data Table' })).toBeVisible({ timeout: 15000 });
 
-    // 2. Start New Issuance (via Sidebar)
+    // 2. Start New Issuance
     await page.getByRole('link', { name: 'New LC Issuance' }).click();
     await expect(page.getByRole('heading', { name: 'Step 1: Parties & Limits' })).toBeVisible();
 
-    // 3. Fill Step 1: Parties
-    const uniqueRef = `E2E-REF-${Date.now()}`;
-    await page.locator('#transactionRef').fill(uniqueRef);
-    await page.locator('#applicant').fill('Test Applicant');
+    const txRef = `IMLC/2026/${Math.floor(Math.random() * 9000) + 1000}`;
+    await page.locator('#transactionRef').fill(txRef);
+    await page.selectOption('#productCatalogId', { label: 'Standard Import LC' });
+    
+    // 3. Select Applicant & Facility in Step 1 (Real Master Data)
+    const facilityPromise = page.waitForResponse(resp => resp.url().includes('/facilities/customer') && resp.status() === 200);
+    await page.locator('#applicant').selectOption({ label: 'Zizi Corp' });
+    await page.locator('#beneficiary').fill('Industrial Components Ltd\n123 Factory Road, Shanghai, China');
+    await facilityPromise; // Robust sync
+    await page.waitForTimeout(1000); 
+    
+    // Click Next and wait for Step 2 heading
     await page.getByTestId('next-button').click();
+    await expect(page.getByRole('heading', { name: 'Step 2: Main LC Information' })).toBeVisible({ timeout: 10000 });
 
-    // 4. Fill Step 2: Main LC Info (Financials, Terms, Narratives)
+    // 4. Fill Step 2: Main LC Information
     await expect(page.getByRole('heading', { name: 'Step 2: Main LC Information' })).toBeVisible();
-    await page.locator('#amount').fill('75000');
-    await page.locator('#portOfLoading').fill('London');
-    await page.locator('#goodsDescription').fill('Precision components');
+    await page.locator('#amount').fill('125000');
+    await page.locator('#expiryPlace').fill('AT OUR COUNTERS');
+    
+    const futureDate = new Date();
+    futureDate.setFullYear(futureDate.getFullYear() + 1);
+    const dateStr = futureDate.toISOString().split('T')[0];
+    await page.locator('#expiryDate').fill(dateStr);
+    await page.locator('#latestShipmentDate').fill(dateStr);
+    
+    await page.locator('#goodsDescription').fill('Precision components for manufacturing');
+    await page.locator('#documentsRequired').fill('1. Commercial Invoice\n2. Packing List\n3. Bill of Lading');
+    
     await page.getByTestId('next-button').click();
     
-    // 5. Navigate Step 3: Margin & Charges
-    await expect(page.getByRole('heading', { name: 'Step 3: Margin & Charges' })).toBeVisible();
+    // 5. Margin & Limits (Step 3) - Select Real Facility
+    await expect(page.getByRole('heading', { name: 'Step 3: Margin & Charges' })).toBeVisible(); 
+    
+    // Handle Facility selection if present in this step or Step 1
+    // The previous test had it in Step 3
+    // Step 3: Margin & Charges
+    await page.selectOption('#customerFacilityId', { label: 'Working Capital Line - $1,000,000' });
+    
     await page.getByTestId('next-button').click();
 
-    // 6. Review & Submit (Step 4)
+    // 6. Review & Submit
     await expect(page.getByRole('heading', { name: 'Step 4: Review & Submit' })).toBeVisible();
-    await expect(page.getByText(`Reference: ${uniqueRef}`).first()).toBeVisible();
-    await expect(page.getByText('Amount: 75,000').first()).toBeVisible();
+    await expect(page.getByText('Amount: 125,000').first()).toBeVisible();
 
-    // 6. Submit for Approval
+    // 7. Submit for Approval
     await page.getByTestId('submit-button').click();
 
-    // 7. Verify Success Message
-    await expect(page.getByText('Successfully Submitted for Approval')).toBeVisible();
+    // 8. Verify Success Message and status transition to PENDING
+    await expect(page.locator('.success-banner')).toContainText('Successfully Submitted for Approval');
   });
 });

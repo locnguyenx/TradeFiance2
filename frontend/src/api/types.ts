@@ -162,3 +162,14 @@ export interface QueueItem {
   priorityEnumId: string;
   lifecycleStatusId: string;
 }
+
+export interface ExposureData {
+  totalLimit: number;
+  totalExposure: number;
+  totalFirm: number;
+  totalContingent: number;
+  totalReserved: number;
+  utilizationPercent: number;
+  facilityBreakdown: any[];
+  facilityList?: any[];
+}

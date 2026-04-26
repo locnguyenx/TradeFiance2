@@ -67,9 +67,9 @@ export const ProductCatalogManager: React.FC = () => {
                     <h3>Products</h3>
                 </header>
                 <div className="product-items">
-                    {(products || []).map(p => (
+                    {(products || []).map((p, index) => (
                         <div 
-                            key={p.productId} 
+                            key={p.productId || `product-${index}`} 
                             className={`product-item ${selectedProduct?.productId === p.productId ? 'active' : ''}`}
                             onClick={() => handleSelectProduct(p)}
                         >

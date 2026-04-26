@@ -68,11 +68,11 @@ export const TariffManager: React.FC = () => {
                 <header className="pane-header">
                     <h3>Tariff Matrix</h3>
                 </header>
-                <div className="fee-items">
-                    {(fees || []).map(f => (
+                <div className="tariff-items">
+                    {(fees || []).map((f, index) => (
                         <div 
-                            key={f.feeConfigurationId} 
-                            className={`fee-item ${selectedFee?.feeConfigurationId === f.feeConfigurationId ? 'active' : ''}`}
+                            key={f.feeConfigurationId || `tariff-${index}`} 
+                            className={`tariff-item ${selectedFee?.feeConfigurationId === f.feeConfigurationId ? 'active' : ''}`}
                             onClick={() => handleSelectFee(f)}
                         >
                             <span className="fee-type">{f.feeEventEnumId}</span>

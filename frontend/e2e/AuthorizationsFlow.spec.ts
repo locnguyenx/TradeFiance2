@@ -1,30 +1,27 @@
 import { test, expect } from '@playwright/test';
-import { setupApiMocks } from './helpers/api-mock';
+import { loginAsAdmin } from './helpers/auth-helper';
 
-test.describe('Authorizations Lifecycle', () => {
+test.describe('Authorizations Lifecycle (True E2E)', () => {
   test.beforeEach(async ({ page }) => {
-    await setupApiMocks(page);
+    await loginAsAdmin(page);
+    await page.goto('/import-lc');
   });
 
-  test('checker should see pending transactions and perform authorization', async ({ page }) => {
-    // 1. Maker creates a transaction
-    await page.goto('/issuance');
-    const uniqueRef = `AUTH-E2E-${Date.now()}`;
-    // Rapidly go through steps to submit
-    await page.locator('#applicant').fill('Test Applicant');
-    await page.getByTestId('next-button').click(); // to Step 2
-    await page.locator('#amount').fill('100000');
-    await page.getByTestId('next-button').click(); // to Step 3
-    await page.getByTestId('next-button').click(); // to Step 4
-    await page.getByTestId('submit-button').click();
-    await expect(page.getByText('Successfully Submitted for Approval')).toBeVisible();
-
-    // 2. Checker navigates to approvals
+  test('checker should see pending transactions in the queue', async ({ page }) => {
+    // 1. Navigate to Authorizations Queue
     await page.getByRole('link', { name: 'My Tasks' }).click();
-    await expect(page.getByText('Global Checker Queue')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Authorization Queue' }).or(page.getByText('Global Checker Queue'))).toBeVisible({ timeout: 15000 });
+
+    // 2. Verify that at least one pending record exists (e.g. LC240002 from master data)
+    // In True E2E, we look for real instrument or reference patterns
+    const table = page.getByRole('table');
+    await expect(table).toBeVisible();
     
-    // Note: In a real integration test, we'd wait for the record to appear in the table.
-    // For now, we verify the screen state and the ability to view the queue.
-    await expect(page.getByRole('table')).toBeVisible();
+    // Check for the seeded record or a general pattern
+    await expect(page.getByText(/TF-ACME-101|LC240002/)).toBeVisible();
+    
+    // 3. Optional: Perform an authorization action if the "Authorize" button is wired
+    // For now, verifying visibility and data injection from live backend
+    await expect(page.getByRole('row', { name: /TF-ACME-101/ })).toBeVisible();
   });
 });

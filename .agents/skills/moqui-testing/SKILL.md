@@ -58,6 +58,45 @@ JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-21.jdk/Contents/Home ./gradlew 
 > [!CAUTION]
 > Do NOT combine `reloadSave` with `load` or `loadSave` in the same command. `reloadSave` restores from the saved snapshot, which would undo the fresh load.
 
+## E2E INTEGRITY (MANDATORY)
+
+> [!CAUTION]
+> **NEVER USE MOCKS IN END-TO-END (E2E) TESTS.**
+> Our testing policy (`testing-debugging.md:13`) strictly forbids network interception (e.g. `page.route` or `api-mock.ts`) in the E2E suite.
+> 1. Tests must run against a **LIVE** Moqui backend (`localhost:8080`).
+2. Data must be seeded using `./gradlew reloadSave` before execution.
+3. Failures in integration must be fixed in the service logic, NOT bypassed by modifying mocks.
+
+## FRONTEND E2E TESTING (Playwright)
+
+### Execution Commands
+```bash
+# Full test suite
+cd frontend && npx playwright test
+
+# Single spec
+npx playwright test e2e/IssuanceFlow.spec.ts
+
+# With UI
+npx playwright test --ui
+```
+
+### Real Data Seeding
+The frontend must interact with live data seeded in the Moqui backend.
+- **Rule**: ALWAYS execute `./gradlew reloadSave` before running Playwright tests to ensure the database contains the required Parties, Products, and Facilities.
+- **Rule**: Use the `TradeFinanceMasterData.xml` as the primary source of truth for E2E entity IDs (e.g., `CORP_BETA`, `PROD_IMP_LC`).
+
+### Dynamic Assertions
+Since real IDs and auto-generated references (e.g., `TF-IMP-YY-NNNN`) are non-deterministic:
+- **Solution**: Use regex matchers for reference numbers: `expect(page.getByText(/TF-IMP-\d{2}-\d{4}/)).toBeVisible()`.
+- **Solution**: Assert on semantic content (headings, status labels) rather than exact UUIDs or mock IDs.
+
+### Disambiguating Locators
+In Master-Detail views (Products, Tiers, Parties), strict mode violations occur when the same text appears in both panes.
+- **Solution**: Use `.first()` for high-level link clicks (sidebar).
+- **Solution**: Use `page.getByRole('heading', { name: '...' })` for detail pane verification.
+- **Solution**: Target specific layout regions (e.g. `page.locator('aside').getByRole(...)`).
+
 ## Execution Steps
 
 > [!IMPORTANT]

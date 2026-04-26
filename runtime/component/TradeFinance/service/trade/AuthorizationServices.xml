@@ -75,4 +75,39 @@
             </if>
         </actions>
     </service>
+    <service verb="get" noun="PendingApprovals">
+        <out-parameters>
+            <parameter name="approvalsList" type="List">
+                <parameter name="item" type="Map"/>
+            </parameter>
+        </out-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find entity-name="trade.TradeInstrument" list="pendingList">
+                <econdition field-name="transactionStatusId" value="TX_PENDING"/>
+                <order-by field-name="-makerTimestamp"/>
+            </entity-find>
+            <set field="approvalsList" from="[]"/>
+            <iterate list="pendingList" entry="instrument">
+                <set field="item" from="[
+                    instrumentId: instrument.instrumentId,
+                    transactionRef: instrument.transactionRef,
+                    module: instrument.instrumentTypeEnumId == 'IMPORT_LC' ? 'IMPORT LC' : instrument.instrumentTypeEnumId,
+                    action: 'Authorization',
+                    makerUserId: instrument.makerUserId,
+                    baseEquivalentAmount: instrument.baseEquivalentAmount,
+                    priorityEnumId: instrument.priorityEnumId ?: 'NORMAL',
+                    lifecycleStatusId: instrument.lifecycleStatusId,
+                    timeInQueue: '0h'
+                ]"/>
+                <if condition="instrument.makerTimestamp">
+                    <set field="diffMs" from="ec.user.nowTimestamp.time - instrument.makerTimestamp.time"/>
+                    <set field="hours" from="(diffMs / (1000 * 60 * 60)).toInteger()"/>
+                    <set field="item.timeInQueue" from="hours + 'h'"/>
+                </if>
+                <script>approvalsList.add(item)</script>
+            </iterate>
+            <script>ec.artifactExecution.enableAuthz()</script>
+        </actions>
+    </service>
 </services>

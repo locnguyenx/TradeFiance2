@@ -14,9 +14,12 @@
     <resource name="import-lc">
         <method type="get"><service name="trade.importlc.ImportLcServices.get#ImportLetterOfCreditList"/></method>
         <method type="post"><service name="trade.importlc.ImportLcServices.create#ImportLetterOfCredit"/></method>
-        <id name="instrumentId">
-            <method type="get" require-authentication="false"><service name="trade.importlc.ImportLcServices.get#ImportLetterOfCreditList"/></method>
-            <method type="post" require-authentication="false"><service name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit"/></method>
+        <resource name="validate">
+            <method type="post"><service name="trade.importlc.ImportLcValidationServices.validate#SwiftFields"/></method>
+        </resource>
+        <id name="instrumentId" require-authentication="false">
+            <method type="get"><service name="trade.importlc.ImportLcServices.get#ImportLetterOfCreditList"/></method>
+            <method type="post"><service name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit"/></method>
             <resource name="amendments">
                 <method type="post"><service name="trade.importlc.ImportLcServices.create#Amendment"/></method>
             </resource>
@@ -37,13 +40,13 @@
             <resource name="cancel">
                 <method type="post"><service name="trade.TradeCommonServices.update#Cancellation"/></method>
             </resource>
-            <resource name="validate">
-                <method type="get"><service name="trade.ImportLcValidationServices.validate#SwiftFields"/></method>
-            </resource>
         </id>
     </resource>
     <resource name="authorize">
         <method type="post"><service name="trade.AuthorizationServices.authorize#Instrument"/></method>
+    </resource>
+    <resource name="approvals">
+        <method type="get"><service name="trade.AuthorizationServices.get#PendingApprovals"/></method>
     </resource>
     <resource name="standard-clauses">
         <method type="get"><service name="trade.TradeClauseServices.get#StandardClauses"/></method>
@@ -80,5 +83,8 @@
     <resource name="facilities">
         <parameter name="facilityId"/>
         <method type="get"><service name="trade.LimitServices.get#FacilityDetail"/></method>
+        <resource name="customer">
+            <method type="get"><service name="trade.LimitServices.get#CustomerFacilities"/></method>
+        </resource>
     </resource>
 </resource>

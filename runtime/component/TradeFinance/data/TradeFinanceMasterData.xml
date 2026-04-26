@@ -15,11 +15,13 @@
     
     <trade.TradeParty partyId="ISSUING_BANK_001" partyName="Trade Finance Bank" kycStatus="Active" sanctionsStatus="SANCTION_CLEAR" countryOfRisk="VNM"/>
     <trade.TradeParty partyId="ADVISING_BANK_001" partyName="Overseas Banking Corp" kycStatus="Active" sanctionsStatus="SANCTION_CLEAR" countryOfRisk="SGP"/>
+    <trade.TradeParty partyId="ORG_ZIZI_CORP" partyName="Zizi Corp" kycStatus="Active" sanctionsStatus="SANCTION_CLEAR" countryOfRisk="VNM"/>
 
     <!-- Master Data: Customer Facilities -->
-    <trade.CustomerFacility facilityId="FAC-ACME-001" ownerPartyId="ACME_CORP_001" totalApprovedLimit="10000000.00" utilizedAmount="2500000.00" facilityExpiryDate="2027-12-31"/>
-    <trade.CustomerFacility facilityId="FAC-GLOBAL-002" ownerPartyId="GLOBAL_EXP_002" totalApprovedLimit="5000000.00" utilizedAmount="4800000.00" facilityExpiryDate="2027-01-01"/>
-    <trade.CustomerFacility facilityId="FAC-EXPIRED-003" ownerPartyId="ACME_CORP_001" totalApprovedLimit="1000000.00" utilizedAmount="0.00" facilityExpiryDate="2024-12-31"/>
+    <trade.CustomerFacility facilityId="FAC-ACME-001" ownerPartyId="ACME_CORP_001" totalApprovedLimit="10000000.00" utilizedAmount="2500000.00" facilityExpiryDate="2027-12-31" description="Core Working Capital Line"/>
+    <trade.CustomerFacility facilityId="FAC-GLOBAL-002" ownerPartyId="GLOBAL_EXP_002" totalApprovedLimit="5000000.00" utilizedAmount="4800000.00" facilityExpiryDate="2027-01-01" description="Trade Export Line"/>
+    <trade.CustomerFacility facilityId="FAC-EXPIRED-003" ownerPartyId="ACME_CORP_001" totalApprovedLimit="1000000.00" utilizedAmount="0.00" facilityExpiryDate="2024-12-31" description="Old Line"/>
+    <trade.CustomerFacility facilityId="FAC-ZIZI-001" ownerPartyId="ORG_ZIZI_CORP" totalApprovedLimit="1000000.00" utilizedAmount="0.00" facilityExpiryDate="2027-12-31" description="Working Capital Line"/>
 
     <!-- Master Data: Product Configurations -->
     <trade.common.TradeConfig configId="CFG_TOL_VAL" configKey="MAX_TOLERANCE" configValue="0.10" description="Maximum drawing tolerance multiplier (e.g. 0.10 for 10%)"/>

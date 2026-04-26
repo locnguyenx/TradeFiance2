@@ -200,4 +200,28 @@
             </if>
         </actions>
     </service>
+    <service verb="get" noun="CustomerFacilities" authenticate="false">
+        <in-parameters><parameter name="partyId" required="true"/></in-parameters>
+        <out-parameters>
+            <parameter name="facilityList" type="List"><parameter name="facility" type="Map"/></parameter>
+        </out-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find entity-name="trade.CustomerFacility" list="rawList">
+                <econdition field-name="ownerPartyId" from="partyId"/>
+            </entity-find>
+            <script>
+                facilityList = rawList.collect { f ->
+                    [
+                        facilityId: f.facilityId,
+                        description: f.description,
+                        limitAmount: f.totalApprovedLimit,
+                        utilizedAmount: f.utilizedAmount,
+                        currency: f.currencyUomId
+                    ]
+                }
+            </script>
+            <script>ec.artifactExecution.enableAuthz()</script>
+        </actions>
+    </service>
 </services>

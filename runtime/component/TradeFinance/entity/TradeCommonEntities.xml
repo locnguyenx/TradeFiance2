@@ -45,6 +45,7 @@
     <entity entity-name="CustomerFacility" package="trade">
         <field name="facilityId" type="id" is-pk="true"/>
         <field name="ownerPartyId" type="id"/>
+        <field name="description" type="text-medium"/>
         <field name="totalApprovedLimit" type="number-decimal"/>
         <field name="utilizedAmount" type="number-decimal"/>
         <field name="currencyUomId" type="id"/>

@@ -15,12 +15,23 @@ jest.mock('../api/tradeApi', () => ({
         ]),
         getProductCatalog: jest.fn().mockResolvedValue({
             productList: [
-                { productCatalogId: 'IMP_LC_STANDARD', productName: 'Standard Import LC', isActive: 'Y' }
+                { productId: 'IMP_LC_STANDARD', productName: 'Standard Import LC', isActive: 'Y' },
+                { productId: 'IMP_LC_USANCE', productName: 'Usance Import LC', isActive: 'Y' }
             ]
         }),
         getFeeConfigurations: jest.fn().mockResolvedValue({
             feeList: [
                 { feeConfigId: '1', feeTypeEnumId: 'ISSUANCE_FEE', calculationMethodEnumId: 'PERCENTAGE', ratePercent: 0.125 }
+            ]
+        }),
+        getParties: jest.fn().mockResolvedValue({
+            partyList: [
+                { partyId: 'GLOBAL_CORP', partyName: 'Global Corp' }
+            ]
+        }),
+        getCustomerFacilities: jest.fn().mockResolvedValue({
+            facilityList: [
+                { facilityId: 'FAC-001', description: 'Working Capital Line', limitAmount: 1000000 }
             ]
         })
     }
@@ -34,8 +45,13 @@ describe('IssuanceStepper v3.0 (BDD-IMP-FLOW-01, BDD-CMN-VAL-05)', () => {
     });
 
     const completeStep0 = async () => {
-        expect(await screen.findByLabelText(/LC Product/i)).toBeInTheDocument();
-        fireEvent.change(screen.getByLabelText(/Applicant/i), { target: { value: 'Global Corp' } });
+        const productSelect = await screen.findByLabelText(/LC Product/i) as HTMLSelectElement;
+        // Wait for mock data to populate options
+        await waitFor(() => {
+            expect(productSelect.options.length).toBeGreaterThan(1);
+        });
+        
+        fireEvent.change(screen.getByLabelText(/Applicant/i), { target: { value: 'GLOBAL_CORP' } });
         fireEvent.change(screen.getByLabelText(/LC Product/i), { target: { value: 'IMP_LC_STANDARD' } });
         fireEvent.change(screen.getByLabelText(/Beneficiary \(Tag 59\)/i), { target: { value: 'Beneficiary Name\nAddress' } });
     };

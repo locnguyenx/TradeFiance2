@@ -22,72 +22,65 @@ Ensure the following are installed:
 # Developer Guide: Digital Trade Finance
 
 ## 1. Architectural Principles
-The platform is built on **Moqui Framework**, utilizing a headless service architecture.
+The platform is built on **Moqui Framework**, utilizing a headless service architecture for high-throughput transactional integrity.
 
 ### Namespace Convention
-- `trade.common`: Shared entities (Facilities, FX, Config).
-- `trade.importlc`: Import LC domain logic.
-- `trade.exportlc`: Export LC domain logic (Phase 5).
+- `trade.common`: Shared entities (Facilities, FX Rates, Party Config).
+- `trade.importlc`: Import LC domain logic and state transitions.
+- `trade.exportlc`: Export LC domain logic (Phase 5 reconstruction).
 
 ### Service Hardening
-All state-changing services must:
-1.  **Enforce Maker/Checker**: Via `trade.AuthorizationServices`.
-2.  **Validate SWIFT**: Via `trade.importlc.ImportLcValidationServices`.
-3.  **Audit**: Create entries in `TradeTransactionAudit`.
+All state-changing services must adhere to the following guards:
+1.  **Enforce Maker/Checker**: Implemented via `trade.AuthorizationServices`. Status transitions for `LC_ISSUED` are blocked until `INST_APPROVED`.
+2.  **Validate SWIFT**: Strict regex validation for X/Z character sets and BIC codes via `trade.importlc.ImportLcValidationServices`.
+3.  **Facility Utilization**: Atomic limit check-and-earmark logic in `LimitServices.xml` to prevent over-drawing.
+4.  **Audit Persistence**: Automatic transaction logging in `TradeTransactionAudit` for every business state change.
 
 ---
 
-## 2. Domain Logic & Entities
-
-### Financial Integrity
-- **Facility Management**: Handled by `LimitServices.xml`.
-- **Earmarking**: 110% multiplier for Shipping Guarantees is enforced in `create#ShippingGuarantee`.
-- **Settlement**: Atomic transaction that updates `utilizedAmount`, `outstandingAmount`, and posts to the GL.
-
-### SWIFT Character Sets
-The platform enforces validation at the service level:
-- **X-Charset**: Used for addresses, names, and general fields.
-- **Z-Charset**: Used for Tag 79N narratives and amendments.
-- **BIC Format**: Strict 8/11 character validation.
+## 2. Technical Stack
+- **Backend**: Moqui Framework 3.0 (Groovy/Java).
+- **Frontend**: Next.js 14 (TypeScript / Vanilla CSS / premium tokens).
+- **Communication**: REST API (v1 / trade namespace).
+- **Verification**: Playwright E2E and Spock Integration Tests.
 
 ---
 
 ## 3. Regression Suite
-The suite is unified under `trade.TradeFinanceMoquiSuite`.
+The backend suite is unified under `trade.TradeFinanceMoquiSuite` (runtime/component/TradeFinance).
+The frontend suite uses Playwright (frontend/e2e).
 
-### Execution
+### Execution (Backend)
 ```bash
 ./gradlew :runtime:component:TradeFinance:test --tests trade.TradeFinanceMoquiSuite
 ```
 
-### Components (18)
-1.  **BddCommonModuleSpec**: Base framework and business rules.
-2.  **BddImportLcModuleSpec**: Core LC lifecycle.
-3.  **ImportLcServicesSpec**: Hardened issuance flows.
-4.  **ImportLcValidationServicesSpec**: SWIFT and BIC validation.
-5.  **DraftLcSpec**: Automated reference generation.
-6.  **ShippingGuaranteeSpec**: 110% limit verification.
-7.  **AuthVerificationSpec**: Logic bypass guards.
-8.  **AuthorizationServicesSpec**: Four-eyes matrix.
-9.  **ComplianceServicesSpec**: Sanctions proxy.
-10. **DualApprovalSpec**: Tier 4 thresholds.
-11. **EndToEndImportLcSpec**: Integration journeys.
-12. **ImportLcEntitiesSpec**: Persistent schema.
-13. **LimitServicesSpec**: Facility math.
-14. **RestApiEndpointsSpec**: API contracts.
-15. **SwiftGenerationSpec**: MT700 construction.
-16. **SwiftValidationSpec**: Regex and boundary checks.
-17. **TradeCommonEntitiesSpec**: Common schema.
-18. **TradeSeedDataSpec**: Enumeration integrity.
+### Execution (Frontend)
+```bash
+cd frontend && npx playwright test
+```
+
+### Validation Strategy
+- **Service Layer**: TDD-based unit tests for all domain math.
+- **Workflow Layer**: Integration tests for multi-step approvals and compliance holds.
+- **UI Layer**: E2E tests focusing on navigation integrity and "Clean at Capture" validation.
 
 ---
 
-## 4. Troubleshooting
-- **Referential Integrity**: Check `TradeFinanceMasterData.xml` for valid `productId` and `facilityId`.
-- **Auth Exceptions**: Ensure `ec.artifactExecution.disableAuthz()` is used in setup for bypass tests.
-- **Log Noise**: Business errors are logged as `ERROR` by `MessageFacadeImpl`; this is expected for auditability.
+## 4. SWIFT Character Sets & Mappings
+The platform validates input strictly against SWIFT MT7xx standards:
+- **X-Charset**: `A-Z 0-9 / - ? : ( ) . , ' + space`. (Standard narratives).
+- **Z-Charset**: Includes additional characters but excludes illegal symbols. (Narrative Tag 79N).
+- **BIC-11/8**: Validated via centralized `trade.importlc.ImportLcValidationServices.check#BicCode`.
 
 ---
 
-## 5. Deployment
-Refer to the standard Moqui `Run+and+Deploy` documentation for production WAR generation.
+## 5. Troubleshooting & Maintenance
+- **Data Seeding**: Use `./gradlew loadSave` to refresh the master data (Facilities, Products, Tiers).
+- **Log Analysis**: Business rule failures are logged with `[TRADE-AUTH]` or `[TRADE-VAL]` prefixes.
+- **E2E Stabilization**: When UI labels change, update `NavigationIntegrity.spec.ts` to match the "Blue Premium" tokens.
+
+---
+
+## Conclusion
+Maintain transactional integrity above all. When refactoring common services, ensure no side effects on the `trade.common` facility utilization logic.

@@ -1,8 +1,6 @@
-import { TradeInstrument, ImportLetterOfCredit, TradeParty, TradeProductCatalog, FeeConfiguration, UserAuthorityProfile, QueueItem } from './types';
+import { TradeInstrument, ImportLetterOfCredit, TradeParty, TradeProductCatalog, FeeConfiguration, UserAuthorityProfile, QueueItem, ExposureData } from './types';
 
-const API_BASE = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) 
-  ? `${process.env.NEXT_PUBLIC_API_URL}/rest/s1/trade` 
-  : '/rest/s1/trade';
+const API_BASE = '/rest/s1/trade';
 
 export interface Kpis {
   pendingDrafts: number;
@@ -42,6 +40,8 @@ export const tradeApi = {
     // Add Authorization header if credentials are set
     if (this.credentials) {
       headers['Authorization'] = `Basic ${this.credentials}`;
+    } else if (typeof window !== 'undefined' && (window as any).__E2E_CREDENTIALS__) {
+      headers['Authorization'] = `Basic ${(window as any).__E2E_CREDENTIALS__}`;
     }
 
     // Moqui CSRF handling: send moquiSessionToken from cookies if it exists
@@ -54,12 +54,23 @@ export const tradeApi = {
         }
     }
 
-    const res = await fetch(url, { 
+    let res = await fetch(url, { 
         ...init, 
         headers,
-        credentials: 'include' // Always include cookies for session persistence
+        credentials: 'include' 
     });
     
+    // Retry once for transient 500 errors (often caused by session clashing in dev/test)
+    if (res.status === 500) {
+        console.warn(`Transient 500 detected for ${url}. Retrying...`);
+        await new Promise(resolve => setTimeout(resolve, 200));
+        res = await fetch(url, { 
+            ...init, 
+            headers,
+            credentials: 'include' 
+        });
+    }
+
     if (!res.ok) {
       let errorBody = null;
       try {
@@ -149,8 +160,12 @@ export const tradeApi = {
     return res.json();
   },
 
-  async validateLcSwiftFields(instrumentId: string, entityType: string): Promise<{ errors: { fieldName: string; message: string; violationType: string }[] }> {
-    const res = await this._fetch(`${API_BASE}/import-lc/${instrumentId}/validate?entityType=${entityType}`);
+  async validateLcSwiftFields(entityId: string, entityType: string): Promise<{ errors: { fieldName: string; message: string; violationType: string }[] }> {
+    const res = await this._fetch(`${API_BASE}/import-lc/validate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entityId, entityType }),
+    });
     return res.json();
   },
 
@@ -286,8 +301,13 @@ export const tradeApi = {
     return res.json();
   },
 
-  async getFacilityDetail(facilityId: string): Promise<any> {
+  async getFacilityDetail(facilityId: string): Promise<ExposureData> {
     const res = await this._fetch(`${API_BASE}/facilities?facilityId=${facilityId}`);
+    return res.json();
+  },
+
+  async getCustomerFacilities(partyId: string): Promise<{ facilityList: any[] }> {
+    const res = await this._fetch(`${API_BASE}/facilities/customer?partyId=${partyId}`);
     return res.json();
   },
 };

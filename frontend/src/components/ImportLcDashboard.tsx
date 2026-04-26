@@ -33,6 +33,7 @@ export const ImportLcDashboard: React.FC = () => {
                 setLoading(false);
             })
             .catch(err => {
+                console.error("Dashboard Fetch Error:", err);
                 setError("System Temporarily Unavailable. Please contact Trade Support.");
                 setLoading(false);
             });
