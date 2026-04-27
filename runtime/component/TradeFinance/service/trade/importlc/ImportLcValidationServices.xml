@@ -199,6 +199,15 @@
                             addError("shipmentPeriodText", "Shipment Period and Latest Shipment Date are mutually exclusive", "LOGIC")
                         }
                     }
+                } else if (entityType == "TradeDocumentPresentation") {
+                    def pres = ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("presentationId", entityId).one()
+                    if (pres) {
+                        validateZCharset("chargesDeducted", pres.chargesDeducted)
+                        validateZCharset("senderToReceiverPresentationInfo", pres.senderToReceiverPresentationInfo)
+                        
+                        validateLineLimit("chargesDeducted", pres.chargesDeducted, 6)
+                        validateLineLimit("senderToReceiverPresentationInfo", pres.senderToReceiverPresentationInfo, 6)
+                    }
                 } else if (entityType == "ImportLcAmendment") {
                     def amd = ec.entity.find("trade.importlc.ImportLcAmendment").condition("amendmentId", entityId).one()
                     if (amd) {

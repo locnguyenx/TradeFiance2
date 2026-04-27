@@ -297,4 +297,52 @@ class SwiftValidationSpec extends Specification {
         result.errors != null
         result.errors.any { it.message.contains("mutually exclusive") }
     }
+
+    def "LIN-03: Presentation chargesDeducted exceeds 6 lines (Tag 73)"() {
+        given: "A presentation with 7 lines in chargesDeducted"
+        def ref = "TF-PRES-LIN-" + System.currentTimeMillis()
+        def lcRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
+            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
+                         lcTypeEnumId: "IRREVOCABLE", availableByEnumId: "SIGHT", confirmationEnumId: "WITHOUT"]).call()
+        
+        def longText = "LINE 1\nLINE 2\nLINE 3\nLINE 4\nLINE 5\nLINE 6\nLINE 7"
+        def presId = "PRES-" + System.currentTimeMillis()
+        ec.entity.makeValue("trade.importlc.TradeDocumentPresentation")
+            .setAll([presentationId: presId, instrumentId: lcRes.instrumentId, chargesDeducted: longText, claimAmount: 1000]).create()
+
+        when: "validate#SwiftFields is called for TradeDocumentPresentation"
+        def result = ec.service.sync().name("trade.importlc.ImportLcValidationServices.validate#SwiftFields")
+            .parameters([entityType: "TradeDocumentPresentation", entityId: presId]).call()
+
+        then: "Error for exceeding 6 lines"
+        result.errors != null
+        result.errors.any { it.fieldName == "chargesDeducted" && it.message.contains("6 lines") }
+
+        cleanup:
+        ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("presentationId", presId).deleteAll()
+    }
+
+    def "LIN-04: Presentation senderToReceiverPresentationInfo exceeds 6 lines (Tag 72Z)"() {
+        given: "A presentation with 7 lines in senderToReceiverPresentationInfo"
+        def ref = "TF-PRES-LIN2-" + System.currentTimeMillis()
+        def lcRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
+            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
+                         lcTypeEnumId: "IRREVOCABLE", availableByEnumId: "SIGHT", confirmationEnumId: "WITHOUT"]).call()
+        
+        def longText = "LINE 1\nLINE 2\nLINE 3\nLINE 4\nLINE 5\nLINE 6\nLINE 7"
+        def presId = "PRES2-" + System.currentTimeMillis()
+        ec.entity.makeValue("trade.importlc.TradeDocumentPresentation")
+            .setAll([presentationId: presId, instrumentId: lcRes.instrumentId, senderToReceiverPresentationInfo: longText, claimAmount: 1000]).create()
+
+        when: "validate#SwiftFields is called for TradeDocumentPresentation"
+        def result = ec.service.sync().name("trade.importlc.ImportLcValidationServices.validate#SwiftFields")
+            .parameters([entityType: "TradeDocumentPresentation", entityId: presId]).call()
+
+        then: "Error for exceeding 6 lines"
+        result.errors != null
+        result.errors.any { it.fieldName == "senderToReceiverPresentationInfo" && it.message.contains("6 lines") }
+
+        cleanup:
+        ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("presentationId", presId).deleteAll()
+    }
 }
