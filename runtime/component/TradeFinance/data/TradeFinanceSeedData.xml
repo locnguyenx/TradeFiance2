@@ -20,6 +20,7 @@
     <moqui.basic.EnumerationType enumTypeId="SwiftMessageStatus" description="SWIFT Message Processing Statuses"/>
     <moqui.basic.EnumerationType enumTypeId="DocumentDisposal" description="Document Disposal Options (Tag 77B)"/>
     <moqui.basic.EnumerationType enumTypeId="TradeAvailableBy" description="LC Availability Methods (Tag 41a)"/>
+    <moqui.basic.EnumerationType enumTypeId="TradeTransactionType" description="Type of Trade Transaction"/>
 
     <!-- Audit Action Enums -->
     <moqui.basic.Enumeration enumId="AUDIT_HOLD" enumTypeId="TradeLaunchAction" description="Compliance Hold Applied"/>
@@ -126,6 +127,22 @@
     <!-- Bank Configuration -->
     <trade.common.TradeConfig configId="ISSUING_BANK_BIC" configValue="VIETBANK1XXX" description="Issuing bank SWIFT BIC for message headers"/>
     <trade.common.TradeConfig configId="NOSTRO_ACCOUNT_USD" configValue="001-234567-USD" description="USD Nostro account for MT202 routing"/>
+
+    <!-- Transaction Types -->
+    <!-- Import LC Transactions -->
+    <moqui.basic.Enumeration enumId="IMP_NEW" enumTypeId="TradeTransactionType" description="Import LC Issuance" sequenceNum="1"/>
+    <moqui.basic.Enumeration enumId="IMP_AMENDMENT" enumTypeId="TradeTransactionType" description="Import LC Amendment" sequenceNum="2"/>
+    <moqui.basic.Enumeration enumId="IMP_PRESENTATION" enumTypeId="TradeTransactionType" description="Import LC Document Presentation" sequenceNum="3"/>
+    <moqui.basic.Enumeration enumId="IMP_SETTLEMENT" enumTypeId="TradeTransactionType" description="Import LC Settlement" sequenceNum="4"/>
+    <moqui.basic.Enumeration enumId="IMP_CANCELLATION" enumTypeId="TradeTransactionType" description="Import LC Cancellation" sequenceNum="5"/>
+    
+    <!-- Future: Export LC Transactions -->
+    <moqui.basic.Enumeration enumId="EXP_NEW" enumTypeId="TradeTransactionType" description="Export LC Issuance" sequenceNum="11"/>
+    <moqui.basic.Enumeration enumId="EXP_AMENDMENT" enumTypeId="TradeTransactionType" description="Export LC Amendment" sequenceNum="12"/>
+    
+    <!-- Future: Collections -->
+    <moqui.basic.Enumeration enumId="COL_IMP_NEW" enumTypeId="TradeTransactionType" description="Import Collection" sequenceNum="21"/>
+    <moqui.basic.Enumeration enumId="COL_EXP_NEW" enumTypeId="TradeTransactionType" description="Export Collection" sequenceNum="22"/>
 
     <!-- Status Types -->
     <moqui.basic.StatusType statusTypeId="TradeTransactionStatus" description="System/Transaction Processing States"/>

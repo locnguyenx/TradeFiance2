@@ -5,40 +5,69 @@
 
     <service verb="evaluate" noun="MakerCheckerMatrix" authenticate="false">
         <in-parameters>
-            <parameter name="instrumentId" required="true"/>
+            <parameter name="instrumentId"/>
+            <parameter name="transactionId"/>
             <parameter name="userId" default="ec.user.userId ?: 'EXOR_SERVICE_USER'"/>
         </in-parameters>
         <out-parameters>
             <parameter name="isAuthorized" type="Boolean"/>
             <parameter name="authorityTierEnumId"/>
+            <parameter name="evaluationAmount" type="BigDecimal"/>
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
+            
+            <!-- Resolve instrument from transaction or direct -->
+            <set field="localInstrumentId" from="instrumentId"/>
+            <if condition="transactionId">
+                <entity-find-one entity-name="trade.TradeTransaction" value-field="tx">
+                    <field-map field-name="transactionId"/>
+                </entity-find-one>
+                <if condition="tx">
+                    <set field="localInstrumentId" from="tx.instrumentId"/>
+                </if>
+            </if>
+            
             <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument">
-                <field-map field-name="instrumentId"/>
+                <field-map field-name="instrumentId" from="localInstrumentId"/>
             </entity-find-one>
-            <if condition="!instrument"><return error="true" message="Instrument ${instrumentId} not found"/></if>
+            <if condition="!instrument">
+                <return error="true" message="Instrument not found"/>
+            </if>
 
-            <!-- 1. Determine evaluation amount (use effectiveAmount for LCs if available) -->
+            <!-- Get evaluation amount -->
             <set field="evaluationAmount" from="instrument.amount ?: 0"/>
             <if condition="instrument.instrumentTypeEnumId == 'IMPORT_LC'">
                 <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc">
-                    <field-map field-name="instrumentId"/>
+                    <field-map field-name="instrumentId" from="localInstrumentId"/>
                 </entity-find-one>
-                <if condition="lc?.effectiveAmount"><set field="evaluationAmount" from="lc.effectiveAmount"/></if>
+                <if condition="lc?.effectiveAmount">
+                    <set field="evaluationAmount" from="lc.effectiveAmount"/>
+                </if>
             </if>
             
-            <!-- 2. Prohibit same user from Maker and Checker actions -->
-            <entity-find entity-name="trade.TradeTransactionAudit" list="makerAudits">
-                <econdition field-name="instrumentId"/>
-                <econdition field-name="actionEnumId" value="MAKER_COMMIT"/>
-            </entity-find>
-            <if condition="makerAudits &amp;&amp; makerAudits[0].userId == userId">
-                <set field="isAuthorized" from="false" type="Boolean"/>
-                <return/>
+            <!-- Check Four-Eyes: Cannot approve own submission -->
+            <if condition="transactionId">
+                <entity-find-one entity-name="trade.TradeTransaction" value-field="makerTx">
+                    <field-map field-name="transactionId"/>
+                </entity-find-one>
+                <if condition="makerTx?.makerUserId == userId">
+                    <set field="isAuthorized" from="false" type="Boolean"/>
+                    <return/>
+                </if>
+            </if>
+            <if condition="!transactionId">
+                <entity-find entity-name="trade.TradeTransactionAudit" list="makerAudits">
+                    <econdition field-name="instrumentId" from="localInstrumentId"/>
+                    <econdition field-name="actionEnumId" value="MAKER_COMMIT"/>
+                </entity-find>
+                <if condition="makerAudits &amp;&amp; makerAudits[0].userId == userId">
+                    <set field="isAuthorized" from="false" type="Boolean"/>
+                    <return/>
+                </if>
             </if>
             
-            <!-- 3. Check Authority Tier / Limit -->
+            <!-- Check User Authority Tier -->
             <entity-find entity-name="trade.UserAuthorityProfile" list="profiles">
                 <econdition field-name="userId"/>
                 <econdition field-name="isSuspended" operator="not-equals" value="Y"/>
@@ -51,7 +80,7 @@
             
             <set field="isAuthorized" value="false" type="Boolean"/>
             <iterate list="profiles" entry="profile">
-                <if condition="evaluationAmount &lt;= profile.customLimit">
+                <if condition="evaluationAmount &lt;= (profile.customLimit ?: BigDecimal.ZERO)">
                     <set field="isAuthorized" value="true" type="Boolean"/>
                     <set field="authorityTierEnumId" from="profile.delegationTierId"/>
                     <break/>
@@ -85,25 +114,30 @@
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
-            <entity-find entity-name="trade.TradeInstrument" list="pendingList">
+            <entity-find entity-name="trade.TradeTransaction" list="pendingList">
                 <econdition field-name="transactionStatusId" value="TX_PENDING"/>
                 <order-by field-name="-makerTimestamp"/>
             </entity-find>
             <set field="approvalsList" from="[]"/>
-            <iterate list="pendingList" entry="instrument">
+            <iterate list="pendingList" entry="tx">
+                <entity-find-one entity-name="trade.TradeInstrument" value-field="inst">
+                    <field-map field-name="instrumentId" from="tx.instrumentId"/>
+                </entity-find-one>
                 <set field="item" from="[
-                    instrumentId: instrument.instrumentId,
-                    transactionRef: instrument.transactionRef,
-                    module: instrument.instrumentTypeEnumId == 'IMPORT_LC' ? 'IMPORT LC' : instrument.instrumentTypeEnumId,
+                    instrumentId: tx.instrumentId,
+                    transactionRef: inst?.transactionRef,
+                    transactionId: tx.transactionId,
+                    module: inst?.instrumentTypeEnumId == 'IMPORT_LC' ? 'IMPORT LC' : inst?.instrumentTypeEnumId,
                     action: 'Authorization',
-                    makerUserId: instrument.makerUserId,
-                    baseEquivalentAmount: instrument.baseEquivalentAmount,
-                    priorityEnumId: instrument.priorityEnumId ?: 'NORMAL',
-                    lifecycleStatusId: instrument.lifecycleStatusId,
+                    makerUserId: tx.makerUserId,
+                    baseEquivalentAmount: inst?.baseEquivalentAmount,
+                    priorityEnumId: tx.priorityEnumId ?: 'NORMAL',
+                    transactionStatusId: tx.transactionStatusId,
+                    transactionTypeEnumId: tx.transactionTypeEnumId,
                     timeInQueue: '0h'
                 ]"/>
-                <if condition="instrument.makerTimestamp">
-                    <set field="diffMs" from="ec.user.nowTimestamp.time - instrument.makerTimestamp.time"/>
+                <if condition="tx.makerTimestamp">
+                    <set field="diffMs" from="ec.user.nowTimestamp.time - tx.makerTimestamp.time"/>
                     <set field="hours" from="(diffMs / (1000 * 60 * 60)).toInteger()"/>
                     <set field="item.timeInQueue" from="hours + 'h'"/>
                 </if>
@@ -121,8 +155,48 @@
         </in-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
-            <service-call name="update#trade.TradeInstrument" 
-                          in-map="[instrumentId: instrumentId, transactionStatusId: 'TX_DRAFT', lifecycleStatusId: 'LC_DRAFT', rejectionReason: rejectionReason]"/>
+            
+            <!-- Find pending transaction -->
+            <entity-find entity-name="trade.TradeTransaction" list="txList">
+                <econdition field-name="instrumentId"/>
+                <econdition field-name="transactionStatusId" value="TX_PENDING"/>
+                <order-by field-name="-transactionId"/>
+            </entity-find>
+            <if condition="txList">
+                <service-call name="update#trade.TradeTransaction" 
+                              in-map="[transactionId: txList[0].transactionId, 
+                                       transactionStatusId: 'TX_DRAFT', 
+                                       rejectionReason: rejectionReason,
+                                       checkerUserId: userId,
+                                       checkerTimestamp: ec.user.nowTimestamp]"/>
+                
+                <!-- Create audit record -->
+                <service-call name="create#trade.TradeTransactionAudit"
+                    in-map="[transactionId: txList[0].transactionId,
+                             instrumentId: instrumentId,
+                             userId: userId,
+                             actionEnumId: 'CHECKER_REJECT',
+                             oldValue: 'TX_PENDING',
+                             newValue: 'TX_DRAFT',
+                             justificationRootText: rejectionReason]"/>
+            </if>
+            
+            <!-- Update business state to LC_DRAFT -->
+            <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" for-update="true">
+                <field-map field-name="instrumentId"/>
+            </entity-find-one>
+            <if condition="lc &amp;&amp; lc.businessStateId != 'LC_DRAFT'">
+                <set field="oldBusinessState" from="lc.businessStateId"/>
+                <set field="lc.businessStateId" value="LC_DRAFT"/>
+                <entity-update value-field="lc"/>
+                
+                <service-call name="create#trade.TradeTransactionAudit"
+                    in-map="[instrumentId: instrumentId,
+                             userId: userId,
+                             actionEnumId: 'BUSINESS_STATE_CHANGE',
+                             oldValue: oldBusinessState,
+                             newValue: 'LC_DRAFT']"/>
+            </if>
         </actions>
     </service>
 </services>

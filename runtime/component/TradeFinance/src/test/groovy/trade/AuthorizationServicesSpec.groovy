@@ -26,8 +26,10 @@ class AuthorizationServicesSpec extends Specification {
         setup:
         ec.entity.makeValue("trade.TradeInstrument")
             .setAll([instrumentId:"AUTH-1", transactionRef:"TF-AUTH-01", instrumentTypeEnumId: 'IMPORT_LC']).create()
+        ec.entity.makeValue("trade.TradeTransaction")
+            .setAll([transactionId:"TX-AUTH-1", instrumentId:"AUTH-1", transactionStatusId: 'TX_PENDING', makerUserId: 'john.doe', versionNumber: 1]).create()
         ec.entity.makeValue("trade.TradeTransactionAudit")
-            .setAll([instrumentId:"AUTH-1", auditId:"1", actionEnumId:"MAKER_COMMIT", userId:"john.doe"]).create()
+            .setAll([transactionId:"TX-AUTH-1", instrumentId:"AUTH-1", auditId:"1", actionEnumId:"MAKER_COMMIT", userId:"john.doe"]).create()
         ec.entity.makeValue("trade.UserAuthorityProfile")
             .setAll([userAuthorityId:"T1-02", userId:"jane.doe", delegationTierId:"TIER_1", customLimit:100000.0, makerCheckerFlag: "CHECKER"]).create()
             
@@ -46,8 +48,10 @@ class AuthorizationServicesSpec extends Specification {
         resultDiff.isAuthorized == true
         
         cleanup:
+        if (ec != null) ec.artifactExecution.disableAuthz()
         ec.entity.find("trade.UserAuthorityProfile").condition("userAuthorityId", "T1-02").deleteAll()
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "AUTH-1").deleteAll()
+        ec.entity.find("trade.TradeTransaction").condition("instrumentId", "AUTH-1").deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", "AUTH-1").deleteAll()
     }
     
@@ -58,9 +62,12 @@ class AuthorizationServicesSpec extends Specification {
         ec.entity.makeValue("trade.importlc.ImportLetterOfCredit")
             .setAll([instrumentId:"AUTH-AMD", effectiveAmount:150000.0]).create()
         
+        ec.entity.makeValue("trade.TradeTransaction")
+            .setAll([transactionId:"TX-AUTH-AMD", instrumentId:"AUTH-AMD", transactionStatusId: 'TX_PENDING', makerUserId: 'maker.user', versionNumber: 1]).create()
+            
         and: "Audit record for maker"
         ec.entity.makeValue("trade.TradeTransactionAudit")
-            .setAll([instrumentId:"AUTH-AMD", auditId:"2", actionEnumId:"MAKER_COMMIT", userId:"maker.user"]).create()
+            .setAll([transactionId:"TX-AUTH-AMD", instrumentId:"AUTH-AMD", auditId:"2", actionEnumId:"MAKER_COMMIT", userId:"maker.user"]).create()
             
         and: "Checker with Tier 1 limit (100k)"
         ec.entity.makeValue("trade.UserAuthorityProfile")
@@ -74,19 +81,23 @@ class AuthorizationServicesSpec extends Specification {
         result.isAuthorized == false
         
         cleanup:
+        if (ec != null) ec.artifactExecution.disableAuthz()
         ec.entity.find("trade.UserAuthorityProfile").condition("userAuthorityId", "T1-03").deleteAll()
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "AUTH-AMD").deleteAll()
+        ec.entity.find("trade.TradeTransaction").condition("instrumentId", "AUTH-AMD").deleteAll()
         ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", "AUTH-AMD").deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", "AUTH-AMD").deleteAll()
     }
 
     def "BDD-CMN-AUTH-05: Priority Queue ordering sorts Urgent before Low"() {
         given: "Two instruments with different priorities"
-        ec.entity.makeValue("trade.TradeInstrument").setAll([instrumentId:"PRIO-LOW", transactionRef:"TF-PRIO-01", priorityEnumId:"PRIO_LOW", instrumentTypeEnumId:'IMPORT_LC']).create()
+        ec.entity.makeValue("trade.TradeInstrument").setAll([instrumentId:"PRIO-LOW", transactionRef:"TF-PRIO-01", instrumentTypeEnumId:'IMPORT_LC']).create()
         ec.entity.makeValue("trade.importlc.ImportLetterOfCredit").setAll([instrumentId:"PRIO-LOW"]).create()
+        ec.entity.makeValue("trade.TradeTransaction").setAll([transactionId:"TX-PRIO-LOW", instrumentId:"PRIO-LOW", transactionStatusId: 'TX_DRAFT', versionNumber: 1, priorityEnumId:"PRIO_LOW"]).create()
         
-        ec.entity.makeValue("trade.TradeInstrument").setAll([instrumentId:"PRIO-HIGH", transactionRef:"TF-PRIO-02", priorityEnumId:"PRIO_URGENT", instrumentTypeEnumId:'IMPORT_LC']).create()
+        ec.entity.makeValue("trade.TradeInstrument").setAll([instrumentId:"PRIO-HIGH", transactionRef:"TF-PRIO-02", instrumentTypeEnumId:'IMPORT_LC']).create()
         ec.entity.makeValue("trade.importlc.ImportLetterOfCredit").setAll([instrumentId:"PRIO-HIGH"]).create()
+        ec.entity.makeValue("trade.TradeTransaction").setAll([transactionId:"TX-PRIO-HIGH", instrumentId:"PRIO-HIGH", transactionStatusId: 'TX_DRAFT', versionNumber: 1, priorityEnumId:"PRIO_URGENT"]).create()
         
         when: "Retrieving the list"
         def result = ec.service.sync().name("trade.importlc.ImportLcServices.get#ImportLetterOfCreditList").call()
@@ -101,9 +112,14 @@ class AuthorizationServicesSpec extends Specification {
         highIdx < lowIdx
         
         cleanup:
+        if (ec != null) ec.artifactExecution.disableAuthz()
         ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", "PRIO-LOW").deleteAll()
+        ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "PRIO-LOW").deleteAll()
+        ec.entity.find("trade.TradeTransaction").condition("instrumentId", "PRIO-LOW").deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", "PRIO-LOW").deleteAll()
         ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", "PRIO-HIGH").deleteAll()
+        ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "PRIO-HIGH").deleteAll()
+        ec.entity.find("trade.TradeTransaction").condition("instrumentId", "PRIO-HIGH").deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", "PRIO-HIGH").deleteAll()
     }
 }

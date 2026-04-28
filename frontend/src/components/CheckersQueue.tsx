@@ -18,7 +18,7 @@ export const CheckersQueue: React.FC<CheckersQueueProps> = ({ items: initialItem
     const [items, setItems] = useState<QueueItem[]>(initialItems || []);
     const [loading, setLoading] = useState(!initialItems);
     const [filter, setFilter] = useState<'ALL' | 'HIGH' | 'SLA'>('ALL');
-    const [selectedAuthId, setSelectedAuthId] = useState<string | null>(null);
+    const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
     const [mounted, setMounted] = useState(false);
     const router = useRouter();
 
@@ -40,9 +40,10 @@ export const CheckersQueue: React.FC<CheckersQueueProps> = ({ items: initialItem
     });
 
     const priorityWeight: Record<string, number> = {
-        'URGENT': 3,
-        'EXPRESS': 2,
-        'NORMAL': 1
+        'URGENT': 4,
+        'HIGH': 3,
+        'MEDIUM': 2,
+        'LOW': 1
     };
 
     const sortedItems = [...filteredItems].sort((a, b) => {
@@ -90,7 +91,7 @@ export const CheckersQueue: React.FC<CheckersQueueProps> = ({ items: initialItem
                     </thead>
                     <tbody>
                         {sortedItems.map(item => (
-                            <tr key={item.instrumentId} className="clickable-row" onClick={() => setSelectedAuthId(item.instrumentId)}>
+                            <tr key={item.transactionId} className="clickable-row" onClick={() => setSelectedTransactionId(item.transactionId)}>
                                 <td>
                                     <span className={`priority-badge ${(item.priorityEnumId || 'normal').toLowerCase()}`}>
                                         {item.priorityEnumId}
@@ -98,7 +99,7 @@ export const CheckersQueue: React.FC<CheckersQueueProps> = ({ items: initialItem
                                 </td>
                                 <td className="ref-cell">
                                     {item.transactionRef}
-                                    {item.lifecycleStatusId === 'INST_PARTIAL_APPROVAL' && (
+                                    {item.businessStateId === 'INST_PARTIAL_APPROVAL' && (
                                         <div className="status-label partial">PARTIAL APPROVAL</div>
                                     )}
                                 </td>
@@ -123,7 +124,7 @@ export const CheckersQueue: React.FC<CheckersQueueProps> = ({ items: initialItem
                                 <td>
                                     <button 
                                         className="authorize-btn"
-                                        onClick={(e) => { e.stopPropagation(); setSelectedAuthId(item.instrumentId); }}
+                                        onClick={(e) => { e.stopPropagation(); setSelectedTransactionId(item.transactionId); }}
                                     >
                                         Authorize
                                     </button>
@@ -134,11 +135,11 @@ export const CheckersQueue: React.FC<CheckersQueueProps> = ({ items: initialItem
                 </table>
             </section>
 
-            {mounted && selectedAuthId && createPortal(
-                <div className="auth-modal-overlay" onClick={() => setSelectedAuthId(null)}>
+            {mounted && selectedTransactionId && createPortal(
+                <div className="auth-modal-overlay" onClick={() => setSelectedTransactionId(null)}>
                     <div className="auth-modal-content premium-card" onClick={e => e.stopPropagation()}>
-                        <button className="close-modal" onClick={() => setSelectedAuthId(null)}>✕</button>
-                        <CheckerAuthorization instrumentId={selectedAuthId} />
+                        <button className="close-modal" onClick={() => setSelectedTransactionId(null)}>✕</button>
+                        <CheckerAuthorization transactionId={selectedTransactionId} />
                     </div>
                 </div>,
                 document.body

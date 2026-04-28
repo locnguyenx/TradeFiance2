@@ -4,6 +4,7 @@
  */
 
 export const SWIFT_X_CHARS = /^[A-Za-z0-9/\-?:().,'+ ]+$/;
+export const SWIFT_Z_CHARS = /^[A-Za-z0-9.,\-()/\='+:? !#&*<>;@]+$/;
 
 /**
  * Filter string to SWIFT X-character set. 
@@ -14,6 +15,30 @@ export const filterXChars = (input: string): string => {
     return input.split('').map(char => {
         return SWIFT_X_CHARS.test(char) ? char : ' ';
     }).join('');
+};
+
+/**
+ * Checks if string contains only characters from SWIFT X-character set.
+ */
+export const isValidXChars = (input: string): boolean => {
+    if (!input) return true;
+    return input.split('\n').every(line => SWIFT_X_CHARS.test(line.trimEnd()));
+};
+
+/**
+ * Checks if string contains only characters from SWIFT Z-character set.
+ */
+export const isValidZChars = (input: string): boolean => {
+    if (!input) return true;
+    return input.split('\n').every(line => SWIFT_Z_CHARS.test(line.trimEnd()));
+};
+
+/**
+ * Returns the number of lines in a multi-line string.
+ */
+export const getLineCount = (input: string): number => {
+    if (!input) return 0;
+    return input.split('\n').length;
 };
 
 /**

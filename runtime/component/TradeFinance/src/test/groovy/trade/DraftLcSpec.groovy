@@ -50,8 +50,9 @@ class DraftLcSpec extends Specification {
         
         then: "LC is created in TX_DRAFT status"
         instrumentId != null
-        def inst = ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).one()
-        inst.transactionStatusId == 'TX_DRAFT'
+        // Finding the transaction associated with the instrument
+        def tx = ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).one()
+        tx.transactionStatusId == 'TX_DRAFT'
         
         when: "Fetching LC list for dashboard"
         def listResult = ec.service.sync().name("trade.importlc.ImportLcServices.get#ImportLetterOfCreditList").call()

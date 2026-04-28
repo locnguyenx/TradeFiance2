@@ -1,8 +1,8 @@
-import { filterXChars, splitLines, formatTolerance, formatSwiftAmount } from '../utils/SwiftUtils';
+import { filterXChars, splitLines, formatTolerance, formatSwiftAmount, isValidZChars, getLineCount } from '../utils/SwiftUtils';
 
 /**
  * ABOUTME: BDD Traceability for SWIFT MT7xx.
- * ABOUTME: Mapping: BDD-IMP-SWT-01, BDD-IMP-SWT-02, BDD-IMP-SWT-03, BDD-IMP-SWT-04, BDD-IMP-SWT-05.
+ * ABOUTME: Mapping: BDD-IMP-SWT-01, BDD-IMP-SWT-02, BDD-IMP-SWT-03, BDD-IMP-SWT-04, BDD-IMP-SWT-05, BDD-IMP-SWT-06, BDD-IMP-SWT-07.
  */
 
 describe('SWIFT Validation', () => {
@@ -11,6 +11,17 @@ describe('SWIFT Validation', () => {
         const input = 'Acme Corp @ 123 Street';
         const expected = 'Acme Corp   123 Street';
         expect(filterXChars(input)).toBe(expected);
+    });
+
+    it('BDD-IMP-SWT-06: MT700: Z-Character Validation', () => {
+        expect(isValidZChars('Valid Z chars: ! # & * < > ; @')).toBe(true);
+        expect(isValidZChars('Invalid Z chars: { } [ ]')).toBe(false);
+    });
+
+    it('BDD-IMP-SWT-07: MT700: Line Count Validation', () => {
+        expect(getLineCount('Line 1\nLine 2\nLine 3')).toBe(3);
+        expect(getLineCount('Single Line')).toBe(1);
+        expect(getLineCount('')).toBe(0);
     });
 
     it('BDD-IMP-SWT-05: MT700: Native 65-Character Array Splitting', () => {

@@ -46,6 +46,9 @@ class SwiftValidationSpec extends Specification {
             ec.entity.find("trade.importlc.ImportLcSettlement").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "9000000").deleteAll()
             ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "9000000").deleteAll()
             ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "9000000").deleteAll()
+            ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "9000000").deleteAll()
+            ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "9000000").deleteAll()
+            ec.entity.find("trade.TradeTransaction").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "9000000").deleteAll()
             ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "9000000").deleteAll()
         } finally {
             ec.artifactExecution.enableAuthz()

@@ -29,15 +29,19 @@
             </if>
             
             <set field="draftMsg" from="existingMessages.find { it.messageStatusId == 'SWIFT_MSG_DRAFT' }"/>
+            <entity-find-one entity-name="trade.TradeTransaction" value-field="transaction">
+                <field-map field-name="instrumentId" from="instrumentId"/>
+            </entity-find-one>
+
             <!-- If draft exists and not approved, return existing unless forced -->
-            <if condition="draftMsg &amp;&amp; !forceRegenerate &amp;&amp; instrument.transactionStatusId != 'TX_APPROVED'">
+            <if condition="draftMsg &amp;&amp; !forceRegenerate &amp;&amp; transaction?.transactionStatusId != 'TX_APPROVED'">
                 <set field="swiftMessageId" from="draftMsg.swiftMessageId"/>
                 <set field="messageContent" from="draftMsg.messageContent"/>
                 <return/>
             </if>
 
             <!-- Determine Status: ACTIVE if instrument is approved, else DRAFT -->
-            <set field="messageStatusId" from="instrument.transactionStatusId == 'TX_APPROVED' ? 'SWIFT_MSG_ACTIVE' : 'SWIFT_MSG_DRAFT'"/>
+            <set field="messageStatusId" from="transaction?.transactionStatusId == 'TX_APPROVED' ? 'SWIFT_MSG_ACTIVE' : 'SWIFT_MSG_DRAFT'"/>
 
             <entity-find-one entity-name="trade.common.TradeConfig" value-field="bicConfig">
                 <field-map field-name="configId" value="ISSUING_BANK_BIC"/>

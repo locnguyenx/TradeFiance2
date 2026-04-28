@@ -26,7 +26,15 @@ class ImportLcValidationServicesSpec extends Specification {
         given:
         def ref = "TF-SWIFT-BAD-" + System.currentTimeMillis()
         ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, goodsDescription: "Steel Rods @ 50mm diameter", lcAmount: 1000.0, lcCurrencyUomId: 'USD']).call()
+            .parameters([
+                transactionRef: ref, 
+                goodsDescription: "Steel Rods @ 50mm diameter", 
+                lcAmount: 1000.0, 
+                lcCurrencyUomId: 'USD',
+                lcTypeEnumId: 'LC_TYPE_IRREVOCABLE',
+                availableByEnumId: 'AVAIL_BY_SIGHT',
+                confirmationEnumId: 'CONFIRM_WITHOUT'
+            ]).call()
         def lc = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("goodsDescription", "Steel Rods @ 50mm diameter").one()
 
         when:
@@ -46,7 +54,15 @@ class ImportLcValidationServicesSpec extends Specification {
         given:
         def ref = "TF-SWIFT-GOOD-" + System.currentTimeMillis()
         ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, goodsDescription: "Steel Rods - 50mm diameter (standard)", lcAmount: 1000.0, lcCurrencyUomId: 'USD']).call()
+            .parameters([
+                transactionRef: ref, 
+                goodsDescription: "Steel Rods - 50mm diameter (standard)", 
+                lcAmount: 1000.0, 
+                lcCurrencyUomId: 'USD',
+                lcTypeEnumId: 'LC_TYPE_IRREVOCABLE',
+                availableByEnumId: 'AVAIL_BY_SIGHT',
+                confirmationEnumId: 'CONFIRM_WITHOUT'
+            ]).call()
         def lc = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("goodsDescription", "Steel Rods - 50mm diameter (standard)").one()
 
         when:

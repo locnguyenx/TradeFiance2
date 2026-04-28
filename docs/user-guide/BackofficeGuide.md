@@ -1,8 +1,6 @@
 # Backoffice & System Admin Manual: Digital Trade Finance
 
-This guide provides exhaustive, step-by-step instructions for Administrative and Backoffice users. The platform uses a "Four-Eyes" principle ensuring no single user can complete a sensitive operation.
-
-![Navigation Overview](file:///Users/me/.gemini/antigravity/brain/222f8be2-5040-4a62-83e6-546ec9bc13b0/modern_flat_light_trade_navigation_mockup_v2_1776866522690.png)
+This guide provides exhaustive, step-by-step instructions for Administrative and Backoffice users. The platform runs on the **"Blue Premium"** enterprise design system, ensuring high visibility for audit and compliance workflows.
 
 ---
 
@@ -10,66 +8,59 @@ This guide provides exhaustive, step-by-step instructions for Administrative and
 **Goal**: Onboard a new corporate entity or verify compliance status.
 
 1.  **Initiation**: Click **Party Directory** in the **MASTER DATA** section of the sidebar.
-2.  **Selection**: Use the search bar in the left pane to find the entity by Name or Legal ID (e.g., `P001`). Click the row to load details.
-3.  **KYC Verification (Step-by-Step)**:
-    - Click the **KYC** tab in the main workspace.
-    - Review **Ultimate Beneficial Owner (UBO)** details.
-    - Check the **Verification Date**. If expired (red dot), click the **Renew Record** action (to be implemented).
-4.  **Compliance Audit**:
-    - Switch to the **Compliance** tab.
-    - Review the **Narrative** for adverse media flags.
-    - Verify that **UN Sanctions** and **OFAC** status are marked as `CLEAR`.
-5.  **Role Assignment**:
-    - Click the **Roles** tab.
-    - Verify the entity is authorized as an `Applicant` or `Beneficiary`. Active roles are highlighted in green.
+2.  **Selection**: The directory uses a master-detail split view. Use the search bar to find an entity by Name or Legal ID.
+3.  **KYC & Compliance (Full-Screen View)**:
+    - Click **View Details** to enter the full instrument view.
+    - Review **Ultimate Beneficial Owner (UBO)** and **UN Sanctions/OFAC** status.
+    - Status is visually indicated by color-coded badges (Green: Clear, Red: Action Required).
+4.  **Role Assignment**:
+    - Verify roles (Applicant/Beneficiary) in the **Identity Card**.
 
 ---
 
-## 2. Credit Facility Monitoring
+## 2. Credit Facility & Exposure Monitoring
 **Goal**: Review bank-wide exposure and drill down into specific utilization.
 
-1.  **Access**: Click **Credit Facilities** in the sidebar.
-2.  **Overview Analysis**:
-    - Review the **Total Exposure** cards at the top. Note the **Available Headroom** (highlighted in Green).
-3.  **Drill-Down Utilization (Step-by-Step)**:
-    - In the **Exposure by Instrument** section (Right Pane), click on a specific segment (e.g., **Import LC**).
-    - The **Utilization Breakdown** table will refresh below.
-    - Review the **EAD (Exposure at Default)** for each transaction.
-    - Click any **Transaction Ref** (underlined) to pull up the full instrument audit log.
-4.  **Risk Metrics**:
-    - Scroll to the bottom to view **Weighted Average Tenor** and **Concentration Metrics** for the selected segment.
+1.  **Facility Dashboard**: Click **Credit Facilities** in the sidebar.
+2.  **Exposure Breakdown**:
+    - Review the "Financial Hero Cards" for Total Exposure, Utilized, and Available Headroom.
+    - Use the **Utilization Breakdown** table to see individual transactions.
+3.  **Audit Drill-Down**:
+    - Click any underlined **Transaction Ref** to open the dedicated full-screen detail page.
+    - Review the **Unified Narrative Timeline** for a merged view of financial transactions and system audit logs.
+    - Every business action (Issuance, Amendment) is linked to a unique **Transaction ID**, allowing for granular backtracking.
 
 ---
 
 ## 3. System Administration & Audit
-**Goal**: Enforce security policies and audit system activity.
 
 ### A. Managing Authority Tiers
 1.  Navigate to **Administration > Authority Tiers**.
-2.  Review the **Approval Matrices**.
-3.  **Action**: Verify that `TRADE_CHECKER` users have sufficient limits for the current transaction volume.
+2.  The platform enforces **Dual Checker** logic for Tier 4 transactions automatically based on the configured amount thresholds.
 
 ### B. Analyzing Audit Logs
 1.  Navigate to **Administration > System Audit Logs**.
-2.  **Step-by-Step Audit**:
-    - Use the search bar to filter by **User ID** or **Transaction Ref**.
-    - Observe the `MAKER_COMMIT` vs `CHECKER_APPROVE` events.
-    - Click **View Delta** to see the exact fields changed during an amendment.
+    - Observe the interleaved feed of business transactions and low-level entity changes.
+    - View exactly which transaction triggered each lifecycle state transition.
 
 ### C. Product Configuration
 1.  Navigate to **Master Data > Product Config**.
-2.  Review standard **Incoterms** and **Document Checklist** templates.
-3.  **Action**: Update mandatory document requirements for specific LC types if regulatory policies change.
+2.  Configure standard **Incoterms** and **Document Checklist** templates which are proactively loaded into the Issuance Stepper.
 
 ---
 
 ### D. Compliance Holds & Release
-1.  **Enforcement**: Transactions triggering sanctions flags (e.g., matching SDN entities) are automatically placed on **Compliance Hold**.
-2.  **Release**: A specialized **Compliance Officer** must review and call the `validate#BusinessStateTransition` service with `holdReleased=true` to unblock the instrument.
+1.  **Enforcement**: Transactions matching SDN entities or sanctions lists are automatically placed on **Compliance Hold**.
+2.  **Release**: A Compliance Officer must review the instrument and explicitly release the hold via the **Release Hold** action in the detail view.
 
 ---
 
-## 5. Security & Risk Controls
-- **Dual Checker Enforcement**: Tier 4 transactions (High Risk/High Value) automatically require two independent authorizations before execution.
+## 4. Security & Risk Controls
+- **Dual Checker Enforcement**: High-value transactions are locked to unique **Transaction IDs** that require multi-stage authorization before the legal instrument is updated.
 - **Role Isolation**: Makers cannot authorize their own transactions.
-- **Audit Traceability**: Every state transition is recorded in the `TradeInstrumentHistory` log with a timestamped user ID.
+- **Narrative Traceability**: The platform maintains a persistent, chronological record of every touchpoint on an instrument via the unified timeline.
+
+---
+
+## Conclusion
+For operational support, contact the **Trade Finance Operations Helpdesk** at ext 9999 or email `trade-support@bank.com`.

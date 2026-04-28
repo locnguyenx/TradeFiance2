@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { tradeApi } from '../api/tradeApi';
+import { isValidZChars, getLineCount } from '../utils/SwiftUtils';
 
 // ABOUTME: Document Presentation Lodgement implementing REQ-IMP-PRC-03.
 // ABOUTME: Captures claims, document matrices, and tracks UCP 600 5-day examination SLA.
@@ -28,7 +29,25 @@ export const PresentationLodgement: React.FC<PresentationLodgementProps> = ({ in
     const [deadline, setDeadline] = useState('');
 
     const [error, setError] = useState('');
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(false);
+
+    const validateField = (name: string, value: string) => {
+        let errorMsg = '';
+        if (name === 'chargesDeducted' || name === 'senderToReceiverPresentationInfo') {
+            if (!isValidZChars(value)) {
+                errorMsg = 'Invalid characters detected (Internal SWIFT Z charset required)';
+            } else if (getLineCount(value) > 6) {
+                errorMsg = 'Exceeds maximum 6 lines (SWIFT standard)';
+            }
+        }
+        setFieldErrors(prev => {
+            const updated = { ...prev };
+            if (errorMsg) updated[name] = errorMsg;
+            else delete updated[name];
+            return updated;
+        });
+    };
 
     useEffect(() => {
         if (formData.presentationDate) {
@@ -108,20 +127,30 @@ export const PresentationLodgement: React.FC<PresentationLodgementProps> = ({ in
                         <label htmlFor="chargesDeducted">Charges Deducted (Tag 73)</label>
                         <input 
                             id="chargesDeducted"
+                            className={fieldErrors.chargesDeducted ? 'is-invalid' : ''}
                             value={formData.chargesDeducted}
-                            onChange={e => setFormData({...formData, chargesDeducted: e.target.value})}
+                            onChange={e => {
+                                setFormData({...formData, chargesDeducted: e.target.value});
+                                validateField('chargesDeducted', e.target.value);
+                            }}
                             placeholder="e.g. ADVISING FEES USD 50"
                         />
+                        {fieldErrors.chargesDeducted && <p className="error-text text-xs mt-1">{fieldErrors.chargesDeducted}</p>}
                     </div>
                     <div className="field-group">
                         <label htmlFor="senderToReceiverPresentationInfo">Sender to Receiver Info (Tag 72Z)</label>
                         <textarea 
                             id="senderToReceiverPresentationInfo"
-                            rows={2}
+                            className={fieldErrors.senderToReceiverPresentationInfo ? 'is-invalid' : ''}
+                            rows={3}
                             value={formData.senderToReceiverPresentationInfo}
-                            onChange={e => setFormData({...formData, senderToReceiverPresentationInfo: e.target.value})}
+                            onChange={e => {
+                                setFormData({...formData, senderToReceiverPresentationInfo: e.target.value});
+                                validateField('senderToReceiverPresentationInfo', e.target.value);
+                            }}
                             placeholder="Special instructions or information..."
                         />
+                        {fieldErrors.senderToReceiverPresentationInfo && <p className="error-text text-xs mt-1">{fieldErrors.senderToReceiverPresentationInfo}</p>}
                     </div>
                 </section>
 
@@ -167,7 +196,7 @@ export const PresentationLodgement: React.FC<PresentationLodgementProps> = ({ in
 
             <footer className="footer-actions">
                 <button className="secondary-btn" disabled={loading}>Cancel</button>
-                <button className="primary-btn" onClick={handleLogPresentation} disabled={loading}>
+                <button className="primary-btn" onClick={handleLogPresentation} disabled={loading || Object.keys(fieldErrors).length > 0}>
                     {loading ? 'Logging...' : 'Log Presentation'}
                 </button>
             </footer>
@@ -198,6 +227,9 @@ export const PresentationLodgement: React.FC<PresentationLodgementProps> = ({ in
                 .matrix-table th { text-align: left; padding: 0.75rem; background: #f8fafc; color: #475569; font-size: 0.75rem; text-transform: uppercase; }
                 .matrix-table td { padding: 0.75rem; border-bottom: 1px solid #f1f5f9; font-size: 0.875rem; }
                 .matrix-table input { width: 60px; padding: 0.5rem; border: 1px solid #e2e8f0; border-radius: 4px; }
+                
+                .is-invalid { border-color: #ef4444 !important; }
+                .error-text { color: #ef4444; font-weight: 500; }
                 
                 .summary-footer { margin-top: 1rem; padding: 1rem; background: #f8fafc; border-radius: 6px; text-align: right; font-weight: 600; color: #1e293b; }
 

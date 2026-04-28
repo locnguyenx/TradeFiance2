@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { tradeApi } from '../api/tradeApi';
 import { TradeInstrument, ImportLetterOfCredit } from '../api/types';
+import { isValidZChars } from '../utils/SwiftUtils';
 
 // ABOUTME: LC Amendment Stepper implementing REQ-IMP-PRC-02.
 // ABOUTME: Allows makers to capture "Delta" changes to active LCs and preview SWIFT MT 707.
@@ -30,6 +31,7 @@ export const AmendmentStepper: React.FC<AmendmentStepperProps> = ({ lcId }) => {
     });
 
     const [error, setError] = useState('');
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(true);
     const [status, setStatus] = useState<'IDLE' | 'SUBMITTED'>('IDLE');
 
@@ -159,11 +161,25 @@ export const AmendmentStepper: React.FC<AmendmentStepperProps> = ({ lcId }) => {
                             <label htmlFor="shippingChanges">Shipping & Terms Changes</label>
                             <textarea 
                                 id="shippingChanges"
+                                className={fieldErrors.amendmentNarrative ? 'is-invalid' : ''}
                                 rows={5}
                                 placeholder="Describe changes to Ports, Latest Shipment Date, etc."
                                 value={delta.amendmentNarrative}
-                                onChange={e => setDelta({...delta, amendmentNarrative: e.target.value})}
+                                onChange={e => {
+                                    const val = e.target.value;
+                                    setDelta({...delta, amendmentNarrative: val});
+                                    if (!isValidZChars(val)) {
+                                        setFieldErrors(prev => ({...prev, amendmentNarrative: 'Invalid characters detected (Internal SWIFT Z charset required)'}));
+                                    } else {
+                                        setFieldErrors(prev => {
+                                            const updated = { ...prev };
+                                            delete updated.amendmentNarrative;
+                                            return updated;
+                                        });
+                                    }
+                                }}
                             />
+                            {fieldErrors.amendmentNarrative && <p className="error-text text-xs mt-1">{fieldErrors.amendmentNarrative}</p>}
                         </div>
                     </section>
                 )}
@@ -229,7 +245,7 @@ ${delta.newExpiryDate ? `:31E: ${delta.newExpiryDate}` : ''}`}
                             data-testid="submit-button" 
                             className="primary-btn" 
                             onClick={handleSubmit}
-                            disabled={loading || status === 'SUBMITTED'}
+                            disabled={loading || status === 'SUBMITTED' || Object.keys(fieldErrors).length > 0}
                         >
                             {loading ? 'Submitting...' : 'Submit Amendment'}
                         </button>
@@ -258,6 +274,9 @@ ${delta.newExpiryDate ? `:31E: ${delta.newExpiryDate}` : ''}`}
                 .context-item .value { font-weight: 700; color: #0f172a; }
 
                 .swift-block { background: #0f172a; color: #10b981; padding: 1.5rem; border-radius: 8px; font-family: monospace; font-size: 0.875rem; margin-top: 1rem; }
+                
+                .is-invalid { border-color: #ef4444 !important; }
+                .error-text { color: #ef4444; font-weight: 500; }
                 
                 .error-banner { padding: 1rem; background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; border-radius: 6px; font-size: 0.875rem; font-weight: 600; margin-bottom: 1.5rem; }
                 .mb-2 { margin-bottom: 1.5rem; }

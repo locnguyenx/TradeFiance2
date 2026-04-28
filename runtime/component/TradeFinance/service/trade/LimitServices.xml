@@ -75,7 +75,6 @@
                 
                 <entity-find entity-name="trade.TradeInstrument" list="instrumentList">
                     <econdition field-name="customerFacilityId" from="facility.facilityId"/>
-                    <econdition field-name="transactionStatusId" operator="in" value="TX_DRAFT,TX_PENDING,TX_APPROVED"/>
                 </entity-find>
                 
                 <set field="fFirm" from="0.0" type="BigDecimal"/>
@@ -83,12 +82,19 @@
                 <set field="fReserved" from="0.0" type="BigDecimal"/>
                 
                 <iterate list="instrumentList" entry="inst">
-                    <if condition="inst.transactionStatusId == 'TX_APPROVED'">
+                    <!-- Get latest transaction status for this instrument -->
+                    <entity-find entity-name="trade.TradeTransaction" list="txList">
+                        <econdition field-name="instrumentId" from="inst.instrumentId"/>
+                        <order-by field-name="-transactionId"/>
+                    </entity-find>
+                    <set field="txStatus" from="txList ? txList[0].transactionStatusId : null"/>
+                    
+                    <if condition="txStatus == 'TX_APPROVED'">
                         <set field="fFirm" from="fFirm + (inst.baseEquivalentAmount ?: 0)"/>
-                    <else-if condition="inst.transactionStatusId == 'TX_PENDING'">
+                    <else-if condition="txStatus == 'TX_PENDING'">
                         <set field="fContingent" from="fContingent + (inst.baseEquivalentAmount ?: 0)"/>
                     </else-if>
-                    <else-if condition="inst.transactionStatusId == 'TX_DRAFT'">
+                    <else-if condition="txStatus == 'TX_DRAFT'">
                         <set field="fReserved" from="fReserved + (inst.baseEquivalentAmount ?: 0)"/>
                     </else-if>
                     </if>
@@ -148,12 +154,20 @@
             <set field="transactions" from="[]"/>
             
             <iterate list="instrumentList" entry="inst">
-                <if condition="inst.transactionStatusId == 'TX_APPROVED'">
+                <!-- Get latest transaction status -->
+                <entity-find entity-name="trade.TradeTransaction" list="txList">
+                    <econdition field-name="instrumentId" from="inst.instrumentId"/>
+                    <order-by field-name="-transactionId"/>
+                </entity-find>
+                <set field="tx" from="txList ? txList[0] : null"/>
+                <set field="txStatus" from="tx?.transactionStatusId"/>
+                
+                <if condition="txStatus == 'TX_APPROVED'">
                     <set field="fFirm" from="fFirm + (inst.baseEquivalentAmount ?: 0)"/>
-                <else-if condition="inst.transactionStatusId == 'TX_PENDING'">
+                <else-if condition="txStatus == 'TX_PENDING'">
                     <set field="fContingent" from="fContingent + (inst.baseEquivalentAmount ?: 0)"/>
                 </else-if>
-                <else-if condition="inst.transactionStatusId == 'TX_DRAFT'">
+                <else-if condition="txStatus == 'TX_DRAFT'">
                     <set field="fReserved" from="fReserved + (inst.baseEquivalentAmount ?: 0)"/>
                 </else-if>
                 </if>
@@ -162,9 +176,10 @@
                     transactions.add([
                         instrumentId: inst.instrumentId,
                         transactionRef: inst.transactionRef,
-                        businessStateId: inst.lifecycleStatusId,
+                        businessStateId: inst.businessStateId,
+                        transactionStatusId: txStatus,
                         effectiveOutstandingAmount: inst.baseEquivalentAmount,
-                        transactionDate: inst.transactionDate
+                        transactionDate: tx?.transactionDate ?: inst.transactionDate
                     ])
                 </script>
             </iterate>

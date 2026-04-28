@@ -31,18 +31,21 @@ class BddCommonModuleSpec extends Specification {
         ec.entity.makeValue("moqui.security.ArtifactAuthz").setAll([artifactAuthzId: "TA_ALL_COM", userGroupId: "TRADE_ADMIN", artifactGroupId: "TRADE_FINANCE_ENTITIES", authzTypeEnumId: "AUTHZT_ALLOW", authzActionEnumId: "AUTHZA_ALL"]).createOrUpdate()
         ec.entity.makeValue("moqui.security.ArtifactAuthz").setAll([artifactAuthzId: "TA_SRV_ALL_COM", userGroupId: "TRADE_ADMIN", artifactGroupId: "TRADE_FINANCE_SERVICES", authzTypeEnumId: "AUTHZT_ALLOW", authzActionEnumId: "AUTHZA_ALL"]).createOrUpdate()
 
-        ec.entity.find("trade.importlc.ImportLcSettlement").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "2000000").deleteAll()
-        def presList = ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "2000000").list()
+        ec.entity.find("trade.importlc.ImportLcSettlement").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
+        def presList = ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").list()
         def presIds = presList.collect{it.presentationId ?: ''}
-        ec.entity.find("trade.importlc.PresentationDiscrepancy").condition("presentationId", EntityCondition.IN, presIds).deleteAll()
-        ec.entity.find("trade.importlc.TradeDocumentPresentationItem").condition("presentationId", EntityCondition.IN, presIds).deleteAll()
-        ec.entity.find("trade.importlc.ImportLcSettlement").condition("presentationId", EntityCondition.IN, presIds).deleteAll()
-ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
+        if (presIds) {
+            ec.entity.find("trade.importlc.PresentationDiscrepancy").condition("presentationId", EntityCondition.IN, presIds).deleteAll()
+            ec.entity.find("trade.importlc.TradeDocumentPresentationItem").condition("presentationId", EntityCondition.IN, presIds).deleteAll()
+            ec.entity.find("trade.importlc.ImportLcSettlement").condition("presentationId", EntityCondition.IN, presIds).deleteAll()
+        }
+        ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
         ec.entity.find("trade.importlc.ImportLcAmendment").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
         ec.entity.find("trade.importlc.ImportLcShippingGuarantee").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
         ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
-        ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
         ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
+        ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
+        ec.entity.find("trade.TradeTransaction").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
         ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
         ec.entity.find("trade.CustomerFacility").condition("facilityId", EntityCondition.LIKE, "FAC-%").deleteAll()

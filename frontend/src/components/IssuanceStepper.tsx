@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { tradeApi } from '../api/tradeApi';
 import { ClauseSelector } from './ClauseSelector';
+import { isValidXChars, isValidZChars, getLineCount } from '../utils/SwiftUtils';
 
 // ABOUTME: High-fidelity LC Issuance Stepper implementing REQ-UI-IMP-03.
 // ABOUTME: Maps state to BDD sequences: BDD-IMP-FLOW-01 (Draft) and BDD-IMP-FLOW-02 (Submit).
@@ -191,17 +192,24 @@ export const IssuanceStepper: React.FC = () => {
         }
     }, [formData.applicantPartyId]);
 
-    const validateSwift = (field: string, value: string) => {
-        const swiftRegex = /^[a-zA-Z0-9/\-?:().,'+ \n\r]*$/;
-        if (!swiftRegex.test(value)) {
-            setSwiftErrors(prev => ({ ...prev, [field]: 'Invalid SWIFT character detected' }));
-        } else {
-            setSwiftErrors(prev => {
-                const updated = { ...prev };
-                delete updated[field];
-                return updated;
-            });
+    const validateSwiftField = (field: string, value: string, charset: 'X' | 'Z' = 'X', maxLines?: number) => {
+        let errorMsg = '';
+        if (charset === 'X' && !isValidXChars(value)) {
+            errorMsg = 'Invalid characters detected (SWIFT X charset required)';
+        } else if (charset === 'Z' && !isValidZChars(value)) {
+            errorMsg = 'Invalid characters detected (SWIFT Z charset required)';
+        } else if (maxLines && getLineCount(value) > maxLines) {
+            errorMsg = `Exceeds maximum ${maxLines} lines`;
         }
+
+        setSwiftErrors(prev => {
+            const updated = { ...prev };
+            if (errorMsg) updated[field] = errorMsg;
+            else delete updated[field];
+            return updated;
+        });
+
+        // Bug fix in my thought: it should be delete updated[field]
     };
 
     const handleNext = async () => {
@@ -516,7 +524,9 @@ export const IssuanceStepper: React.FC = () => {
                                     value={formData.applicantPartyId}
                                     onChange={e => {
                                         const party = parties.find(p => p.partyId === e.target.value);
-                                        setFormData({...formData, applicantPartyId: e.target.value, applicant: party?.partyName || ''});
+                                        const partyName = party?.partyName || '';
+                                        setFormData({...formData, applicantPartyId: e.target.value, applicant: partyName});
+                                        validateSwiftField('applicant', partyName, 'X', 4);
                                     }}
                                 >
                                     <option value="">Select Applicant...</option>
@@ -544,7 +554,10 @@ export const IssuanceStepper: React.FC = () => {
                                     className={swiftErrors.beneficiary ? 'is-invalid' : ''}
                                     rows={3}
                                     value={formData.beneficiary}
-                                    onChange={e => setFormData({...formData, beneficiary: e.target.value})}
+                                    onChange={e => {
+                                        setFormData({...formData, beneficiary: e.target.value});
+                                        validateSwiftField('beneficiary', e.target.value, 'X', 4);
+                                    }}
                                     placeholder="Multi-line Beneficiary details..."
                                 />
                                 {swiftErrors.beneficiary && <p className="error-text text-xs mt-1">{swiftErrors.beneficiary}</p>}
@@ -663,7 +676,10 @@ export const IssuanceStepper: React.FC = () => {
                                         className={swiftErrors.availableWithName ? 'is-invalid' : ''}
                                         rows={2}
                                         value={formData.availableWithName}
-                                        onChange={e => setFormData({...formData, availableWithName: e.target.value})}
+                                        onChange={e => {
+                                            setFormData({...formData, availableWithName: e.target.value});
+                                            validateSwiftField('availableWithName', e.target.value, 'X', 4);
+                                        }}
                                         placeholder="Name and address if BIC not available..."
                                     />
                                     {swiftErrors.availableWithName && <p className="error-text text-xs mt-1">{swiftErrors.availableWithName}</p>}
@@ -699,11 +715,29 @@ export const IssuanceStepper: React.FC = () => {
                                 </div>
                                 <div className="field-group">
                                     <label htmlFor="portOfLoading">Port of Loading</label>
-                                    <input id="portOfLoading" value={formData.portOfLoading} onChange={e => setFormData({...formData, portOfLoading: e.target.value})} />
+                                    <input 
+                                        id="portOfLoading" 
+                                        className={swiftErrors.portOfLoading ? 'is-invalid' : ''}
+                                        value={formData.portOfLoading} 
+                                        onChange={e => {
+                                            setFormData({...formData, portOfLoading: e.target.value});
+                                            validateSwiftField('portOfLoading', e.target.value, 'X');
+                                        }} 
+                                    />
+                                    {swiftErrors.portOfLoading && <p className="error-text text-xs mt-1">{swiftErrors.portOfLoading}</p>}
                                 </div>
                                 <div className="field-group">
                                     <label htmlFor="portOfDischarge">Port of Discharge</label>
-                                    <input id="portOfDischarge" value={formData.portOfDischarge} onChange={e => setFormData({...formData, portOfDischarge: e.target.value})} />
+                                    <input 
+                                        id="portOfDischarge" 
+                                        className={swiftErrors.portOfDischarge ? 'is-invalid' : ''}
+                                        value={formData.portOfDischarge} 
+                                        onChange={e => {
+                                            setFormData({...formData, portOfDischarge: e.target.value});
+                                            validateSwiftField('portOfDischarge', e.target.value, 'X');
+                                        }} 
+                                    />
+                                    {swiftErrors.portOfDischarge && <p className="error-text text-xs mt-1">{swiftErrors.portOfDischarge}</p>}
                                 </div>
                             </section>
 
@@ -719,7 +753,10 @@ export const IssuanceStepper: React.FC = () => {
                                         className={swiftErrors.goodsDescription ? 'is-invalid' : ''}
                                         rows={4} 
                                         value={formData.goodsDescription} 
-                                        onChange={e => setFormData({...formData, goodsDescription: e.target.value})} 
+                                        onChange={e => {
+                                            setFormData({...formData, goodsDescription: e.target.value});
+                                            validateSwiftField('goodsDescription', e.target.value, 'X');
+                                        }} 
                                     />
                                     {swiftErrors.goodsDescription && <p className="error-text text-xs mt-1">{swiftErrors.goodsDescription}</p>}
                                 </div>
@@ -733,7 +770,10 @@ export const IssuanceStepper: React.FC = () => {
                                         className={swiftErrors.documentsRequired ? 'is-invalid' : ''}
                                         rows={4} 
                                         value={formData.documentsRequired} 
-                                        onChange={e => setFormData({...formData, documentsRequired: e.target.value})} 
+                                        onChange={e => {
+                                            setFormData({...formData, documentsRequired: e.target.value});
+                                            validateSwiftField('documentsRequired', e.target.value, 'X');
+                                        }} 
                                     />
                                     {swiftErrors.documentsRequired && <p className="error-text text-xs mt-1">{swiftErrors.documentsRequired}</p>}
                                 </div>

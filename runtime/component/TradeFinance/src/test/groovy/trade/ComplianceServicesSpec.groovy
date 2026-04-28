@@ -22,6 +22,7 @@ class ComplianceServicesSpec extends Specification {
         // Clean up before each test
         String lcId = "COMP-HOLD-LC-01"
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", lcId).deleteAll()
+        ec.entity.find("trade.TradeTransaction").condition("instrumentId", lcId).deleteAll()
         ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", lcId).deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", lcId).deleteAll()
     }
@@ -35,11 +36,14 @@ class ComplianceServicesSpec extends Specification {
         String lcId = "COMP-HOLD-LC-01"
         ec.entity.makeValue("trade.TradeInstrument").setAll([
             instrumentId: lcId, instrumentTypeEnumId: 'IMPORT_LC', 
-            businessStateId: 'LC_ISSUED', transactionStatusId: 'TX_APPROVED',
+            businessStateId: 'LC_ISSUED',
             amount: 10000, currencyUomId: 'USD'
         ]).create()
         ec.entity.makeValue("trade.importlc.ImportLetterOfCredit").setAll([
             instrumentId: lcId, businessStateId: 'LC_ISSUED'
+        ]).create()
+        ec.entity.makeValue("trade.TradeTransaction").setAll([
+            transactionId: "TX-COMP-HOLD-01", instrumentId: lcId, transactionStatusId: 'TX_DRAFT', versionNumber: 1
         ]).create()
 
         when: "Apply Compliance Hold"
@@ -78,6 +82,7 @@ class ComplianceServicesSpec extends Specification {
 
         cleanup:
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", lcId).deleteAll()
+        ec.entity.find("trade.TradeTransaction").condition("instrumentId", lcId).deleteAll()
         ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", lcId).deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", lcId).deleteAll()
     }

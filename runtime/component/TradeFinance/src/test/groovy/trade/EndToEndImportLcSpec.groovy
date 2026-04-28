@@ -73,6 +73,8 @@ class EndToEndImportLcSpec extends Specification {
         cleanup:
         if (instrumentId) {
             ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", instrumentId).deleteAll()
+            ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instrumentId).deleteAll()
+            ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).deleteAll()
         }

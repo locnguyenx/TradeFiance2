@@ -1,0 +1,57 @@
+<h2>Designing Transaction & Instrument Traceability</h2>
+<p class="subtitle">How should users interact with Transactions vs. the underlying Instrument?</p>
+
+<div class="options">
+  <div class="option" data-choice="timeline" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Unified Timeline</h3>
+      <p>Chronological feed of all events (Create LC, Authorized, Amended, Presented). 
+      Best for seeing the <strong>story</strong> of the instrument.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="tabs" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Tabbed Navigation</h3>
+      <p>Separate "Overview" (Aggregate Data) from "History" (Individual Transactions).
+      Best for <strong>complex LCs</strong> with many amendments.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="hero" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Active Hero</h3>
+      <p>The latest transaction is pinned to the top as a "Workflow Hero". 
+      Best for <strong>action-oriented</strong> users focusing on current task.</p>
+    </div>
+  </div>
+</div>
+
+<div class="mockup mt-8">
+  <div class="mockup-header">Preview: Unified Timeline (Option A)</div>
+  <div class="mockup-body" style="background:#f8fafc; padding: 2rem;">
+    <div style="max-width: 600px; margin: 0 auto; background: white; padding: 1.5rem; border-radius: 8px; border: 1px solid #e2e8f0;">
+      <h4 style="margin: 0 0 1rem 0; color: #1e293b;">Import LC Traceability</h4>
+      
+      <div class="timeline" style="position: relative; padding-left: 2rem; border-left: 2px solid #e2e8f0;">
+        <div style="margin-bottom: 2rem;">
+          <div class="dot" style="position: absolute; left: -5px; top: 0; width: 8px; height: 8px; border-radius: 50%; background: #2563eb;"></div>
+          <div class="label" style="font-size: 0.65rem; color: #64748b; font-weight: 800;">CURRENT WORKFLOW</div>
+          <p style="margin: 0.25rem 0; font-weight: 700;">Amendment Pre-Authorize (v.2)</p>
+          <p style="margin: 0; font-size: 0.75rem; color: #64748b;">Maker: Loc | Pending: Dual Checker</p>
+          <div style="background: #eff6ff; padding: 0.75rem; margin-top: 0.5rem; border-radius: 4px; border: 1px solid #bfdbfe;">
+            <p style="margin: 0; font-size: 0.75rem; color: #1e40af;"><strong>Change:</strong> Amount increased by USD 50,000.00</p>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 2rem; opacity: 0.6;">
+          <div class="dot" style="position: absolute; left: -5px; top: 0; width: 8px; height: 8px; border-radius: 50%; background: #94a3b8;"></div>
+          <div class="label" style="font-size: 0.65rem; color: #64748b; font-weight: 800;">2026-04-20</div>
+          <p style="margin: 0.25rem 0; font-weight: 600;">LC Issued (v.1)</p>
+          <p style="margin: 0; font-size: 0.75rem; color: #64748b;">Transaction: TF-IMP-26-0001</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

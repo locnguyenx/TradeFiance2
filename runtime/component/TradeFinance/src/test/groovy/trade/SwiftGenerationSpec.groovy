@@ -41,9 +41,15 @@ class SwiftGenerationSpec extends Specification {
         ec.user.loginUser("john.doe", "moqui")
         ec.artifactExecution.disableAuthz()
         try {
+            ec.entity.find("trade.importlc.ImportLcSettlement").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "6000000").deleteAll()
+            ec.entity.find("trade.importlc.PresentationDiscrepancy").condition("presentationId", EntityCondition.IN, ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "6000000").list().collect { it.presentationId } ?: ["NONE"]).deleteAll()
+            ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "6000000").deleteAll()
             ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "6000000").deleteAll()
             ec.entity.find("trade.importlc.ImportLcAmendment").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "6000000").deleteAll()
             ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "6000000").deleteAll()
+            ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "6000000").deleteAll()
+            ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "6000000").deleteAll()
+            ec.entity.find("trade.TradeTransaction").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "6000000").deleteAll()
             ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "6000000").deleteAll()
         } finally {
             ec.artifactExecution.enableAuthz()
@@ -80,7 +86,7 @@ class SwiftGenerationSpec extends Specification {
                          advisingBankBic: "ADVISXXX"]).call()
         
         // Simulate approval
-        ec.entity.find("trade.TradeInstrument").condition("instrumentId", res.instrumentId).one()
+        ec.entity.find("trade.TradeTransaction").condition("instrumentId", res.instrumentId).one()
             .set("transactionStatusId", "TX_APPROVED").update()
 
         when: "generate#Mt700 is called"
@@ -99,7 +105,7 @@ class SwiftGenerationSpec extends Specification {
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([transactionRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD"]).call()
         
-        ec.entity.find("trade.TradeInstrument").condition("instrumentId", res.instrumentId).one()
+        ec.entity.find("trade.TradeTransaction").condition("instrumentId", res.instrumentId).one()
             .set("transactionStatusId", "TX_APPROVED").update()
         
         def gen1 = ec.service.sync().name("trade.SwiftGenerationServices.generate#Mt700")

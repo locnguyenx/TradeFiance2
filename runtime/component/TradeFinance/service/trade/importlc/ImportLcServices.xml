@@ -19,6 +19,7 @@
         </in-parameters>
         <out-parameters>
             <parameter name="instrumentId" required="true"/>
+            <parameter name="transactionId" required="true"/>
             <parameter name="transactionRef"/>
         </out-parameters>
         <actions>
@@ -32,17 +33,26 @@
                 in-map="[
                     transactionRef: transactionRef,
                     instrumentTypeEnumId: 'IMPORT_LC',
-                    transactionStatusId: 'TX_DRAFT',
                     businessStateId: 'LC_DRAFT',
-                    makerUserId: ec.user.userId,
-                    makerTimestamp: ec.user.nowTimestamp,
                     amount: lcAmount,
                     currencyUomId: lcCurrencyUomId,
                     expiryDate: expiryDate,
-                    baseEquivalentAmount: lcAmount,
-                    versionNumber: 1
+                    baseEquivalentAmount: lcAmount
                 ]"/>
             <set field="instrumentId" from="createInstOut.instrumentId"/>
+
+            <!-- 2. Create TradeTransaction for Issuance -->
+            <service-call name="create#trade.TradeTransaction" out-map="txOut"
+                in-map="[
+                    instrumentId: instrumentId,
+                    transactionTypeEnumId: 'IMP_NEW',
+                    transactionStatusId: 'TX_DRAFT',
+                    transactionDate: ec.user.nowTimestamp,
+                    makerUserId: ec.user.userId,
+                    makerTimestamp: ec.user.nowTimestamp,
+                    versionNumber: 1
+                ]"/>
+            <set field="transactionId" from="txOut.transactionId"/>
 
             <!-- 2. Create ImportLetterOfCredit -->
             <service-call name="create#trade.importlc.ImportLetterOfCredit" out-map="createLcOut"
@@ -86,15 +96,31 @@
             <if condition="!instrument"><return error="true" message="Letter of Credit not found with ID ${instrumentId}"/></if>
 
             <!-- Versioning Logic -->
-            <if condition="instrument.transactionStatusId == 'TX_APPROVED'">
-                <set field="instrument.versionNumber" from="(instrument.versionNumber ?: 1) + 1"/>
-                <set field="instrument.transactionStatusId" value="TX_DRAFT"/>
+            <entity-find entity-name="trade.TradeTransaction" list="txList">
+                <econdition field-name="instrumentId"/>
+                <econdition field-name="transactionTypeEnumId" value="IMP_NEW"/>
+                <order-by field-name="-transactionId"/>
+            </entity-find>
+            <set field="tx" from="txList ? txList[0] : null"/>
+            
+            <if condition="tx?.transactionStatusId == 'TX_APPROVED'">
+                <service-call name="create#trade.TradeTransaction" out-map="newTxOut"
+                    in-map="[
+                        instrumentId: instrumentId,
+                        transactionTypeEnumId: 'IMP_NEW',
+                        transactionStatusId: 'TX_DRAFT',
+                        transactionDate: ec.user.nowTimestamp,
+                        makerUserId: ec.user.userId,
+                        makerTimestamp: ec.user.nowTimestamp,
+                        versionNumber: (tx.versionNumber ?: 1) + 1
+                    ]"/>
+                <set field="tx" from="ec.entity.find('trade.TradeTransaction').condition('transactionId', newTxOut.transactionId).one()"/>
             </if>
 
             <if condition="lcAmount != null"><set field="instrument.amount" from="lcAmount"/></if>
             <if condition="lcCurrencyUomId != null"><set field="instrument.currencyUomId" from="lcCurrencyUomId"/></if>
             <if condition="expiryDate != null"><set field="instrument.expiryDate" from="expiryDate"/></if>
-            <set field="instrument.lastUpdateTimestamp" from="ec.user.nowTimestamp"/>
+            <!-- lastUpdatedStamp is automatic in Moqui -->
             <entity-update value-field="instrument"/>
 
             <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" auto-field-map="true"/>
@@ -108,16 +134,12 @@
             <if condition="latestShipmentDate != null"><set field="lc.effectiveShipmentDate" from="latestShipmentDate"/></if>
             <if condition="businessStateId != null &amp;&amp; businessStateId != lc.businessStateId">
                 <set field="lc.businessStateId" from="businessStateId"/>
-                <!-- Sync with TradeInstrument -->
-                <if condition="instrument">
-                    <set field="updateInstMap" from="[instrumentId: instrumentId, businessStateId: businessStateId, lifecycleStatusId: businessStateId]"/>
-                    <if condition="businessStateId == 'LC_CANCELLED' || businessStateId == 'LC_CLOSED' || businessStateId == 'LC_EXPIRED'">
-                        <set field="updateInstMap.transactionStatusId" value="TX_APPROVED"/>
-                    </if>
-                    <if condition="businessStateId == 'LC_PENDING'">
-                        <set field="updateInstMap.transactionStatusId" value="TX_PENDING"/>
-                    </if>
-                    <service-call name="update#trade.TradeInstrument" in-map="updateInstMap"/>
+                <!-- Sync with TradeTransaction -->
+                <if condition="businessStateId == 'LC_PENDING'">
+                    <service-call name="update#trade.TradeTransaction" in-map="[transactionId: tx.transactionId, transactionStatusId: 'TX_PENDING']"/>
+                </if>
+                <if condition="businessStateId == 'LC_CANCELLED' || businessStateId == 'LC_CLOSED' || businessStateId == 'LC_EXPIRED'">
+                    <service-call name="update#trade.TradeTransaction" in-map="[transactionId: tx.transactionId, transactionStatusId: 'TX_APPROVED']"/>
                 </if>
                 <set field="lc.businessStateId" from="businessStateId"/>
                 <if condition="outstandingAmount != null"><set field="lc.effectiveOutstandingAmount" from="outstandingAmount"/></if>
@@ -136,33 +158,38 @@
         </in-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
-            <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument" for-update="true"/>
-            <if condition="!instrument"><return error="true" message="Instrument not found with ID ${instrumentId}"/></if>
-
+            <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument" auto-field-map="true"/>
+            <if condition="!instrument"><return error="true" message="Letter of Credit not found with ID ${instrumentId}"/></if>
             <set field="approverUserId" from="approverUserId ?: ec.user.userId"/>
 
-            <!-- 1. Validate Authority -->
+            <!-- 1. Find the IMP_NEW transaction -->
+            <entity-find entity-name="trade.TradeTransaction" list="txList">
+                <econdition field-name="instrumentId"/>
+                <econdition field-name="transactionTypeEnumId" value="IMP_NEW"/>
+                <order-by field-name="-transactionId"/>
+            </entity-find>
+            <set field="tx" from="txList ? txList[0] : null"/>
+            <if condition="!tx"><return error="true" message="No issuance transaction found"/></if>
+
+            <!-- 2. Validate Authority using transaction -->
             <service-call name="trade.AuthorizationServices.evaluate#MakerCheckerMatrix" 
-                          in-map="[instrumentId: instrumentId, userId: approverUserId]" out-map="authOut"/>
+                          in-map="[transactionId: tx.transactionId, userId: approverUserId]" out-map="authOut"/>
             <if condition="!authOut.isAuthorized">
-                <return error="true" message="User ${approverUserId} is not authorized to approve this instrument (Limit exceeded or Maker/Checker conflict)"/>
+                <return error="true" message="User ${approverUserId} is not authorized: ${authOut.reason ?: 'Limit exceeded or Maker/Checker conflict'}"/>
             </if>
 
-            <!-- 2. Dual Checker Logic for Tier 4 -->
+            <!-- 3. Dual Checker Logic for Tier 4 -->
             <set field="isFinalApproval" from="true"/>
-            <set field="dualCheckError" value="false" type="Boolean"/>
             <if condition="authOut.authorityTierEnumId == 'TIER_4'">
                 <script>
                     def existing = ec.entity.find("trade.TradeApprovalRecord")
-                        .condition("instrumentId", instrumentId)
-                        .condition("versionSnapshot", instrument.versionNumber)
+                        .condition("transactionId", tx.transactionId)
+                        .condition("versionSnapshot", tx.versionNumber)
                         .list()
-                    ec.logger.info("DEBUG DUAL: count=${existing.size()}")
                     if (existing.isEmpty()) {
                         context.isFinalApproval = false
                     } else {
                         for (prevAppr in existing) {
-                            ec.logger.info("DEBUG DUAL: Comparing current ${approverUserId} with previous ${prevAppr.approverUserId}")
                             if (prevAppr.approverUserId == approverUserId) {
                                 throw new org.moqui.service.ServiceException("Dual approval required: Current user has already approved this version.")
                             }
@@ -171,24 +198,36 @@
                 </script>
             </if>
 
-            <!-- 3. Create Approval Record -->
+            <!-- 4. Create Approval Record -->
             <service-call name="create#trade.TradeApprovalRecord"
                 in-map="[
+                    transactionId: tx.transactionId,
                     instrumentId: instrumentId,
                     approverUserId: approverUserId,
                     approvalTimestamp: ec.user.nowTimestamp,
                     approvalComments: approvalComments,
-                    versionSnapshot: instrument.versionNumber
+                    versionSnapshot: tx.versionNumber,
+                    approvalDecision: 'APPROVED'
                 ]"/>
 
-            <!-- 4. Update status if final -->
+            <!-- 5. Update Transaction Status -->
             <if condition="isFinalApproval">
-                <service-call name="update#trade.TradeInstrument"
-                    in-map="[instrumentId: instrumentId, transactionStatusId: 'TX_APPROVED', 
-                             checkerUserId: approverUserId, checkerTimestamp: ec.user.nowTimestamp]"/>
+                <service-call name="update#trade.TradeTransaction"
+                    in-map="[transactionId: tx.transactionId, 
+                             transactionStatusId: 'TX_APPROVED',
+                             checkerUserId: approverUserId, 
+                             checkerTimestamp: ec.user.nowTimestamp]"/>
+                
+                <!-- 6. Update Business State to LC_ISSUED -->
+                <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" for-update="true">
+                    <field-map field-name="instrumentId"/>
+                </entity-find-one>
+                <if condition="lc">
+                    <set field="lc.businessStateId" value="LC_ISSUED"/>
+                    <entity-update value-field="lc"/>
+                </if>
             </if>
             <else>
-                <!-- Keep status as is (presumably TX_PENDING) -->
                 <message>First approval recorded for Tier 4 transaction. Waiting for second checker.</message>
             </else>
         </actions>
@@ -238,29 +277,29 @@
             <service-call name="create#trade.importlc.ImportLcAmendment" out-map="amdOut"
                 in-map="context + [amendmentBusinessStateId:amendmentBusinessStateId, amendmentNumber:amendmentNumber, beneficiaryConsentStatusId:beneficiaryConsentStatusId]"/>
             
-            <if condition="beneficiaryConsentStatusId == 'PENDING'">
-                <service-call name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit"
-                    in-map="[instrumentId: instrumentId, businessStateId: 'LC_AMENDMENT_PENDING']"/>
-            </if>
-
-            <!-- Facility limit check for financial increase -->
-            <if condition="isFinancial == 'Y' &amp;&amp; amountAdjustment &gt; 0">
-                <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument"/>
-                <if condition="instrument?.customerFacilityId">
-                    <entity-find-one entity-name="trade.CustomerFacility" value-field="facility" for-update="true">
-                        <field-map field-name="facilityId" from="instrument.customerFacilityId"/>
-                    </entity-find-one>
-                    <if condition="facility">
-                        <set field="availableLimit" from="facility.totalApprovedLimit - (facility.utilizedAmount ?: 0)"/>
-                        <if condition="amountAdjustment &gt; availableLimit">
-                            <return error="true" message="Insufficient facility limit for amendment increase"/>
-                        </if>
-                        <!-- Note: In Amendment flow, we typically finalize on authorization, but for TDD we need to track logic -->
-                    </if>
-                </if>
-            </if>
+            <!-- NEW: Create TradeTransaction for Amendment -->
+            <service-call name="create#trade.TradeTransaction" out-map="txOut"
+                in-map="[
+                    instrumentId: instrumentId,
+                    transactionTypeEnumId: 'IMP_AMENDMENT',
+                    transactionStatusId: 'TX_DRAFT',
+                    transactionDate: ec.user.nowTimestamp,
+                    makerUserId: ec.user.userId,
+                    makerTimestamp: ec.user.nowTimestamp,
+                    versionNumber: 1,
+                    relatedRecordId: amdOut.amendmentId,
+                    relatedRecordType: 'AMENDMENT'
+                ]"/>
 
             <set field="amendmentId" from="amdOut.amendmentId"/>
+
+            <!-- Transition LC state if financial and pending consent -->
+            <if condition="isFinancial == 'Y'">
+                <service-call name="update#trade.TradeInstrument"
+                              in-map="[instrumentId: instrumentId, businessStateId: 'LC_AMENDMENT_PENDING']"/>
+                <service-call name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit"
+                              in-map="[instrumentId: instrumentId, businessStateId: 'LC_AMENDMENT_PENDING']"/>
+            </if>
         </actions>
     </service>
 
@@ -276,8 +315,8 @@
                 <return error="true" message="Only amendments in DRAFT state can be authorized (current: ${amendment.amendmentBusinessStateId})"/>
             </if>
 
-            <set field="amendment.amendmentBusinessStateId" value="AMEND_APPROVED"/>
-            <entity-update value-field="amendment"/>
+            <service-call name="update#trade.importlc.ImportLcAmendment"
+                in-map="[amendmentId: amendmentId, amendmentBusinessStateId: 'AMEND_APPROVED']"/>
 
             <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" for-update="true">
                 <field-map field-name="instrumentId" from="amendment.instrumentId"/>
@@ -289,21 +328,34 @@
                 <entity-update value-field="lc"/>
             </if>
 
-            <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument" for-update="true">
-                <field-map field-name="instrumentId" from="amendment.instrumentId"/>
-            </entity-find-one>
-            <if condition="instrument">
-                <set field="instrument.versionNumber" from="(instrument.versionNumber ?: 1) + 1"/>
-                <if condition="instrument.transactionStatusId == 'TX_APPROVED'">
-                    <set field="instrument.transactionStatusId" value="TX_DRAFT"/>
-                </if>
-                <entity-update value-field="instrument"/>
+
+            <!-- Find the IMP_AMENDMENT transaction -->
+            <entity-find entity-name="trade.TradeTransaction" list="txList">
+                <econdition field-name="instrumentId" from="amendment.instrumentId"/>
+                <econdition field-name="relatedRecordId" from="amendmentId"/>
+                <econdition field-name="transactionTypeEnumId" value="IMP_AMENDMENT"/>
+                <order-by field-name="-transactionId"/>
+            </entity-find>
+            <if condition="txList">
+                <set field="newVersion" from="(txList[0].versionNumber ?: 1) + 1"/>
+                <service-call name="update#trade.TradeTransaction"
+                    in-map="[transactionId: txList[0].transactionId,
+                             transactionStatusId: 'TX_APPROVED',
+                             versionNumber: newVersion,
+                             checkerUserId: ec.user.userId,
+                             checkerTimestamp: ec.user.nowTimestamp]"/>
             </if>
 
             <if condition="amendment.isFinancial == 'Y'">
+                <log level="info" message="Authorizing financial amendment ${amendmentId} for LC ${amendment.instrumentId}. Transitioning state to LC_AMENDMENT_PENDING."/>
+                <service-call name="update#trade.TradeInstrument"
+                              in-map="[instrumentId: amendment.instrumentId, businessStateId: 'LC_AMENDMENT_PENDING']"/>
                 <service-call name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit"
                               in-map="[instrumentId: amendment.instrumentId, businessStateId: 'LC_AMENDMENT_PENDING']"/>
             </if>
+            <else>
+                <log level="info" message="Authorizing non-financial amendment ${amendmentId} for LC ${amendment.instrumentId}. State remains LC_ISSUED."/>
+            </else>
         </actions>
     </service>
 
@@ -362,15 +414,49 @@
             <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="presentation" for-update="true"/>
             <if condition="!presentation"><return error="true" message="Presentation ${presentationId} not found"/></if>
-            <set field="instrumentId" from="presentation.instrumentId"/>
-
+            
             <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" for-update="true"/>
             
-            <service-call name="trade.TradeAccountingServices.create#ImportLcSettlement" in-map="context"/>
+            <!-- 1. Resolve and Approve Pending Presentation Transaction -->
+            <entity-find entity-name="trade.TradeTransaction" list="presTxList">
+                <econdition field-name="instrumentId" from="presentation.instrumentId"/>
+                <econdition field-name="relatedRecordId" from="presentationId"/>
+                <econdition field-name="transactionTypeEnumId" value="IMP_PRESENTATION"/>
+                <order-by field-name="-transactionId"/>
+            </entity-find>
+            <if condition="presTxList &amp;&amp; presTxList[0].transactionStatusId != 'TX_APPROVED'">
+                <service-call name="update#trade.TradeTransaction"
+                    in-map="[transactionId: presTxList[0].transactionId, transactionStatusId: 'TX_APPROVED',
+                             checkerUserId: ec.user.userId, checkerTimestamp: ec.user.nowTimestamp]"/>
+            </if>
+
+            <!-- 2. Create IMP_SETTLEMENT Transaction -->
+            <service-call name="create#trade.TradeTransaction" out-map="txOut"
+                in-map="[
+                    instrumentId: presentation.instrumentId,
+                    transactionTypeEnumId: 'IMP_SETTLEMENT',
+                    transactionStatusId: 'TX_APPROVED',
+                    transactionDate: ec.user.nowTimestamp,
+                    makerUserId: ec.user.userId,
+                    makerTimestamp: ec.user.nowTimestamp,
+                    checkerUserId: ec.user.userId,
+                    checkerTimestamp: ec.user.nowTimestamp,
+                    versionNumber: 1,
+                    relatedRecordId: presentationId,
+                    relatedRecordType: 'PRESENTATION'
+                ]"/>
+
+            <!-- 3. Record Settlement and Update State -->
+            <service-call name="trade.TradeAccountingServices.create#ImportLcSettlement"
+                in-map="context + [instrumentId: presentation.instrumentId]"/>
             
-            <!-- Update Presentation Status -->
             <set field="presentation.presentationStatusId" value="PRES_SETTLED"/>
             <entity-update value-field="presentation"/>
+
+            <if condition="isPartialDraw == 'N'">
+                <service-call name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit"
+                              in-map="[instrumentId: presentation.instrumentId, businessStateId: 'LC_CLOSED']"/>
+            </if>
         </actions>
     </service>
     <service verb="examine" noun="Documents" authenticate="false">
@@ -456,10 +542,12 @@
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
+            
             <entity-find entity-name="trade.importlc.ImportLetterOfCreditView" list="lcList">
                 <econdition field-name="instrumentId" from="instrumentId" ignore-if-empty="true"/>
-                <econdition field-name="transactionStatusId" from="transactionStatusId" ignore-if-empty="true"/>
                 <econdition field-name="businessStateId" from="businessStateId" ignore-if-empty="true"/>
+                <econdition field-name="transactionStatusId" from="transactionStatusId" ignore-if-empty="true"/>
+                
                 <order-by field-name="prioritySequence, -instrumentId"/>
             </entity-find>
             <script>ec.artifactExecution.enableAuthz()</script>
@@ -472,10 +560,10 @@
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
-            <entity-find entity-name="trade.TradeInstrument" list="draftList">
+            <entity-find entity-name="trade.TradeTransaction" list="draftList">
                 <econdition field-name="transactionStatusId" value="TX_DRAFT"/>
             </entity-find>
-            <entity-find entity-name="trade.TradeInstrument" list="pendingList">
+            <entity-find entity-name="trade.TradeTransaction" list="pendingList">
                 <econdition field-name="transactionStatusId" value="TX_PENDING"/>
             </entity-find>
             <set field="kpis" from="[pendingDrafts: draftList.size(), pendingApprovals: pendingList.size()]"/>
@@ -490,14 +578,21 @@
             <if condition="!instrument"><return error="true" message="Instrument ${instrumentId} not found"/></if>
             <if condition="instrument.businessStateId == 'LC_HOLD'"><return/></if>
             
+            <entity-find-one entity-name="trade.TradeTransaction" value-field="transaction">
+                <field-map field-name="instrumentId" from="instrumentId"/>
+            </entity-find-one>
+
             <set field="instrument.previousBusinessStateId" from="instrument.businessStateId"/>
             <set field="instrument.businessStateId" value="LC_HOLD"/>
             <entity-update value-field="instrument"/>
             
+            <set field="auditId" from="ec.entity.sequencedIdPrimary('trade.TradeTransactionAudit', null, null)"/>
             <service-call name="create#trade.TradeTransactionAudit"
-                          in-map="[instrumentId: instrumentId, actionEnumId: 'AUDIT_HOLD', 
-                                  changedFieldName: 'businessStateId', oldValue: instrument.previousBusinessStateId, 
-                                  newValue: 'LC_HOLD', justificationRootText: 'Compliance Hold applied']"/>
+                          in-map="[transactionId: transaction?.transactionId, instrumentId: instrumentId, auditId: auditId,
+                                  userId: ec.user.userId,
+                                  actionEnumId: 'AUDIT_HOLD', changedFieldName: 'businessStateId', 
+                                  oldValue: instrument.previousBusinessStateId, newValue: 'LC_HOLD', 
+                                  justificationRootText: 'Compliance Hold applied']"/>
         </actions>
     </service>
 
@@ -515,14 +610,20 @@
             <set field="oldState" from="instrument.businessStateId"/>
             <set field="newState" from="instrument.previousBusinessStateId"/>
             
-            <set field="instrument.businessStateId" from="newState"/>
+            <entity-find-one entity-name="trade.TradeTransaction" value-field="transaction">
+                <field-map field-name="instrumentId" from="instrumentId"/>
+            </entity-find-one>
+
+            <set field="instrument.businessStateId" from="instrument.previousBusinessStateId"/>
             <set field="instrument.previousBusinessStateId" from="null"/>
             <entity-update value-field="instrument"/>
             
+            <set field="auditId" from="ec.entity.sequencedIdPrimary('trade.TradeTransactionAudit', null, null)"/>
             <service-call name="create#trade.TradeTransactionAudit"
-                          in-map="[instrumentId: instrumentId, actionEnumId: 'AUDIT_RELEASE', 
-                                  changedFieldName: 'businessStateId', oldValue: oldState, 
-                                  newValue: newState, justificationRootText: 'Compliance Hold released']"/>
+                          in-map="[transactionId: transaction?.transactionId, instrumentId: instrumentId, auditId: auditId,
+                                  userId: ec.user.userId,
+                                  actionEnumId: 'AUDIT_RELEASE', changedFieldName: 'businessStateId', 
+                                  oldValue: 'LC_HOLD', newValue: newState, justificationRootText: 'Compliance Hold released']"/>
         </actions>
     </service>
     <service verb="create" noun="ShippingGuarantee" authenticate="false">
@@ -556,6 +657,18 @@
             <service-call name="create#trade.importlc.ImportLcShippingGuarantee" out-map="sgOut"
                           in-map="context + [earmarkAmount: earmarkAmount, guaranteeStatusId: 'SG_ACTIVE']"/>
             <set field="guaranteeId" from="sgOut.guaranteeId"/>
+        </actions>
+    </service>
+    <service verb="update" noun="ImportLetterOfCredit">
+        <in-parameters>
+            <auto-parameters entity-name="trade.importlc.ImportLetterOfCredit" include="pk"/>
+            <auto-parameters entity-name="trade.importlc.ImportLetterOfCredit" include="nonpk"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" for-update="true"/>
+            <if condition="lc == null"><return-error message="Letter of Credit not found for instrument ${instrumentId}"/></if>
+            <entity-set value-field="lc" include="nonpk"/>
+            <entity-update value-field="lc"/>
         </actions>
     </service>
 </services>

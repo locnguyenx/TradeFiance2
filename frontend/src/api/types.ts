@@ -1,11 +1,29 @@
 // ABOUTME: TypeScript interfaces for all Trade Finance entity shapes.
 // ABOUTME: Aligned with Design Spec v3.0 entity definitions.
 
+export interface TradeTransaction {
+  transactionId: string;
+  instrumentId: string;
+  transactionTypeEnumId: string;
+  transactionStatusId: string;
+  priorityEnumId: string;
+  transactionDate: string;
+  makerUserId: string;
+  makerTimestamp: string;
+  checkerUserId?: string;
+  checkerTimestamp?: string;
+  rejectionReason?: string;
+  versionNumber: number;
+  relatedRecordId?: string;
+  relatedRecordType?: string;
+  // Proposed value hints for simple diffs
+  proposedAmount?: number;
+  proposedExpiryDate?: string;
+}
+
 export interface TradeInstrument {
   instrumentId: string;
   transactionRef: string;
-  lifecycleStatusId: string;
-  transactionStatusId: string;
   productEnumId: string;
   amount: number;
   currencyUomId: string;
@@ -16,22 +34,8 @@ export interface TradeInstrument {
   issueDate: string;
   expiryDate: string;
   customerFacilityId: string;
-  // Transaction management
-  transactionDate: string;
-  transactionTypeEnumId: string;
-  makerUserId: string;
-  makerTimestamp: string;
-  checkerUserId?: string;
-  checkerTimestamp?: string;
-  rejectionReason?: string;
   versionNumber: number;
   lastUpdateTimestamp?: string;
-  priorityEnumId: string;
-  // v3.0 Amendment Snapshot Fields
-  snapshotAmount?: number;
-  effectiveAmount?: number;
-  snapshotExpiryDate?: string;
-  effectiveExpiryDate?: string;
 }
 
 export interface ImportLetterOfCredit {
@@ -146,6 +150,26 @@ export interface ImportLcSettlement {
   maturityDate?: string;
 }
 
+export interface ImportLcAmendment {
+  amendmentId: string;
+  instrumentId: string;
+  transactionId: string;
+  amount?: number;
+  expiryDate?: string;
+  beneficiaryPartyId?: string;
+  amendmentDate: string;
+}
+
+export interface TradePresentation {
+  presentationId: string;
+  instrumentId: string;
+  transactionId: string;
+  presentationDate: string;
+  presentationAmount: number;
+  currencyUomId: string;
+  expiryDate?: string;
+}
+
 export interface UserAuthorityProfile {
   userAuthorityId: string;
   userId: string;
@@ -166,6 +190,7 @@ export interface PresentationDiscrepancy {
 }
 
 export interface QueueItem {
+  transactionId: string;
   instrumentId: string;
   transactionRef: string;
   module: string;
@@ -174,7 +199,8 @@ export interface QueueItem {
   baseEquivalentAmount: number;
   timeInQueue: string;
   priorityEnumId: string;
-  lifecycleStatusId: string;
+  transactionStatusId: string;
+  businessStateId: string;
 }
 
 export interface ExposureData {

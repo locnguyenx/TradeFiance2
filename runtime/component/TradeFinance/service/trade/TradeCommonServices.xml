@@ -48,6 +48,20 @@
                           in-map="context + [presentationStatusId: 'PRES_RECEIVED']"/>
             <set field="presentationId" from="presOut.presentationId"/>
             
+            <!-- NEW: Create TradeTransaction for Presentation -->
+            <service-call name="create#trade.TradeTransaction" out-map="txOut"
+                in-map="[
+                    instrumentId: instrumentId,
+                    transactionTypeEnumId: 'IMP_PRESENTATION',
+                    transactionStatusId: 'TX_DRAFT',
+                    transactionDate: ec.user.nowTimestamp,
+                    makerUserId: ec.user.userId,
+                    makerTimestamp: ec.user.nowTimestamp,
+                    versionNumber: 1,
+                    relatedRecordId: presentationId,
+                    relatedRecordType: 'PRESENTATION'
+                ]"/>
+
             <!-- Update LC state to DOC_RECEIVED -->
             <service-call name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit"
                           in-map="[instrumentId: instrumentId, businessStateId: 'LC_DOC_RECEIVED']"/>

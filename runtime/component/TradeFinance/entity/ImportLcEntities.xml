@@ -209,7 +209,10 @@
         <member-entity entity-alias="inst" entity-name="trade.TradeInstrument" join-from-alias="lc">
             <key-map field-name="instrumentId"/>
         </member-entity>
-        <member-entity entity-alias="prio" entity-name="moqui.basic.Enumeration" join-from-alias="inst" join-optional="true">
+        <member-entity entity-alias="tx" entity-name="trade.TradeTransaction" join-from-alias="lc" join-optional="true">
+            <key-map field-name="instrumentId"/>
+        </member-entity>
+        <member-entity entity-alias="prio" entity-name="moqui.basic.Enumeration" join-from-alias="tx" join-optional="true">
             <key-map field-name="priorityEnumId" related="enumId"/>
         </member-entity>
         <member-entity entity-alias="aparty" entity-name="trade.TradeParty" join-from-alias="inst" join-optional="true">
@@ -219,7 +222,20 @@
             <key-map field-name="beneficiaryPartyId" related="partyId"/>
         </member-entity>
         <alias-all entity-alias="lc"/>
-        <alias-all entity-alias="inst"><exclude field="instrumentId"/><exclude field="businessStateId"/></alias-all>
+        <alias-all entity-alias="inst">
+            <exclude field="instrumentId"/>
+            <exclude field="businessStateId"/>
+            <exclude field="amount"/>
+            <exclude field="currencyUomId"/>
+            <exclude field="outstandingAmount"/>
+            <exclude field="baseEquivalentAmount"/>
+            <exclude field="issueDate"/>
+            <exclude field="expiryDate"/>
+            <exclude field="customerFacilityId"/>
+            <exclude field="beneficiaryName"/>
+            <exclude field="productEnumId"/>
+        </alias-all>
+        <alias-all entity-alias="tx"/>
         <alias entity-alias="prio" name="prioritySequence" field="sequenceNum"/>
         <alias entity-alias="aparty" name="applicantPartyName" field="partyName"/>
         <alias entity-alias="bparty" name="beneficiaryPartyName" field="partyName"/>

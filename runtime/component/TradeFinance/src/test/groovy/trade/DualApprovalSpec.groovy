@@ -24,6 +24,7 @@ class DualApprovalSpec extends Specification {
             String instId = "DUAL-APP-LC-01"
             ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", instId).deleteAll()
             ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instId).deleteAll()
+            ec.entity.find("trade.TradeTransaction").condition("instrumentId", instId).deleteAll()
             ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instId).deleteAll()
             ec.entity.find("trade.TradeInstrument").condition("instrumentId", instId).deleteAll()
 
@@ -68,9 +69,16 @@ class DualApprovalSpec extends Specification {
             instrumentId: instId, effectiveAmount: 2000000, businessStateId: 'LC_DRAFT'
         ]).create()
         
+        // Record TradeTransaction
+        ec.entity.makeValue("trade.TradeTransaction").setAll([
+            transactionId: "TX-DUAL-01", instrumentId: instId, transactionStatusId: 'TX_PENDING',
+            transactionTypeEnumId: 'IMP_NEW',
+            makerUserId: "trade.maker", versionNumber: 1
+        ]).create()
+
         // Record maker audit
         ec.entity.makeValue("trade.TradeTransactionAudit").setAll([
-            instrumentId: instId, auditId: "AUDIT-M1", actionEnumId: "MAKER_COMMIT", userId: "trade.maker"
+            transactionId: "TX-DUAL-01", instrumentId: instId, auditId: "AUDIT-M1", actionEnumId: "MAKER_COMMIT", userId: "trade.maker"
         ]).create()
 
         when: "First checker approves"
@@ -84,8 +92,8 @@ class DualApprovalSpec extends Specification {
             ec.message.clearAll()
             assert false, "First approval failed"
         }
-        def inst1 = ec.entity.find("trade.TradeInstrument").condition("instrumentId", instId).one()
-        inst1.transactionStatusId == "TX_PENDING"
+        def trans1 = ec.entity.find("trade.TradeTransaction").condition("instrumentId", instId).one()
+        trans1.transactionStatusId == "TX_PENDING"
         def approvals1 = ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", instId).list()
         approvals1.size() == 1
         approvals1[0].approverUserId == "trade.checker1"
@@ -109,14 +117,14 @@ class DualApprovalSpec extends Specification {
             .parameters([instrumentId: instId, approvalComments: "Second checker approved"]).call()
 
         then: "Status becomes TX_APPROVED"
-        def inst2 = ec.entity.find("trade.TradeInstrument").condition("instrumentId", instId).useCache(false).one()
-        inst2.refresh()
-        if (inst2.transactionStatusId != "TX_APPROVED") {
-            ec.logger.info("VERIFY_FAIL: Expected TX_APPROVED, got ${inst2.transactionStatusId} for ${inst2.instrumentId}")
-            ec.logger.info("VERIFY_FAIL_MAP: ${inst2.getMap()}")
+        def trans2 = ec.entity.find("trade.TradeTransaction").condition("instrumentId", instId).useCache(false).one()
+        trans2.refresh()
+        if (trans2.transactionStatusId != "TX_APPROVED") {
+            ec.logger.info("VERIFY_FAIL: Expected TX_APPROVED, got ${trans2.transactionStatusId} for ${trans2.instrumentId}")
+            ec.logger.info("VERIFY_FAIL_MAP: ${trans2.getMap()}")
         }
-        inst2.transactionStatusId == "TX_APPROVED"
-        inst2.checkerUserId == "trade.checker2"
+        trans2.transactionStatusId == "TX_APPROVED"
+        trans2.checkerUserId == "trade.checker2"
         def approvals2 = ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", instId).list()
         approvals2.size() == 2
         approvals2.any { it.approverUserId == "trade.checker1" }
@@ -125,6 +133,7 @@ class DualApprovalSpec extends Specification {
         cleanup:
         ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", instId).deleteAll()
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instId).deleteAll()
+        ec.entity.find("trade.TradeTransaction").condition("instrumentId", instId).deleteAll()
         ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instId).deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", instId).deleteAll()
     }

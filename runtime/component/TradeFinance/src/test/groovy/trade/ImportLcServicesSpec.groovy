@@ -85,12 +85,17 @@ class ImportLcServicesSpec extends Specification {
 
         def instrumentLookup = ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).useCache(false).one()
         instrumentLookup != null
-        instrumentLookup.transactionStatusId == "TX_DRAFT"
         instrumentLookup.instrumentTypeEnumId == "IMPORT_LC"
-        instrumentLookup.versionNumber == 1
+
+        def txLookup = ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).one()
+        txLookup != null
+        txLookup.transactionStatusId == "TX_DRAFT"
+        txLookup.versionNumber == 1
 
         cleanup:
         if (instrumentId) {
+            ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instrumentId).deleteAll()
+            ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).deleteAll()
         }
@@ -123,10 +128,15 @@ class ImportLcServicesSpec extends Specification {
         !ec.message.hasError()
         instrumentLookup != null
         instrumentLookup.amount == 600000.0
-        instrumentLookup.versionNumber == 1
+        
+        def txLookup = ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).one()
+        txLookup != null
+        txLookup.versionNumber == 1
 
         cleanup:
         if (instrumentId) {
+            ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instrumentId).deleteAll()
+            ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).deleteAll()
         }
@@ -154,16 +164,20 @@ class ImportLcServicesSpec extends Specification {
         ]).call()
         def instrumentLookup = ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).useCache(false).one()
         def approvalRecord = ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", instrumentId).one()
+        def txLookup = ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).one()
 
         then:
         !ec.message.hasError()
-        instrumentLookup.transactionStatusId == "TX_APPROVED"
+        txLookup != null
+        txLookup.transactionStatusId == "TX_APPROVED"
         approvalRecord != null
         approvalRecord.approverUserId == "trade.checker"
 
         cleanup:
         if (instrumentId) {
             ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", instrumentId).deleteAll()
+            ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instrumentId).deleteAll()
+            ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).deleteAll()
         }
@@ -205,6 +219,8 @@ class ImportLcServicesSpec extends Specification {
         cleanup:
         if (instrumentId) {
             ec.entity.find("trade.importlc.ImportLcAmendment").condition("instrumentId", instrumentId).deleteAll()
+            ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instrumentId).deleteAll()
+            ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).deleteAll()
         }
@@ -263,6 +279,8 @@ class ImportLcServicesSpec extends Specification {
         if (instrumentId) {
             ec.entity.find("trade.importlc.ImportLcSettlement").condition("presentationId", presId).deleteAll()
             ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("presentationId", presId).deleteAll()
+            ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instrumentId).deleteAll()
+            ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).deleteAll()
         }

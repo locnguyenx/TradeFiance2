@@ -1,4 +1,4 @@
-import { TradeInstrument, ImportLetterOfCredit, TradeParty, TradeProductCatalog, FeeConfiguration, UserAuthorityProfile, QueueItem, ExposureData } from './types';
+import { TradeInstrument, TradeTransaction, ImportLetterOfCredit, TradeParty, TradeProductCatalog, FeeConfiguration, UserAuthorityProfile, QueueItem, ExposureData } from './types';
 
 const API_BASE = '/rest/s1/trade';
 
@@ -133,11 +133,11 @@ export const tradeApi = {
     return res.json();
   },
 
-  async authorize(instrumentId: string, userId?: string): Promise<{ isAuthorized: boolean }> {
+  async authorize(transactionId: string, userId?: string): Promise<{ isAuthorized: boolean }> {
     const res = await this._fetch(`${API_BASE}/authorize`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ instrumentId, userId }),
+      body: JSON.stringify({ transactionId, userId }),
     });
     return res.json();
   },
@@ -174,13 +174,6 @@ export const tradeApi = {
     const res = await this._fetch(`${API_BASE}/standard-clauses${query}`);
     const json = await res.json();
     return json.clauseList || [];
-  },
-
-  async getAuditLogs(transactionRef?: string): Promise<any[]> {
-    const query = transactionRef ? `?transactionRef=${transactionRef}` : '';
-    const res = await this._fetch(`${API_BASE}/audit-logs${query}`);
-    const json = await res.json();
-    return json.auditLogList || [];
   },
 
   async createLcPresentation(instrumentId: string, data: any): Promise<any> {
@@ -260,11 +253,11 @@ export const tradeApi = {
     return res.json();
   },
 
-  async rejectToMaker(instrumentId: string, rejectionReason: string): Promise<any> {
+  async rejectToMaker(transactionId: string, rejectionReason: string): Promise<any> {
     const res = await this._fetch(`${API_BASE}/reject`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ instrumentId, rejectionReason }),
+      body: JSON.stringify({ transactionId, rejectionReason }),
     });
     return res.json();
   },
@@ -308,6 +301,21 @@ export const tradeApi = {
 
   async getCustomerFacilities(partyId: string): Promise<{ facilityList: any[] }> {
     const res = await this._fetch(`${API_BASE}/facilities/customer?partyId=${partyId}`);
+    return res.json();
+  },
+
+  async getTransaction(transactionId: string): Promise<TradeTransaction> {
+    const res = await this._fetch(`${API_BASE}/transaction/${transactionId}`);
+    return res.json();
+  },
+
+  async getInstrumentTransactions(instrumentId: string): Promise<{ transactionList: TradeTransaction[] }> {
+    const res = await this._fetch(`${API_BASE}/instrument/${instrumentId}/transactions`);
+    return res.json();
+  },
+
+  async getAuditLogs(instrumentId: string): Promise<{ auditLogList: any[] }> {
+    const res = await this._fetch(`${API_BASE}/instrument/${instrumentId}/audit-logs`);
     return res.json();
   },
 };

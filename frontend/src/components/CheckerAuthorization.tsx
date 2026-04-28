@@ -2,17 +2,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { tradeApi } from '../api/tradeApi';
-import { TradeInstrument, ImportLetterOfCredit } from '../api/types';
+import { TradeInstrument, ImportLetterOfCredit, TradeTransaction } from '../api/types';
 import { InstrumentDetails } from './InstrumentDetails';
 
 // ABOUTME: High-fidelity Checker Authorization Workspace (REQ-UI-IMP-05).
 // ABOUTME: Features "Exposure Widget" progress bars and "Compliance Deck" for risk analysis.
 
 interface Props {
-    instrumentId: string;
+    transactionId: string;
 }
 
-export const CheckerAuthorization: React.FC<Props> = ({ instrumentId }) => {
+export const CheckerAuthorization: React.FC<Props> = ({ transactionId }) => {
+    const [transaction, setTransaction] = useState<TradeTransaction | null>(null);
     const [instrument, setInstrument] = useState<(TradeInstrument & ImportLetterOfCredit) | null>(null);
     const [authResult, setAuthResult] = useState<boolean | null>(null);
     const [showRejectionModal, setShowRejectionModal] = useState(false);
@@ -21,24 +22,33 @@ export const CheckerAuthorization: React.FC<Props> = ({ instrumentId }) => {
 
     useEffect(() => {
         setLoading(true);
-        tradeApi.getInstrument(instrumentId).then(data => {
-            setInstrument(data as any);
+        tradeApi.getTransaction(transactionId).then(txn => {
+            setTransaction(txn);
+            return tradeApi.getImportLc(txn.instrumentId);
+        }).then(inst => {
+            setInstrument(inst as any);
+            setLoading(false);
+        }).catch(err => {
+            console.error("Error loading auth data", err);
             setLoading(false);
         });
-    }, [instrumentId]);
+    }, [transactionId]);
 
     const handleApprove = async () => {
         setLoading(true);
         try {
-            const result = await tradeApi.authorize(instrumentId);
+            const result = await tradeApi.authorize(transactionId);
             setAuthResult(result.isAuthorized);
-            // Re-fetch instrument to see updated status (e.g. from PARTIAL to ISSUED)
-            const updated = await tradeApi.getInstrument(instrumentId);
-            setInstrument(updated as any);
+            // Re-fetch transaction and instrument to see updated status
+            const updatedTxn = await tradeApi.getTransaction(transactionId);
+            setTransaction(updatedTxn);
+            const updatedInst = await tradeApi.getImportLc(updatedTxn.instrumentId);
+            setInstrument(updatedInst as any);
+            
             if (result.isAuthorized) {
-                alert(updated.lifecycleStatusId === 'INST_ISSUED' 
+                alert(updatedInst.businessStateId === 'INST_ISSUED' 
                     ? 'Final Authorization Complete. Instrument Issued.' 
-                    : 'Partial Authorization Recorded (1/2). Dual Checker required.');
+                    : 'Authorization Recorded. Transaction has been executed.');
             }
         } catch (e) {
             console.error(e);
@@ -48,10 +58,12 @@ export const CheckerAuthorization: React.FC<Props> = ({ instrumentId }) => {
     };
 
     const handleReject = async () => {
-        const result = await tradeApi.rejectToMaker(instrumentId, rejectionReason);
+        const result = await tradeApi.rejectToMaker(transactionId, rejectionReason);
         if (result.success || !result.error) {
             setShowRejectionModal(false);
-            // Notify success
+            // Re-fetch state
+            const updatedTxn = await tradeApi.getTransaction(transactionId);
+            setTransaction(updatedTxn);
         }
     };
 
@@ -66,13 +78,19 @@ export const CheckerAuthorization: React.FC<Props> = ({ instrumentId }) => {
                 </div>
             )}
 
-            {instrument.lifecycleStatusId === 'INST_PARTIAL_APPROVAL' && (
+            {transaction?.transactionStatusId === 'TXN_REJECTED' && (
+                <div className="alert-ribbon error">
+                    Transaction Rejected: {transaction.rejectionReason}
+                </div>
+            )}
+
+            {instrument.businessStateId === 'INST_PARTIAL_APPROVAL' && (
                 <div className="alert-ribbon warning">
                      Dual Checker Progress: First Authorization Recorded. A second, different checker is required for Tier 4 transactions ({instrument.currencyUomId || 'USD'} {instrument.baseEquivalentAmount.toLocaleString()}).
                 </div>
             )}
             
-            {instrument.baseEquivalentAmount > 500000 && instrument.lifecycleStatusId === 'INST_PENDING_APPROVAL' && (
+            {instrument.baseEquivalentAmount > 500000 && instrument.businessStateId === 'INST_PENDING_APPROVAL' && (
                 <div className="alert-ribbon info">
                     Tier 4 Transaction Detected: Dual Checker Authorization will be enforced.
                 </div>
@@ -81,8 +99,13 @@ export const CheckerAuthorization: React.FC<Props> = ({ instrumentId }) => {
             <header className="auth-header">
                 <div className="flex justify-between items-center w-full">
                     <div className="status-group">
-                        <span className="badge primary">Instrument: {instrumentId}</span>
-                        <span className="badge secondary">Status: {instrument.lifecycleStatusId.replace('INST_', '').replace('_', ' ')}</span>
+                        <span className="badge primary">Instrument: {instrument.instrumentId}</span>
+                        <span className="badge second-badge">Lifecycle: {instrument.businessStateId.replace('INST_', '').replace('_', ' ')}</span>
+                        {transaction && (
+                            <span className={`badge ${transaction.transactionStatusId.toLowerCase()}`}>
+                                Workflow: {transaction.transactionStatusId.replace('TXN_', '').replace('_', ' ')}
+                            </span>
+                        )}
                     </div>
                     <div className="action-buttons">
                         <button className="btn secondary" onClick={() => setShowRejectionModal(true)}>Reject</button>
@@ -141,18 +164,18 @@ export const CheckerAuthorization: React.FC<Props> = ({ instrumentId }) => {
                         <h4>Instrument Details & Delta Analysis</h4>
                     </header>
                     <div className="details-scroll-content">
-                        {instrument.snapshotAmount && (
+                        {transaction?.proposedAmount && (
                             <div className="delta-notice mb-4">
-                                <strong>Amendment Snapshot:</strong> Showing changes from previous version.
+                                <strong>Amendment Snapshot:</strong> Showing proposed changes.
                                 <div className="snapshot-grid mt-2">
                                     <div className="snap-field">
-                                        <label>Previous Amount</label>
-                                        <p>{instrument.currencyUomId} {instrument.snapshotAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
+                                        <label>Proposed Amount</label>
+                                        <p>{instrument.currencyUomId} {transaction.proposedAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
                                     </div>
-                                    {instrument.snapshotExpiryDate && (
+                                    {transaction.proposedExpiryDate && (
                                         <div className="snap-field">
-                                            <label>Previous Expiry</label>
-                                            <p>{instrument.snapshotExpiryDate}</p>
+                                            <label>Proposed Expiry</label>
+                                            <p>{transaction.proposedExpiryDate}</p>
                                         </div>
                                     )}
                                 </div>
@@ -233,7 +256,10 @@ export const CheckerAuthorization: React.FC<Props> = ({ instrumentId }) => {
 
                 .badge { padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 800; margin-right: 0.5rem; }
                 .badge.primary { background: #1e293b; color: white; }
-                .badge.secondary { background: #e2e8f0; color: #475569; }
+                .badge.second-badge { background: #e2e8f0; color: #475569; }
+                .badge.txn_pending { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+                .badge.txn_approved { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+                .badge.txn_rejected { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
 
                 .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 2rem; }
                 .modal { width: 450px; padding: 2rem; background: white; border-radius: 12px; }

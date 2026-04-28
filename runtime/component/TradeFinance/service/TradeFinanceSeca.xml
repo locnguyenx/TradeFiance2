@@ -22,9 +22,10 @@
     </seca>
 
     <!-- Request 5: system autogenerate the message when TradeInstrument is approved (TX_APPROVED) -->
-    <seca service="update#trade.TradeInstrument" when="post-service">
+    <!-- Request 5: system autogenerate the message when TradeTransaction is approved (TX_APPROVED) -->
+    <seca service="update#trade.TradeTransaction" when="post-service">
         <condition>
-            <expression>transactionStatusId == 'TX_APPROVED' &amp;&amp; oldValueMap?.transactionStatusId != 'TX_APPROVED'</expression>
+            <expression>transactionStatusId == 'TX_APPROVED' &amp;&amp; oldValueMap?.transactionStatusId != 'TX_APPROVED' &amp;&amp; transactionTypeEnumId == 'IMP_ISSUANCE'</expression>
         </condition>
         <actions>
             <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc">

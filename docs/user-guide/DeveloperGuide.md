@@ -26,15 +26,15 @@ The platform is built on **Moqui Framework**, utilizing a headless service archi
 
 ### Namespace Convention
 - `trade.common`: Shared entities (Facilities, FX Rates, Party Config).
-- `trade.importlc`: Import LC domain logic and state transitions.
-- `trade.exportlc`: Export LC domain logic (Phase 5 reconstruction).
+- `trade.importlc`: Import LC domain logic.
+- **Transaction-Centric Model**: The platform decouples "Proposed State" (`TradeTransaction`) from "Current State" (`TradeInstrument`). All workflow actions Target `transactionId` rather than `instrumentId`.
 
 ### Service Hardening
 All state-changing services must adhere to the following guards:
 1.  **Enforce Maker/Checker**: Implemented via `trade.AuthorizationServices`. Status transitions for `LC_ISSUED` are blocked until `INST_APPROVED`.
 2.  **Validate SWIFT**: Strict regex validation for X/Z character sets and BIC codes via `trade.importlc.ImportLcValidationServices`.
 3.  **Facility Utilization**: Atomic limit check-and-earmark logic in `LimitServices.xml` to prevent over-drawing.
-4.  **Audit Persistence**: Automatic transaction logging in `TradeTransactionAudit` for every business state change.
+4.  **Transaction Audit Hub**: Automatic logging in `TradeTransaction` and `TradeTransactionAudit`. The frontend merges these into a **Unified Narrative Timeline** via the `getInstrumentTransactions` and `getAuditLogs` API end-points.
 
 ---
 
@@ -47,40 +47,36 @@ All state-changing services must adhere to the following guards:
 ---
 
 ## 3. Regression Suite
-The backend suite is unified under `trade.TradeFinanceMoquiSuite` (runtime/component/TradeFinance).
-The frontend suite uses Playwright (frontend/e2e).
+The backend suite is unified under `trade.TradeFinanceMoquiSuite`.
+The frontend suite uses Playwright (frontend/e2e) and Vitest for unit tests.
 
 ### Execution (Backend)
 ```bash
 ./gradlew :runtime:component:TradeFinance:test --tests trade.TradeFinanceMoquiSuite
 ```
 
-### Execution (Frontend)
+### Execution (Frontend Unit Tests)
 ```bash
-cd frontend && npx playwright test
+cd frontend && npm test src/components/SwiftValidation.test.tsx
 ```
-
-### Validation Strategy
-- **Service Layer**: TDD-based unit tests for all domain math.
-- **Workflow Layer**: Integration tests for multi-step approvals and compliance holds.
-- **UI Layer**: E2E tests focusing on navigation integrity and "Clean at Capture" validation.
 
 ---
 
 ## 4. SWIFT Character Sets & Mappings
 The platform validates input strictly against SWIFT MT7xx standards:
-- **X-Charset**: `A-Z 0-9 / - ? : ( ) . , ' + space`. (Standard narratives).
-- **Z-Charset**: Includes additional characters but excludes illegal symbols. (Narrative Tag 79N).
-- **BIC-11/8**: Validated via centralized `trade.importlc.ImportLcValidationServices.check#BicCode`.
+- **X-Charset**: `A-Z a-z 0-9 / - ? : ( ) . , ' + space`. (Standard narratives: 45A, 46A).
+- **Z-Charset**: Extended set allowed in Tag 73, 72Z, and 77A.
+- **Line Enforcement**: Narrative fields are proactively checked for line-count compliance (e.g., Tag 73 max 6 lines).
+- **Utilities**: Centralized validation in `frontend/src/utils/SwiftUtils.ts`.
 
 ---
 
 ## 5. Troubleshooting & Maintenance
-- **Data Seeding**: Use `./gradlew loadSave` to refresh the master data (Facilities, Products, Tiers).
+- **Data Seeding**: Use `./gradlew load` to refresh master data.
 - **Log Analysis**: Business rule failures are logged with `[TRADE-AUTH]` or `[TRADE-VAL]` prefixes.
-- **E2E Stabilization**: When UI labels change, update `NavigationIntegrity.spec.ts` to match the "Blue Premium" tokens.
+- **UI Stabilization**: When UI labels change, update the "Blue Premium" tokens and verify navigation integrity.
 
 ---
 
 ## Conclusion
-Maintain transactional integrity above all. When refactoring common services, ensure no side effects on the `trade.common` facility utilization logic.
+Maintain transactional integrity above all. Ensure all frontend changes mirror backend validation constraints to enable "Clean at Capture" processing.

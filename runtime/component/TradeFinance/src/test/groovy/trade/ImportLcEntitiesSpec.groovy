@@ -36,6 +36,8 @@ class ImportLcEntitiesSpec extends Specification {
         lc.instrumentId == "LC-ENT-1"
         
         cleanup:
+        ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "LC-ENT-1").deleteAll()
+        ec.entity.find("trade.TradeTransaction").condition("instrumentId", "LC-ENT-1").deleteAll()
         ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", "LC-ENT-1").deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", "LC-ENT-1").deleteAll()
     }
@@ -76,10 +78,10 @@ class ImportLcEntitiesSpec extends Specification {
         lc.latestShipmentDate == java.sql.Date.valueOf("2026-12-15")
 
         cleanup:
-        ec.entity.find("trade.importlc.ImportLetterOfCredit")
-            .condition("instrumentId", "LC-MGMT-TEST").deleteAll()
-        ec.entity.find("trade.TradeInstrument")
-            .condition("instrumentId", "LC-MGMT-TEST").deleteAll()
+        ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "LC-MGMT-TEST").deleteAll()
+        ec.entity.find("trade.TradeTransaction").condition("instrumentId", "LC-MGMT-TEST").deleteAll()
+        ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", "LC-MGMT-TEST").deleteAll()
+        ec.entity.find("trade.TradeInstrument").condition("instrumentId", "LC-MGMT-TEST").deleteAll()
     }
 
     def "PresentationDiscrepancy persists correctly"() {
@@ -108,14 +110,12 @@ class ImportLcEntitiesSpec extends Specification {
         disc.isWaived == "N"
 
         cleanup:
-        ec.entity.find("trade.importlc.PresentationDiscrepancy")
-            .condition("discrepancyId", "DISC_TEST_01").deleteAll()
-        ec.entity.find("trade.importlc.TradeDocumentPresentation")
-            .condition("presentationId", "PRES_TEST_01").deleteAll()
-        ec.entity.find("trade.importlc.ImportLetterOfCredit")
-            .condition("instrumentId", "LC-MGMT-TEST").deleteAll()
-        ec.entity.find("trade.TradeInstrument")
-            .condition("instrumentId", "LC-MGMT-TEST").deleteAll()
+        ec.entity.find("trade.importlc.PresentationDiscrepancy").condition("presentationId", "PRES_TEST_01").deleteAll()
+        ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", "LC-MGMT-TEST").deleteAll()
+        ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "LC-MGMT-TEST").deleteAll()
+        ec.entity.find("trade.TradeTransaction").condition("instrumentId", "LC-MGMT-TEST").deleteAll()
+        ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", "LC-MGMT-TEST").deleteAll()
+        ec.entity.find("trade.TradeInstrument").condition("instrumentId", "LC-MGMT-TEST").deleteAll()
     }
 
     def "ImportLcSettlement persists correctly"() {
@@ -148,14 +148,12 @@ class ImportLcEntitiesSpec extends Specification {
         (settle.principalAmount as BigDecimal) == 250000.0G
 
         cleanup:
-        ec.entity.find("trade.importlc.ImportLcSettlement")
-            .condition("settlementId", "SETTLE_TEST_01").deleteAll()
-        ec.entity.find("trade.importlc.TradeDocumentPresentation")
-            .condition("presentationId", "PRES_TEST_01").deleteAll()
-        ec.entity.find("trade.importlc.ImportLetterOfCredit")
-            .condition("instrumentId", "LC-MGMT-TEST").deleteAll()
-        ec.entity.find("trade.TradeInstrument")
-            .condition("instrumentId", "LC-MGMT-TEST").deleteAll()
+        ec.entity.find("trade.importlc.ImportLcSettlement").condition("instrumentId", "LC-MGMT-TEST").deleteAll()
+        ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", "LC-MGMT-TEST").deleteAll()
+        ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "LC-MGMT-TEST").deleteAll()
+        ec.entity.find("trade.TradeTransaction").condition("instrumentId", "LC-MGMT-TEST").deleteAll()
+        ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", "LC-MGMT-TEST").deleteAll()
+        ec.entity.find("trade.TradeInstrument").condition("instrumentId", "LC-MGMT-TEST").deleteAll()
     }
 
     def "ImportLcAmendment persists extended fields"() {
@@ -182,12 +180,11 @@ class ImportLcEntitiesSpec extends Specification {
         am.isBeneficiaryAcceptanceRequired == "Y"
 
         cleanup:
-        ec.entity.find("trade.importlc.ImportLcAmendment")
-            .condition("amendmentId", "AMEND_01").deleteAll()
-        ec.entity.find("trade.importlc.ImportLetterOfCredit")
-            .condition("instrumentId", "LC-AMEND-TEST").deleteAll()
-        ec.entity.find("trade.TradeInstrument")
-            .condition("instrumentId", "LC-AMEND-TEST").deleteAll()
+        ec.entity.find("trade.importlc.ImportLcAmendment").condition("instrumentId", "LC-AMEND-TEST").deleteAll()
+        ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "LC-AMEND-TEST").deleteAll()
+        ec.entity.find("trade.TradeTransaction").condition("instrumentId", "LC-AMEND-TEST").deleteAll()
+        ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", "LC-AMEND-TEST").deleteAll()
+        ec.entity.find("trade.TradeInstrument").condition("instrumentId", "LC-AMEND-TEST").deleteAll()
     }
 
     def "TradeDocumentPresentation persists status field"() {
@@ -212,12 +209,11 @@ class ImportLcEntitiesSpec extends Specification {
         pr.presentationStatusId == "PRES_DRAFT"
 
         cleanup:
-        ec.entity.find("trade.importlc.TradeDocumentPresentation")
-            .condition("presentationId", "PRES_01").deleteAll()
-        ec.entity.find("trade.importlc.ImportLetterOfCredit")
-            .condition("instrumentId", "LC-PRES-TEST").deleteAll()
-        ec.entity.find("trade.TradeInstrument")
-            .condition("instrumentId", "LC-PRES-TEST").deleteAll()
+        ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", "LC-PRES-TEST").deleteAll()
+        ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "LC-PRES-TEST").deleteAll()
+        ec.entity.find("trade.TradeTransaction").condition("instrumentId", "LC-PRES-TEST").deleteAll()
+        ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", "LC-PRES-TEST").deleteAll()
+        ec.entity.find("trade.TradeInstrument").condition("instrumentId", "LC-PRES-TEST").deleteAll()
     }
 
     def "ImportLcShippingGuarantee persists status field"() {
@@ -242,12 +238,11 @@ class ImportLcEntitiesSpec extends Specification {
         sg.guaranteeStatusId == "SG_DRAFT"
 
         cleanup:
-        ec.entity.find("trade.importlc.ImportLcShippingGuarantee")
-            .condition("guaranteeId", "SG_01").deleteAll()
-        ec.entity.find("trade.importlc.ImportLetterOfCredit")
-            .condition("instrumentId", "LC-SG-TEST").deleteAll()
-        ec.entity.find("trade.TradeInstrument")
-            .condition("instrumentId", "LC-SG-TEST").deleteAll()
+        ec.entity.find("trade.importlc.ImportLcShippingGuarantee").condition("instrumentId", "LC-SG-TEST").deleteAll()
+        ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "LC-SG-TEST").deleteAll()
+        ec.entity.find("trade.TradeTransaction").condition("instrumentId", "LC-SG-TEST").deleteAll()
+        ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", "LC-SG-TEST").deleteAll()
+        ec.entity.find("trade.TradeInstrument").condition("instrumentId", "LC-SG-TEST").deleteAll()
     }
 
     def "ImportLcAmendment persists amendmentNumber, newTolerance, chargeAllocationEnumId"() {
@@ -275,12 +270,11 @@ class ImportLcEntitiesSpec extends Specification {
         am.chargeAllocationEnumId == "SHA"
 
         cleanup:
-        ec.entity.find("trade.importlc.ImportLcAmendment")
-            .condition("amendmentId", "AMEND_EXT_01").deleteAll()
-        ec.entity.find("trade.importlc.ImportLetterOfCredit")
-            .condition("instrumentId", "LC-AMEND-EXT").deleteAll()
-        ec.entity.find("trade.TradeInstrument")
-            .condition("instrumentId", "LC-AMEND-EXT").deleteAll()
+        ec.entity.find("trade.importlc.ImportLcAmendment").condition("instrumentId", "LC-AMEND-EXT").deleteAll()
+        ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "LC-AMEND-EXT").deleteAll()
+        ec.entity.find("trade.TradeTransaction").condition("instrumentId", "LC-AMEND-EXT").deleteAll()
+        ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", "LC-AMEND-EXT").deleteAll()
+        ec.entity.find("trade.TradeInstrument").condition("instrumentId", "LC-AMEND-EXT").deleteAll()
     }
 
     def "TradeDocumentPresentation persists presentingBankBic, presentingBankRef, claimCurrency, regulatoryDeadline"() {
@@ -311,12 +305,11 @@ class ImportLcEntitiesSpec extends Specification {
         pr.regulatoryDeadline == java.sql.Date.valueOf("2026-06-30")
 
         cleanup:
-        ec.entity.find("trade.importlc.TradeDocumentPresentation")
-            .condition("presentationId", "PRES_EXT_01").deleteAll()
-        ec.entity.find("trade.importlc.ImportLetterOfCredit")
-            .condition("instrumentId", "LC-PRES-EXT").deleteAll()
-        ec.entity.find("trade.TradeInstrument")
-            .condition("instrumentId", "LC-PRES-EXT").deleteAll()
+        ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", "LC-PRES-EXT").deleteAll()
+        ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "LC-PRES-EXT").deleteAll()
+        ec.entity.find("trade.TradeTransaction").condition("instrumentId", "LC-PRES-EXT").deleteAll()
+        ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", "LC-PRES-EXT").deleteAll()
+        ec.entity.find("trade.TradeInstrument").condition("instrumentId", "LC-PRES-EXT").deleteAll()
     }
 
     def "ImportLcShippingGuarantee persists sgStatusId, waiverLockFlag, redemptionDate, issuanceFee"() {
@@ -346,12 +339,11 @@ class ImportLcEntitiesSpec extends Specification {
         sg.issuanceFee == 150.00
 
         cleanup:
-        ec.entity.find("trade.importlc.ImportLcShippingGuarantee")
-            .condition("guaranteeId", "SG_EXT_01").deleteAll()
-        ec.entity.find("trade.importlc.ImportLetterOfCredit")
-            .condition("instrumentId", "LC-SG-EXT").deleteAll()
-        ec.entity.find("trade.TradeInstrument")
-            .condition("instrumentId", "LC-SG-EXT").deleteAll()
+        ec.entity.find("trade.importlc.ImportLcShippingGuarantee").condition("instrumentId", "LC-SG-EXT").deleteAll()
+        ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "LC-SG-EXT").deleteAll()
+        ec.entity.find("trade.TradeTransaction").condition("instrumentId", "LC-SG-EXT").deleteAll()
+        ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", "LC-SG-EXT").deleteAll()
+        ec.entity.find("trade.TradeInstrument").condition("instrumentId", "LC-SG-EXT").deleteAll()
     }
     
     def "Entity has missing presentation fields"() {

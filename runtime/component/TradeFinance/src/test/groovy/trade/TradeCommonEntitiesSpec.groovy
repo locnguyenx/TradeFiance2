@@ -29,51 +29,12 @@ class TradeCommonEntitiesSpec extends Specification {
             .condition("instrumentId", "RESTORE-1").one() != null
             
         cleanup:
-        ec.entity.find("trade.TradeInstrument")
-            .condition("instrumentId", "RESTORE-1").deleteAll()
+        ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "RESTORE-1").deleteAll()
+        ec.entity.find("trade.TradeTransaction").condition("instrumentId", "RESTORE-1").deleteAll()
+        ec.entity.find("trade.TradeInstrument").condition("instrumentId", "RESTORE-1").deleteAll()
     }
-    def "TradeInstrument persists transaction management fields"() {
-        when:
-        ec.service.sync().name("create#trade.TradeInstrument").parameters([
-            instrumentId: "TF-MGMT-TEST",
-            transactionRef: "TF-IMP-26-TEST",
-            lifecycleStatusId: "INST_PRE_ISSUE",
-            transactionStatusId: "TRANS_DRAFT",
-            transactionDate: ec.user.nowTimestamp,
-            transactionTypeEnumId: "NEW_ISSUANCE",
-            makerUserId: ec.user.userId,
-            makerTimestamp: ec.user.nowTimestamp,
-            versionNumber: 1,
-            priorityEnumId: "NORMAL",
-            productEnumId: "IMP_LC",
-            amount: 100000,
-            currencyUomId: "USD",
-            outstandingAmount: 100000,
-            applicantPartyId: "ACME_CORP_001",
-            beneficiaryPartyId: "BENEFICIARY_001",
-            issueDate: "2026-06-01",
-            expiryDate: "2026-12-31"
-        ]).call()
-        def instruments = ec.entity.find("trade.TradeInstrument")
-                .condition("instrumentId", "TF-MGMT-TEST").list()
-        def inst = instruments[0]
-
-        then:
-        inst != null
-        inst.transactionStatusId == "TRANS_DRAFT"
-        inst.transactionTypeEnumId == "NEW_ISSUANCE"
-        inst.makerUserId == ec.user.userId
-        inst.makerTimestamp != null
-        inst.versionNumber == 1
-        inst.priorityEnumId == "NORMAL"
-        inst.checkerUserId == null
-        inst.checkerTimestamp == null
-        inst.rejectionReason == null
-
-        cleanup:
-        ec.entity.find("trade.TradeInstrument")
-            .condition("instrumentId", "TF-MGMT-TEST").deleteAll()
-    }
+    // Removed test: TradeInstrument persists transaction management fields
+    // Fields moved to TradeTransaction entity. See TradeTransactionSpec.groovy
 
     def "TradeParty persists compliance and SWIFT fields"() {
         when:
@@ -132,6 +93,7 @@ class TradeCommonEntitiesSpec extends Specification {
         when:
         ec.service.sync().name("create#trade.TradeTransactionAudit").parameters([
             instrumentId: "AUDIT-TEST",
+            transactionId: "TX-AUDIT-TEST",
             auditId: "1",
             userId: "USER_001",
             actionEnumId: "UPDATE",
@@ -152,8 +114,9 @@ class TradeCommonEntitiesSpec extends Specification {
         audit.newValue == "500000"
 
         cleanup:
-        ec.entity.find("trade.TradeTransactionAudit")
-            .condition("instrumentId", "AUDIT-TEST").deleteAll()
+        ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "AUDIT-TEST").deleteAll()
+        ec.entity.find("trade.TradeTransaction").condition("instrumentId", "AUDIT-TEST").deleteAll()
+        ec.entity.find("trade.TradeInstrument").condition("instrumentId", "AUDIT-TEST").deleteAll()
     }
 
     def "FeeConfiguration persists correctly"() {
