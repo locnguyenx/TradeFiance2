@@ -317,7 +317,9 @@
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
-            <entity-find-one entity-name="trade.TradeTransaction" value-field="tx"/>
+            <entity-find-one entity-name="trade.TradeTransaction" value-field="tx">
+                <field-map field-name="transactionId"/>
+            </entity-find-one>
             <if condition="tx == null">
                 <return error="true" message="Transaction ${transactionId} not found"/>
             </if>
@@ -333,7 +335,7 @@
                 <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc">
                     <field-map field-name="instrumentId" from="tx.instrumentId"/>
                 </entity-find-one>
-                <set field="result.proposedAmount" from="lc?.lcAmount"/>
+                <set field="result.proposedAmount" from="lc?.amount"/>
                 <set field="result.proposedExpiryDate" from="lc?.expiryDate"/>
                 <set field="result.proposedCurrencyUomId" from="inst?.currencyUomId"/>
             </if>

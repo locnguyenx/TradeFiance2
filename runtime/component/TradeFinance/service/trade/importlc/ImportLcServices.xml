@@ -124,7 +124,7 @@
             <if condition="lcAmount != null"><set field="instrument.amount" from="lcAmount"/></if>
             <if condition="lcCurrencyUomId != null"><set field="instrument.currencyUomId" from="lcCurrencyUomId"/></if>
             <if condition="expiryDate != null"><set field="instrument.expiryDate" from="expiryDate"/></if>
-            <!-- lastUpdatedStamp is automatic in Moqui -->
+            <entity-set value-field="instrument" include="nonpk"/>
             <entity-update value-field="instrument"/>
 
             <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" auto-field-map="true"/>
@@ -151,6 +151,7 @@
             <if condition="businessStateId == 'LC_CANCELLED'">
                 <service-call name="trade.LimitServices.reverse#Limit" in-map="[instrumentId: instrumentId]"/>
             </if>
+            <entity-set value-field="lc" include="nonpk"/>
             <entity-update value-field="lc"/>
             <set field="transactionRef" from="instrument.transactionRef"/>
         </actions>
@@ -671,7 +672,9 @@
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
-            <entity-find-one entity-name="trade.importlc.ImportLetterOfCreditView" value-field="lc"/>
+            <entity-find-one entity-name="trade.importlc.ImportLetterOfCreditView" value-field="lc">
+                <field-map field-name="instrumentId"/>
+            </entity-find-one>
             <if condition="lc == null"><return error="true" message="Letter of Credit not found for instrument ${instrumentId}"/></if>
             <script>context.putAll(lc)</script>
             <script>ec.artifactExecution.enableAuthz()</script>

@@ -18,6 +18,8 @@ export const PresentationLodgement: React.FC<PresentationLodgementProps> = ({ in
         currency: 'USD',
         chargesDeducted: '',
         senderToReceiverPresentationInfo: '',
+        presentingBankBic: '',
+        presentingBankRef: '',
     });
 
     const [docs, setDocs] = useState([
@@ -102,7 +104,7 @@ export const PresentationLodgement: React.FC<PresentationLodgementProps> = ({ in
                 {error && <div className="error-banner mb-2">{error}</div>}
                 <section className="header-fields">
                     <div className="field-group">
-                        <label htmlFor="presentationDate">Presentation Date</label>
+                        <label htmlFor="presentationDate" className="required-label">Presentation Date</label>
                         <input 
                             id="presentationDate"
                             type="date"
@@ -111,7 +113,7 @@ export const PresentationLodgement: React.FC<PresentationLodgementProps> = ({ in
                         />
                     </div>
                     <div className="field-group">
-                        <label htmlFor="claimAmount">Claim Amount</label>
+                        <label htmlFor="claimAmount" className="required-label">Claim Amount</label>
                         <div className="input-with-addon">
                             <span className="addon">{formData.currency}</span>
                             <input 
@@ -136,6 +138,24 @@ export const PresentationLodgement: React.FC<PresentationLodgementProps> = ({ in
                             placeholder="e.g. ADVISING FEES USD 50"
                         />
                         {fieldErrors.chargesDeducted && <p className="error-text text-xs mt-1">{fieldErrors.chargesDeducted}</p>}
+                    </div>
+                    <div className="field-group">
+                        <label htmlFor="presentingBankBic" className="required-label">Presenting Bank BIC (Tag 54A)</label>
+                        <input 
+                            id="presentingBankBic"
+                            value={formData.presentingBankBic}
+                            onChange={e => setFormData({...formData, presentingBankBic: e.target.value.toUpperCase()})}
+                            placeholder="e.g. ABIC US 33"
+                        />
+                    </div>
+                    <div className="field-group">
+                        <label htmlFor="presentingBankRef" className="required-label">Presenting Bank Ref (Tag 20)</label>
+                        <input 
+                            id="presentingBankRef"
+                            value={formData.presentingBankRef}
+                            onChange={e => setFormData({...formData, presentingBankRef: e.target.value})}
+                            placeholder="e.g. PRES/2026/001"
+                        />
                     </div>
                     <div className="field-group">
                         <label htmlFor="senderToReceiverPresentationInfo">Sender to Receiver Info (Tag 72Z)</label>

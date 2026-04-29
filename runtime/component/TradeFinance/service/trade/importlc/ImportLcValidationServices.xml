@@ -115,7 +115,6 @@
                 
                 def addError = { fieldName, message, type ->
                     errors.add([fieldName: fieldName, message: message, violationType: type])
-                    ec.message.addError("${fieldName}: ${message}")
                 }
                 
                 def validateXCharset = { fieldName, value ->

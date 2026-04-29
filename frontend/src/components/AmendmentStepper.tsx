@@ -27,6 +27,7 @@ export const AmendmentStepper: React.FC<AmendmentStepperProps> = ({ lcId }) => {
         amountAdjustment: '0',
         newExpiryDate: '',
         amendmentNarrative: '',
+        amendmentTypeEnumId: 'FINANCIAL',
         beneficiaryConsentRequired: true,
     });
 
@@ -131,6 +132,17 @@ export const AmendmentStepper: React.FC<AmendmentStepperProps> = ({ lcId }) => {
 
                 {stepIndex === 1 && (
                     <section className="form-grid">
+                        <div className="field-group full-width">
+                            <label htmlFor="amendmentTypeEnumId" className="required-label">Amendment Type</label>
+                            <select 
+                                id="amendmentTypeEnumId"
+                                value={delta.amendmentTypeEnumId}
+                                onChange={e => setDelta({...delta, amendmentTypeEnumId: e.target.value})}
+                            >
+                                <option value="FINANCIAL">Financial (Amount/Expiry)</option>
+                                <option value="NARRATIVE">Narrative / Terms Only</option>
+                            </select>
+                        </div>
                         <div className="field-group">
                             <label htmlFor="amountAdjustment">Amount Adjustment (Delta)</label>
                             <input 
@@ -158,7 +170,7 @@ export const AmendmentStepper: React.FC<AmendmentStepperProps> = ({ lcId }) => {
                 {stepIndex === 2 && (
                     <section className="form-grid">
                         <div className="field-group full-width">
-                            <label htmlFor="shippingChanges">Shipping & Terms Changes</label>
+                            <label htmlFor="shippingChanges" className="required-label">Shipping & Terms Changes (Tag 77A)</label>
                             <textarea 
                                 id="shippingChanges"
                                 className={fieldErrors.amendmentNarrative ? 'is-invalid' : ''}

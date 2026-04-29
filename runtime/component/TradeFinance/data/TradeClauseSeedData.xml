@@ -2,11 +2,11 @@
 <entity-facade-xml>
     <!-- Goods Description Clauses -->
     <trade.common.TradeStandardClause clauseId="CL_GOODS_001" clauseTypeEnumId="GOODS" clauseName="General Merchandise"
-        clauseText="General merchandise as per Proforma Invoice No. [REF] dated [DATE]. All goods to be packed in export standard seaworthy packaging."/>
+        clauseText="General merchandise as per Proforma Invoice No. (REF) dated (DATE). All goods to be packed in export standard seaworthy packaging."/>
     
     <!-- Documents Required Clauses -->
     <trade.common.TradeStandardClause clauseId="CL_DOCS_001" clauseTypeEnumId="DOCUMENTS" clauseName="Full Set B/L"
-        clauseText="+ Full set of clean on board ocean Bill of Lading made out to the order of [BANK NAME], marked freight [PREPAID/COLLECT] and notify applicant."/>
+        clauseText="+ Full set of clean on board ocean Bill of Lading made out to the order of (BANK NAME), marked freight (PREPAID/COLLECT) and notify applicant."/>
     <trade.common.TradeStandardClause clauseId="CL_DOCS_002" clauseTypeEnumId="DOCUMENTS" clauseName="Commercial Invoice"
         clauseText="+ Signed commercial invoice in 3 originals and 3 copies indicating LC number and contract reference."/>
     

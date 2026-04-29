@@ -16,6 +16,13 @@
                 <econdition field-name="clauseTypeEnumId" from="clauseTypeEnumId" ignore-if-empty="true"/>
                 <order-by field-name="clauseName"/>
             </entity-find>
+            <script>
+                clauseList.each { clause ->
+                    if (clause.clauseText?.contains("[")) {
+                        clause.clauseText = clause.clauseText.replace("[", "(").replace("]", ")")
+                    }
+                }
+            </script>
             <script>ec.artifactExecution.enableAuthz()</script>
         </actions>
     </service>

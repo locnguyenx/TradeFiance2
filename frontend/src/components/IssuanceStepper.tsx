@@ -223,7 +223,7 @@ export const IssuanceStepper: React.FC = () => {
             if (!formData.amount || parseFloat(formData.amount) <= 0) missingFields.push('LC Amount');
             if (!formData.currency) missingFields.push('Currency');
             if (!formData.expiryPlace) missingFields.push('Expiry Place');
-            if (!formData.latestShipmentDate) missingFields.push('Latest Shipment Date');
+            if (!formData.latestShipmentDate && !formData.shipmentPeriodText) missingFields.push('Latest Shipment Date or Shipment Period');
             if (!formData.goodsDescription) missingFields.push('Goods Description');
             if (formData.lcTypeEnumId === 'USANCE' && !formData.usanceDays) missingFields.push('Usance Days');
         } else if (stepIndex === 2) {
@@ -256,11 +256,19 @@ export const IssuanceStepper: React.FC = () => {
         } else if (stepIndex === 1 && formData.instrumentId) {
             setLoading(true);
             try {
+                // Persistent Save as Draft to capture Step 2 changes
+                const success = await handleSaveDraft();
+                if (!success) return;
+
                 // Call backend validation for Spec A
                 const res = await tradeApi.validateLcSwiftFields(formData.instrumentId, 'ImportLetterOfCredit');
                 const newErrors: Record<string, string> = {};
                 res.errors?.forEach(err => {
-                    newErrors[err.fieldName] = err.message;
+                    if (newErrors[err.fieldName]) {
+                        newErrors[err.fieldName] += `; ${err.message}`;
+                    } else {
+                        newErrors[err.fieldName] = err.message;
+                    }
                 });
                 setSwiftErrors(newErrors);
                 
@@ -316,7 +324,7 @@ export const IssuanceStepper: React.FC = () => {
             if (!formData.amount || parseFloat(formData.amount) <= 0) missingFields.push('LC Amount');
             if (!formData.currency) missingFields.push('Currency');
             if (!formData.expiryPlace) missingFields.push('Expiry Place');
-            if (!formData.latestShipmentDate) missingFields.push('Latest Shipment Date');
+            if (!formData.latestShipmentDate && !formData.shipmentPeriodText) missingFields.push('Latest Shipment Date or Shipment Period');
             if (!formData.goodsDescription) missingFields.push('Goods Description');
         }
         
@@ -330,6 +338,7 @@ export const IssuanceStepper: React.FC = () => {
             const payload = {
                 ...formData,
                 applicantName: formData.applicant,
+                beneficiaryName: formData.beneficiary,
                 lcAmount: Number(formData.amount),
                 lcCurrencyUomId: formData.currency,
                 amount: parseFloat(formData.amount) || 0,
@@ -337,10 +346,13 @@ export const IssuanceStepper: React.FC = () => {
                 issueDate: formData.issueDate || new Date().toISOString().split('T')[0],
                 expiryDate: formData.expiryDate || undefined,
                 latestShipmentDate: formData.latestShipmentDate || undefined,
+                usanceBaseDate: formData.usanceBaseDate || formData.issueDate || new Date().toISOString().split('T')[0],
                 businessStateId: 'LC_DRAFT'
             };
             
-            const result = await tradeApi.createLc(payload);
+            const result = await (formData.instrumentId 
+                ? tradeApi.updateLc(formData.instrumentId, payload)
+                : tradeApi.createLc(payload));
             
             if (result.instrumentId) {
                 setFormData(prev => ({ 
@@ -476,10 +488,12 @@ export const IssuanceStepper: React.FC = () => {
                                     disabled={status === 'SUBMITTED'}
                                     value={formData.lcTypeEnumId}
                                     onChange={e => setFormData({...formData, lcTypeEnumId: e.target.value})}
+                                    className={swiftErrors.lcTypeEnumId ? 'is-invalid' : ''}
                                 >
                                     <option value="SIGHT">Sight LC</option>
                                     <option value="USANCE">Usance LC</option>
                                 </select>
+                                {swiftErrors.lcTypeEnumId && <p className="error-text text-xs mt-1">{swiftErrors.lcTypeEnumId}</p>}
                             </div>
                             <div className="field-group">
                                 <label htmlFor="confirmationEnumId">Confirmation Instruction</label>
@@ -488,11 +502,13 @@ export const IssuanceStepper: React.FC = () => {
                                     disabled={status === 'SUBMITTED'}
                                     value={formData.confirmationEnumId}
                                     onChange={e => setFormData({...formData, confirmationEnumId: e.target.value})}
+                                    className={swiftErrors.confirmationEnumId ? 'is-invalid' : ''}
                                 >
                                     <option value="WITHOUT">Without</option>
                                     <option value="CONFIRM">Confirm</option>
                                     <option value="MAY_ADD">May Add</option>
                                 </select>
+                                {swiftErrors.confirmationEnumId && <p className="error-text text-xs mt-1">{swiftErrors.confirmationEnumId}</p>}
                             </div>
                             <div className="field-group">
                                 <label htmlFor="productCatalogId" className="required-label">LC Product</label>
@@ -528,10 +544,12 @@ export const IssuanceStepper: React.FC = () => {
                                         setFormData({...formData, applicantPartyId: e.target.value, applicant: partyName});
                                         validateSwiftField('applicant', partyName, 'X', 4);
                                     }}
+                                    className={(swiftErrors.applicantName || swiftErrors.applicant) ? 'is-invalid' : ''}
                                 >
                                     <option value="">Select Applicant...</option>
                                     {parties.map(p => <option key={p.partyId} value={p.partyId}>{p.partyName}</option>)}
                                 </select>
+                                {(swiftErrors.applicantName || swiftErrors.applicant) && <p className="error-text text-xs mt-1">{swiftErrors.applicantName || swiftErrors.applicant}</p>}
                                 <div className="helper-box">
                                     <p>Available Facility Limit: $1,000,000</p>
                                     <p>KYC Status: <span className="text-success">VERIFIED</span></p>
@@ -551,7 +569,7 @@ export const IssuanceStepper: React.FC = () => {
                                 <label htmlFor="beneficiary" className="required-label">Beneficiary (Tag 59)</label>
                                 <textarea 
                                     id="beneficiary"
-                                    className={swiftErrors.beneficiary ? 'is-invalid' : ''}
+                                    className={(swiftErrors.beneficiaryName || swiftErrors.beneficiary) ? 'is-invalid' : ''}
                                     rows={3}
                                     value={formData.beneficiary}
                                     onChange={e => {
@@ -560,10 +578,10 @@ export const IssuanceStepper: React.FC = () => {
                                     }}
                                     placeholder="Multi-line Beneficiary details..."
                                 />
-                                {swiftErrors.beneficiary && <p className="error-text text-xs mt-1">{swiftErrors.beneficiary}</p>}
+                                {(swiftErrors.beneficiaryName || swiftErrors.beneficiary) && <p className="error-text text-xs mt-1">{swiftErrors.beneficiaryName || swiftErrors.beneficiary}</p>}
                             </div>
                             <div className="field-group">
-                                <label htmlFor="advisingBankBic">Advising Bank BIC (Tag 57A)</label>
+                                <label htmlFor="advisingBankBic" className="required-label">Advising Bank BIC (Tag 57A)</label>
                                 <input 
                                     id="advisingBankBic"
                                     className={swiftErrors.advisingBankBic ? 'is-invalid' : ''}
@@ -622,7 +640,7 @@ export const IssuanceStepper: React.FC = () => {
                                     <input id="issueDate" type="date" value={formData.issueDate} onChange={e => setFormData({...formData, issueDate: e.target.value})} />
                                 </div>
                                 <div className="field-group">
-                                    <label htmlFor="expiryDate">Expiry Date</label>
+                                    <label htmlFor="expiryDate" className="required-label">Expiry Date</label>
                                     <input id="expiryDate" type="date" value={formData.expiryDate} onChange={e => setFormData({...formData, expiryDate: e.target.value})} />
                                     {dateError && <p className="error-text">{dateError}</p>}
                                 </div>
@@ -636,18 +654,40 @@ export const IssuanceStepper: React.FC = () => {
                                 </div>
                                 <div className="field-group">
                                     <label htmlFor="shipmentPeriodText">Shipment Period (Tag 44D)</label>
-                                    <input id="shipmentPeriodText" disabled={!!formData.latestShipmentDate} value={formData.shipmentPeriodText} onChange={e => setFormData({...formData, shipmentPeriodText: e.target.value})} placeholder="e.g. SHIPMENT WITHIN 30 DAYS" />
+                                    <input 
+                                        id="shipmentPeriodText" 
+                                        className={swiftErrors.shipmentPeriodText ? 'is-invalid' : ''}
+                                        disabled={!!formData.latestShipmentDate} 
+                                        value={formData.shipmentPeriodText} 
+                                        onChange={e => setFormData({...formData, shipmentPeriodText: e.target.value})} 
+                                        placeholder="e.g. SHIPMENT WITHIN 30 DAYS" 
+                                    />
+                                    {swiftErrors.shipmentPeriodText && <p className="error-text text-xs mt-1">{swiftErrors.shipmentPeriodText}</p>}
                                 </div>
                                 {formData.lcTypeEnumId === 'USANCE' && (
-                                    <div className="field-group">
-                                        <label htmlFor="usanceDays">Usance Days</label>
-                                        <input id="usanceDays" type="number" value={formData.usanceDays} onChange={e => setFormData({...formData, usanceDays: parseInt(e.target.value) || 0})} />
-                                    </div>
+                                    <>
+                                        <div className="field-group">
+                                            <label htmlFor="usanceDays">Usance Days</label>
+                                            <input id="usanceDays" type="number" value={formData.usanceDays} onChange={e => setFormData({...formData, usanceDays: parseInt(e.target.value) || 0})} />
+                                        </div>
+                                        <div className="field-group">
+                                            <label htmlFor="usanceBaseDate" className="required-label">Usance Base Date</label>
+                                            <input 
+                                                id="usanceBaseDate" 
+                                                type="date" 
+                                                className={swiftErrors.usanceBaseDate ? 'is-invalid' : ''}
+                                                value={formData.usanceBaseDate} 
+                                                onChange={e => setFormData({...formData, usanceBaseDate: e.target.value})} 
+                                            />
+                                            {swiftErrors.usanceBaseDate && <p className="error-text text-xs mt-1">{swiftErrors.usanceBaseDate}</p>}
+                                        </div>
+                                    </>
                                 )}
                                 <div className="field-group">
                                     <label htmlFor="availableByEnumId" className="required-label">Available By (Tag 41a)</label>
                                     <select 
                                         id="availableByEnumId"
+                                        className={swiftErrors.availableByEnumId ? 'is-invalid' : ''}
                                         value={formData.availableByEnumId}
                                         onChange={e => setFormData({...formData, availableByEnumId: e.target.value})}
                                     >
@@ -657,6 +697,7 @@ export const IssuanceStepper: React.FC = () => {
                                         <option value="DEF_PAYMENT">By Deferred Payment</option>
                                         <option value="MIXED_PAYMENT">By Mixed Payment</option>
                                     </select>
+                                    {swiftErrors.availableByEnumId && <p className="error-text text-xs mt-1">{swiftErrors.availableByEnumId}</p>}
                                 </div>
                                 <div className="field-group">
                                     <label htmlFor="availableWithBic">Available With BIC (Tag 41A)</label>
@@ -762,7 +803,7 @@ export const IssuanceStepper: React.FC = () => {
                                 </div>
                                 <div className="field-group full-width">
                                     <div className="flex justify-between items-center mb-1">
-                                        <label htmlFor="documentsRequired">Documents Required (Tag 46A)</label>
+                                        <label htmlFor="documentsRequired" className="required-label">Documents Required (Tag 46A)</label>
                                         <button className="helper-link" onClick={() => setActiveClauseType('DOCUMENTS')}>+ Standard Clauses</button>
                                     </div>
                                     <textarea 
@@ -825,7 +866,7 @@ export const IssuanceStepper: React.FC = () => {
                                     </select>
                                 </div>
                                 <div className="field-group mb-4 full-width">
-                                    <label htmlFor="customerFacilityId">Customer Facility (Optional for Draft)</label>
+                                    <label htmlFor="customerFacilityId" className="required-label">Customer Facility (Optional for Draft)</label>
                                     <select 
                                         id="customerFacilityId"
                                         value={formData.customerFacilityId}

@@ -47,7 +47,7 @@ Access the **Global Transaction Log** via `ADMINISTRATION > Audit Logs`. This vi
 
 ---
 
-## 2. Dashboard Actions & Workflows
+## 3. Dashboard Actions & Workflows
 The **Operations Dashboard** is the primary launchpad for instrument-level actions.
 
 ### Data Interaction
@@ -70,7 +70,7 @@ Click the triple-dot menu on any dashboard row to access status-specific actions
 
 ---
 
-## 3. Instrument Detail View (Workspace)
+## 4. Instrument Detail View (Workspace)
 Clicking a reference opens the **Full-Screen Workspace**. This view is optimized for audit and control.
 
 ### Navigation within Details
@@ -112,67 +112,107 @@ The platform ensures no data is lost during the issuance process.
 
 ---
 
-## 5. Import LC Issuance (Maker Workflow)
+## 7. Import LC Issuance (Maker Workflow)
 
 ### Step 1: Parties & Limits
 | Field | Tag | Requirement | Character Set | Input Guideline / Constraints |
 |-------|-----|-------------|---------------|-------------------------------|
+| **LC Type** | 40A | **Mandatory** | - | Select SIGHT or USANCE. Determines if Usance Days are required. |
+| **Confirmation** | 49 | Optional | - | Select CONFIRM, MAY ADD, or WITHOUT (Default). |
 | **Product Catalog**| - | **Mandatory** | - | Select the generic LC type to load default SLA/Tenor templates. |
+| **Transaction Ref**| 20 | Optional | **X-Charset** | Bank's internal reference. **Format**: `TF-IMP-YY-NNNN` (e.g., `TF-IMP-26-0001`). |
 | **Applicant** | 50 | **Mandatory** | **X-Charset** | Select corporate client. Name/Address mapped to **Max 4 Lines**. |
 | **Beneficiary** | 59 | **Mandatory** | **X-Charset** | Enter manually or select. Name/Address mapped to **Max 4 Lines**. |
 | **Advising Bank** | 57A | **Mandatory** | **BIC-11/8** | Enter 8 or 11 char BIC. System auto-verifies Bank Name. |
+| **Adv. Thru Bank** | 58A | Optional | **BIC-11/8** | Enter BIC for intermediary bank (Advising Through). |
 | **Credit Facility**| - | **Mandatory** | - | Must have sufficient available balance. Blocks flow if exceeded. |
 
 ---
 
-### Step 2: Main LC Information
+### Step 2: Main LC Information (Financials & Dates)
 | Field | Tag | Requirement | Character Set | Input Guideline / Constraints |
 |-------|-----|-------------|---------------|-------------------------------|
-| **LC Amount** | 32B | **Mandatory** | **Numeric** | Enter base value. **Currency** defaulted from facility. |
-| **Tolerance +/-** | 39A | Optional | **Numeric** | Percentage deviation allowed. Disabled if "Max Credit Amount" checked. |
-| **Available By** | 41a | **Mandatory** | - | Select Payment Type (e.g., SIGHT, NEGOTIATION). |
+| **Currency** | 32B | **Mandatory** | - | Select base currency (USD, EUR, etc.). |
+| **LC Amount** | 32B | **Mandatory** | **Numeric** | Enter face value of the instrument. |
+| **Positive Tol. %**| 39A | Optional | **Numeric** | Percentage deviation above face value. |
+| **Negative Tol. %**| 39A | Optional | **Numeric** | Percentage deviation below face value. Disabled if 39B checked. |
+| **Max Credit Amt** | 39B | Optional | **Indicator**| If "Y", instrument allows amounts exceeding face value. |
+| **Issue Date** | 31C | Optional | **Date** | Default is today. Determines effective date. |
+| **Expiry Date** | 31D | **Mandatory** | **Date** | Date of instrument expiration. Must be > Issue Date. |
+| **Expiry Place** | 31D | **Mandatory** | **X-Charset** | City/Country where the instrument expires. |
+| **Latest Shipment**| 44C | Conditional | **Date** | Mandatory if 44D is empty. Must be $\leq$ Expiry. |
+| **Shipment Period**| 44D | Conditional | **X-Charset** | Narrative shipment window. Mandatory if 44C is empty. |
+| **Usance Days** | 42C | Conditional | **Numeric** | Required if LC Type is USANCE. |
+| **Available By** | 41a | **Mandatory** | - | Select Payment Type (e.g., SIGHT, ACCEPTANCE, NEGOTIATION). |
 | **Available With** | 41A/D| **Mandatory** | **BIC or X** | **BIC (41A)** or **Narrative Name (41D)**. Name max **4 lines**. |
-| **Expiry Date** | 31D | **Mandatory** | **Date** | Must be in the future. |
-| **Latest Shipment**| 44E | Conditional | **Date** | Mandatory if "Shipment Period" is empty. Must be $\leq$ Expiry. |
+| **Drawee Bank** | 42A | Optional | **BIC-11/8** | BIC of the bank that will accept/pay the drafts. |
+| **Partial Ship.** | 43P | Optional | - | Select ALLOWED or NOT ALLOWED. |
+| **Transhipment** | 43T | Optional | - | Select ALLOWED, NOT ALLOWED, or CONDITIONAL. |
+| **Port of Loading**| 44E | Optional | **X-Charset** | Port/Airport of taking in charge/dispatch. |
+| **Port of Disch.** | 44F | Optional | **X-Charset** | Port/Airport of destination. |
+| **Goods Desc.** | 45A | **Mandatory** | **X-Charset** | Detailed list of merchandise and Incoterms. |
+| **Docs Required** | 46A | **Mandatory** | **X-Charset** | List of required evidence (e.g., Bill of Lading, Invoice). |
+| **Issuing Bank** | 51A | Optional | **BIC-11/8** | BIC of the bank issuing the instrument (if not self). |
 
 ---
 
-### Step 3: Narratives & "Clean at Capture"
-Proactive validation prevents the entry of invalid symbols.
-
+### Step 3: Margin & Charges
 | Field | Tag | Requirement | Character Set | Max Lines | Input Guideline |
 |-------|-----|-------------|---------------|-----------|-----------------|
-| **Goods Desc.** | 45A | **Mandatory** | **X-Charset** | 100 | Detailed list of merchandise and Incoterms. |
-| **Docs Required** | 46A | **Mandatory** | **X-Charset** | 100 | List of required evidence (e.g., Bill of Lading, Invoice). |
+| **Margin Type** | - | Optional | - | - | Select None, Cash, or Lombard. |
+| **Margin %** | - | Optional | **Numeric** | - | Percentage of amount to be earmarked as cash margin. |
+| **Charge Alloc.** | 71D | **Mandatory** | - | - | Select who pays fees (Applicant, Beneficiary, or Shared). |
+| **Cust. Facility** | - | **Mandatory** | - | - | Linked credit limit for liability tracking. |
 | **Add. Conditions**| 47A | Optional | **X-Charset** | 100 | Special bank instructions or specific local regulations. |
+| **Bank to Bank** | 78 | Optional | **X-Charset** | 12 | Instructions to the paying/accepting/negotiating bank. |
+| **Pres. Period** | 48 | Optional | **Numeric** | 1 | Days after shipment to present docs (Default 21). |
 | **Charges** | 71D | Optional | **X-Charset** | 6 | Define fee responsibility (e.g., All outside bank for Ben). |
 
 ---
 
-## 3. Document Presentation Lodgement
+## 8. Document Presentation Lodgement
 Enforces strict 5-day UCP 600 examination rules.
 
 | Field | Tag | Requirement | Character Set | Max Lines | Validation Rule |
 |-------|-----|-------------|---------------|-----------|-----------------|
+| **Pres. Date** | - | **Mandatory** | **Date** | - | Date documents were received at bank counter. |
 | **Claim Amount** | - | **Mandatory** | **Numeric** | 1 | Cannot exceed LC Balance + Tolerance. |
-| **Examination Date**| - | **Mandatory** | **Date** | - | Sets the anchor for the 5-day SLA countdown. |
+| **Currency** | - | **Mandatory** | - | - | Mapped from instrument. |
+| **Presenting Bank**| 54A | **Mandatory** | **BIC-11/8** | 1 | BIC of the bank presenting the documents. |
+| **Bank Reference** | 20 | **Mandatory** | **X-Charset** | 1 | The presenting bank's unique reference number. |
+| **Examination Date**| - | **Mandatory** | **Date** | - | SLA anchor. **Rule**: Presentation Date + 5 Business Days (UCP 600). |
+| **Document Matrix** | - | **Mandatory** | - | - | Count of Original/Copy for each document type. |
+| **Doc Disposal** | 77B | Optional | - | 3 | Instructions if docs are refused (e.g., HOLDING). |
 | **Charges Ded.** | 73 | Optional | **Z-Charset** | 6 | Fees taken from proceeds. Ex: `ADVISING FEES USD 50`. |
 | **Sender/Receiver**| 72Z | Optional | **Z-Charset** | 6 | Special instructions to the bank. |
 
 ---
 
-## 4. LC Amendment (MT 707)
+## 9. LC Amendment (MT 707)
 Designed for mid-lifecycle adjustments.
 
 | Field | Tag | Requirement | Character Set | Validation Rule |
 |-------|-----|-------------|---------------|-----------------|
+| **Amendment Type** | - | **Mandatory** | - | Select FINANCIAL or NARRATIVE. |
 | **Amount Delta** | 32B | Optional | **Numeric** | Use `+` or `-` to adjust. Redefines Max Liability. |
 | **Expiry Delta** | 31D | Optional | **Date** | New validity date. |
 | **Narrative** | 77A | **Mandatory**| **Z-Charset** | Explicitly describe what was changed in the instrument. |
+| **Ben. Consent** | - | Optional | **Boolean** | If "Y", amendment is pending until beneficiary accepts. |
 
 ---
 
-## 5. Character Set Quick-Reference
+## 10. Settlement & Drawings
+Captures payment release and liability reduction.
+
+| Field | Tag | Requirement | Character Set | Input Guideline |
+|-------|-----|-------------|---------------|-----------------|
+| **Drawing Amount** | - | **Mandatory** | **Numeric** | Amount to be paid to beneficiary. |
+| **Value Date** | - | **Mandatory** | **Date** | Effective date of payment and account debit. |
+| **Charge Earmark** | - | Optional | - | Select if charges should be settled now or deferred. |
+
+---
+
+## 11. Character Set Quick-Reference
 
 ### X-Character Set (The "Strict" Set)
 Forbidden symbols: `@`, `!`, `#`, `$`, `%`, `^`, `&`, `*`, `_`, `=`, `<`, `>`, `;`, `"`.
@@ -184,5 +224,5 @@ Allowed in **Narratives** (Tags 73, 72Z, 77A):
 
 ---
 
-## Conclusion
+## 12. Support & Helpdesk
 For operational support, contact the **Trade Finance Operations Helpdesk** at ext 9999 or email `trade-support@bank.com`.

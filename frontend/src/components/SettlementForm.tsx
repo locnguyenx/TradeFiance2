@@ -87,7 +87,7 @@ export const SettlementForm: React.FC<SettlementFormProps> = ({ instrumentId, pr
 
             <div className="input-section">
                 <div className="field">
-                    <label htmlFor="settlementAmount">Drawing Amount</label>
+                    <label htmlFor="settlementAmount" className="required-label">Drawing Amount</label>
                     <div className="amount-input">
                         <span className="currency">{lc.currencyUomId}</span>
                         <input 
@@ -101,7 +101,7 @@ export const SettlementForm: React.FC<SettlementFormProps> = ({ instrumentId, pr
                 </div>
 
                 <div className="field">
-                    <label htmlFor="settlementDate">Value Date</label>
+                    <label htmlFor="settlementDate" className="required-label">Value Date</label>
                     <input 
                         id="settlementDate"
                         type="date" 
