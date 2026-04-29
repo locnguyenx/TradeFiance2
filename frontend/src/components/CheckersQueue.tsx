@@ -91,7 +91,7 @@ export const CheckersQueue: React.FC<CheckersQueueProps> = ({ items: initialItem
                     </thead>
                     <tbody>
                         {sortedItems.map(item => (
-                            <tr key={item.transactionId} className="clickable-row" onClick={() => setSelectedTransactionId(item.transactionId)}>
+                            <tr key={item.transactionId} className="clickable-row" onClick={() => router.push(`/transactions/details?id=${item.transactionId}`)}>
                                 <td>
                                     <span className={`priority-badge ${(item.priorityEnumId || 'normal').toLowerCase()}`}>
                                         {item.priorityEnumId}
@@ -99,8 +99,8 @@ export const CheckersQueue: React.FC<CheckersQueueProps> = ({ items: initialItem
                                 </td>
                                 <td className="ref-cell">
                                     {item.transactionRef}
-                                    {item.businessStateId === 'INST_PARTIAL_APPROVAL' && (
-                                        <div className="status-label partial">PARTIAL APPROVAL</div>
+                                    {item.transactionStatusId === 'TXN_PARTIAL_APPROVED' && (
+                                        <div className="status-label partial">PARTIAL APPROVED</div>
                                     )}
                                 </td>
                                 <td><span className="module-tag">{item.module}</span></td>
@@ -116,7 +116,7 @@ export const CheckersQueue: React.FC<CheckersQueueProps> = ({ items: initialItem
                                     <button 
                                         className="btn-icon secondary"
                                         title="View Details"
-                                        onClick={(e) => { e.stopPropagation(); router.push(`/import-lc/details?id=${item.instrumentId}`); }}
+                                        onClick={(e) => { e.stopPropagation(); router.push(`/transactions/details?id=${item.transactionId}`); }}
                                     >
                                         👁️
                                     </button>

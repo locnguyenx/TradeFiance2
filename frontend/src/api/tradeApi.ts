@@ -54,22 +54,48 @@ export const tradeApi = {
         }
     }
 
-    let res = await fetch(url, { 
-        ...init, 
-        headers,
-        credentials: 'include' 
-    });
-    
-    // Retry once for transient 500 errors (often caused by session clashing in dev/test)
-    if (res.status === 500) {
-        console.warn(`Transient 500 detected for ${url}. Retrying...`);
-        await new Promise(resolve => setTimeout(resolve, 200));
-        res = await fetch(url, { 
-            ...init, 
-            headers,
-            credentials: 'include' 
-        });
+    let res: Response;
+    const maxRetries = 3;
+    let attempt = 0;
+
+    while (attempt < maxRetries) {
+        try {
+            res = await fetch(url, { 
+                ...init, 
+                headers,
+                credentials: 'include' 
+            });
+
+            // If success or expected 4xx, return
+            if (res.ok || (res.status >= 400 && res.status < 500)) {
+                break;
+            }
+
+            // Retry for 500 errors or other server issues
+            if (res.status >= 500) {
+                attempt++;
+                if (attempt < maxRetries) {
+                    const delay = Math.pow(2, attempt) * 250; // 500ms, 1000ms, 2000ms
+                    console.warn(`Transient ${res.status} for ${url} (Attempt ${attempt}). Retrying in ${delay}ms...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    continue;
+                }
+            } else {
+                break; // Other status codes (3xx, etc) return as is
+            }
+        } catch (err) {
+            attempt++;
+            if (attempt < maxRetries) {
+                const delay = Math.pow(2, attempt) * 250;
+                console.warn(`Network error for ${url} (Attempt ${attempt}): ${err}. Retrying in ${delay}ms...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            } else {
+                throw err;
+            }
+        }
     }
+
+    if (!res!) throw new Error(`Failed to fetch ${url} after ${maxRetries} attempts`);
 
     if (!res.ok) {
       let errorBody = null;
@@ -316,6 +342,23 @@ export const tradeApi = {
 
   async getAuditLogs(instrumentId: string): Promise<{ auditLogList: any[] }> {
     const res = await this._fetch(`${API_BASE}/instrument/${instrumentId}/audit-logs`);
+    return res.json();
+  },
+
+  async getGlobalAuditLogs(priorityEnumId?: string): Promise<{ auditLogList: any[] }> {
+    const params = new URLSearchParams();
+    if (priorityEnumId) params.append('priorityEnumId', priorityEnumId);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const res = await this._fetch(`${API_BASE}/common/audit-logs${query}`);
+    return res.json();
+  },
+
+  async getTransactions(statusId?: string, priorityId?: string): Promise<{ transactionList: any[] }> {
+    const params = new URLSearchParams();
+    if (statusId) params.append('transactionStatusId', statusId);
+    if (priorityId) params.append('priorityEnumId', priorityId);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const res = await this._fetch(`${API_BASE}/common/transactions${query}`);
     return res.json();
   },
 };

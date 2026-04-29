@@ -1,3 +1,5 @@
+"use client";
+
 import React, { ReactNode, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -44,11 +46,12 @@ export const GlobalShell: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const navSections: NavSection[] = [
         { group: 'OPERATIONS', items: [
-            { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} />, path: '/import-lc' },
+            { id: 'transactions', label: 'Transaction Dashboard', icon: <LayoutDashboard size={18} />, path: '/transactions' },
             { id: 'approvals', label: 'My Tasks', icon: <CheckCircle size={18} />, path: '/approvals' },
             { id: 'documents', label: 'Document Examination', icon: <FileSearch size={18} />, path: '/import-lc/documents' },
         ]},
-        { group: 'LIFECYCLE MANAGEMENT', items: [
+        { group: 'IMPORT LC', items: [
+            { id: 'dashboard', label: 'Import LC Dashboard', icon: <Globe size={18} />, path: '/import-lc' },
             { id: 'issuance', label: 'New LC Issuance', icon: <PlusCircle size={18} />, path: '/issuance' },
             { id: 'amendments', label: 'LC Amendments', icon: <FileEdit size={18} />, path: '/import-lc/amendments' },
             { id: 'presentations', label: 'Presentations', icon: <FileText size={18} />, path: '/import-lc/presentations' },

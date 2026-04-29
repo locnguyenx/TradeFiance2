@@ -144,8 +144,7 @@
             
             <entity-find entity-name="trade.TradeInstrument" list="instrumentList">
                 <econdition field-name="customerFacilityId" from="facilityId"/>
-                <econdition field-name="transactionStatusId" operator="in" value="TX_DRAFT,TX_PENDING,TX_APPROVED"/>
-                <order-by field-name="-transactionDate"/>
+                <order-by field-name="-issueDate"/>
             </entity-find>
             
             <set field="fFirm" from="0.0" type="BigDecimal"/>
@@ -179,7 +178,7 @@
                         businessStateId: inst.businessStateId,
                         transactionStatusId: txStatus,
                         effectiveOutstandingAmount: inst.baseEquivalentAmount,
-                        transactionDate: tx?.transactionDate ?: inst.transactionDate
+                        transactionDate: tx?.transactionDate ?: inst.issueDate
                     ])
                 </script>
             </iterate>

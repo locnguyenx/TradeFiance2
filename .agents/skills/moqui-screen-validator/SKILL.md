@@ -1,10 +1,10 @@
 ---
 name: moqui-screen-validator
-description: Used in screen design, diagnostics screen issue. 
+description: Use when designing Moqui UI screens, writing XML layout code, or diagnosing screen rendering errors.
 ---
 
 ## Execution Steps
-1. **Knowledge Retrieval:** Read the syntax dictionary at `.agents/knowledge/moqui_syntax_ref.md`.
+1. **Knowledge Retrieval:** Read the syntax dictionary at `.journal/moqui_syntax_ref.md`.
 2. **XML Validation (MANDATORY):** Run `xmllint --noout <file-path>` to validate XML syntax BEFORE any other checks.
    - Common errors that break screens: duplicate field definitions, unclosed/extra closing tags
    - This MUST be done for EVERY screen file modification
@@ -17,5 +17,5 @@ description: Used in screen design, diagnostics screen issue.
 6. **Deep Verification:** If a Moqui tag is missing from your `moqui_syntax_ref.md` cache:
    - Read `framework/xsd/xml-screen-3.xsd`. If the tag is absent, flag it as an illegal hallucination.
    - Check `runtime/template/screen-macro/` for attribute verification.
-7. **Self-Correction:** If you validated a new tag via Step 4, append a new row to the Markdown table in `.agents/knowledge/moqui_syntax_ref.md` detailing the tag, parent, and attributes.
+7. **Self-Correction:** If you validated a new tag via Step 4, append a new row to the Markdown table in `.journal/moqui_syntax_ref.md` detailing the tag, parent, and attributes.
 8. **Report:** Output a Markdown summary of violations fixed and/or new tags learned.

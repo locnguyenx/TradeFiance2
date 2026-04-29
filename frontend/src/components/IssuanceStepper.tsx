@@ -437,7 +437,7 @@ export const IssuanceStepper: React.FC = () => {
                         <div className="success-banner flex justify-between items-center">
                             {status === 'SUBMITTED' ? (
                                 <div className="success-banner premium-card mb-6" style={{ backgroundColor: '#dcfce7', borderColor: '#166534', padding: '1.5rem', borderRadius: '12px', border: '1px solid' }}>
-                                    <h3 style={{ color: '#166534', fontWeight: 700, marginBottom: '0.5rem' }}>✓ Submission Successful</h3>
+                                    <h3 style={{ color: '#166534', fontWeight: 700, marginBottom: '0.5rem' }}>Submission Successful</h3>
                                     <p style={{ color: '#166534', marginBottom: '1rem' }}>
                                         Letter of Credit has been submitted for approval.
                                         <br />

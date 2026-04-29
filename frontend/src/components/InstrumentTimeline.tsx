@@ -30,6 +30,10 @@ export const InstrumentTimeline: React.FC<InstrumentTimelineProps> = ({ instrume
     const [loading, setLoading] = useState(true);
 
     const loadTimeline = async () => {
+        if (!instrumentId || instrumentId === 'undefined') {
+            setLoading(false);
+            return;
+        }
         setLoading(true);
         try {
             const [txns, audits] = await Promise.all([

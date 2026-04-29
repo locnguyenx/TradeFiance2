@@ -36,6 +36,8 @@ export interface TradeInstrument {
   customerFacilityId: string;
   versionNumber: number;
   lastUpdateTimestamp?: string;
+  makerUserId?: string;
+  priorityEnumId?: string;
 }
 
 export interface ImportLetterOfCredit {

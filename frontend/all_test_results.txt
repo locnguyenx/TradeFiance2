@@ -1,0 +1,2498 @@
+
+> frontend@0.1.0 test
+> jest --reporter=verbose
+
+FAIL src/components/GlobalShell.test.tsx
+  ● GlobalShell Modern Navigation Layout › renders high-density minimalist navigation matching REQ-UI-MOD-01
+
+    TestingLibraryElementError: Unable to find an element with the text: LIFECYCLE MANAGEMENT. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"jsx-81067f81d5cded9c global-shell"[39m
+        [36m>[39m
+          [36m<aside[39m
+            [33mclass[39m=[32m"jsx-81067f81d5cded9c left-menu"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"jsx-81067f81d5cded9c sidebar-brand"[39m
+              [33mstyle[39m=[32m"padding: 0px 0px 2rem 0px; color: white; font-weight: 800; display: flex; align-items: center; gap: 0.75rem;"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"jsx-81067f81d5cded9c"[39m
+                [33mstyle[39m=[32m"background: var(--nav-active-bg); padding: 6px; border-radius: 6px; display: flex;"[39m
+              [36m>[39m
+                [36m<svg[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"lucide lucide-globe"[39m
+                  [33mfill[39m=[32m"none"[39m
+                  [33mheight[39m=[32m"20"[39m
+                  [33mstroke[39m=[32m"white"[39m
+                  [33mstroke-linecap[39m=[32m"round"[39m
+                  [33mstroke-linejoin[39m=[32m"round"[39m
+                  [33mstroke-width[39m=[32m"2"[39m
+                  [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [33mwidth[39m=[32m"20"[39m
+                  [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                [36m>[39m
+                  [36m<circle[39m
+                    [33mcx[39m=[32m"12"[39m
+                    [33mcy[39m=[32m"12"[39m
+                    [33mr[39m=[32m"10"[39m
+                  [36m/>[39m
+                  [36m<path[39m
+                    [33md[39m=[32m"M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"[39m
+                  [36m/>[39m
+                  [36m<path[39m
+                    [33md[39m=[32m"M2 12h20"[39m
+                  [36m/>[39m
+                [36m</svg>[39m
+              [36m</div>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"jsx-81067f81d5cded9c"[39m
+                [33mstyle[39m=[32m"font-size: 1.1rem; letter-spacing: 0.05em;"[39m
+              [36m>[39m
+                [0mTRADEFINANCE[0m
+              [36m</span>[39m
+            [36m</div>[39m
+            [36m<nav[39m
+              [33mclass[39m=[32m"jsx-81067f81d5cded9c sidebar-nav"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"jsx-81067f81d5cded9c nav-section"[39m
+              [36m>[39m
+                [36m<li[39m
+                  [33mclass[39m=[32m"jsx-81067f81d5cded9c nav-header"[39m
+                  [33mstyle[39m=[32m"list-style: none;"[39m
+                [36m>[39m
+                  [0mOPERATIONS[0m
+                [36m</li>[39m
+                [36m<ul[39m
+                  [33mclass[39m=[32m"jsx-81067f81d5cded9c nav-list"[39m
+                  [33mstyle[39m=[32m"padding: 0px;"[39m
+                [36m>[39m
+                  [36m<li[39m
+                    [33mclass[39m=[32m"jsx-81067f81d5cded9c "[39m
+                  [36m>[39m
+                    [36m<a[39m
+                      [33mhref[39m=[32m"/transactions"[39m
+                      [33mstyle[39m=[32m"color: inherit; text-decoration: none; display: flex; align-items: center; gap: 0.75rem;"[39m
+                    [36m>[39m
+                      [36m<span[39m
+                        [33mclass[39m=[32m"jsx-81067f81d5cded9c nav-icon"[39m
+                      [36m>[39m
+                        [36m<svg[39m
+                          [33maria-hidden[39m=[32m"true"[39m
+                          [33mclass[39m=[32m"lucide lucide-layout-dashboard"[39m
+                          [33mfill[39m=[32m"none"[39m
+                          [33mheight[39m=[32m"18"[39m
+                          [33mstroke[39m=[32m"currentColor"[39m
+                          [33mstroke-linecap[39m=[32m"round"[39m
+                          [33mstroke-linejoin[39m=[32m"round"[39m
+                          [33mstroke-width[39m=[32m"2"[39m
+                          [33mviewBox[39m=[32m"0 0 24 24"[39m
+                          [33mwidth[39m=[32m"18"[39m
+                          [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                        [36m>[39m
+                          [36m<rect[39m
+                            [33mheight[39m=[32m"9"[39m
+                            [33mrx[39m=[32m"1"[39m
+                            [33mwidth[39m=[32m"7"[39m
+                            [33mx[39m=[32m"3"[39m
+                            [33my[39m=[32m"3"[39m
+                          [36m/>[39m
+                          [36m<rect[39m
+                            [33mheight[39m=[32m"5"[39m
+                            [33mrx[39m=[32m"1"[39m
+                            [33mwidth[39m=[32m"7"[39m
+                            [33mx[39m=[32m"14"[39m
+                            [33my[39m=[32m"3"[39m
+                          [36m/>[39m
+                          [36m<rect[39m
+                            [33mheight[39m=[32m"9"[39m
+                            [33mrx[39m=[32m"1"[39m
+                            [33mwidth[39m=[32m"7"[39m
+                            [33mx[39m=[32m"14"[39m
+                            [33my[39m=[32m"12"[39m
+                          [36m/>[39m
+                          [36m<rect[39m
+                            [33mheight[39m=[32m"5"[39m
+                            [33mrx[39m=[32m"1"[39m
+                            [33mwidth[39m=[32m"7"[39m
+                            [33mx[39m=[32m"3"[39m
+                            [33my[39m=[32m"16"[39m
+                          [36m/>[39m
+                        [36m</svg>[39m
+                      [36m</span>[39m
+                      [36m<span[39m
+                        [33mclass[39m=[32m"jsx-81067f81d5cded9c nav-label"[39m
+                      [36m>[39m
+                        [0mTransaction Dashboard[0m
+                      [36m</span>[39m
+                    [36m</a>[39m
+                  [36m</li>[39m
+                  [36m<li[39m
+                    [33mclass[39m=[32m"jsx-81067f81d5cded9c "[39m
+                  [36m>[39m
+                    [36m<a[39m
+                      [33mhref[39m=[32m"/approvals"[39m
+                      [33mstyle[39m=[32m"color: inherit; text-decoration: none; display: flex; align-items: center; gap: 0.75rem;"[39m
+                    [36m>[39m
+                      [36m<span[39m
+                        [33mclass[39m=[32m"jsx-81067f81d5cded9c nav-icon"[39m
+                      [36m>[39m
+                        [36m<svg[39m
+                          [33maria-hidden[39m=[32m"true"[39m
+                          [33mclass[39m=[32m"lucide lucide-circle-check-big"[39m
+                          [33mfill[39m=[32m"none"[39m
+                          [33mheight[39m=[32m"18"[39m
+                          [33mstroke[39m=[32m"currentColor"[39m
+                          [33mstroke-linecap[39m=[32m"round"[39m
+                          [33mstroke-linejoin[39m=[32m"round"[39m
+                          [33mstroke-width[39m=[32m"2"[39m
+                          [33mviewBox[39m=[32m"0 0 24 24"[39m
+                          [33mwidth[39m=[32m"18"[39m
+                          [33mxmlns[39m=[32m"http...
+
+      18 |         // Sections
+      19 |         expect(screen.getByText('OPERATIONS')).toBeInTheDocument();
+    > 20 |         expect(screen.getByText('LIFECYCLE MANAGEMENT')).toBeInTheDocument();
+         |                       ^
+      21 |         expect(screen.getByText('MASTER DATA')).toBeInTheDocument();
+      22 |         expect(screen.getByText('ADMINISTRATION')).toBeInTheDocument();
+      23 |         
+
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+      at node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+      at node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+      at Object.getByText (src/components/GlobalShell.test.tsx:20:23)
+
+PASS src/components/ImportLcDashboard.test.tsx
+PASS src/components/DocumentExamination.test.tsx
+FAIL src/components/SystemAdminSettings.test.tsx
+  ● Console
+
+    console.error
+      Failed to load global audit logs: TypeError: _tradeApi.tradeApi.getGlobalAuditLogs is not a function
+          at getGlobalAuditLogs (/Users/me/myprojects/moqui-trade/frontend/src/components/GlobalTransactionLog.tsx:26:45)
+          at loadLogs (/Users/me/myprojects/moqui-trade/frontend/src/components/GlobalTransactionLog.tsx:34:9)
+          at Object.react_stack_bottom_frame (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+          at runWithFiberInDEV (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+          at commitHookEffectListMount (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29)
+          at commitHookPassiveMountEffects (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:13336:11)
+          at commitPassiveMountOnFiber (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15484:13)
+          at recursivelyTraversePassiveMountEffects (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+          at commitPassiveMountOnFiber (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15718:11)
+          at recursivelyTraversePassiveMountEffects (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+          at commitPassiveMountOnFiber (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15718:11)
+          at recursivelyTraversePassiveMountEffects (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+          at commitPassiveMountOnFiber (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15476:11)
+          at recursivelyTraversePassiveMountEffects (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+          at commitPassiveMountOnFiber (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15519:11)
+          at flushPassiveEffects (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:18432:9)
+          at /Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:17923:15
+          at flushActQueue (/Users/me/myprojects/moqui-trade/frontend/node_modules/react/cjs/react.development.js:590:34)
+          at /Users/me/myprojects/moqui-trade/frontend/node_modules/react/cjs/react.development.js:847:21
+          at processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+      27 |                 setAuditLogs(data.auditLogList || []);
+      28 |             } catch (error) {
+    > 29 |                 console.error('Failed to load global audit logs:', error);
+         |                         ^
+      30 |             } finally {
+      31 |                 setLoading(false);
+      32 |             }
+
+      at error (src/components/GlobalTransactionLog.tsx:29:25)
+      at loadLogs (src/components/GlobalTransactionLog.tsx:34:9)
+      at Object.react_stack_bottom_frame (node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at commitHookEffectListMount (node_modules/react-dom/cjs/react-dom-client.development.js:13249:29)
+      at commitHookPassiveMountEffects (node_modules/react-dom/cjs/react-dom-client.development.js:13336:11)
+      at commitPassiveMountOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:15484:13)
+      at recursivelyTraversePassiveMountEffects (node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+      at commitPassiveMountOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:15718:11)
+      at recursivelyTraversePassiveMountEffects (node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+      at commitPassiveMountOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:15718:11)
+      at recursivelyTraversePassiveMountEffects (node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+      at commitPassiveMountOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:15476:11)
+      at recursivelyTraversePassiveMountEffects (node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+      at commitPassiveMountOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:15519:11)
+      at flushPassiveEffects (node_modules/react-dom/cjs/react-dom-client.development.js:18432:9)
+      at node_modules/react-dom/cjs/react-dom-client.development.js:17923:15
+      at flushActQueue (node_modules/react/cjs/react.development.js:590:34)
+      at node_modules/react/cjs/react.development.js:847:21
+
+    console.error
+      Failed to load global audit logs: TypeError: _tradeApi.tradeApi.getGlobalAuditLogs is not a function
+          at getGlobalAuditLogs (/Users/me/myprojects/moqui-trade/frontend/src/components/GlobalTransactionLog.tsx:26:45)
+          at loadLogs (/Users/me/myprojects/moqui-trade/frontend/src/components/GlobalTransactionLog.tsx:34:9)
+          at Object.react_stack_bottom_frame (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+          at runWithFiberInDEV (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+          at commitHookEffectListMount (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29)
+          at commitHookPassiveMountEffects (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:13336:11)
+          at commitPassiveMountOnFiber (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15484:13)
+          at recursivelyTraversePassiveMountEffects (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+          at commitPassiveMountOnFiber (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15718:11)
+          at recursivelyTraversePassiveMountEffects (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+          at commitPassiveMountOnFiber (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15718:11)
+          at recursivelyTraversePassiveMountEffects (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+          at commitPassiveMountOnFiber (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15476:11)
+          at recursivelyTraversePassiveMountEffects (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+          at commitPassiveMountOnFiber (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15519:11)
+          at flushPassiveEffects (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:18432:9)
+          at /Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:17923:15
+          at flushActQueue (/Users/me/myprojects/moqui-trade/frontend/node_modules/react/cjs/react.development.js:590:34)
+          at /Users/me/myprojects/moqui-trade/frontend/node_modules/react/cjs/react.development.js:847:21
+
+      27 |                 setAuditLogs(data.auditLogList || []);
+      28 |             } catch (error) {
+    > 29 |                 console.error('Failed to load global audit logs:', error);
+         |                         ^
+      30 |             } finally {
+      31 |                 setLoading(false);
+      32 |             }
+
+      at error (src/components/GlobalTransactionLog.tsx:29:25)
+      at loadLogs (src/components/GlobalTransactionLog.tsx:34:9)
+      at Object.react_stack_bottom_frame (node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at commitHookEffectListMount (node_modules/react-dom/cjs/react-dom-client.development.js:13249:29)
+      at commitHookPassiveMountEffects (node_modules/react-dom/cjs/react-dom-client.development.js:13336:11)
+      at commitPassiveMountOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:15484:13)
+      at recursivelyTraversePassiveMountEffects (node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+      at commitPassiveMountOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:15718:11)
+      at recursivelyTraversePassiveMountEffects (node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+      at commitPassiveMountOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:15718:11)
+      at recursivelyTraversePassiveMountEffects (node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+      at commitPassiveMountOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:15476:11)
+      at recursivelyTraversePassiveMountEffects (node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+      at commitPassiveMountOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:15519:11)
+      at flushPassiveEffects (node_modules/react-dom/cjs/react-dom-client.development.js:18432:9)
+      at node_modules/react-dom/cjs/react-dom-client.development.js:17923:15
+      at flushActQueue (node_modules/react/cjs/react.development.js:590:34)
+      at node_modules/react/cjs/react.development.js:847:21
+
+    console.error
+      Failed to load global audit logs: TypeError: _tradeApi.tradeApi.getGlobalAuditLogs is not a function
+          at getGlobalAuditLogs (/Users/me/myprojects/moqui-trade/frontend/src/components/GlobalTransactionLog.tsx:26:45)
+          at loadLogs (/Users/me/myprojects/moqui-trade/frontend/src/components/GlobalTransactionLog.tsx:34:9)
+          at Object.react_stack_bottom_frame (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+          at runWithFiberInDEV (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+          at commitHookEffectListMount (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29)
+          at commitHookPassiveMountEffects (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:13336:11)
+          at commitPassiveMountOnFiber (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15484:13)
+          at recursivelyTraversePassiveMountEffects (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+          at commitPassiveMountOnFiber (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15718:11)
+          at recursivelyTraversePassiveMountEffects (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+          at commitPassiveMountOnFiber (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15718:11)
+          at recursivelyTraversePassiveMountEffects (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+          at commitPassiveMountOnFiber (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15476:11)
+          at recursivelyTraversePassiveMountEffects (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+          at commitPassiveMountOnFiber (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15519:11)
+          at flushPassiveEffects (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:18432:9)
+          at /Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:17923:15
+          at flushActQueue (/Users/me/myprojects/moqui-trade/frontend/node_modules/react/cjs/react.development.js:590:34)
+          at /Users/me/myprojects/moqui-trade/frontend/node_modules/react/cjs/react.development.js:847:21
+
+      27 |                 setAuditLogs(data.auditLogList || []);
+      28 |             } catch (error) {
+    > 29 |                 console.error('Failed to load global audit logs:', error);
+         |                         ^
+      30 |             } finally {
+      31 |                 setLoading(false);
+      32 |             }
+
+      at error (src/components/GlobalTransactionLog.tsx:29:25)
+      at loadLogs (src/components/GlobalTransactionLog.tsx:34:9)
+      at Object.react_stack_bottom_frame (node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at commitHookEffectListMount (node_modules/react-dom/cjs/react-dom-client.development.js:13249:29)
+      at commitHookPassiveMountEffects (node_modules/react-dom/cjs/react-dom-client.development.js:13336:11)
+      at commitPassiveMountOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:15484:13)
+      at recursivelyTraversePassiveMountEffects (node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+      at commitPassiveMountOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:15718:11)
+      at recursivelyTraversePassiveMountEffects (node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+      at commitPassiveMountOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:15718:11)
+      at recursivelyTraversePassiveMountEffects (node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+      at commitPassiveMountOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:15476:11)
+      at recursivelyTraversePassiveMountEffects (node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+      at commitPassiveMountOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:15519:11)
+      at flushPassiveEffects (node_modules/react-dom/cjs/react-dom-client.development.js:18432:9)
+      at node_modules/react-dom/cjs/react-dom-client.development.js:17923:15
+      at flushActQueue (node_modules/react/cjs/react.development.js:590:34)
+      at node_modules/react/cjs/react.development.js:847:21
+
+    console.error
+      Failed to load global audit logs: TypeError: _tradeApi.tradeApi.getGlobalAuditLogs is not a function
+          at getGlobalAuditLogs (/Users/me/myprojects/moqui-trade/frontend/src/components/GlobalTransactionLog.tsx:26:45)
+          at loadLogs (/Users/me/myprojects/moqui-trade/frontend/src/components/GlobalTransactionLog.tsx:34:9)
+          at Object.react_stack_bottom_frame (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+          at runWithFiberInDEV (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+          at commitHookEffectListMount (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29)
+          at commitHookPassiveMountEffects (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:13336:11)
+          at commitPassiveMountOnFiber (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15484:13)
+          at recursivelyTraversePassiveMountEffects (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+          at commitPassiveMountOnFiber (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15718:11)
+          at recursivelyTraversePassiveMountEffects (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+          at commitPassiveMountOnFiber (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15718:11)
+          at recursivelyTraversePassiveMountEffects (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+          at commitPassiveMountOnFiber (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15476:11)
+          at recursivelyTraversePassiveMountEffects (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+          at commitPassiveMountOnFiber (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15519:11)
+          at flushPassiveEffects (/Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:18432:9)
+          at /Users/me/myprojects/moqui-trade/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:17923:15
+          at flushActQueue (/Users/me/myprojects/moqui-trade/frontend/node_modules/react/cjs/react.development.js:590:34)
+          at /Users/me/myprojects/moqui-trade/frontend/node_modules/react/cjs/react.development.js:847:21
+
+      27 |                 setAuditLogs(data.auditLogList || []);
+      28 |             } catch (error) {
+    > 29 |                 console.error('Failed to load global audit logs:', error);
+         |                         ^
+      30 |             } finally {
+      31 |                 setLoading(false);
+      32 |             }
+
+      at error (src/components/GlobalTransactionLog.tsx:29:25)
+      at loadLogs (src/components/GlobalTransactionLog.tsx:34:9)
+      at Object.react_stack_bottom_frame (node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at commitHookEffectListMount (node_modules/react-dom/cjs/react-dom-client.development.js:13249:29)
+      at commitHookPassiveMountEffects (node_modules/react-dom/cjs/react-dom-client.development.js:13336:11)
+      at commitPassiveMountOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:15484:13)
+      at recursivelyTraversePassiveMountEffects (node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+      at commitPassiveMountOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:15718:11)
+      at recursivelyTraversePassiveMountEffects (node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+      at commitPassiveMountOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:15718:11)
+      at recursivelyTraversePassiveMountEffects (node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+      at commitPassiveMountOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:15476:11)
+      at recursivelyTraversePassiveMountEffects (node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+      at commitPassiveMountOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:15519:11)
+      at flushPassiveEffects (node_modules/react-dom/cjs/react-dom-client.development.js:18432:9)
+      at node_modules/react-dom/cjs/react-dom-client.development.js:17923:15
+      at flushActQueue (node_modules/react/cjs/react.development.js:590:34)
+      at node_modules/react/cjs/react.development.js:847:21
+
+  ● SystemAdminSettings Sub-menu Render › generates specific panels for User Authorities, Audit, and Product Config
+
+    TestingLibraryElementError: Unable to find an element with the text: System Audit Logs (Delta JSON). This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"jsx-fd2addb68c191156 system-admin-container"[39m
+        [36m>[39m
+          [36m<section[39m
+            [33mclass[39m=[32m"jsx-fd2addb68c191156 admin-panel premium-card"[39m
+          [36m>[39m
+            [36m<header[39m
+              [33mclass[39m=[32m"jsx-fd2addb68c191156 panel-header"[39m
+            [36m>[39m
+              [36m<h2[39m
+                [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+              [36m>[39m
+                [0mUser Authority Management[0m
+              [36m</h2>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"jsx-fd2addb68c191156 primary-btn"[39m
+              [36m>[39m
+                [0mAdd New Tier[0m
+              [36m</button>[39m
+            [36m</header>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"jsx-fd2addb68c191156 table-wrapper"[39m
+            [36m>[39m
+              [36m<table[39m
+                [33mclass[39m=[32m"jsx-fd2addb68c191156 admin-table"[39m
+              [36m>[39m
+                [36m<thead[39m
+                  [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                [36m>[39m
+                  [36m<tr[39m
+                    [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                  [36m>[39m
+                    [36m<th[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mAuthority Tier[0m
+                    [36m</th>[39m
+                    [36m<th[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mDescription[0m
+                    [36m</th>[39m
+                    [36m<th[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mLimit Threshold[0m
+                    [36m</th>[39m
+                    [36m<th[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mActions[0m
+                    [36m</th>[39m
+                  [36m</tr>[39m
+                [36m</thead>[39m
+                [36m<tbody[39m
+                  [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                [36m>[39m
+                  [36m<tr[39m
+                    [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                  [36m>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mTier 1 - Maker[0m
+                    [36m</td>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mStandard operational data entry[0m
+                    [36m</td>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mN/A[0m
+                    [36m</td>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [36m<button[39m
+                        [33mclass[39m=[32m"jsx-fd2addb68c191156 edit-btn"[39m
+                      [36m>[39m
+                        [0mEdit[0m
+                      [36m</button>[39m
+                    [36m</td>[39m
+                  [36m</tr>[39m
+                  [36m<tr[39m
+                    [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                  [36m>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mTier 2 - Checker[0m
+                    [36m</td>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mBasic authorization authorization[0m
+                    [36m</td>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mUSD 500,000[0m
+                    [36m</td>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [36m<button[39m
+                        [33mclass[39m=[32m"jsx-fd2addb68c191156 edit-btn"[39m
+                      [36m>[39m
+                        [0mEdit[0m
+                      [36m</button>[39m
+                    [36m</td>[39m
+                  [36m</tr>[39m
+                [36m</tbody>[39m
+              [36m</table>[39m
+            [36m</div>[39m
+          [36m</section>[39m
+          [36m<section[39m
+            [33mclass[39m=[32m"jsx-fd2addb68c191156 admin-panel premium-card"[39m
+            [33mstyle[39m=[32m"padding: 2rem;"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"jsx-4a95dd104804929a global-audit-container"[39m
+            [36m>[39m
+              [36m<header[39m
+                [33mclass[39m=[32m"jsx-4a95dd104804929a audit-header"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-4a95dd104804929a header-info"[39m
+                [36m>[39m
+                  [36m<h2[39m
+                    [33mclass[39m=[32m"jsx-4a95dd104804929a"[39m
+                  [36m>[39m
+                    [0mGlobal Transaction Log[0m
+                  [36m</h2>[39m
+                  [36m<p[39m
+                    [33mclass[39m=[32m"jsx-4a95dd104804929a"[39m
+                  [36m>[39m
+                    [0mCross-instrument audit trail of all operational changes and authorizations.[0m
+                  [36m</p>[39m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-4a95dd104804929a audit-filters"[39m
+                [36m>[39m
+                  [36m<select[39m
+                    [33mclass[39m=[32m"jsx-4a95dd104804929a audit-select"[39m
+                  [36m>[39m
+                    [36m<option[39m
+                      [33mclass[39m=[32m"jsx-4a95dd104804929a"[39m
+                      [33mvalue[39m=[32m""[39m
+                    [36m>[39m
+                      [0mAll Priorities[0m
+                    [36m</option>[39m
+                    [36m<option[39m
+                      [33mclass[39m=[32m"jsx-4a95dd104804929a"[39m
+                      [33mvalue[39m=[32m"TX_PRIO_URGENT"[39m
+                    [36m>[39m
+                      [0mUrgent Only[0m
+                    [36m</option>[39m
+                    [36m<option[39m
+                      [33mclass[39m=[32m"jsx-4a95dd104804929a"[39m
+                      [33mvalue[39m=[32m"TX_PRIO_HIGH"[39m
+                    [36m>[39m
+                      [0mHigh Priority[0m
+                    [36m</option>[39m
+                  [36m</select>[39m
+                [36m</div>[39m
+              [36m</header>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"jsx-4a95dd104804929a audit-list"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-4a95dd104804929a empty-state"[39m
+                [36m>[39m
+                  [0mNo audit records found.[0m
+                [36m</div>[39m
+              [36m</div>[39m
+            [36m</div>[39m
+          [36m</section>[39m
+          [36m<section[39m
+            [33mclass[39m=[32m"jsx-fd2addb68c191156 admin-panel premium-card"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"jsx-c65a8929454489af product-manager-layout"[39m
+            [36m>[39m
+              [36m<aside[39m
+                [33mclass[39m=[32m"jsx-c65a8929454489af product-list-pane"[39m
+              [36m>[39m
+                [36m<header[39m
+                  [33mclass[39m=[32m"jsx-c65a8929454489af pane-header"[39m
+                [36m>[39m
+                  [36m<h3[39m
+                    [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                  [36m>[39m
+                    [0mProducts[0m
+                  [36m</h3>[39m
+                [36m</header>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-c65a8929454489af product-items"[39m
+                [36m>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"jsx-c65a8929454489af product-item active"[39m
+                  [36m>[39m
+                    [36m<span[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af product-name"[39m
+                    [36m>[39m
+                      [0mImport LC[0m
+                    [36m</span>[39m
+                    [36m<span[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af product-id"[39m
+                    [36m/>[39m
+                  [36m</div>[39m
+                [36m</div>[39m
+              [36m</aside>[39m
+              [36m<main[39m
+                [33mclass[39m=[32m"jsx-c65a8929454489af product-detail-pane"[39m
+              [36m>[39m
+                [36m<header[39m
+                  [33mclass[39m=[32m"jsx-c65a8929454489af pane-header detail-header"[39m
+                [36m>[39m
+                  [36m<h2[39m
+                    [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                  [36m>[39m
+                    [0mImport LC[0m
+                    [0m Configuration[0m
+                  [36m</h2>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"jsx-c65a8929454489af action-bar"[39m
+                  [36m>[39m
+                    [36m<button[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af secondary-btn"[39m
+                    [36m>[39m
+                      [0mSave Draft[0m
+                    [36m</button>[39m
+                    [36m<button[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af primary-btn"[39m
+                    [36m>[39m
+                      [0mPublish New Product[0m
+                    [36m</button>[39m
+                  [36m</div>[39m
+                [36m</header>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-c65a8929454489af config-form"[39m
+                [36m>[39m
+                  [36m<section[39m
+                    [33mclass[39m=[32m"jsx-c65a8929454489af form-section"[39m
+                  [36m>[39m
+                    [36m<h3[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                    [36m>[39m
+                      [0mBasic Rules[0m
+                    [36m</h3>[39m
+                    [36m<div[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af field-group"[39m
+                    [36m>[39m
+                      [36m<div[39m
+                        [33mclass[39m=[32m"jsx-c65a8929454489af field"[39m
+                      [36m>[39m
+                        [36m<label[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mfor[39m=[32m"documentExamSlaDays"[39m
+                        [36m>[39m
+                          [0mDocument Exam SLA Days[0m
+                        [36m</label>[39m
+                        [36m<input[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mid[39m=[32m"documentExamSlaDays"[39m
+                          [33mtype[39m=[32m"number"[39m
+                          [33mvalue[39m=[32m"5"[39m
+                        [36m/>[39m
+                      [36m</div>[39m
+                      [36m<div[39m
+                        [33mclass[39m=[32m"jsx-c65a8929454489af field"[39m
+                      [36m>[39m
+                        [36m<label[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mfor[39m=[32m"mandatoryMarginPercent"[39m
+                        [36m>[39m
+                          [0mMandatory Margin %[0m
+                        [36m</label>[39m
+                        [36m<input[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mid[39m=[32m"mandatoryMarginPercent"[39m
+                          [33mtype[39m=[32m"number"[39m
+                          [33mvalue[39m=[32m"10"[39m
+                        [36m/>[39m
+                      [36m</div>[39m
+                      [36m<div[39m
+                        [33mclass[39m=[32m"jsx-c65a8929454489af field"[39m
+                      [36m>[39m
+                        [36m<label[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mfor[39m=[32m"maxToleranceLimit"[39m
+                        [36m>[39m
+                          [0mMax Tolerance Limit %[0m
+                        [36m</label>[39m
+                        [36m<input[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mid[39m=[32m"maxToleranceLimit"[39m
+                          [33mtype[39m=[32m"number"[39m
+                          [33mvalue[39m=[32m"5"[39m
+                        [36m/>[39m
+                      [36m</div>[39m
+                    [36m</div>[39m
+                  [36m</section>[39m
+                  [36m<section[39m
+                    [33mclass[39m=[32m"jsx-c65a8929454489af form-section"[39m
+                  [36m>[39m
+                    [36m<h3[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                    [36m>[39m
+                      [0mProduct Toggles[0m
+                    [36m</h3>[39m
+                    [36m<div[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af toggle-grid"[39m
+                    [36m>[39m
+                      [36m<div[39m
+                        [33mclass[39m=[32m"jsx-c65a8929454489af toggle-field"[39m
+                      [36m>[39m
+                        [36m<input[39m
+                          [33mchecked[39m=[32m""[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mid[39m=[32m"allowRevolving"[39m
+                          [33mtype[39m=[32m"checkbox"[39m
+                        [36m/>[39m
+                        [36m<label[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mfor[39m=[32m"allowRevolving"[39m
+                        [36m>[39m
+                          [0mAllow Revolving LCs[0m
+                        [36m</label>[39m
+                      [36m</div>[39m
+                      [36m<div[39m
+                        [33mclass[39m=[32m"jsx-c65a8929454489af toggle-field"[39m
+                      [36m>[39m
+                        [36m<input[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mid[39m=[32m"allowAdvancePayment"[39m
+                          [33mtype[39m=[32m"checkbox"[39m
+                        [36m/>[39m
+                        [36m<label[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mfor[39m=[32m"allowAdvancePayment"[39m
+                        [36m>[39m
+                          [0mAllow Advance Payment[0m
+                        [36m</label>[39m
+                      [36m</div>[39m
+                      [36m<div[39m
+                        [33mclass[39m=[32m"jsx-c65a8929454489af toggle-field"[39m
+                      [36m>[39m
+                        [36m<input[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mid[39m=[32m"isStandby"[39m
+                          [33mtype[39m=[32m"checkbox"[39m
+                        [36m/>[39m
+                        [36m<label[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mfor[39m=[32m"isStandby"[39m
+                        [36m>[39m
+                          [0mIs Standby LC[0m
+                        [36m</label>[39m
+                      [36m</div>[39m
+                      [36m<div[39m
+                        [33mclass[39m=[32m"jsx-c65a8929454489af toggle-field"[39m
+                      [36m>[39m
+                        [36m<input[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mid[39m=[32m"isTransferable"[39m
+                          [33mtype[39m=[32m"checkbox"[39m
+                        [36m/>[39m
+                        [36m<label[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mfor[39m=[32m"isTransferable"[39m
+                        [36m>[39m
+                          [0mIs Transferable LC[0m
+                        [36m</label>[39m
+                      [36m</div>[39m
+                    [36m</div>[39m
+                  [36m</section>[39m
+                [36m</div>[39m
+              [36m</main>[39m
+            [36m</div>[39m
+          [36m</section>[39m
+          [36m<section[39m
+            [33mclass[39m=[32m"jsx-fd2addb68c191156 admin-panel premium-card"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"jsx-a0a2f0b0db43a730 tariff-manager-layout"[39m
+            [36m>[39m
+              [36m<aside[39m
+                [33mclass[39m=[32m"jsx-a0a2f0b0db43a730 fee-list-pane"[39m
+              [36m>[39m
+                [36m<header[39m
+                  [33mclass[39m=[32m"jsx-a0a2f0b0db43a730 pane-header"[39m
+                [36m>[39m
+                  [36m<h3[39m
+                    [33mclass[39m=[32m"jsx-a0a2f0b0db43a730"[39m
+                  [36m>[39m
+                    [0mTariff Matrix[0m
+                  [36m</h3>[39m
+                [36m</header>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-a0a2f0b0db43a730 tariff-items"[39m
+                [36m/>[39m
+              [36m</aside>[39m
+              [36m<main[39m
+                [33mclass[39m=[32m"jsx-a0a2f0b0db43a730 fee-detail-pane"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-a0a2f0b0db43a730 empty-selection"[39m
+                [36m>[39m
+                  [0mSelect a fee type to configure[0m
+                [36m</div>[39m
+              [36m</main>[39m
+            [36m</div>[39m
+          [36m</section>[39m
+          [36m<section[39m
+            [33mclass[39m=[32m"jsx-fd2addb68c191156 admin-panel premium-card"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"jsx-2d89eb36184b1c08 authority-manager-layout"[39m
+            [36m>[39m
+              [36m<aside[39m
+                [33mclass[39m=[32m"jsx-2d89eb36184b1c08 user-list-pane"[39m
+              [36m>[39m
+                [36m<header[39m
+                  [33mclass[39m=[32m"jsx-2d89eb36184b1c08 pane-header"[39m
+                [36m>[39m
+                  [36m<h3[39m
+                    [33mclass[39m=[32m"jsx-2d89eb36184b1c08"[39m
+                  [36m>[39m
+                    [0mUsers[0m
+                  [36m</h3>[39m
+                [36m</header>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-2d89eb36184b1c08 user-items"[39m
+                [36m/>[39m
+              [36m</aside>[39m
+              [36m<main[39m
+                [33mclass[39m=[32m"jsx-2d89eb36184b1c08 authority-detail-pane"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-2d89eb36184b1c08 empty-selection"[39m
+                [36m>[39m
+                  [0mSelect a user to manage authority[0m
+                [36m</div>[39m
+              [36m</main>[39m
+            [36m</div>[39m
+          [36m</section>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</body>[39m
+
+      27 |         });
+      28 |         expect(screen.getByText('User Authority Management')).toBeInTheDocument();
+    > 29 |         expect(screen.getByText('System Audit Logs (Delta JSON)')).toBeInTheDocument();
+         |                       ^
+      30 |         await waitFor(() => {
+      31 |             expect(screen.getByText(/Import LC Configuration/i)).toBeInTheDocument();
+      32 |         });
+
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+      at node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+      at node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+      at Object.getByText (src/components/SystemAdminSettings.test.tsx:29:23)
+
+  ● SystemAdminSettings Sub-menu Render › Renders the System Audit Logs table (REQ-COM-MAS-03)
+
+    TestingLibraryElementError: Unable to find an element with the text: Timestamp. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"jsx-fd2addb68c191156 system-admin-container"[39m
+        [36m>[39m
+          [36m<section[39m
+            [33mclass[39m=[32m"jsx-fd2addb68c191156 admin-panel premium-card"[39m
+          [36m>[39m
+            [36m<header[39m
+              [33mclass[39m=[32m"jsx-fd2addb68c191156 panel-header"[39m
+            [36m>[39m
+              [36m<h2[39m
+                [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+              [36m>[39m
+                [0mUser Authority Management[0m
+              [36m</h2>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"jsx-fd2addb68c191156 primary-btn"[39m
+              [36m>[39m
+                [0mAdd New Tier[0m
+              [36m</button>[39m
+            [36m</header>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"jsx-fd2addb68c191156 table-wrapper"[39m
+            [36m>[39m
+              [36m<table[39m
+                [33mclass[39m=[32m"jsx-fd2addb68c191156 admin-table"[39m
+              [36m>[39m
+                [36m<thead[39m
+                  [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                [36m>[39m
+                  [36m<tr[39m
+                    [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                  [36m>[39m
+                    [36m<th[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mAuthority Tier[0m
+                    [36m</th>[39m
+                    [36m<th[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mDescription[0m
+                    [36m</th>[39m
+                    [36m<th[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mLimit Threshold[0m
+                    [36m</th>[39m
+                    [36m<th[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mActions[0m
+                    [36m</th>[39m
+                  [36m</tr>[39m
+                [36m</thead>[39m
+                [36m<tbody[39m
+                  [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                [36m>[39m
+                  [36m<tr[39m
+                    [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                  [36m>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mTier 1 - Maker[0m
+                    [36m</td>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mStandard operational data entry[0m
+                    [36m</td>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mN/A[0m
+                    [36m</td>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [36m<button[39m
+                        [33mclass[39m=[32m"jsx-fd2addb68c191156 edit-btn"[39m
+                      [36m>[39m
+                        [0mEdit[0m
+                      [36m</button>[39m
+                    [36m</td>[39m
+                  [36m</tr>[39m
+                  [36m<tr[39m
+                    [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                  [36m>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mTier 2 - Checker[0m
+                    [36m</td>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mBasic authorization authorization[0m
+                    [36m</td>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mUSD 500,000[0m
+                    [36m</td>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [36m<button[39m
+                        [33mclass[39m=[32m"jsx-fd2addb68c191156 edit-btn"[39m
+                      [36m>[39m
+                        [0mEdit[0m
+                      [36m</button>[39m
+                    [36m</td>[39m
+                  [36m</tr>[39m
+                [36m</tbody>[39m
+              [36m</table>[39m
+            [36m</div>[39m
+          [36m</section>[39m
+          [36m<section[39m
+            [33mclass[39m=[32m"jsx-fd2addb68c191156 admin-panel premium-card"[39m
+            [33mstyle[39m=[32m"padding: 2rem;"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"jsx-4a95dd104804929a global-audit-container"[39m
+            [36m>[39m
+              [36m<header[39m
+                [33mclass[39m=[32m"jsx-4a95dd104804929a audit-header"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-4a95dd104804929a header-info"[39m
+                [36m>[39m
+                  [36m<h2[39m
+                    [33mclass[39m=[32m"jsx-4a95dd104804929a"[39m
+                  [36m>[39m
+                    [0mGlobal Transaction Log[0m
+                  [36m</h2>[39m
+                  [36m<p[39m
+                    [33mclass[39m=[32m"jsx-4a95dd104804929a"[39m
+                  [36m>[39m
+                    [0mCross-instrument audit trail of all operational changes and authorizations.[0m
+                  [36m</p>[39m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-4a95dd104804929a audit-filters"[39m
+                [36m>[39m
+                  [36m<select[39m
+                    [33mclass[39m=[32m"jsx-4a95dd104804929a audit-select"[39m
+                  [36m>[39m
+                    [36m<option[39m
+                      [33mclass[39m=[32m"jsx-4a95dd104804929a"[39m
+                      [33mvalue[39m=[32m""[39m
+                    [36m>[39m
+                      [0mAll Priorities[0m
+                    [36m</option>[39m
+                    [36m<option[39m
+                      [33mclass[39m=[32m"jsx-4a95dd104804929a"[39m
+                      [33mvalue[39m=[32m"TX_PRIO_URGENT"[39m
+                    [36m>[39m
+                      [0mUrgent Only[0m
+                    [36m</option>[39m
+                    [36m<option[39m
+                      [33mclass[39m=[32m"jsx-4a95dd104804929a"[39m
+                      [33mvalue[39m=[32m"TX_PRIO_HIGH"[39m
+                    [36m>[39m
+                      [0mHigh Priority[0m
+                    [36m</option>[39m
+                  [36m</select>[39m
+                [36m</div>[39m
+              [36m</header>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"jsx-4a95dd104804929a audit-list"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-4a95dd104804929a empty-state"[39m
+                [36m>[39m
+                  [0mNo audit records found.[0m
+                [36m</div>[39m
+              [36m</div>[39m
+            [36m</div>[39m
+          [36m</section>[39m
+          [36m<section[39m
+            [33mclass[39m=[32m"jsx-fd2addb68c191156 admin-panel premium-card"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"jsx-c65a8929454489af product-manager-layout"[39m
+            [36m>[39m
+              [36m<aside[39m
+                [33mclass[39m=[32m"jsx-c65a8929454489af product-list-pane"[39m
+              [36m>[39m
+                [36m<header[39m
+                  [33mclass[39m=[32m"jsx-c65a8929454489af pane-header"[39m
+                [36m>[39m
+                  [36m<h3[39m
+                    [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                  [36m>[39m
+                    [0mProducts[0m
+                  [36m</h3>[39m
+                [36m</header>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-c65a8929454489af product-items"[39m
+                [36m>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"jsx-c65a8929454489af product-item active"[39m
+                  [36m>[39m
+                    [36m<span[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af product-name"[39m
+                    [36m>[39m
+                      [0mImport LC[0m
+                    [36m</span>[39m
+                    [36m<span[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af product-id"[39m
+                    [36m/>[39m
+                  [36m</div>[39m
+                [36m</div>[39m
+              [36m</aside>[39m
+              [36m<main[39m
+                [33mclass[39m=[32m"jsx-c65a8929454489af product-detail-pane"[39m
+              [36m>[39m
+                [36m<header[39m
+                  [33mclass[39m=[32m"jsx-c65a8929454489af pane-header detail-header"[39m
+                [36m>[39m
+                  [36m<h2[39m
+                    [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                  [36m>[39m
+                    [0mImport LC[0m
+                    [0m Configuration[0m
+                  [36m</h2>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"jsx-c65a8929454489af action-bar"[39m
+                  [36m>[39m
+                    [36m<button[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af secondary-btn"[39m
+                    [36m>[39m
+                      [0mSave Draft[0m
+                    [36m</button>[39m
+                    [36m<button[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af primary-btn"[39m
+                    [36m>[39m
+                      [0mPublish New Product[0m
+                    [36m</button>[39m
+                  [36m</div>[39m
+                [36m</header>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-c65a8929454489af config-form"[39m
+                [36m>[39m
+                  [36m<section[39m
+                    [33mclass[39m=[32m"jsx-c65a8929454489af form-section"[39m
+                  [36m>[39m
+                    [36m<h3[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                    [36m>[39m
+                      [0mBasic Rules[0m
+                    [36m</h3>[39m
+                    [36m<div[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af field-group"[39m
+                    [36m>[39m
+                      [36m<div[39m
+                        [33mclass[39m=[32m"jsx-c65a8929454489af field"[39m
+                      [36m>[39m
+                        [36m<label[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mfor[39m=[32m"documentExamSlaDays"[39m
+                        [36m>[39m
+                          [0mDocument Exam SLA Days[0m
+                        [36m</label>[39m
+                        [36m<input[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mid[39m=[32m"documentExamSlaDays"[39m
+                          [33mtype[39m=[32m"number"[39m
+                          [33mvalue[39m=[32m"5"[39m
+                        [36m/>[39m
+                      [36m</div>[39m
+                      [36m<div[39m
+                        [33mclass[39m=[32m"jsx-c65a8929454489af field"[39m
+                      [36m>[39m
+                        [36m<label[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mfor[39m=[32m"mandatoryMarginPercent"[39m
+                        [36m>[39m
+                          [0mMandatory Margin %[0m
+                        [36m</label>[39m
+                        [36m<input[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mid[39m=[32m"mandatoryMarginPercent"[39m
+                          [33mtype[39m=[32m"number"[39m
+                          [33mvalue[39m=[32m"10"[39m
+                        [36m/>[39m
+                      [36m</div>[39m
+                      [36m<div[39m
+                        [33mclass[39m=[32m"jsx-c65a8929454489af field"[39m
+                      [36m>[39m
+                        [36m<label[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mfor[39m=[32m"maxToleranceLimit"[39m
+                        [36m>[39m
+                          [0mMax Tolerance Limit %[0m
+                        [36m</label>[39m
+                        [36m<input[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mid[39m=[32m"maxToleranceLimit"[39m
+                          [33mtype[39m=[32m"number"[39m
+                          [33mvalue[39m=[32m"5"[39m
+                        [36m/>[39m
+                      [36m</div>[39m
+                    [36m</div>[39m
+                  [36m</section>[39m
+                  [36m<section[39m
+                    [33mclass[39m=[32m"jsx-c65a8929454489af form-section"[39m
+                  [36m>[39m
+                    [36m<h3[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                    [36m>[39m
+                      [0mProduct Toggles[0m
+                    [36m</h3>[39m
+                    [36m<div[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af toggle-grid"[39m
+                    [36m>[39m
+                      [36m<div[39m
+                        [33mclass[39m=[32m"jsx-c65a8929454489af toggle-field"[39m
+                      [36m>[39m
+                        [36m<input[39m
+                          [33mchecked[39m=[32m""[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mid[39m=[32m"allowRevolving"[39m
+                          [33mtype[39m=[32m"checkbox"[39m
+                        [36m/>[39m
+                        [36m<label[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mfor[39m=[32m"allowRevolving"[39m
+                        [36m>[39m
+                          [0mAllow Revolving LCs[0m
+                        [36m</label>[39m
+                      [36m</div>[39m
+                      [36m<div[39m
+                        [33mclass[39m=[32m"jsx-c65a8929454489af toggle-field"[39m
+                      [36m>[39m
+                        [36m<input[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mid[39m=[32m"allowAdvancePayment"[39m
+                          [33mtype[39m=[32m"checkbox"[39m
+                        [36m/>[39m
+                        [36m<label[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mfor[39m=[32m"allowAdvancePayment"[39m
+                        [36m>[39m
+                          [0mAllow Advance Payment[0m
+                        [36m</label>[39m
+                      [36m</div>[39m
+                      [36m<div[39m
+                        [33mclass[39m=[32m"jsx-c65a8929454489af toggle-field"[39m
+                      [36m>[39m
+                        [36m<input[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mid[39m=[32m"isStandby"[39m
+                          [33mtype[39m=[32m"checkbox"[39m
+                        [36m/>[39m
+                        [36m<label[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mfor[39m=[32m"isStandby"[39m
+                        [36m>[39m
+                          [0mIs Standby LC[0m
+                        [36m</label>[39m
+                      [36m</div>[39m
+                      [36m<div[39m
+                        [33mclass[39m=[32m"jsx-c65a8929454489af toggle-field"[39m
+                      [36m>[39m
+                        [36m<input[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mid[39m=[32m"isTransferable"[39m
+                          [33mtype[39m=[32m"checkbox"[39m
+                        [36m/>[39m
+                        [36m<label[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mfor[39m=[32m"isTransferable"[39m
+                        [36m>[39m
+                          [0mIs Transferable LC[0m
+                        [36m</label>[39m
+                      [36m</div>[39m
+                    [36m</div>[39m
+                  [36m</section>[39m
+                [36m</div>[39m
+              [36m</main>[39m
+            [36m</div>[39m
+          [36m</section>[39m
+          [36m<section[39m
+            [33mclass[39m=[32m"jsx-fd2addb68c191156 admin-panel premium-card"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"jsx-a0a2f0b0db43a730 tariff-manager-layout"[39m
+            [36m>[39m
+              [36m<aside[39m
+                [33mclass[39m=[32m"jsx-a0a2f0b0db43a730 fee-list-pane"[39m
+              [36m>[39m
+                [36m<header[39m
+                  [33mclass[39m=[32m"jsx-a0a2f0b0db43a730 pane-header"[39m
+                [36m>[39m
+                  [36m<h3[39m
+                    [33mclass[39m=[32m"jsx-a0a2f0b0db43a730"[39m
+                  [36m>[39m
+                    [0mTariff Matrix[0m
+                  [36m</h3>[39m
+                [36m</header>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-a0a2f0b0db43a730 tariff-items"[39m
+                [36m/>[39m
+              [36m</aside>[39m
+              [36m<main[39m
+                [33mclass[39m=[32m"jsx-a0a2f0b0db43a730 fee-detail-pane"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-a0a2f0b0db43a730 empty-selection"[39m
+                [36m>[39m
+                  [0mSelect a fee type to configure[0m
+                [36m</div>[39m
+              [36m</main>[39m
+            [36m</div>[39m
+          [36m</section>[39m
+          [36m<section[39m
+            [33mclass[39m=[32m"jsx-fd2addb68c191156 admin-panel premium-card"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"jsx-2d89eb36184b1c08 authority-manager-layout"[39m
+            [36m>[39m
+              [36m<aside[39m
+                [33mclass[39m=[32m"jsx-2d89eb36184b1c08 user-list-pane"[39m
+              [36m>[39m
+                [36m<header[39m
+                  [33mclass[39m=[32m"jsx-2d89eb36184b1c08 pane-header"[39m
+                [36m>[39m
+                  [36m<h3[39m
+                    [33mclass[39m=[32m"jsx-2d89eb36184b1c08"[39m
+                  [36m>[39m
+                    [0mUsers[0m
+                  [36m</h3>[39m
+                [36m</header>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-2d89eb36184b1c08 user-items"[39m
+                [36m/>[39m
+              [36m</aside>[39m
+              [36m<main[39m
+                [33mclass[39m=[32m"jsx-2d89eb36184b1c08 authority-detail-pane"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-2d89eb36184b1c08 empty-selection"[39m
+                [36m>[39m
+                  [0mSelect a user to manage authority[0m
+                [36m</div>[39m
+              [36m</main>[39m
+            [36m</div>[39m
+          [36m</section>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</body>[39m
+
+      46 |             render(<SystemAdminSettings />);
+      47 |         });
+    > 48 |         expect(screen.getByText('Timestamp')).toBeInTheDocument();
+         |                       ^
+      49 |         expect(screen.getByText('User ID')).toBeInTheDocument();
+      50 |         expect(screen.getByText('Delta Payload')).toBeInTheDocument();
+      51 |     });
+
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+      at node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+      at node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+      at Object.getByText (src/components/SystemAdminSettings.test.tsx:48:23)
+
+PASS src/components/TariffConfiguration.test.tsx
+PASS src/components/RegulatoryVietnam.test.tsx
+PASS src/components/AuthorizationRoles.test.tsx
+PASS src/components/ShippingGuaranteeForm.test.tsx
+PASS src/components/SwiftValidation.test.tsx
+PASS src/components/CheckerAuthorization.test.tsx
+PASS src/components/CheckersQueue.test.tsx
+PASS src/api/tradeApi.integration.test.ts
+  ● Console
+
+    console.warn
+      Skipping tradeApi integration tests: NEXT_PUBLIC_API_URL is missing.
+
+      67 |     if (!isIntegration) {
+      68 |         it('skips integration tests because NEXT_PUBLIC_API_URL is not set', () => {
+    > 69 |             console.warn('Skipping tradeApi integration tests: NEXT_PUBLIC_API_URL is missing.');
+         |                     ^
+      70 |         });
+      71 |         return;
+      72 |     }
+
+      at Object.warn (src/api/tradeApi.integration.test.ts:69:21)
+
+PASS src/components/IssuanceLogic.test.tsx
+PASS src/components/ShippingGuarantee.test.tsx
+PASS src/components/SlaManagement.test.tsx
+PASS src/components/FacilityDashboard.test.tsx
+PASS src/components/CancellationRequest.test.tsx
+PASS src/components/TariffLogic.test.tsx
+PASS src/components/SettlementInitiation.test.tsx
+PASS src/components/ProductCatalogManager.test.tsx
+PASS src/components/CommonEntities.test.tsx
+PASS src/components/NotificationLogic.test.tsx
+PASS src/components/LimitsDashboard.test.tsx
+PASS src/components/AmendmentStepper.test.tsx
+PASS src/components/IssuanceStepper.test.tsx
+PASS src/components/LimitEnforcement.test.tsx
+PASS src/components/ImportLcFlow.test.tsx
+PASS src/components/SettlementForm.test.tsx
+PASS src/components/Resilience.test.tsx
+PASS src/components/SettlementLogic.test.tsx
+PASS src/components/UserAuthorityManager.test.tsx
+PASS src/components/ProductConfig.test.tsx
+PASS src/components/CurrencyPrecision.test.tsx
+PASS src/components/TariffManager.test.tsx
+PASS src/components/PartyDirectory.test.tsx
+PASS src/components/PresentationLodgement.test.tsx
+
+Summary of all failing tests
+FAIL src/components/GlobalShell.test.tsx
+  ● GlobalShell Modern Navigation Layout › renders high-density minimalist navigation matching REQ-UI-MOD-01
+
+    TestingLibraryElementError: Unable to find an element with the text: LIFECYCLE MANAGEMENT. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"jsx-81067f81d5cded9c global-shell"[39m
+        [36m>[39m
+          [36m<aside[39m
+            [33mclass[39m=[32m"jsx-81067f81d5cded9c left-menu"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"jsx-81067f81d5cded9c sidebar-brand"[39m
+              [33mstyle[39m=[32m"padding: 0px 0px 2rem 0px; color: white; font-weight: 800; display: flex; align-items: center; gap: 0.75rem;"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"jsx-81067f81d5cded9c"[39m
+                [33mstyle[39m=[32m"background: var(--nav-active-bg); padding: 6px; border-radius: 6px; display: flex;"[39m
+              [36m>[39m
+                [36m<svg[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"lucide lucide-globe"[39m
+                  [33mfill[39m=[32m"none"[39m
+                  [33mheight[39m=[32m"20"[39m
+                  [33mstroke[39m=[32m"white"[39m
+                  [33mstroke-linecap[39m=[32m"round"[39m
+                  [33mstroke-linejoin[39m=[32m"round"[39m
+                  [33mstroke-width[39m=[32m"2"[39m
+                  [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [33mwidth[39m=[32m"20"[39m
+                  [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                [36m>[39m
+                  [36m<circle[39m
+                    [33mcx[39m=[32m"12"[39m
+                    [33mcy[39m=[32m"12"[39m
+                    [33mr[39m=[32m"10"[39m
+                  [36m/>[39m
+                  [36m<path[39m
+                    [33md[39m=[32m"M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"[39m
+                  [36m/>[39m
+                  [36m<path[39m
+                    [33md[39m=[32m"M2 12h20"[39m
+                  [36m/>[39m
+                [36m</svg>[39m
+              [36m</div>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"jsx-81067f81d5cded9c"[39m
+                [33mstyle[39m=[32m"font-size: 1.1rem; letter-spacing: 0.05em;"[39m
+              [36m>[39m
+                [0mTRADEFINANCE[0m
+              [36m</span>[39m
+            [36m</div>[39m
+            [36m<nav[39m
+              [33mclass[39m=[32m"jsx-81067f81d5cded9c sidebar-nav"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"jsx-81067f81d5cded9c nav-section"[39m
+              [36m>[39m
+                [36m<li[39m
+                  [33mclass[39m=[32m"jsx-81067f81d5cded9c nav-header"[39m
+                  [33mstyle[39m=[32m"list-style: none;"[39m
+                [36m>[39m
+                  [0mOPERATIONS[0m
+                [36m</li>[39m
+                [36m<ul[39m
+                  [33mclass[39m=[32m"jsx-81067f81d5cded9c nav-list"[39m
+                  [33mstyle[39m=[32m"padding: 0px;"[39m
+                [36m>[39m
+                  [36m<li[39m
+                    [33mclass[39m=[32m"jsx-81067f81d5cded9c "[39m
+                  [36m>[39m
+                    [36m<a[39m
+                      [33mhref[39m=[32m"/transactions"[39m
+                      [33mstyle[39m=[32m"color: inherit; text-decoration: none; display: flex; align-items: center; gap: 0.75rem;"[39m
+                    [36m>[39m
+                      [36m<span[39m
+                        [33mclass[39m=[32m"jsx-81067f81d5cded9c nav-icon"[39m
+                      [36m>[39m
+                        [36m<svg[39m
+                          [33maria-hidden[39m=[32m"true"[39m
+                          [33mclass[39m=[32m"lucide lucide-layout-dashboard"[39m
+                          [33mfill[39m=[32m"none"[39m
+                          [33mheight[39m=[32m"18"[39m
+                          [33mstroke[39m=[32m"currentColor"[39m
+                          [33mstroke-linecap[39m=[32m"round"[39m
+                          [33mstroke-linejoin[39m=[32m"round"[39m
+                          [33mstroke-width[39m=[32m"2"[39m
+                          [33mviewBox[39m=[32m"0 0 24 24"[39m
+                          [33mwidth[39m=[32m"18"[39m
+                          [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                        [36m>[39m
+                          [36m<rect[39m
+                            [33mheight[39m=[32m"9"[39m
+                            [33mrx[39m=[32m"1"[39m
+                            [33mwidth[39m=[32m"7"[39m
+                            [33mx[39m=[32m"3"[39m
+                            [33my[39m=[32m"3"[39m
+                          [36m/>[39m
+                          [36m<rect[39m
+                            [33mheight[39m=[32m"5"[39m
+                            [33mrx[39m=[32m"1"[39m
+                            [33mwidth[39m=[32m"7"[39m
+                            [33mx[39m=[32m"14"[39m
+                            [33my[39m=[32m"3"[39m
+                          [36m/>[39m
+                          [36m<rect[39m
+                            [33mheight[39m=[32m"9"[39m
+                            [33mrx[39m=[32m"1"[39m
+                            [33mwidth[39m=[32m"7"[39m
+                            [33mx[39m=[32m"14"[39m
+                            [33my[39m=[32m"12"[39m
+                          [36m/>[39m
+                          [36m<rect[39m
+                            [33mheight[39m=[32m"5"[39m
+                            [33mrx[39m=[32m"1"[39m
+                            [33mwidth[39m=[32m"7"[39m
+                            [33mx[39m=[32m"3"[39m
+                            [33my[39m=[32m"16"[39m
+                          [36m/>[39m
+                        [36m</svg>[39m
+                      [36m</span>[39m
+                      [36m<span[39m
+                        [33mclass[39m=[32m"jsx-81067f81d5cded9c nav-label"[39m
+                      [36m>[39m
+                        [0mTransaction Dashboard[0m
+                      [36m</span>[39m
+                    [36m</a>[39m
+                  [36m</li>[39m
+                  [36m<li[39m
+                    [33mclass[39m=[32m"jsx-81067f81d5cded9c "[39m
+                  [36m>[39m
+                    [36m<a[39m
+                      [33mhref[39m=[32m"/approvals"[39m
+                      [33mstyle[39m=[32m"color: inherit; text-decoration: none; display: flex; align-items: center; gap: 0.75rem;"[39m
+                    [36m>[39m
+                      [36m<span[39m
+                        [33mclass[39m=[32m"jsx-81067f81d5cded9c nav-icon"[39m
+                      [36m>[39m
+                        [36m<svg[39m
+                          [33maria-hidden[39m=[32m"true"[39m
+                          [33mclass[39m=[32m"lucide lucide-circle-check-big"[39m
+                          [33mfill[39m=[32m"none"[39m
+                          [33mheight[39m=[32m"18"[39m
+                          [33mstroke[39m=[32m"currentColor"[39m
+                          [33mstroke-linecap[39m=[32m"round"[39m
+                          [33mstroke-linejoin[39m=[32m"round"[39m
+                          [33mstroke-width[39m=[32m"2"[39m
+                          [33mviewBox[39m=[32m"0 0 24 24"[39m
+                          [33mwidth[39m=[32m"18"[39m
+                          [33mxmlns[39m=[32m"http...
+
+      18 |         // Sections
+      19 |         expect(screen.getByText('OPERATIONS')).toBeInTheDocument();
+    > 20 |         expect(screen.getByText('LIFECYCLE MANAGEMENT')).toBeInTheDocument();
+         |                       ^
+      21 |         expect(screen.getByText('MASTER DATA')).toBeInTheDocument();
+      22 |         expect(screen.getByText('ADMINISTRATION')).toBeInTheDocument();
+      23 |         
+
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+      at node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+      at node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+      at Object.getByText (src/components/GlobalShell.test.tsx:20:23)
+
+FAIL src/components/SystemAdminSettings.test.tsx
+  ● SystemAdminSettings Sub-menu Render › generates specific panels for User Authorities, Audit, and Product Config
+
+    TestingLibraryElementError: Unable to find an element with the text: System Audit Logs (Delta JSON). This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"jsx-fd2addb68c191156 system-admin-container"[39m
+        [36m>[39m
+          [36m<section[39m
+            [33mclass[39m=[32m"jsx-fd2addb68c191156 admin-panel premium-card"[39m
+          [36m>[39m
+            [36m<header[39m
+              [33mclass[39m=[32m"jsx-fd2addb68c191156 panel-header"[39m
+            [36m>[39m
+              [36m<h2[39m
+                [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+              [36m>[39m
+                [0mUser Authority Management[0m
+              [36m</h2>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"jsx-fd2addb68c191156 primary-btn"[39m
+              [36m>[39m
+                [0mAdd New Tier[0m
+              [36m</button>[39m
+            [36m</header>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"jsx-fd2addb68c191156 table-wrapper"[39m
+            [36m>[39m
+              [36m<table[39m
+                [33mclass[39m=[32m"jsx-fd2addb68c191156 admin-table"[39m
+              [36m>[39m
+                [36m<thead[39m
+                  [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                [36m>[39m
+                  [36m<tr[39m
+                    [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                  [36m>[39m
+                    [36m<th[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mAuthority Tier[0m
+                    [36m</th>[39m
+                    [36m<th[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mDescription[0m
+                    [36m</th>[39m
+                    [36m<th[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mLimit Threshold[0m
+                    [36m</th>[39m
+                    [36m<th[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mActions[0m
+                    [36m</th>[39m
+                  [36m</tr>[39m
+                [36m</thead>[39m
+                [36m<tbody[39m
+                  [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                [36m>[39m
+                  [36m<tr[39m
+                    [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                  [36m>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mTier 1 - Maker[0m
+                    [36m</td>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mStandard operational data entry[0m
+                    [36m</td>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mN/A[0m
+                    [36m</td>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [36m<button[39m
+                        [33mclass[39m=[32m"jsx-fd2addb68c191156 edit-btn"[39m
+                      [36m>[39m
+                        [0mEdit[0m
+                      [36m</button>[39m
+                    [36m</td>[39m
+                  [36m</tr>[39m
+                  [36m<tr[39m
+                    [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                  [36m>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mTier 2 - Checker[0m
+                    [36m</td>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mBasic authorization authorization[0m
+                    [36m</td>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mUSD 500,000[0m
+                    [36m</td>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [36m<button[39m
+                        [33mclass[39m=[32m"jsx-fd2addb68c191156 edit-btn"[39m
+                      [36m>[39m
+                        [0mEdit[0m
+                      [36m</button>[39m
+                    [36m</td>[39m
+                  [36m</tr>[39m
+                [36m</tbody>[39m
+              [36m</table>[39m
+            [36m</div>[39m
+          [36m</section>[39m
+          [36m<section[39m
+            [33mclass[39m=[32m"jsx-fd2addb68c191156 admin-panel premium-card"[39m
+            [33mstyle[39m=[32m"padding: 2rem;"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"jsx-4a95dd104804929a global-audit-container"[39m
+            [36m>[39m
+              [36m<header[39m
+                [33mclass[39m=[32m"jsx-4a95dd104804929a audit-header"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-4a95dd104804929a header-info"[39m
+                [36m>[39m
+                  [36m<h2[39m
+                    [33mclass[39m=[32m"jsx-4a95dd104804929a"[39m
+                  [36m>[39m
+                    [0mGlobal Transaction Log[0m
+                  [36m</h2>[39m
+                  [36m<p[39m
+                    [33mclass[39m=[32m"jsx-4a95dd104804929a"[39m
+                  [36m>[39m
+                    [0mCross-instrument audit trail of all operational changes and authorizations.[0m
+                  [36m</p>[39m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-4a95dd104804929a audit-filters"[39m
+                [36m>[39m
+                  [36m<select[39m
+                    [33mclass[39m=[32m"jsx-4a95dd104804929a audit-select"[39m
+                  [36m>[39m
+                    [36m<option[39m
+                      [33mclass[39m=[32m"jsx-4a95dd104804929a"[39m
+                      [33mvalue[39m=[32m""[39m
+                    [36m>[39m
+                      [0mAll Priorities[0m
+                    [36m</option>[39m
+                    [36m<option[39m
+                      [33mclass[39m=[32m"jsx-4a95dd104804929a"[39m
+                      [33mvalue[39m=[32m"TX_PRIO_URGENT"[39m
+                    [36m>[39m
+                      [0mUrgent Only[0m
+                    [36m</option>[39m
+                    [36m<option[39m
+                      [33mclass[39m=[32m"jsx-4a95dd104804929a"[39m
+                      [33mvalue[39m=[32m"TX_PRIO_HIGH"[39m
+                    [36m>[39m
+                      [0mHigh Priority[0m
+                    [36m</option>[39m
+                  [36m</select>[39m
+                [36m</div>[39m
+              [36m</header>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"jsx-4a95dd104804929a audit-list"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-4a95dd104804929a empty-state"[39m
+                [36m>[39m
+                  [0mNo audit records found.[0m
+                [36m</div>[39m
+              [36m</div>[39m
+            [36m</div>[39m
+          [36m</section>[39m
+          [36m<section[39m
+            [33mclass[39m=[32m"jsx-fd2addb68c191156 admin-panel premium-card"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"jsx-c65a8929454489af product-manager-layout"[39m
+            [36m>[39m
+              [36m<aside[39m
+                [33mclass[39m=[32m"jsx-c65a8929454489af product-list-pane"[39m
+              [36m>[39m
+                [36m<header[39m
+                  [33mclass[39m=[32m"jsx-c65a8929454489af pane-header"[39m
+                [36m>[39m
+                  [36m<h3[39m
+                    [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                  [36m>[39m
+                    [0mProducts[0m
+                  [36m</h3>[39m
+                [36m</header>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-c65a8929454489af product-items"[39m
+                [36m>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"jsx-c65a8929454489af product-item active"[39m
+                  [36m>[39m
+                    [36m<span[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af product-name"[39m
+                    [36m>[39m
+                      [0mImport LC[0m
+                    [36m</span>[39m
+                    [36m<span[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af product-id"[39m
+                    [36m/>[39m
+                  [36m</div>[39m
+                [36m</div>[39m
+              [36m</aside>[39m
+              [36m<main[39m
+                [33mclass[39m=[32m"jsx-c65a8929454489af product-detail-pane"[39m
+              [36m>[39m
+                [36m<header[39m
+                  [33mclass[39m=[32m"jsx-c65a8929454489af pane-header detail-header"[39m
+                [36m>[39m
+                  [36m<h2[39m
+                    [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                  [36m>[39m
+                    [0mImport LC[0m
+                    [0m Configuration[0m
+                  [36m</h2>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"jsx-c65a8929454489af action-bar"[39m
+                  [36m>[39m
+                    [36m<button[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af secondary-btn"[39m
+                    [36m>[39m
+                      [0mSave Draft[0m
+                    [36m</button>[39m
+                    [36m<button[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af primary-btn"[39m
+                    [36m>[39m
+                      [0mPublish New Product[0m
+                    [36m</button>[39m
+                  [36m</div>[39m
+                [36m</header>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-c65a8929454489af config-form"[39m
+                [36m>[39m
+                  [36m<section[39m
+                    [33mclass[39m=[32m"jsx-c65a8929454489af form-section"[39m
+                  [36m>[39m
+                    [36m<h3[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                    [36m>[39m
+                      [0mBasic Rules[0m
+                    [36m</h3>[39m
+                    [36m<div[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af field-group"[39m
+                    [36m>[39m
+                      [36m<div[39m
+                        [33mclass[39m=[32m"jsx-c65a8929454489af field"[39m
+                      [36m>[39m
+                        [36m<label[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mfor[39m=[32m"documentExamSlaDays"[39m
+                        [36m>[39m
+                          [0mDocument Exam SLA Days[0m
+                        [36m</label>[39m
+                        [36m<input[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mid[39m=[32m"documentExamSlaDays"[39m
+                          [33mtype[39m=[32m"number"[39m
+                          [33mvalue[39m=[32m"5"[39m
+                        [36m/>[39m
+                      [36m</div>[39m
+                      [36m<div[39m
+                        [33mclass[39m=[32m"jsx-c65a8929454489af field"[39m
+                      [36m>[39m
+                        [36m<label[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mfor[39m=[32m"mandatoryMarginPercent"[39m
+                        [36m>[39m
+                          [0mMandatory Margin %[0m
+                        [36m</label>[39m
+                        [36m<input[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mid[39m=[32m"mandatoryMarginPercent"[39m
+                          [33mtype[39m=[32m"number"[39m
+                          [33mvalue[39m=[32m"10"[39m
+                        [36m/>[39m
+                      [36m</div>[39m
+                      [36m<div[39m
+                        [33mclass[39m=[32m"jsx-c65a8929454489af field"[39m
+                      [36m>[39m
+                        [36m<label[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mfor[39m=[32m"maxToleranceLimit"[39m
+                        [36m>[39m
+                          [0mMax Tolerance Limit %[0m
+                        [36m</label>[39m
+                        [36m<input[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mid[39m=[32m"maxToleranceLimit"[39m
+                          [33mtype[39m=[32m"number"[39m
+                          [33mvalue[39m=[32m"5"[39m
+                        [36m/>[39m
+                      [36m</div>[39m
+                    [36m</div>[39m
+                  [36m</section>[39m
+                  [36m<section[39m
+                    [33mclass[39m=[32m"jsx-c65a8929454489af form-section"[39m
+                  [36m>[39m
+                    [36m<h3[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                    [36m>[39m
+                      [0mProduct Toggles[0m
+                    [36m</h3>[39m
+                    [36m<div[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af toggle-grid"[39m
+                    [36m>[39m
+                      [36m<div[39m
+                        [33mclass[39m=[32m"jsx-c65a8929454489af toggle-field"[39m
+                      [36m>[39m
+                        [36m<input[39m
+                          [33mchecked[39m=[32m""[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mid[39m=[32m"allowRevolving"[39m
+                          [33mtype[39m=[32m"checkbox"[39m
+                        [36m/>[39m
+                        [36m<label[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mfor[39m=[32m"allowRevolving"[39m
+                        [36m>[39m
+                          [0mAllow Revolving LCs[0m
+                        [36m</label>[39m
+                      [36m</div>[39m
+                      [36m<div[39m
+                        [33mclass[39m=[32m"jsx-c65a8929454489af toggle-field"[39m
+                      [36m>[39m
+                        [36m<input[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mid[39m=[32m"allowAdvancePayment"[39m
+                          [33mtype[39m=[32m"checkbox"[39m
+                        [36m/>[39m
+                        [36m<label[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mfor[39m=[32m"allowAdvancePayment"[39m
+                        [36m>[39m
+                          [0mAllow Advance Payment[0m
+                        [36m</label>[39m
+                      [36m</div>[39m
+                      [36m<div[39m
+                        [33mclass[39m=[32m"jsx-c65a8929454489af toggle-field"[39m
+                      [36m>[39m
+                        [36m<input[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mid[39m=[32m"isStandby"[39m
+                          [33mtype[39m=[32m"checkbox"[39m
+                        [36m/>[39m
+                        [36m<label[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mfor[39m=[32m"isStandby"[39m
+                        [36m>[39m
+                          [0mIs Standby LC[0m
+                        [36m</label>[39m
+                      [36m</div>[39m
+                      [36m<div[39m
+                        [33mclass[39m=[32m"jsx-c65a8929454489af toggle-field"[39m
+                      [36m>[39m
+                        [36m<input[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mid[39m=[32m"isTransferable"[39m
+                          [33mtype[39m=[32m"checkbox"[39m
+                        [36m/>[39m
+                        [36m<label[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mfor[39m=[32m"isTransferable"[39m
+                        [36m>[39m
+                          [0mIs Transferable LC[0m
+                        [36m</label>[39m
+                      [36m</div>[39m
+                    [36m</div>[39m
+                  [36m</section>[39m
+                [36m</div>[39m
+              [36m</main>[39m
+            [36m</div>[39m
+          [36m</section>[39m
+          [36m<section[39m
+            [33mclass[39m=[32m"jsx-fd2addb68c191156 admin-panel premium-card"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"jsx-a0a2f0b0db43a730 tariff-manager-layout"[39m
+            [36m>[39m
+              [36m<aside[39m
+                [33mclass[39m=[32m"jsx-a0a2f0b0db43a730 fee-list-pane"[39m
+              [36m>[39m
+                [36m<header[39m
+                  [33mclass[39m=[32m"jsx-a0a2f0b0db43a730 pane-header"[39m
+                [36m>[39m
+                  [36m<h3[39m
+                    [33mclass[39m=[32m"jsx-a0a2f0b0db43a730"[39m
+                  [36m>[39m
+                    [0mTariff Matrix[0m
+                  [36m</h3>[39m
+                [36m</header>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-a0a2f0b0db43a730 tariff-items"[39m
+                [36m/>[39m
+              [36m</aside>[39m
+              [36m<main[39m
+                [33mclass[39m=[32m"jsx-a0a2f0b0db43a730 fee-detail-pane"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-a0a2f0b0db43a730 empty-selection"[39m
+                [36m>[39m
+                  [0mSelect a fee type to configure[0m
+                [36m</div>[39m
+              [36m</main>[39m
+            [36m</div>[39m
+          [36m</section>[39m
+          [36m<section[39m
+            [33mclass[39m=[32m"jsx-fd2addb68c191156 admin-panel premium-card"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"jsx-2d89eb36184b1c08 authority-manager-layout"[39m
+            [36m>[39m
+              [36m<aside[39m
+                [33mclass[39m=[32m"jsx-2d89eb36184b1c08 user-list-pane"[39m
+              [36m>[39m
+                [36m<header[39m
+                  [33mclass[39m=[32m"jsx-2d89eb36184b1c08 pane-header"[39m
+                [36m>[39m
+                  [36m<h3[39m
+                    [33mclass[39m=[32m"jsx-2d89eb36184b1c08"[39m
+                  [36m>[39m
+                    [0mUsers[0m
+                  [36m</h3>[39m
+                [36m</header>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-2d89eb36184b1c08 user-items"[39m
+                [36m/>[39m
+              [36m</aside>[39m
+              [36m<main[39m
+                [33mclass[39m=[32m"jsx-2d89eb36184b1c08 authority-detail-pane"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-2d89eb36184b1c08 empty-selection"[39m
+                [36m>[39m
+                  [0mSelect a user to manage authority[0m
+                [36m</div>[39m
+              [36m</main>[39m
+            [36m</div>[39m
+          [36m</section>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</body>[39m
+
+      27 |         });
+      28 |         expect(screen.getByText('User Authority Management')).toBeInTheDocument();
+    > 29 |         expect(screen.getByText('System Audit Logs (Delta JSON)')).toBeInTheDocument();
+         |                       ^
+      30 |         await waitFor(() => {
+      31 |             expect(screen.getByText(/Import LC Configuration/i)).toBeInTheDocument();
+      32 |         });
+
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+      at node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+      at node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+      at Object.getByText (src/components/SystemAdminSettings.test.tsx:29:23)
+
+  ● SystemAdminSettings Sub-menu Render › Renders the System Audit Logs table (REQ-COM-MAS-03)
+
+    TestingLibraryElementError: Unable to find an element with the text: Timestamp. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"jsx-fd2addb68c191156 system-admin-container"[39m
+        [36m>[39m
+          [36m<section[39m
+            [33mclass[39m=[32m"jsx-fd2addb68c191156 admin-panel premium-card"[39m
+          [36m>[39m
+            [36m<header[39m
+              [33mclass[39m=[32m"jsx-fd2addb68c191156 panel-header"[39m
+            [36m>[39m
+              [36m<h2[39m
+                [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+              [36m>[39m
+                [0mUser Authority Management[0m
+              [36m</h2>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"jsx-fd2addb68c191156 primary-btn"[39m
+              [36m>[39m
+                [0mAdd New Tier[0m
+              [36m</button>[39m
+            [36m</header>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"jsx-fd2addb68c191156 table-wrapper"[39m
+            [36m>[39m
+              [36m<table[39m
+                [33mclass[39m=[32m"jsx-fd2addb68c191156 admin-table"[39m
+              [36m>[39m
+                [36m<thead[39m
+                  [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                [36m>[39m
+                  [36m<tr[39m
+                    [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                  [36m>[39m
+                    [36m<th[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mAuthority Tier[0m
+                    [36m</th>[39m
+                    [36m<th[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mDescription[0m
+                    [36m</th>[39m
+                    [36m<th[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mLimit Threshold[0m
+                    [36m</th>[39m
+                    [36m<th[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mActions[0m
+                    [36m</th>[39m
+                  [36m</tr>[39m
+                [36m</thead>[39m
+                [36m<tbody[39m
+                  [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                [36m>[39m
+                  [36m<tr[39m
+                    [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                  [36m>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mTier 1 - Maker[0m
+                    [36m</td>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mStandard operational data entry[0m
+                    [36m</td>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mN/A[0m
+                    [36m</td>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [36m<button[39m
+                        [33mclass[39m=[32m"jsx-fd2addb68c191156 edit-btn"[39m
+                      [36m>[39m
+                        [0mEdit[0m
+                      [36m</button>[39m
+                    [36m</td>[39m
+                  [36m</tr>[39m
+                  [36m<tr[39m
+                    [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                  [36m>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mTier 2 - Checker[0m
+                    [36m</td>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mBasic authorization authorization[0m
+                    [36m</td>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [0mUSD 500,000[0m
+                    [36m</td>[39m
+                    [36m<td[39m
+                      [33mclass[39m=[32m"jsx-fd2addb68c191156"[39m
+                    [36m>[39m
+                      [36m<button[39m
+                        [33mclass[39m=[32m"jsx-fd2addb68c191156 edit-btn"[39m
+                      [36m>[39m
+                        [0mEdit[0m
+                      [36m</button>[39m
+                    [36m</td>[39m
+                  [36m</tr>[39m
+                [36m</tbody>[39m
+              [36m</table>[39m
+            [36m</div>[39m
+          [36m</section>[39m
+          [36m<section[39m
+            [33mclass[39m=[32m"jsx-fd2addb68c191156 admin-panel premium-card"[39m
+            [33mstyle[39m=[32m"padding: 2rem;"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"jsx-4a95dd104804929a global-audit-container"[39m
+            [36m>[39m
+              [36m<header[39m
+                [33mclass[39m=[32m"jsx-4a95dd104804929a audit-header"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-4a95dd104804929a header-info"[39m
+                [36m>[39m
+                  [36m<h2[39m
+                    [33mclass[39m=[32m"jsx-4a95dd104804929a"[39m
+                  [36m>[39m
+                    [0mGlobal Transaction Log[0m
+                  [36m</h2>[39m
+                  [36m<p[39m
+                    [33mclass[39m=[32m"jsx-4a95dd104804929a"[39m
+                  [36m>[39m
+                    [0mCross-instrument audit trail of all operational changes and authorizations.[0m
+                  [36m</p>[39m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-4a95dd104804929a audit-filters"[39m
+                [36m>[39m
+                  [36m<select[39m
+                    [33mclass[39m=[32m"jsx-4a95dd104804929a audit-select"[39m
+                  [36m>[39m
+                    [36m<option[39m
+                      [33mclass[39m=[32m"jsx-4a95dd104804929a"[39m
+                      [33mvalue[39m=[32m""[39m
+                    [36m>[39m
+                      [0mAll Priorities[0m
+                    [36m</option>[39m
+                    [36m<option[39m
+                      [33mclass[39m=[32m"jsx-4a95dd104804929a"[39m
+                      [33mvalue[39m=[32m"TX_PRIO_URGENT"[39m
+                    [36m>[39m
+                      [0mUrgent Only[0m
+                    [36m</option>[39m
+                    [36m<option[39m
+                      [33mclass[39m=[32m"jsx-4a95dd104804929a"[39m
+                      [33mvalue[39m=[32m"TX_PRIO_HIGH"[39m
+                    [36m>[39m
+                      [0mHigh Priority[0m
+                    [36m</option>[39m
+                  [36m</select>[39m
+                [36m</div>[39m
+              [36m</header>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"jsx-4a95dd104804929a audit-list"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-4a95dd104804929a empty-state"[39m
+                [36m>[39m
+                  [0mNo audit records found.[0m
+                [36m</div>[39m
+              [36m</div>[39m
+            [36m</div>[39m
+          [36m</section>[39m
+          [36m<section[39m
+            [33mclass[39m=[32m"jsx-fd2addb68c191156 admin-panel premium-card"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"jsx-c65a8929454489af product-manager-layout"[39m
+            [36m>[39m
+              [36m<aside[39m
+                [33mclass[39m=[32m"jsx-c65a8929454489af product-list-pane"[39m
+              [36m>[39m
+                [36m<header[39m
+                  [33mclass[39m=[32m"jsx-c65a8929454489af pane-header"[39m
+                [36m>[39m
+                  [36m<h3[39m
+                    [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                  [36m>[39m
+                    [0mProducts[0m
+                  [36m</h3>[39m
+                [36m</header>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-c65a8929454489af product-items"[39m
+                [36m>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"jsx-c65a8929454489af product-item active"[39m
+                  [36m>[39m
+                    [36m<span[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af product-name"[39m
+                    [36m>[39m
+                      [0mImport LC[0m
+                    [36m</span>[39m
+                    [36m<span[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af product-id"[39m
+                    [36m/>[39m
+                  [36m</div>[39m
+                [36m</div>[39m
+              [36m</aside>[39m
+              [36m<main[39m
+                [33mclass[39m=[32m"jsx-c65a8929454489af product-detail-pane"[39m
+              [36m>[39m
+                [36m<header[39m
+                  [33mclass[39m=[32m"jsx-c65a8929454489af pane-header detail-header"[39m
+                [36m>[39m
+                  [36m<h2[39m
+                    [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                  [36m>[39m
+                    [0mImport LC[0m
+                    [0m Configuration[0m
+                  [36m</h2>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"jsx-c65a8929454489af action-bar"[39m
+                  [36m>[39m
+                    [36m<button[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af secondary-btn"[39m
+                    [36m>[39m
+                      [0mSave Draft[0m
+                    [36m</button>[39m
+                    [36m<button[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af primary-btn"[39m
+                    [36m>[39m
+                      [0mPublish New Product[0m
+                    [36m</button>[39m
+                  [36m</div>[39m
+                [36m</header>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-c65a8929454489af config-form"[39m
+                [36m>[39m
+                  [36m<section[39m
+                    [33mclass[39m=[32m"jsx-c65a8929454489af form-section"[39m
+                  [36m>[39m
+                    [36m<h3[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                    [36m>[39m
+                      [0mBasic Rules[0m
+                    [36m</h3>[39m
+                    [36m<div[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af field-group"[39m
+                    [36m>[39m
+                      [36m<div[39m
+                        [33mclass[39m=[32m"jsx-c65a8929454489af field"[39m
+                      [36m>[39m
+                        [36m<label[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mfor[39m=[32m"documentExamSlaDays"[39m
+                        [36m>[39m
+                          [0mDocument Exam SLA Days[0m
+                        [36m</label>[39m
+                        [36m<input[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mid[39m=[32m"documentExamSlaDays"[39m
+                          [33mtype[39m=[32m"number"[39m
+                          [33mvalue[39m=[32m"5"[39m
+                        [36m/>[39m
+                      [36m</div>[39m
+                      [36m<div[39m
+                        [33mclass[39m=[32m"jsx-c65a8929454489af field"[39m
+                      [36m>[39m
+                        [36m<label[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mfor[39m=[32m"mandatoryMarginPercent"[39m
+                        [36m>[39m
+                          [0mMandatory Margin %[0m
+                        [36m</label>[39m
+                        [36m<input[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mid[39m=[32m"mandatoryMarginPercent"[39m
+                          [33mtype[39m=[32m"number"[39m
+                          [33mvalue[39m=[32m"10"[39m
+                        [36m/>[39m
+                      [36m</div>[39m
+                      [36m<div[39m
+                        [33mclass[39m=[32m"jsx-c65a8929454489af field"[39m
+                      [36m>[39m
+                        [36m<label[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mfor[39m=[32m"maxToleranceLimit"[39m
+                        [36m>[39m
+                          [0mMax Tolerance Limit %[0m
+                        [36m</label>[39m
+                        [36m<input[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mid[39m=[32m"maxToleranceLimit"[39m
+                          [33mtype[39m=[32m"number"[39m
+                          [33mvalue[39m=[32m"5"[39m
+                        [36m/>[39m
+                      [36m</div>[39m
+                    [36m</div>[39m
+                  [36m</section>[39m
+                  [36m<section[39m
+                    [33mclass[39m=[32m"jsx-c65a8929454489af form-section"[39m
+                  [36m>[39m
+                    [36m<h3[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                    [36m>[39m
+                      [0mProduct Toggles[0m
+                    [36m</h3>[39m
+                    [36m<div[39m
+                      [33mclass[39m=[32m"jsx-c65a8929454489af toggle-grid"[39m
+                    [36m>[39m
+                      [36m<div[39m
+                        [33mclass[39m=[32m"jsx-c65a8929454489af toggle-field"[39m
+                      [36m>[39m
+                        [36m<input[39m
+                          [33mchecked[39m=[32m""[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mid[39m=[32m"allowRevolving"[39m
+                          [33mtype[39m=[32m"checkbox"[39m
+                        [36m/>[39m
+                        [36m<label[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mfor[39m=[32m"allowRevolving"[39m
+                        [36m>[39m
+                          [0mAllow Revolving LCs[0m
+                        [36m</label>[39m
+                      [36m</div>[39m
+                      [36m<div[39m
+                        [33mclass[39m=[32m"jsx-c65a8929454489af toggle-field"[39m
+                      [36m>[39m
+                        [36m<input[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mid[39m=[32m"allowAdvancePayment"[39m
+                          [33mtype[39m=[32m"checkbox"[39m
+                        [36m/>[39m
+                        [36m<label[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mfor[39m=[32m"allowAdvancePayment"[39m
+                        [36m>[39m
+                          [0mAllow Advance Payment[0m
+                        [36m</label>[39m
+                      [36m</div>[39m
+                      [36m<div[39m
+                        [33mclass[39m=[32m"jsx-c65a8929454489af toggle-field"[39m
+                      [36m>[39m
+                        [36m<input[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mid[39m=[32m"isStandby"[39m
+                          [33mtype[39m=[32m"checkbox"[39m
+                        [36m/>[39m
+                        [36m<label[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mfor[39m=[32m"isStandby"[39m
+                        [36m>[39m
+                          [0mIs Standby LC[0m
+                        [36m</label>[39m
+                      [36m</div>[39m
+                      [36m<div[39m
+                        [33mclass[39m=[32m"jsx-c65a8929454489af toggle-field"[39m
+                      [36m>[39m
+                        [36m<input[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mid[39m=[32m"isTransferable"[39m
+                          [33mtype[39m=[32m"checkbox"[39m
+                        [36m/>[39m
+                        [36m<label[39m
+                          [33mclass[39m=[32m"jsx-c65a8929454489af"[39m
+                          [33mfor[39m=[32m"isTransferable"[39m
+                        [36m>[39m
+                          [0mIs Transferable LC[0m
+                        [36m</label>[39m
+                      [36m</div>[39m
+                    [36m</div>[39m
+                  [36m</section>[39m
+                [36m</div>[39m
+              [36m</main>[39m
+            [36m</div>[39m
+          [36m</section>[39m
+          [36m<section[39m
+            [33mclass[39m=[32m"jsx-fd2addb68c191156 admin-panel premium-card"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"jsx-a0a2f0b0db43a730 tariff-manager-layout"[39m
+            [36m>[39m
+              [36m<aside[39m
+                [33mclass[39m=[32m"jsx-a0a2f0b0db43a730 fee-list-pane"[39m
+              [36m>[39m
+                [36m<header[39m
+                  [33mclass[39m=[32m"jsx-a0a2f0b0db43a730 pane-header"[39m
+                [36m>[39m
+                  [36m<h3[39m
+                    [33mclass[39m=[32m"jsx-a0a2f0b0db43a730"[39m
+                  [36m>[39m
+                    [0mTariff Matrix[0m
+                  [36m</h3>[39m
+                [36m</header>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-a0a2f0b0db43a730 tariff-items"[39m
+                [36m/>[39m
+              [36m</aside>[39m
+              [36m<main[39m
+                [33mclass[39m=[32m"jsx-a0a2f0b0db43a730 fee-detail-pane"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-a0a2f0b0db43a730 empty-selection"[39m
+                [36m>[39m
+                  [0mSelect a fee type to configure[0m
+                [36m</div>[39m
+              [36m</main>[39m
+            [36m</div>[39m
+          [36m</section>[39m
+          [36m<section[39m
+            [33mclass[39m=[32m"jsx-fd2addb68c191156 admin-panel premium-card"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"jsx-2d89eb36184b1c08 authority-manager-layout"[39m
+            [36m>[39m
+              [36m<aside[39m
+                [33mclass[39m=[32m"jsx-2d89eb36184b1c08 user-list-pane"[39m
+              [36m>[39m
+                [36m<header[39m
+                  [33mclass[39m=[32m"jsx-2d89eb36184b1c08 pane-header"[39m
+                [36m>[39m
+                  [36m<h3[39m
+                    [33mclass[39m=[32m"jsx-2d89eb36184b1c08"[39m
+                  [36m>[39m
+                    [0mUsers[0m
+                  [36m</h3>[39m
+                [36m</header>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-2d89eb36184b1c08 user-items"[39m
+                [36m/>[39m
+              [36m</aside>[39m
+              [36m<main[39m
+                [33mclass[39m=[32m"jsx-2d89eb36184b1c08 authority-detail-pane"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"jsx-2d89eb36184b1c08 empty-selection"[39m
+                [36m>[39m
+                  [0mSelect a user to manage authority[0m
+                [36m</div>[39m
+              [36m</main>[39m
+            [36m</div>[39m
+          [36m</section>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</body>[39m
+
+      46 |             render(<SystemAdminSettings />);
+      47 |         });
+    > 48 |         expect(screen.getByText('Timestamp')).toBeInTheDocument();
+         |                       ^
+      49 |         expect(screen.getByText('User ID')).toBeInTheDocument();
+      50 |         expect(screen.getByText('Delta Payload')).toBeInTheDocument();
+      51 |     });
+
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+      at node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+      at node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+      at Object.getByText (src/components/SystemAdminSettings.test.tsx:48:23)
+
+
+Test Suites: 2 failed, 34 passed, 36 total
+Tests:       3 failed, 159 passed, 162 total
+Snapshots:   0 total
+Time:        3.601 s
+Ran all test suites.

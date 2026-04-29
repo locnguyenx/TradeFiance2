@@ -285,3 +285,33 @@ xmllint --noout runtime/component/TradeFinance/screen/.../Screen.xml
 ```xml
 <transition-include name="createLc" location="component://.../template/lc/LcTransitions.xml"/>
 ```
+
+## 11. Additional UI Patterns (From patterns)
+### Screen Rendering (formInstance was null)
+**Symptom**: `expression 'formInstance' was null`
+**Cause**: Using `<include-screen>` for dialog with missing context
+**Solution**: Inline dialogs or ensure context parameters exist
+
+### Form Submit Issues
+- Static `<option>` tags may not submit correctly
+- Use `entity-options` for reliable behavior
+- `<text-line>` for manual input
+```xml
+<!-- Reliable -->
+<drop-down>
+    <entity-options key="${uomId}" text="${uomId}">
+        <entity-find entity-name="moqui.basic.Uom"/>
+    </entity-options>
+</drop-down>
+```
+
+### Conditional Logic
+**CRITICAL**: `<else>` must be INSIDE `<if>`, not as sibling.
+```xml
+<if condition="status == 'Active'">
+    <set field="label" value="label-success"/>
+    <else>
+        <set field="label" value="label-danger"/>
+    </else>
+</if>
+```

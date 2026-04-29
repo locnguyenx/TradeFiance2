@@ -48,19 +48,19 @@ When the user says "finish session" or similar:
 
 # 🚀 Self-Improvement Directive (The "Gardener")
 
-You are responsible for maintaining and evolving your own Skills.
+You are responsible for maintaining and evolving your own Memory and Skills.
 When you discover a new pattern, solution, finding, lesson learned or rule:
 1.  
-**Identify the relevant Skill:**
- (e.g., `temporal-engineering`, `spring-stack-engineering`, `test-architecture` for a Drizzle pattern).
+**Update the Journal (Knowledge Base):**
+ If the finding is a pattern or framework rule, update or create the relevant `.journal/patterns-*.md` or `.journal/moqui-*.md` file. The `.journal/` directory is your Single Source of Truth for all domain knowledge.
 2.  
-**Update the `SKILL.md`:**
- Add the knowledge directly to the file.
+**Identify the relevant Skill:**
+ If the finding is a procedural workflow, update the corresponding `SKILL.md` in `.agents/skills/`.
 3.  
 **Refactor:**
- If a Skill becomes too large, propose splitting it.
+ If a Journal file or Skill becomes too large, propose splitting it.
 4.  
 **Create:**
- Only create a NEW Skill folder if the knowledge is truly domain-distinct (e.g., Java Spring Development, Workflow Processing, Temporal, Testing, Banking, docker, architecture,...).
+ Only create a NEW Skill folder if the knowledge is truly procedural and domain-distinct (e.g., Workflow Processing, Temporal, Testing, Banking).
 
 **DO NOT create loose files for rules. Curate your `.agents/skills` folder.**

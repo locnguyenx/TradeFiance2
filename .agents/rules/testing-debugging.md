@@ -63,14 +63,38 @@ YOU MUST follow this debugging framework for ANY technical issue:
 
 ---
 
-## Test Structure
+## Test Architecture
+
+### Backend Test Structure (Moqui Spock)
 
 ```
 src/test/groovy/
-��── moqui/trade/finance/
+└── moqui/trade/finance/
     ├── TradeFinanceSuite.groovy           # Aggregator
     ├── TradeFinanceServicesSpec.groovy    # Service tests
-    ├── TradeFinanceScreensSpec.groovy    # Screen tests
-    ├── TradeFinanceLifecycleSpec.groovy # Status transitions
+    ├── TradeFinanceScreensSpec.groovy     # Screen tests
+    ├── TradeFinanceLifecycleSpec.groovy   # Status transitions
     └── ...
+```
+
+### Frontend Test Structure (Jest + React Testing Library)
+
+```
+frontend/
+├── src/
+│   ├── components/
+│   │   ├── *.test.tsx                     # Unit tests for React components
+│   │   └── ...
+│   └── api/
+│       ├── *.test.ts                      # Unit tests for API clients
+│       └── ...
+```
+
+### E2E Test Structure (Playwright)
+
+```
+frontend/
+├── e2e/
+│   ├── *.spec.ts                          # End-to-end user flows (e.g. IssuanceFlow.spec.ts)
+│   └── helpers/                           # E2E test helpers and utilities
 ```

@@ -55,7 +55,7 @@ Instead, you convert the knowledge into a **JSON Dictionary** and create a tiny 
 ### Step 1: The Knowledge Base (Not read by the agent directly)
 
 Create a file to hold your massive list of errors.
-**Save as:** `.agents/knowledge/moqui-errors.json`
+**Save as:** `.journal/moqui-errors.json`
 
 ```json
 {
@@ -87,7 +87,7 @@ import os
 
 def search_errors(query):
     # Load the JSON dictionary
-    file_path = os.path.join(os.path.dirname(__file__), '../../knowledge/moqui-errors.json')
+    file_path = os.path.join(os.path.dirname(__file__), '../../../.journal/moqui-errors.json')
     try:
         with open(file_path, 'r') as f:
             errors = json.load(f)

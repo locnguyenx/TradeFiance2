@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entities xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/entity-definition-3.0.xsd">
+
+    <!-- ABOUTME: GlobalAuditEntities provides view entities for cross-instrument audit and transaction analysis. -->
+
+    <view-entity entity-name="GlobalTransactionAuditView" package="trade">
+        <member-entity entity-alias="TTA" entity-name="trade.TradeTransactionAudit"/>
+        <member-entity entity-alias="TX" entity-name="trade.TradeTransaction" join-from-alias="TTA">
+            <key-map field-name="transactionId"/>
+        </member-entity>
+        <member-entity entity-alias="TI" entity-name="trade.TradeInstrument" join-from-alias="TX">
+            <key-map field-name="instrumentId"/>
+        </member-entity>
+
+        <!-- Explicit Aliases to avoid name collisions and ensure stability -->
+        <alias entity-alias="TTA" name="auditId"/>
+        <alias entity-alias="TTA" name="transactionId"/>
+        <alias entity-alias="TTA" name="instrumentId"/>
+        <alias entity-alias="TTA" name="timestamp"/>
+        <alias entity-alias="TTA" name="userId"/>
+        <alias entity-alias="TTA" name="actionEnumId"/>
+        <alias entity-alias="TTA" name="snapshotDeltaJSON"/>
+        
+        <alias entity-alias="TX" name="priorityEnumId"/>
+        <alias entity-alias="TX" name="transactionTypeEnumId"/>
+        <alias entity-alias="TX" name="transactionStatusId"/>
+        <alias entity-alias="TI" name="transactionRef"/>
+        <alias entity-alias="TI" name="instrumentTypeEnumId"/>
+    </view-entity>
+
+</entities>

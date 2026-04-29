@@ -3,6 +3,9 @@ import { GlobalShell } from './GlobalShell';
 
 jest.mock('next/navigation', () => ({
     usePathname: () => '/import-lc',
+    useRouter: () => ({
+        push: jest.fn(),
+    }),
 }));
 
 describe('GlobalShell Modern Navigation Layout', () => {
@@ -14,12 +17,13 @@ describe('GlobalShell Modern Navigation Layout', () => {
         
         // Sections
         expect(screen.getByText('OPERATIONS')).toBeInTheDocument();
-        expect(screen.getByText('LIFECYCLE MANAGEMENT')).toBeInTheDocument();
+        expect(screen.getByText('IMPORT LC')).toBeInTheDocument();
         expect(screen.getByText('MASTER DATA')).toBeInTheDocument();
         expect(screen.getByText('ADMINISTRATION')).toBeInTheDocument();
         
         // Items
-        expect(screen.getByText('Dashboard')).toBeInTheDocument();
+        expect(screen.getByText('Transaction Dashboard')).toBeInTheDocument();
+        expect(screen.getByText('Import LC Dashboard')).toBeInTheDocument();
         expect(screen.getByText('New LC Issuance')).toBeInTheDocument();
         expect(screen.getByText('Party & KYC Directory')).toBeInTheDocument();
         expect(screen.getByText('Credit Facilities (Limits)')).toBeInTheDocument();

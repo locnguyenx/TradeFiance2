@@ -74,7 +74,7 @@ export const ImportLcDashboard: React.FC = () => {
 
             <section className="transaction-section premium-card">
                 <header className="table-header">
-                    <h2>Active Transaction Data Table</h2>
+                    <h2>Import LC Portfolio</h2>
                     <div className="table-filters">
                         <select 
                             aria-label="Status Filter" 

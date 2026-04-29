@@ -18,7 +18,7 @@
             <method type="post"><service name="trade.importlc.ImportLcValidationServices.validate#SwiftFields"/></method>
         </resource>
         <id name="instrumentId" require-authentication="false">
-            <method type="get"><service name="trade.importlc.ImportLcServices.get#ImportLetterOfCreditList"/></method>
+            <method type="get"><service name="trade.importlc.ImportLcServices.get#ImportLetterOfCredit"/></method>
             <method type="post"><service name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit"/></method>
             <resource name="amendments">
                 <method type="post"><service name="trade.importlc.ImportLcServices.create#Amendment"/></method>
@@ -53,6 +53,21 @@
     </resource>
     <resource name="standard-clauses">
         <method type="get"><service name="trade.TradeClauseServices.get#StandardClauses"/></method>
+    </resource>
+
+    <resource name="common">
+        <resource name="transactions">
+            <method type="get"><service name="trade.TradeCommonServices.get#TradeTransactions"/></method>
+        </resource>
+        <resource name="audit-logs">
+            <method type="get"><service name="trade.TradeCommonServices.get#GlobalTransactionLogs"/></method>
+        </resource>
+    </resource>
+
+    <resource name="transaction">
+        <id name="transactionId">
+            <method type="get"><service name="trade.TradeCommonServices.get#TradeTransaction"/></method>
+        </id>
     </resource>
 
     <resource name="audit-logs">
@@ -93,6 +108,12 @@
     <resource name="instrument">
         <id name="instrumentId">
             <method type="get"><service name="trade.TradeCommonServices.get#Instrument"/></method>
+            <resource name="audit-logs">
+                <method type="get"><service name="trade.AdminServices.get#TradeAuditLogs"/></method>
+            </resource>
+            <resource name="transactions">
+                <method type="get"><service name="trade.TradeCommonServices.get#InstrumentTransactions"/></method>
+            </resource>
         </id>
     </resource>
 </resource>

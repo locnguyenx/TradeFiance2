@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { TariffManager } from './TariffManager';
 import { tradeApi } from '../api/tradeApi';
 import { FeeConfiguration } from '../api/types';
@@ -29,12 +29,16 @@ describe('TariffManager', () => {
   });
 
   it('renders fee type list in left navigation', async () => {
-    render(<TariffManager />);
+    await act(async () => {
+      render(<TariffManager />);
+    });
     expect(await screen.findByText('Issuance Fee')).toBeInTheDocument();
   });
 
   it('displays floor and ceiling configuration for selected fee', async () => {
-    render(<TariffManager />);
+    await act(async () => {
+      render(<TariffManager />);
+    });
     const feeItem = await screen.findByText('Issuance Fee');
     fireEvent.click(feeItem);
     
@@ -46,14 +50,18 @@ describe('TariffManager', () => {
   it('submits updates when Publish is clicked', async () => {
     (tradeApi.updateFeeConfiguration as jest.Mock).mockResolvedValue({ success: true });
     
-    render(<TariffManager />);
+    await act(async () => {
+      render(<TariffManager />);
+    });
     const feeItem = await screen.findByText('Issuance Fee');
     fireEvent.click(feeItem);
 
     const rateInput = await screen.findByLabelText(/rate %/i);
     fireEvent.change(rateInput, { target: { value: '0.15' } });
     
-    fireEvent.click(screen.getByRole('button', { name: /publish/i }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /publish/i }));
+    });
     
     expect(tradeApi.updateFeeConfiguration).toHaveBeenCalledWith('FEE_ISS_01', expect.objectContaining({
       ratePercent: 0.15

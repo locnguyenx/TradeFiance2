@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { ProductCatalogManager } from './ProductCatalogManager';
 import { tradeApi } from '../api/tradeApi';
 import { TradeProductCatalog } from '../api/types';
@@ -34,14 +34,18 @@ describe('ProductCatalogManager', () => {
   });
 
   it('renders product list in left navigation', async () => {
-    render(<ProductCatalogManager />);
+    await act(async () => {
+      render(<ProductCatalogManager />);
+    });
     await waitFor(() => {
       expect(screen.getByText('Sight Import LC')).toBeInTheDocument();
     });
   });
 
   it('displays config form when a product is selected', async () => {
-    render(<ProductCatalogManager />);
+    await act(async () => {
+      render(<ProductCatalogManager />);
+    });
     await waitFor(() => {
       fireEvent.click(screen.getByText('Sight Import LC'));
     });
@@ -54,7 +58,9 @@ describe('ProductCatalogManager', () => {
   it('submits updates when Save Draft is clicked', async () => {
     (tradeApi.updateProductCatalog as jest.Mock).mockResolvedValue({ success: true });
     
-    render(<ProductCatalogManager />);
+    await act(async () => {
+      render(<ProductCatalogManager />);
+    });
     await waitFor(() => {
       fireEvent.click(screen.getByText('Sight Import LC'));
     });
@@ -62,7 +68,9 @@ describe('ProductCatalogManager', () => {
     const revolvingToggle = screen.getByLabelText(/allow revolving/i);
     fireEvent.click(revolvingToggle);
     
-    fireEvent.click(screen.getByRole('button', { name: /save draft/i }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /save draft/i }));
+    });
     
     expect(tradeApi.updateProductCatalog).toHaveBeenCalledWith('IMP_LC_SIGHT', expect.objectContaining({
       allowRevolving: 'Y'

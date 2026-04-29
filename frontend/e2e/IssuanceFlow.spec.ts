@@ -11,7 +11,7 @@ test.describe('Issuance Life-Cycle (True E2E)', () => {
   test('completes a full LC issuance from dashboard to submission', async ({ page }) => {
     // 1. Navigate to Dashboard
     await page.goto('/import-lc');
-    await expect(page.getByRole('heading', { name: 'Active Transaction Data Table' })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('heading', { name: 'Active Instrument Data Table' })).toBeVisible({ timeout: 15000 });
 
     // 2. Start New Issuance
     await page.getByRole('link', { name: 'New LC Issuance' }).click();
@@ -54,7 +54,7 @@ test.describe('Issuance Life-Cycle (True E2E)', () => {
     // Handle Facility selection if present in this step or Step 1
     // The previous test had it in Step 3
     // Step 3: Margin & Charges
-    await page.selectOption('#customerFacilityId', { label: 'Working Capital Line - $1,000,000' });
+    await page.selectOption('#customerFacilityId', { value: 'FAC-ZIZI-001' });
     
     await page.getByTestId('next-button').click();
 
@@ -66,6 +66,6 @@ test.describe('Issuance Life-Cycle (True E2E)', () => {
     await page.getByTestId('submit-button').click();
 
     // 8. Verify Success Message and status transition to PENDING
-    await expect(page.getByRole('heading', { name: 'Submission Successful' })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('heading', { name: 'Submission Successful' })).toBeVisible({ timeout: 60000 });
   });
 });

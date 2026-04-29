@@ -105,7 +105,7 @@ In Master-Detail views (Products, Tiers, Parties), strict mode violations occur 
 All data loading and test execution must use `./gradlew` only.
 
 ### 1. Environment Verification
-- **Read the Law:** Open and read `.agents/knowledge/moqui-testing.md` to refresh your memory on the exact `./gradlew` execution mandates (specifically the `reloadSave` rule).
+- **Read the Law:** Open and read `.journal/moqui-testing.md` to refresh your memory on the exact `./gradlew` execution mandates (specifically the `reloadSave` rule).
 - **Verify Path:** Ensure you are targeting the correct component for testing (e.g., `TradeFinance`).
 
 ### 2. Execution
@@ -123,7 +123,7 @@ Do not rely solely on the terminal output. If a test fails, use your file-readin
 1. Output a final Markdown report to the user:
 - State whether the suite passed or failed.
 - If it failed, extract the specific assertion failure from the XML report.
-- If the failure matches a known issue in the `moqui-testing.md` knowledge base (like a Type Coercion Trap or a Stale UI Cache), point it out and offer to fix the code.
+- If the failure matches a known issue in the `moqui-testing.md` journal (like a Type Coercion Trap or a Stale UI Cache), point it out and offer to fix the code.
 2. Update the test coverage report in the component's `docs/tcd` directory.
 
 ### 5. Verification Integrity Audit (Mandatory)

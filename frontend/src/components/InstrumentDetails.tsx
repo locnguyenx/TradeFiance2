@@ -20,7 +20,7 @@ import Link from 'next/link';
 import { TradeInstrument, ImportLetterOfCredit } from '../api/types';
 import './InstrumentDetails.css';
 
-// ABOUTME: High-fidelity "Blue Premium" Transaction Details view.
+// ABOUTME: High-fidelity "Blue Premium" Instrument Details view.
 // ABOUTME: Uses standard CSS import for robust layout and deterministic 2-column grid rows.
 
 interface Props {
@@ -97,7 +97,7 @@ export const InstrumentDetails: React.FC<Props> = ({ instrument }) => {
               <div className="identity-hero">
                 <div className="identity-main">
                   <div className="id-group">
-                    <span className="id-label">TRANSACTION REFERENCE</span>
+                    <span className="id-label">INSTRUMENT REFERENCE</span>
                     <div className="id-value">{instrument.transactionRef}</div>
                   </div>
                   <div className="status-pill">{instrument.businessStateId?.replace('LC_', '') || 'DRAFT'}</div>

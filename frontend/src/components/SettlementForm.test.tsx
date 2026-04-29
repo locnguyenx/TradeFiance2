@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { SettlementForm } from './SettlementForm';
 import { tradeApi } from '../api/tradeApi';
 
@@ -22,13 +22,17 @@ describe('SettlementForm', () => {
   });
 
   it('renders LC details and outstanding balance', async () => {
-    render(<SettlementForm instrumentId="LC_100" />);
+    await act(async () => {
+      render(<SettlementForm instrumentId="LC_100" />);
+    });
     expect(await screen.findByText(/Global Supplier/)).toBeInTheDocument();
     expect(screen.getAllByText(/50,000/).length).toBeGreaterThan(0);
   });
 
   it('calculates remaining balance after drawing amount is entered', async () => {
-    render(<SettlementForm instrumentId="LC_100" />);
+    await act(async () => {
+      render(<SettlementForm instrumentId="LC_100" />);
+    });
     const amountInput = await screen.findByLabelText(/drawing amount/i);
     fireEvent.change(amountInput, { target: { value: '10000' } });
     
@@ -38,11 +42,15 @@ describe('SettlementForm', () => {
   it('submits settlement when confirmed', async () => {
     (tradeApi.settleLcPresentation as jest.Mock).mockResolvedValue({ success: true });
     
-    render(<SettlementForm instrumentId="LC_100" />);
+    await act(async () => {
+      render(<SettlementForm instrumentId="LC_100" />);
+    });
     const amountInput = await screen.findByLabelText(/drawing amount/i);
     fireEvent.change(amountInput, { target: { value: '10000' } });
     
-    fireEvent.click(screen.getByRole('button', { name: /confirm settlement/i }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /confirm settlement/i }));
+    });
     
     expect(tradeApi.settleLcPresentation).toHaveBeenCalledWith('LC_100', expect.any(String), expect.objectContaining({
       principalAmount: 10000

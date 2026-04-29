@@ -46,9 +46,7 @@ export const CheckerAuthorization: React.FC<Props> = ({ transactionId }) => {
             setInstrument(updatedInst as any);
             
             if (result.isAuthorized) {
-                alert(updatedInst.businessStateId === 'INST_ISSUED' 
-                    ? 'Final Authorization Complete. Instrument Issued.' 
-                    : 'Authorization Recorded. Transaction has been executed.');
+                alert('Authorization Recorded. Transaction has been executed and status updated.');
             }
         } catch (e) {
             console.error(e);
@@ -84,13 +82,13 @@ export const CheckerAuthorization: React.FC<Props> = ({ transactionId }) => {
                 </div>
             )}
 
-            {instrument.businessStateId === 'INST_PARTIAL_APPROVAL' && (
+            {transaction?.transactionStatusId === 'TXN_PARTIAL_APPROVED' && (
                 <div className="alert-ribbon warning">
-                     Dual Checker Progress: First Authorization Recorded. A second, different checker is required for Tier 4 transactions ({instrument.currencyUomId || 'USD'} {instrument.baseEquivalentAmount.toLocaleString()}).
+                     Dual Checker Progress: First Authorization Recorded. A second, different checker is required for Tier 4 transactions (${instrument.baseEquivalentAmount.toLocaleString()}).
                 </div>
             )}
             
-            {instrument.baseEquivalentAmount > 500000 && instrument.businessStateId === 'INST_PENDING_APPROVAL' && (
+            {transaction?.proposedAmount && transaction.proposedAmount >= 500000 && transaction.transactionStatusId === 'TXN_SUBMITTED' && (
                 <div className="alert-ribbon info">
                     Tier 4 Transaction Detected: Dual Checker Authorization will be enforced.
                 </div>
@@ -99,11 +97,11 @@ export const CheckerAuthorization: React.FC<Props> = ({ transactionId }) => {
             <header className="auth-header">
                 <div className="flex justify-between items-center w-full">
                     <div className="status-group">
-                        <span className="badge primary">Instrument: {instrument.instrumentId}</span>
-                        <span className="badge second-badge">Lifecycle: {instrument.businessStateId.replace('INST_', '').replace('_', ' ')}</span>
+                        <span className="badge primary">Transaction Authorization: {transaction?.transactionId}</span>
+                        <span className="badge second-badge">Ref: {instrument.instrumentId}</span>
                         {transaction && (
                             <span className={`badge ${transaction.transactionStatusId.toLowerCase()}`}>
-                                Workflow: {transaction.transactionStatusId.replace('TXN_', '').replace('_', ' ')}
+                                Status: {transaction.transactionStatusId.replace('TXN_', '').replace('_', ' ')}
                             </span>
                         )}
                     </div>
@@ -161,7 +159,7 @@ export const CheckerAuthorization: React.FC<Props> = ({ transactionId }) => {
 
                 <main className="details-pane">
                     <header className="sub-header">
-                        <h4>Instrument Details & Delta Analysis</h4>
+                        <h4>Transaction Data & Delta Analysis</h4>
                     </header>
                     <div className="details-scroll-content">
                         {transaction?.proposedAmount && (
@@ -169,8 +167,16 @@ export const CheckerAuthorization: React.FC<Props> = ({ transactionId }) => {
                                 <strong>Amendment Snapshot:</strong> Showing proposed changes.
                                 <div className="snapshot-grid mt-2">
                                     <div className="snap-field">
+                                        <label>Original Amount</label>
+                                        <p>{instrument.currencyUomId || 'USD'} {instrument.baseEquivalentAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
+                                    </div>
+                                    <div className="snap-field">
                                         <label>Proposed Amount</label>
-                                        <p>{instrument.currencyUomId} {transaction.proposedAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
+                                        <p>{instrument.currencyUomId || 'USD'} {transaction.proposedAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
+                                    </div>
+                                    <div className="snap-field">
+                                        <label>Original Expiry</label>
+                                        <p>{instrument.expiryDate}</p>
                                     </div>
                                     {transaction.proposedExpiryDate && (
                                         <div className="snap-field">

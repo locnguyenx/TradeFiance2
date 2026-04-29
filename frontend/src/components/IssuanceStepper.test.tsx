@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
 import { IssuanceStepper } from './IssuanceStepper';
 import { tradeApi } from '../api/tradeApi';
 
@@ -52,7 +52,9 @@ describe('IssuanceStepper v3.0 (BDD-IMP-FLOW-01, BDD-CMN-VAL-05)', () => {
             expect(productSelect.options.length).toBeGreaterThan(1);
         });
         
-        fireEvent.change(screen.getByLabelText(/Applicant/i), { target: { value: 'GLOBAL_CORP' } });
+        await act(async () => {
+            fireEvent.change(screen.getByLabelText(/Applicant/i), { target: { value: 'GLOBAL_CORP' } });
+        });
         fireEvent.change(screen.getByLabelText(/LC Product/i), { target: { value: 'IMP_LC_STANDARD' } });
         fireEvent.change(screen.getByLabelText(/Beneficiary \(Tag 59\)/i), { target: { value: 'Beneficiary Name\nAddress' } });
     };
@@ -71,12 +73,16 @@ describe('IssuanceStepper v3.0 (BDD-IMP-FLOW-01, BDD-CMN-VAL-05)', () => {
     };
 
     it('renders product catalog dropdown on Step 1', async () => {
-        render(<IssuanceStepper />);
+        await act(async () => {
+            render(<IssuanceStepper />);
+        });
         expect(await screen.findByLabelText(/LC Product/i)).toBeInTheDocument();
     });
 
     it('validates mandatory fields in Step 1 before moving to Step 2', async () => {
-        render(<IssuanceStepper />);
+        await act(async () => {
+            render(<IssuanceStepper />);
+        });
         fireEvent.click(screen.getByTestId('next-button'));
         
         // Wait for the error banner to appear and check its content
@@ -89,9 +95,13 @@ describe('IssuanceStepper v3.0 (BDD-IMP-FLOW-01, BDD-CMN-VAL-05)', () => {
     });
 
     it('auto-saves draft when moving from Step 1 to Step 2', async () => {
-        render(<IssuanceStepper />);
+        await act(async () => {
+            render(<IssuanceStepper />);
+        });
         await completeStep0();
-        fireEvent.click(screen.getByTestId('next-button'));
+        await act(async () => {
+            fireEvent.click(screen.getByTestId('next-button'));
+        });
 
         await waitFor(() => {
             expect(tradeApi.createLc).toHaveBeenCalledWith(expect.objectContaining({
@@ -105,13 +115,19 @@ describe('IssuanceStepper v3.0 (BDD-IMP-FLOW-01, BDD-CMN-VAL-05)', () => {
     });
 
     it('renders charge allocation field on Step 3 after valid Step 1 and 2', async () => {
-        render(<IssuanceStepper />);
+        await act(async () => {
+            render(<IssuanceStepper />);
+        });
         await completeStep0();
-        fireEvent.click(screen.getByTestId('next-button')); // To Step 2
+        await act(async () => {
+            fireEvent.click(screen.getByTestId('next-button')); // To Step 2
+        });
         await waitFor(() => expect(screen.getByText(/Step 2/i)).toBeInTheDocument());
         
         await completeStep1();
-        fireEvent.click(screen.getByTestId('next-button')); // To Step 3
+        await act(async () => {
+            fireEvent.click(screen.getByTestId('next-button')); // To Step 3
+        });
         await waitFor(() => expect(screen.getByText(/Step 3/i)).toBeInTheDocument());
         
         expect(screen.getByText(/Step 3: Margin & Charges/i)).toBeInTheDocument();
@@ -123,15 +139,21 @@ describe('IssuanceStepper v3.0 (BDD-IMP-FLOW-01, BDD-CMN-VAL-05)', () => {
             errors: [{ fieldName: 'goodsDescription', message: 'Z-Charset violation' }]
         });
 
-        render(<IssuanceStepper />);
+        await act(async () => {
+            render(<IssuanceStepper />);
+        });
         await completeStep0();
-        fireEvent.click(screen.getByTestId('next-button')); 
+        await act(async () => {
+            fireEvent.click(screen.getByTestId('next-button')); 
+        });
         
         // Wait for transition to Step 2
         await waitFor(() => expect(screen.getByText(/Step 2/i)).toBeInTheDocument());
         
         await completeStep1();
-        fireEvent.click(screen.getByTestId('next-button')); // Trigger Validation
+        await act(async () => {
+            fireEvent.click(screen.getByTestId('next-button')); // Trigger Validation
+        });
         
         await waitFor(() => {
             expect(tradeApi.validateLcSwiftFields).toHaveBeenCalled();
@@ -143,40 +165,56 @@ describe('IssuanceStepper v3.0 (BDD-IMP-FLOW-01, BDD-CMN-VAL-05)', () => {
     });
 
     it('shows Save Draft only on the final Review step and handles submission', async () => {
-        render(<IssuanceStepper />);
+        await act(async () => {
+            render(<IssuanceStepper />);
+        });
         await completeStep0();
-        fireEvent.click(screen.getByTestId('next-button')); 
+        await act(async () => {
+            fireEvent.click(screen.getByTestId('next-button')); 
+        });
         await waitFor(() => expect(screen.getByText(/Step 2/i)).toBeInTheDocument());
         
         // On Step 2, Save Draft should NOT be visible
         expect(screen.queryByText(/Save Draft/i)).not.toBeInTheDocument();
         
         await completeStep1();
-        fireEvent.click(screen.getByTestId('next-button')); 
+        await act(async () => {
+            fireEvent.click(screen.getByTestId('next-button')); 
+        });
         await waitFor(() => expect(screen.getByText(/Step 3/i)).toBeInTheDocument());
         
         await completeStep2();
-        fireEvent.click(screen.getByTestId('next-button'));
+        await act(async () => {
+            fireEvent.click(screen.getByTestId('next-button'));
+        });
         await waitFor(() => expect(screen.getByText(/Step 4/i)).toBeInTheDocument());
 
         // On Final Step, Save Draft SHOULD be visible
         expect(screen.getByText(/Save Draft/i)).toBeInTheDocument();
         
-        fireEvent.click(screen.getByText(/Save Draft/i));
+        await act(async () => {
+            fireEvent.click(screen.getByText(/Save Draft/i));
+        });
         expect(await screen.findByText(/Draft Saved Successfully/i)).toBeInTheDocument();
         
-        fireEvent.click(screen.getByTestId('submit-button'));
+        await act(async () => {
+            fireEvent.click(screen.getByTestId('submit-button'));
+        });
         expect(await screen.findByText(/Submission Successful/i)).toBeInTheDocument();
     });
 
     it('renders all required BIC fields in Step 1 and 2', async () => {
-        render(<IssuanceStepper />);
+        await act(async () => {
+            render(<IssuanceStepper />);
+        });
         // Step 1 (Parties)
         expect(screen.getByLabelText(/Advising Through Bank BIC/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/Advising Bank BIC/i)).toBeInTheDocument();
         
         await completeStep0();
-        fireEvent.click(screen.getByTestId('next-button')); 
+        await act(async () => {
+            fireEvent.click(screen.getByTestId('next-button')); 
+        });
         
         // Wait for transition to Step 2 (Financials)
         await waitFor(() => expect(screen.getByText(/Step 2/i)).toBeInTheDocument());

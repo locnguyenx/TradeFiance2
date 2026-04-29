@@ -5,6 +5,7 @@ import { tradeApi } from '../api/tradeApi';
 import { ProductCatalogManager } from './ProductCatalogManager';
 import { TariffManager } from './TariffManager';
 import { UserAuthorityManager } from './UserAuthorityManager';
+import { GlobalTransactionLog } from './GlobalTransactionLog';
 
 // ABOUTME: SystemAdminSettings component provides configuration panels for user authorities, system audits, and product matrices.
 // ABOUTME: Centralizes key governance settings for the Trade Finance platform.
@@ -14,29 +15,10 @@ interface AdminSettingsProps {
 }
 
 export const SystemAdminSettings: React.FC<AdminSettingsProps> = ({ activePanel }) => {
-    const [auditLogs, setAuditLogs] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    
     const showAll = !activePanel;
-
-    useEffect(() => {
-        const loadAudit = async () => {
-            try {
-                const logs = await tradeApi.getAuditLogs();
-                setAuditLogs(logs);
-            } catch (error) {
-                console.error('Audit Load Failed:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        loadAudit();
-    }, []);
 
     const handleConfigSave = async (key: string, value: string) => {
         await tradeApi.updateProductConfig(key, value);
-        const logs = await tradeApi.getAuditLogs();
-        setAuditLogs(logs);
     };
 
     return (
@@ -77,44 +59,8 @@ export const SystemAdminSettings: React.FC<AdminSettingsProps> = ({ activePanel 
             )}
 
             {(showAll || activePanel === 'audit') && (
-                <section className="admin-panel premium-card">
-                    <header className="panel-header">
-                        <h2>System Audit Logs (Delta JSON)</h2>
-                        <div className="filter-group">
-                            <input type="text" placeholder="Filter by User or Transaction..." className="admin-input" />
-                        </div>
-                    </header>
-                    <div className="table-wrapper">
-                        <table className="admin-table">
-                            <thead>
-                                <tr>
-                                    <th>Timestamp</th>
-                                    <th>User ID</th>
-                                    <th>Action</th>
-                                    <th>Delta Payload</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading ? (
-                                    <tr><td colSpan={4}>Loading logs...</td></tr>
-                                ) : auditLogs.length === 0 ? (
-                                    <tr>
-                                        <td>2026-04-22 10:45:12</td>
-                                        <td>JSMITH_OPS</td>
-                                        <td>UPDATE_LC</td>
-                                        <td className="font-mono">{"{ \"amount\": 500000 }"}</td>
-                                    </tr>
-                                ) : auditLogs.map(log => (
-                                    <tr key={log.auditLogId}>
-                                        <td>{new Date(log.timestamp).toLocaleString()}</td>
-                                        <td>{log.changedByUserId}</td>
-                                        <td>{log.actionName}</td>
-                                        <td className="font-mono">{log.deltaJson}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                <section className="admin-panel premium-card" style={{ padding: '2rem' }}>
+                    <GlobalTransactionLog />
                 </section>
             )}
 

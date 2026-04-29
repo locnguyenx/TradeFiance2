@@ -90,7 +90,8 @@
     </service>
     <service verb="authorize" noun="Instrument" authenticate="false">
         <in-parameters>
-            <parameter name="instrumentId" required="true"/>
+            <parameter name="instrumentId"/>
+            <parameter name="transactionId"/>
             <parameter name="userId" default="ec.user.userId ?: 'EXOR_SERVICE_USER'"/>
         </in-parameters>
         <out-parameters>
@@ -102,8 +103,65 @@
             <set field="isAuthorized" from="evalOut.isAuthorized"/>
             
             <if condition="isAuthorized">
-                <service-call name="update#trade.TradeInstrument" in-map="[instrumentId:instrumentId, lifecycleStatusId:'INST_AUTHORIZED']"/>
+                <if condition="transactionId">
+                    <entity-find-one entity-name="trade.TradeTransaction" value-field="tx"/>
+                    <entity-find-one entity-name="trade.TradeInstrument" value-field="inst">
+                        <field-map field-name="instrumentId" from="tx.instrumentId"/>
+                    </entity-find-one>
+
+                    <!-- Dynamically calculate target values -->
+                    <set field="targetAmount" from="inst.amount"/>
+                    <set field="targetExpiry" from="inst.expiryDate"/>
+
+                    <if condition="tx.transactionTypeEnumId == 'IMP_NEW'">
+                        <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc">
+                            <field-map field-name="instrumentId" from="tx.instrumentId"/>
+                        </entity-find-one>
+                        <set field="targetAmount" from="lc?.lcAmount ?: targetAmount"/>
+                        <set field="targetExpiry" from="lc?.expiryDate ?: targetExpiry"/>
+                    </if>
+                    <if condition="tx.transactionTypeEnumId == 'IMP_AMENDMENT'">
+                        <entity-find-one entity-name="trade.importlc.ImportLcAmendment" value-field="amd">
+                            <field-map field-name="amendmentId" from="tx.relatedRecordId"/>
+                        </entity-find-one>
+                        <set field="targetAmount" from="(inst.amount ?: 0) + (amd?.amountAdjustment ?: 0)"/>
+                        <set field="targetExpiry" from="amd?.newExpiryDate ?: targetExpiry"/>
+                    </if>
+                    
+                    <!-- Commit to Master Data -->
+                    <service-call name="update#trade.TradeInstrument" in-map="[
+                        instrumentId: tx.instrumentId,
+                        businessStateId: 'INST_AUTHORIZED',
+                        amount: targetAmount,
+                        expiryDate: targetExpiry
+                    ]"/>
+
+                    <service-call name="update#trade.TradeTransaction" in-map="[
+                        transactionId: transactionId,
+                        transactionStatusId: 'TX_APPROVED',
+                        checkerUserId: userId,
+                        checkerTimestamp: ec.user.nowTimestamp
+                    ]"/>
+
+                    <!-- Update Import LC Specifics -->
+                    <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc">
+                        <field-map field-name="instrumentId" from="tx.instrumentId"/>
+                    </entity-find-one>
+                    <if condition="lc">
+                        <set field="targetState" value="LC_ISSUED"/>
+                        <if condition="tx.transactionTypeEnumId == 'IMP_AMENDMENT'">
+                            <set field="targetState" value="LC_AMENDED"/>
+                        </if>
+                        <service-call name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit" in-map="[
+                            instrumentId: tx.instrumentId,
+                            businessStateId: targetState,
+                            lcAmount: targetAmount,
+                            expiryDate: targetExpiry
+                        ]"/>
+                    </if>
+                </if>
             </if>
+            <script>ec.artifactExecution.enableAuthz()</script>
         </actions>
     </service>
     <service verb="get" noun="PendingApprovals" authenticate="false">

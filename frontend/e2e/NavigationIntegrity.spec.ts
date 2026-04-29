@@ -40,13 +40,13 @@ test.describe('Navigation Integrity (True E2E)', () => {
   test('BDD-CMN-AUTH-01: User Authority Tiers navigation', async ({ page }) => {
     await page.getByRole('link', { name: 'User Authority Tiers' }).click();
     await expect(page).toHaveURL(/\/admin\/tiers/);
-    await expect(page.getByText('User Authority Management')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'User Authority Management' })).toBeVisible();
   });
 
   test('BDD-CMN-MAS-04: Audit Logs navigation from sidebar', async ({ page }) => {
     await page.getByRole('link', { name: 'Audit Logs' }).click();
     await expect(page).toHaveURL(/.*logs/);
-    await expect(page.getByText('System Audit Logs (Delta JSON)')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Global Transaction Log' })).toBeVisible();
   });
 
   test('BDD-CMN-MAS-03: Party Directory navigation from sidebar', async ({ page }) => {
@@ -75,8 +75,16 @@ test.describe('Navigation Integrity (True E2E)', () => {
 
   test('BDD-CMN-WF-01: Operations Dashboard (Return from Navigation)', async ({ page }) => {
     await page.getByRole('link', { name: 'LC Amendments' }).click();
-    await page.getByRole('link', { name: 'Dashboard' }).click();
+    await page.getByRole('link', { name: 'Import LC Dashboard' }).click();
     await expect(page).toHaveURL(/\/import-lc/);
-    await expect(page.getByRole('heading', { name: 'Active Transaction Data Table' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Active Instrument Data Table' })).toBeVisible();
+  });
+
+  test('REQ-NAV-01.3: Transaction Dashboard visibility and content', async ({ page }) => {
+    await page.getByRole('link', { name: 'Transaction Dashboard' }).click();
+    await expect(page).toHaveURL(/\/transactions/);
+    await expect(page.getByRole('heading', { name: 'Transaction Dashboard' })).toBeVisible();
+    // Verify that at least the header or a table row appears without 404 error
+    await expect(page.getByText('Unified operational view')).toBeVisible();
   });
 });

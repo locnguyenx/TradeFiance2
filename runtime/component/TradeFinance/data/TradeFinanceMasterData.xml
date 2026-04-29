@@ -47,13 +47,17 @@
     <moqui.basic.Enumeration enumId="AttInternal" enumTypeId="AcctgTransType" description="Internal Transfer"/>
 
     <!-- Sample Utilization Data for Dashboard -->
-    <trade.TradeInstrument instrumentId="LC240001" transactionRef="TF-ACME-100" transactionDate="2026-04-20" transactionStatusId="TX_APPROVED" baseEquivalentAmount="2000000.00" customerFacilityId="FAC-ACME-001" lifecycleStatusId="LC_ISSUED" instrumentTypeEnumId="INST_LC" applicantPartyId="ACME_CORP_001" beneficiaryPartyId="GLOBAL_EXP_002"/>
+    <!-- Sample Utilization Data for Dashboard -->
+    <trade.TradeInstrument instrumentId="LC240001" transactionRef="TF-ACME-100" baseEquivalentAmount="2000000.00" customerFacilityId="FAC-ACME-001" instrumentTypeEnumId="INST_LC" applicantPartyId="ACME_CORP_001" beneficiaryPartyId="GLOBAL_EXP_002" issueDate="2026-04-20"/>
     <trade.importlc.ImportLetterOfCredit instrumentId="LC240001" effectiveAmount="2000000.00" effectiveOutstandingAmount="2000000.00" businessStateId="LC_ISSUED"/>
+    <trade.TradeTransaction transactionId="TXN240001" instrumentId="LC240001" transactionDate="2026-04-20" transactionStatusId="TX_APPROVED" transactionTypeEnumId="TXN_IMP_NEW" makerUserId="trade.maker" makerTimestamp="2026-04-20 09:00:00.000" checkerUserId="trade.checker" checkerTimestamp="2026-04-20 11:00:00.000"/>
 
-    <trade.TradeInstrument instrumentId="LC240002" transactionRef="TF-ACME-101" transactionDate="2026-04-21" transactionStatusId="TX_PENDING" baseEquivalentAmount="500000.00" customerFacilityId="FAC-ACME-001" lifecycleStatusId="LC_DRAFT" instrumentTypeEnumId="INST_LC" applicantPartyId="ACME_CORP_001" beneficiaryPartyId="GLOBAL_EXP_002"/>
+    <trade.TradeInstrument instrumentId="LC240002" transactionRef="TF-ACME-101" baseEquivalentAmount="500000.00" customerFacilityId="FAC-ACME-001" instrumentTypeEnumId="INST_LC" applicantPartyId="ACME_CORP_001" beneficiaryPartyId="GLOBAL_EXP_002" issueDate="2026-04-21"/>
     <trade.importlc.ImportLetterOfCredit instrumentId="LC240002" effectiveAmount="500000.00" effectiveOutstandingAmount="500000.00" businessStateId="LC_DRAFT"/>
+    <trade.TradeTransaction transactionId="TXN240002" instrumentId="LC240002" transactionDate="2026-04-21" transactionStatusId="TX_PENDING" transactionTypeEnumId="TXN_IMP_NEW" makerUserId="trade.maker" makerTimestamp="2026-04-21 10:00:00.000"/>
 
-    <trade.TradeInstrument instrumentId="LC240003" transactionRef="TF-GLBL-200" transactionDate="2026-04-22" transactionStatusId="TX_APPROVED" baseEquivalentAmount="4800000.00" customerFacilityId="FAC-GLOBAL-002" lifecycleStatusId="LC_ISSUED" instrumentTypeEnumId="INST_LC" applicantPartyId="GLOBAL_EXP_002" beneficiaryPartyId="ACME_CORP_001"/>
+    <trade.TradeInstrument instrumentId="LC240003" transactionRef="TF-GLBL-200" baseEquivalentAmount="4800000.00" customerFacilityId="FAC-GLOBAL-002" instrumentTypeEnumId="INST_LC" applicantPartyId="GLOBAL_EXP_002" beneficiaryPartyId="ACME_CORP_001" issueDate="2026-04-22"/>
     <trade.importlc.ImportLetterOfCredit instrumentId="LC240003" effectiveAmount="4800000.00" effectiveOutstandingAmount="4800000.00" businessStateId="LC_ISSUED"/>
+    <trade.TradeTransaction transactionId="TXN240003" instrumentId="LC240003" transactionDate="2026-04-22" transactionStatusId="TX_APPROVED" transactionTypeEnumId="TXN_IMP_NEW" makerUserId="trade.maker" makerTimestamp="2026-04-22 14:00:00.000" checkerUserId="trade.checker" checkerTimestamp="2026-04-22 16:00:00.000"/>
 
 </entity-facade-xml>

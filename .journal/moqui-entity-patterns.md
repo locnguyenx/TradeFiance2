@@ -196,3 +196,39 @@ Calling child service modifies record, parent EntityValue becomes stale.
     </actions>
 </service>
 ```
+
+## 9. Entity & Database Operations (From patterns)
+* **View-Entity Brittleness**: Moqui's `view-entity` engine can be brittle when resolving joined fields across packages. For high-stakes API services, use **Manual Groovy Joins** (sequential lookups and merging maps like `TI.getMap() + ILC.getMap()`) for predictability and avoiding registry resolution errors.
+* **Composite Keys & Sequencing**: `<entity-sequenced-id>` is not valid in XML actions directly for composite keys. Use `<entity-make-value>` followed by `<entity-sequenced-id-secondary value-field="..."/>` to correctly increment secondary IDs relative to a primary key.
+* **Data Mapping**: Ensure explicit mapping between UI fields and backend entity fields in service actions (e.g. `amount` vs `baseEquivalentAmount`) to avoid silent failure of `auto-parameters`.
+* **XML Fragility**: Be careful with XML syntax. Accidental removal of `<actions>` or unclosed `<in-parameters>` tags can lead to services that load successfully but execute no logic.
+
+### Entity Condition
+```groovy
+// LIKE query
+import org.moqui.entity.EntityCondition
+ec.entity.find("trade.LetterOfCredit")
+    .condition("lcNumber", EntityCondition.LIKE, "DEMO%")
+    .list()
+
+// IN query
+import org.moqui.entity.EntityCondition
+ec.entity.find("trade.LetterOfCredit")
+    .condition("statusId", EntityCondition.IN, ["LcDraft", "LcApproved"])
+    .list()
+```
+
+### Cascade Delete
+```groovy
+// Delete children first
+def children = ec.entity.find("trade.LcHistory")
+    .condition("lcId", lcId)
+    .list()
+children.each { it.delete() }
+
+// Then parent
+def lc = ec.entity.find("trade.LetterOfCredit")
+    .condition("lcId", lcId)
+    .one()
+lc.delete()
+```

@@ -7,7 +7,7 @@ import { TradeInstrument, ImportLetterOfCredit } from '../../../api/types';
 import { InstrumentDetails } from '../../../components/InstrumentDetails';
 import { InstrumentTimeline } from '../../../components/InstrumentTimeline';
 
-// ABOUTME: Dedicated Transaction Details page implementing full-screen audit view.
+// ABOUTME: Dedicated Instrument Details page implementing full-screen audit view.
 // ABOUTME: Uses InstrumentDetails component with "Back to List" navigation.
 
 const DetailsView = () => {
@@ -30,14 +30,14 @@ const DetailsView = () => {
             })
             .catch(err => {
                 console.error('Fetch Details Error:', err);
-                setError('Failed to load transaction details.');
+                setError('Failed to load instrument details.');
                 setLoading(false);
             });
     };
 
     useEffect(() => {
         if (!id) {
-            setError('No Transaction ID provided.');
+            setError('No Instrument ID provided.');
             setLoading(false);
             return;
         }
@@ -48,7 +48,7 @@ const DetailsView = () => {
         return (
             <div className="loading-state">
                 <div className="spinner"></div>
-                <p>Retrieving Trade Asset Record...</p>
+                <p>Retrieving Instrument Details...</p>
                 <style jsx>{`
                     .loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; color: #64748b; font-weight: 600; gap: 1rem; }
                     .spinner { width: 40px; height: 40px; border: 3px solid #f1f5f9; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.8s linear infinite; }
@@ -79,8 +79,11 @@ const DetailsView = () => {
             <header className="details-header">
                 <div className="left-meta">
                     <button className="back-btn" onClick={() => router.push('/import-lc')}>
-                        ← Back to List
+                        ← Back to Import LC Portfolio
                     </button>
+                    <div className="title-group mb-2">
+                        <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Instrument Details</h1>
+                    </div>
                     <div className="header-meta">
                         <span className="ref-tag">{instrument.transactionRef}</span>
                         <span className="status-badge">{instrument.businessStateId?.replace('LC_', '').replace('INST_', '')}</span>

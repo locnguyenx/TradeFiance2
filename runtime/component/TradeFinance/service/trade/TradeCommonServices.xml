@@ -105,11 +105,10 @@
         <actions>
             <!-- STUB: Simple date addition + 3 days for holiday simulation if needed by BDD line 438 -->
             <script>
-                import java.util.Calendar
-                Calendar cal = Calendar.getInstance()
-                cal.setTime(startDate)
-                cal.add(Calendar.DATE, daysToAdd + 3) // +3 for holiday simulation in BDD-IMP-DOC-01
-                resultDate = new java.sql.Date(cal.getTimeInMillis())
+                java.util.Calendar cal = java.util.Calendar.getInstance();
+                cal.setTime(startDate);
+                cal.add(java.util.Calendar.DATE, daysToAdd + 3); // +3 for holiday simulation in BDD-IMP-DOC-01
+                resultDate = new java.sql.Date(cal.getTimeInMillis());
             </script>
         </actions>
     </service>
@@ -255,6 +254,107 @@
                 <return error="true" message="Instrument ${instrumentId} not found"/>
             </if>
             <script>context.putAll(instrument)</script>
+        </actions>
+    </service>
+    <service verb="get" noun="TradeTransactions" authenticate="false">
+        <in-parameters>
+            <parameter name="transactionStatusId"/>
+            <parameter name="priorityEnumId"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="transactionList" type="List"><parameter name="transaction" type="Map"/></parameter>
+        </out-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz();</script>
+            <entity-find entity-name="trade.TradeTransaction" list="transactionList">
+                <econdition field-name="transactionStatusId" from="transactionStatusId" ignore-if-empty="true"/>
+                <econdition field-name="priorityEnumId" from="priorityEnumId" ignore-if-empty="true"/>
+                <order-by field-name="-transactionDate"/>
+                <order-by field-name="priorityEnumId"/>
+            </entity-find>
+            <script>ec.artifactExecution.enableAuthz();</script>
+        </actions>
+    </service>
+
+    <service verb="get" noun="GlobalTransactionLogs" authenticate="false">
+        <in-parameters>
+            <parameter name="priorityEnumId"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="auditLogList" type="List"><parameter name="auditLog" type="Map"/></parameter>
+        </out-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz();</script>
+            <entity-find entity-name="trade.GlobalTransactionAuditView" list="auditLogList">
+                <econdition field-name="priorityEnumId" from="priorityEnumId" ignore-if-empty="true"/>
+                <order-by field-name="-timestamp"/>
+            </entity-find>
+            <script>ec.artifactExecution.enableAuthz();</script>
+        </actions>
+    </service>
+    <service verb="get" noun="InstrumentTransactions" authenticate="false">
+        <in-parameters><parameter name="instrumentId" required="true"/></in-parameters>
+        <out-parameters>
+            <parameter name="transactionList" type="List"><parameter name="transaction" type="Map"/></parameter>
+        </out-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz();</script>
+            <entity-find entity-name="trade.TradeTransaction" list="transactionList">
+                <econdition field-name="instrumentId"/>
+                <order-by field-name="-transactionDate"/>
+            </entity-find>
+            <script>ec.artifactExecution.enableAuthz();</script>
+        </actions>
+    </service>
+    <service verb="get" noun="TradeTransaction" authenticate="false">
+        <in-parameters><parameter name="transactionId" required="true"/></in-parameters>
+        <out-parameters>
+            <auto-parameters entity-name="trade.TradeTransaction" include="all"/>
+            <parameter name="instrument" type="Map"/>
+            <parameter name="proposedAmount" type="BigDecimal"/>
+            <parameter name="proposedExpiryDate" type="Date"/>
+            <parameter name="proposedCurrencyUomId" type="String"/>
+        </out-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find-one entity-name="trade.TradeTransaction" value-field="tx"/>
+            <if condition="tx == null">
+                <return error="true" message="Transaction ${transactionId} not found"/>
+            </if>
+            
+            <entity-find-one entity-name="trade.TradeInstrument" value-field="inst">
+                <field-map field-name="instrumentId" from="tx.instrumentId"/>
+            </entity-find-one>
+            
+            <set field="result" from="tx.getMap()"/>
+            
+            <!-- Dynamic Snapshot Calculation -->
+            <if condition="tx.transactionTypeEnumId == 'IMP_NEW'">
+                <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc">
+                    <field-map field-name="instrumentId" from="tx.instrumentId"/>
+                </entity-find-one>
+                <set field="result.proposedAmount" from="lc?.lcAmount"/>
+                <set field="result.proposedExpiryDate" from="lc?.expiryDate"/>
+                <set field="result.proposedCurrencyUomId" from="inst?.currencyUomId"/>
+            </if>
+            <if condition="tx.transactionTypeEnumId == 'IMP_AMENDMENT'">
+                <entity-find-one entity-name="trade.importlc.ImportLcAmendment" value-field="amd">
+                    <field-map field-name="amendmentId" from="tx.relatedRecordId"/>
+                </entity-find-one>
+                <set field="result.proposedAmount" from="(inst?.amount ?: 0) + (amd?.amountAdjustment ?: 0)"/>
+                <set field="result.proposedExpiryDate" from="amd?.newExpiryDate ?: inst?.expiryDate"/>
+                <set field="result.proposedCurrencyUomId" from="inst?.currencyUomId"/>
+            </if>
+
+            <!-- Final Fallback -->
+            <if condition="!result.proposedAmount"><set field="result.proposedAmount" from="inst?.amount"/></if>
+            <if condition="!result.proposedExpiryDate"><set field="result.proposedExpiryDate" from="inst?.expiryDate"/></if>
+            <if condition="!result.proposedCurrencyUomId"><set field="result.proposedCurrencyUomId" from="inst?.currencyUomId"/></if>
+            
+            <script>
+                context.putAll(result)
+                context.instrument = inst?.getMap()
+            </script>
         </actions>
     </service>
 </services>

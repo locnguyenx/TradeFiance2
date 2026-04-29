@@ -8,8 +8,8 @@ description: Used in diagnostics Moqui error stack traces, rendering errors, and
 ### 1. Context Retrieval
 - **Extract error:** Identify the core exception string (e.g., "SAXParseException", "formInstance was null").
 - **Read Knowledge:** 
-  1. Read `.agents/knowledge/moqui-errors.json` for immediate matches.
-  2. Read `.agents/knowledge/moqui-ui-patterns.md`, `moqui-entity-patterns.md`, or `moqui-service-patterns.md` for architectural context, resolution, best practices.
+  1. Read `.journal/moqui-errors.json` for immediate matches.
+  2. Read `.journal/moqui-ui-patterns.md`, `moqui-entity-patterns.md`, or `moqui-service-patterns.md` for architectural context, resolution, best practices.
 
 ### 2. Match & Apply
 - If a match is found in the JSON or Markdown patterns:
@@ -19,9 +19,9 @@ description: Used in diagnostics Moqui error stack traces, rendering errors, and
 
 ### 3. Deep Diagnosis & Learning (Fallback)
 - **If match fails:**
-  1. **UI/XML:** Read `.agents/knowledge/moqui_syntax_ref.md`. If still unknown, check `framework/xsd/xml-screen-3.xsd`.
+  1. **UI/XML:** Read `.journal/moqui_syntax_ref.md`. If still unknown, check `framework/xsd/xml-screen-3.xsd`.
   2. **Logic/Groovy:** Analyze the script against Moqui context objects (`ec`).
-- **Resolve & Update:** After fixing a *new* error, you MUST update `.agents/knowledge/moqui-errors.json` with a concise key-value pair describing the error and fix.
+- **Resolve & Update:** After fixing a *new* error, you MUST update `.journal/moqui-errors.json` with a concise key-value pair describing the error and fix.
 
 ### 4. Reporting
 Output a Markdown report:

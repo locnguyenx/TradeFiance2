@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { UserAuthorityManager } from './UserAuthorityManager';
 import { tradeApi } from '../api/tradeApi';
 import { UserAuthorityProfile } from '../api/types';
@@ -27,12 +27,16 @@ describe('UserAuthorityManager', () => {
   });
 
   it('renders user list', async () => {
-    render(<UserAuthorityManager />);
+    await act(async () => {
+      render(<UserAuthorityManager />);
+    });
     expect(await screen.findByText('CHECKER_ALPHA')).toBeInTheDocument();
   });
 
   it('displays tier and limit configuration for selected user', async () => {
-    render(<UserAuthorityManager />);
+    await act(async () => {
+      render(<UserAuthorityManager />);
+    });
     const userItem = await screen.findByText('CHECKER_ALPHA');
     fireEvent.click(userItem);
     
@@ -44,14 +48,18 @@ describe('UserAuthorityManager', () => {
   it('submits updates when Save is clicked', async () => {
     (tradeApi.updateUserAuthorityProfile as jest.Mock).mockResolvedValue({ success: true });
     
-    render(<UserAuthorityManager />);
+    await act(async () => {
+      render(<UserAuthorityManager />);
+    });
     const userItem = await screen.findByText('CHECKER_ALPHA');
     fireEvent.click(userItem);
 
     const limitInput = await screen.findByLabelText(/max approval limit/i);
     fireEvent.change(limitInput, { target: { value: '6000000' } });
     
-    fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+    });
     
     expect(tradeApi.updateUserAuthorityProfile).toHaveBeenCalledWith('AUTH_001', expect.objectContaining({
       customLimit: 6000000

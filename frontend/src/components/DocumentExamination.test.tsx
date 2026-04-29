@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { DocumentExamination } from './DocumentExamination';
 
 // ABOUTME: TDD suite for High-Density Document Examination (REQ-UI-IMP-04).
@@ -62,7 +62,9 @@ describe('DocumentExamination (BDD-IMP-FLOW-04,05,06 / BDD-IMP-VAL-02)', () => {
         
         // Find Waive button/checkbox (assuming we add a Waive action to the logged items)
         const waiveBtn = await screen.findByRole('button', { name: /Waive/i });
-        fireEvent.click(waiveBtn);
+        await act(async () => {
+            fireEvent.click(waiveBtn);
+        });
         
         expect(tradeApi.waiveDiscrepancy).toHaveBeenCalled();
     });

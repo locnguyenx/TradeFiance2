@@ -45,9 +45,11 @@ This document provides essential information for developing, testing, and troubl
 | **Moqui Framework** | v4.0.0 (Feb 2026) |
 | **Java** | Version 21 |
 | **Groovy** | Version 5 |
-| **Build** | Gradle |
-| **Test** | JUnit 5 + Spock |
+| **Build** | Gradle (Backend), npm (Frontend) |
+| **Test** | JUnit 5 + Spock (Backend), Jest + React Testing Library (Frontend) |
+| **E2E Test** | Playwright |
 | **Database** | H2 (dev), PostgreSQL (prod) |
+| **Frontend Framework** | Next.js (React) |
 
 ### Component Dependencies
 
@@ -71,11 +73,12 @@ root/
 │   │   ├── mantle-udm       # Universal Data Model (Party, Contact, etc.)
 │   │   ├── mantle-usl       # Universal Service Layer (core services)
 │   │   ├── SimpleScreens   # UI framework
-│   │   └── TradeFinance    # THIS COMPONENT
+│   │   └── TradeFinance    # Backend TradeFinance component
+├── frontend/                   # Next.js Frontend Application
 ```
-TradeFinance application is a component of Moqui System, placed inside `runtime/component/`
+TradeFinance application is composed of a Moqui backend inside `runtime/component/TradeFinance` and a React frontend in `frontend/`.
 
-### TradeFinance Component
+### TradeFinance Component (Backend)
 
 ```
 TradeFinance/
@@ -121,23 +124,40 @@ TradeFinance/
         └── ...
 ```
 
+### Frontend Component (`frontend/`)
+
+```
+frontend/
+├── src/
+│   ├── api/            # API client (e.g., tradeApi.ts) communicating with Moqui REST endpoints
+│   ├── app/            # Next.js App Router (Pages, Layouts)
+│   ├── components/     # Reusable React components
+│   └── lib/            # Utilities
+├── e2e/                # Playwright E2E tests
+└── package.json        # Frontend dependencies
+```
+
 ---
 
-## 3. Three-Layer Architecture
+## 3. System Architecture
 
 ```
 ┌─────────────────────────────────────┐
-│ Screen Layer (UI)                    │
-│ XML screens with form-list,           │
-│ entity-find, transitions          │
+│ Frontend Layer (Next.js/React)      │
+│ Next.js App Router, React Components│
+│ Communicates via REST API           │
 ├─────────────────────────────────────┤
-│ Service Layer                     │
-│ XML definitions + Groovy scripts   │
-│ verb#noun service actions          │
+│ API Layer (Moqui REST)              │
+│ XML Rest API (*.rest.xml)           │
+│ Maps endpoints to Services          │
 ├─────────────────────────────────────┤
-│ Entity Layer                     │
-│ XML entity definitions             │
-│ CRUD via ec.entity              │
+│ Service Layer (Moqui)               │
+│ XML definitions + Groovy scripts    │
+│ verb#noun service actions           │
+├─────────────────────────────────────┤
+│ Entity Layer (Moqui)                │
+│ XML entity definitions              │
+│ CRUD via ec.entity                  │
 └─────────────────────────────────────┘
 ```
 

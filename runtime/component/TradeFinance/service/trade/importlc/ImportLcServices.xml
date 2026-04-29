@@ -90,6 +90,10 @@
             <parameter name="latestShipmentDate" type="Date"/>
             <parameter name="businessStateId"/>
         </in-parameters>
+        <out-parameters>
+            <parameter name="instrumentId" required="true"/>
+            <parameter name="transactionRef"/>
+        </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument" auto-field-map="true"/>
@@ -148,6 +152,7 @@
                 <service-call name="trade.LimitServices.reverse#Limit" in-map="[instrumentId: instrumentId]"/>
             </if>
             <entity-update value-field="lc"/>
+            <set field="transactionRef" from="instrument.transactionRef"/>
         </actions>
     </service>
     <service verb="approve" noun="ImportLetterOfCredit" authenticate="false">
@@ -657,6 +662,19 @@
             <service-call name="create#trade.importlc.ImportLcShippingGuarantee" out-map="sgOut"
                           in-map="context + [earmarkAmount: earmarkAmount, guaranteeStatusId: 'SG_ACTIVE']"/>
             <set field="guaranteeId" from="sgOut.guaranteeId"/>
+        </actions>
+    </service>
+    <service verb="get" noun="ImportLetterOfCredit" authenticate="false">
+        <in-parameters><parameter name="instrumentId" required="true"/></in-parameters>
+        <out-parameters>
+            <auto-parameters entity-name="trade.importlc.ImportLetterOfCreditView" include="all"/>
+        </out-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find-one entity-name="trade.importlc.ImportLetterOfCreditView" value-field="lc"/>
+            <if condition="lc == null"><return error="true" message="Letter of Credit not found for instrument ${instrumentId}"/></if>
+            <script>context.putAll(lc)</script>
+            <script>ec.artifactExecution.enableAuthz()</script>
         </actions>
     </service>
     <service verb="update" noun="ImportLetterOfCredit">

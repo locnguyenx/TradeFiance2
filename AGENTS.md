@@ -131,10 +131,12 @@ Only pause to ask for confirmation when:
 | File | Purpose |
 |------|---------|
 | `.agents/rules/moqui-framework.md` | Moqui Framework development guidelines |
-| `.agents/knowledge/moqui-entity-patterns.md` | Entity patterns |
-| `.agents/knowledge/moqui-service-patterns.md` | Service patterns |
-| `.agents/knowledge/moqui-ui-patterns.md` | UI patterns |
-| `.agents/knowledge/moqui-testing.md` | Testing patterns |
-| `.agents/knowledge/moqui_syntax_ref.md` | XML syntax reference |
-| `.agents/knowledge/moqui-errors.json` | Error diagnostics cache |
-| `.agents/knowledge/moqui-other-patterns` | Development & Integration patterns |
+| `.journal/moqui-entity-patterns.md` | Entity patterns |
+| `.journal/moqui-service-patterns.md` | Service patterns |
+| `.journal/moqui-ui-patterns.md` | UI patterns |
+| `.journal/moqui-rest-patterns.md` | REST API routing and parsing patterns |
+| `.journal/moqui-testing.md` | Testing patterns for backend (Spock) |
+| `.journal/moqui_syntax_ref.md` | XML syntax reference |
+| `.journal/moqui-errors.json` | Error diagnostics cache |
+| `.journal/e2e-frontend-patterns.md` | Playwright & Jest patterns |
+| `.journal/e2e-frontend-testing.md` | E2E Testing gotchas |

@@ -4,12 +4,19 @@
     <!-- ABOUTME: AdminServices.xml handles system-level governance and audit retrieval. -->
 
     <service verb="get" noun="TradeAuditLogs" authenticate="false">
-        <in-parameters><parameter name="transactionRef"/></in-parameters>
+        <in-parameters>
+            <parameter name="transactionRef"/>
+            <parameter name="instrumentId"/>
+        </in-parameters>
         <out-parameters>
             <parameter name="auditLogList" type="List"><parameter name="log" type="Map"/></parameter>
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
+            <if condition="instrumentId &amp;&amp; !transactionRef">
+                <entity-find-one entity-name="trade.TradeInstrument" value-field="inst" auto-field-map="true"/>
+                <set field="transactionRef" from="inst?.transactionRef"/>
+            </if>
             <entity-find entity-name="trade.common.TradeAuditLog" list="auditLogList">
                 <econdition field-name="transactionRef" from="transactionRef" ignore-if-empty="true"/>
                 <order-by field-name="-timestamp"/>

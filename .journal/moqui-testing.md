@@ -297,3 +297,28 @@ tail -f runtime/log/moqui.log
 4. Accounting Preference (`mantle.ledger.config.PartyAcctgPreference`)
 5. Open FiscalMonth for organization
 6. InvoiceTypeTransType mapping exists
+
+## 11. ScreenTest & Testing Limitations (From patterns)
+* **WebFacadeStub Limitations**: `ScreenTest` uses a stubbed web context. If a service call triggers `ec.message.addError()`, the framework attempts to save it to the session. The stub is not a full `WebFacadeImpl` and this triggers a `NullPointerException`. Always check if errors are originating from missing parameters causing error reporting NPEs.
+* **JSON Parsing in Spock**: `ScreenTestRender.getJsonObject()` is unreliable in the Spock test runner. Use `groovy.json.JsonSlurper().parseText(str.output)` for consistent results and better error messages.
+* **Log Buffering**: Redirect test output to a temp file (like `/tmp/diag.txt`) to inspect full JSON payloads and stack traces that Gradle truncates.
+* **Namespace Consistency**: Moving specs to the correct package (e.g., `trade`) is critical for accurate discovery by the Moqui test runner.
+
+## 12. Master Data & Referential Integrity
+* **Test Isolation**: Integration tests will fail on a blank environment due to missing core enumerations (`InternalOrganization`, `AcctgTransType`, etc.). Consolidate these into a master seed file (`TradeFinanceMasterData.xml`) to ensure a "bootstrappable" testing environment.
+* **Data Dependency**: Always seed master data (`reloadSave`) before test runs to ensure referential integrity.
+
+## 13. Double Test Execution
+### Problem
+JUnit Suite + Spock discovery = tests run twice
+
+### Solution (build.gradle)
+```gradle
+test {
+    useJUnitPlatform {
+        filter {
+            includeTestsMatching '*Suite'
+        }
+    }
+}
+```

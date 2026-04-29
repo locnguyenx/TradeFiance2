@@ -7,12 +7,13 @@ This guide provides exhaustive, step-by-step instructions for Bank Makers and Ch
 ## 1. Navigation Route Map
 The platform is organized into functional modules accessible via the **Sidebar**.
 
-### OPERATIONS (Core Workflow)
-- **Dashboard**: Central command for tracking all active and pending instruments. Key landing page for daily operations.
+### OPERATIONS (Cross-Product Workflow)
+- **Transaction Dashboard**: Unified view of all transactions (Maker/Checker) across all product lines.
 - **My Tasks**: Checker queue for authorizing transactions (requires `TRADE_CHECKER` role).
 - **Doc Examination**: Specialized workflow for verifying physical documents against LC terms.
 
-### LIFECYCLE MANAGEMENT (Transaction Actions)
+### IMPORT LC (Product-Specific Management)
+- **Import LC Dashboard**: Central command for tracking current legal states of Import instruments.
 - **New LC Issuance**: Entry point for creating fresh MT 700 draft instruments.
 - **LC Amendments**: Capture delta changes (Amount, Expiry, Terms) via MT 707.
 - **Presentations**: Log beneficiary document claims and track 5-day examination SLAs.
@@ -24,6 +25,25 @@ The platform is organized into functional modules accessible via the **Sidebar**
 - **Party & KYC Directory**: Manage corporate client records, BICs, and compliance status.
 - **Credit Facilities**: Real-time monitoring of bank-wide limits and utilization.
 - **Product & Tariff Config**: System-level pricing and logic templates.
+
+---
+
+## 2. Vertical Asset Management (REQ-NAV-01.2)
+Unlike the operational Dashboards which show pending work, the **Vertical Asset Lists** are designed for browsing the current legal state of trade products.
+
+### Accessing Vertical Lists
+Navigate to the specific product group in the sidebar to view its dedicated master list:
+- **Import LCs**: Accessible via `IMPORT LC > Import LC Dashboard`. This list provides a filtered view of all active and historical Import Letters of Credit.
+- **Shipping Guarantees**: Accessible via `IMPORT LC > Shipping Guarantees`.
+- **Other Verticals**: Export LCs and Standby LCs are accessible via their respective sidebar groups (where implemented).
+
+### Global Transaction Log (REQ-NAV-01.3)
+Access the **Global Transaction Log** via `ADMINISTRATION > Audit Logs`. This view provides a chronologically sorted, priority-aware list of all operational actions. It allows officers to trace decisions back to specific Maker/Checker IDs and view the data delta for every change.
+
+### Functional Features
+- **Asset Snapshot**: Unlike transaction views, these lists always show the **Approved Version** of the instrument.
+- **Exposure Tracking**: Integrated with **REQ-NAV-01.1**, these views provide the primary source of truth for bank exposure at the instrument level.
+- **Deep Link Navigation**: Click any Reference Number to enter the **Unified Narrative Timeline** for that specific asset.
 
 ---
 
