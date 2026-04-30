@@ -6,7 +6,6 @@
     <entity entity-name="ImportLetterOfCredit" package="trade.importlc">
         <field name="instrumentId" type="id" is-pk="true"/>
         <field name="businessStateId" type="id"/>
-        <field name="beneficiaryPartyId" type="id"/>
         <field name="tolerancePositive" type="number-decimal"/>
         <field name="toleranceNegative" type="number-decimal"/>
         <field name="tenorTypeId" type="id"/>
@@ -14,8 +13,6 @@
         <field name="portOfLoading" type="text-medium"/>
         <field name="portOfDischarge" type="text-medium"/>
         <field name="expiryPlace" type="text-medium"/>
-        <field name="applicantName" type="text-long"/> <!-- Tag 50 -->
-        <field name="beneficiaryName" type="text-long"/> <!-- Tag 59 -->
         <field name="goodsDescription" type="text-very-long"/>
         <field name="documentsRequired" type="text-very-long"/>
         <field name="additionalConditions" type="text-very-long"/>
@@ -28,19 +25,9 @@
         <field name="confirmationEnumId" type="id"/>
         <field name="lcTypeEnumId" type="id"/>
         <field name="availableByEnumId" type="id"/>
+        <field name="availableWithEnumId" type="id"/> <!-- AvailableWithType -->
         <field name="productCatalogId" type="id"/>
 
-        <!-- Replicated from TradeInstrument (Snapshot per improvement requirement) -->
-        <field name="productEnumId" type="id"/>
-        <field name="applicantPartyId" type="id"/>
-        <field name="currencyUomId" type="id"/>
-        <field name="amount" type="number-decimal"/>
-        <field name="outstandingAmount" type="number-decimal"/>
-        <field name="baseEquivalentAmount" type="number-decimal"/>
-        <field name="issueDate" type="date"/>
-        <field name="expiryDate" type="date"/>
-        <field name="customerFacilityId" type="id"/>
-        
         <!-- Effective Values (Snapshot vs Last Effective Pattern) -->
         <field name="effectiveAmount" type="number-decimal"/>
         <field name="effectiveCurrencyUomId" type="id"/>
@@ -64,14 +51,6 @@
         <field name="bankToBankInstructions" type="text-very-long"/> <!-- Tag 78: max 12x65, X charset -->
         <field name="presentationPeriodDays" type="number-integer"/> <!-- Tag 48 -->
         <field name="chargeAllocationText" type="text-long"/> <!-- Tag 71D: max 6x35, X charset -->
-
-        <!-- BIC Addressing -->
-        <field name="advisingBankBic" type="text-short"/> <!-- Tag 57A -->
-        <field name="advisingThroughBankBic" type="text-short"/> <!-- Tag 58A -->
-        <field name="issuingBankBic" type="text-short"/> <!-- Override for Tag 51A/52A -->
-        <field name="availableWithBic" type="text-short"/> <!-- Tag 41A -->
-        <field name="availableWithName" type="text-medium"/> <!-- Tag 41D -->
-        <field name="draweeBankBic" type="text-short"/> <!-- Tag 42a -->
 
         <relationship type="one" related="trade.TradeInstrument">
             <key-map field-name="instrumentId"/>
@@ -119,7 +98,6 @@
         <field name="isDiscrepant" type="text-indicator"/>
         <field name="applicantDecisionEnumId" type="id"/> <!-- PENDING, WAIVED, REFUSED -->
         <field name="presentationStatusId" type="id"/>
-        <field name="presentingBankBic" type="text-short"/>
         <field name="presentingBankRef" type="text-medium"/>
         <field name="claimCurrency" type="id"/>
         <field name="regulatoryDeadline" type="date"/>
@@ -215,30 +193,35 @@
         <member-entity entity-alias="prio" entity-name="moqui.basic.Enumeration" join-from-alias="tx" join-optional="true">
             <key-map field-name="priorityEnumId" related="enumId"/>
         </member-entity>
-        <member-entity entity-alias="aparty" entity-name="trade.TradeParty" join-from-alias="inst" join-optional="true">
-            <key-map field-name="applicantPartyId" related="partyId"/>
+        
+        <!-- Junction Joins for Core Roles -->
+        <member-entity entity-alias="appJunc" entity-name="trade.TradeInstrumentParty" join-from-alias="inst" join-optional="true">
+            <key-map field-name="instrumentId"/>
+            <entity-condition><econdition field-name="roleEnumId" value="TP_APPLICANT"/></entity-condition>
         </member-entity>
-        <member-entity entity-alias="bparty" entity-name="trade.TradeParty" join-from-alias="inst" join-optional="true">
-            <key-map field-name="beneficiaryPartyId" related="partyId"/>
+        <member-entity entity-alias="aparty" entity-name="trade.TradeParty" join-from-alias="appJunc" join-optional="true">
+            <key-map field-name="partyId"/>
         </member-entity>
+
+        <member-entity entity-alias="benJunc" entity-name="trade.TradeInstrumentParty" join-from-alias="inst" join-optional="true">
+            <key-map field-name="instrumentId"/>
+            <entity-condition><econdition field-name="roleEnumId" value="TP_BENEFICIARY"/></entity-condition>
+        </member-entity>
+        <member-entity entity-alias="bparty" entity-name="trade.TradeParty" join-from-alias="benJunc" join-optional="true">
+            <key-map field-name="partyId"/>
+        </member-entity>
+
         <alias-all entity-alias="lc"/>
         <alias-all entity-alias="inst">
             <exclude field="instrumentId"/>
             <exclude field="businessStateId"/>
-            <exclude field="amount"/>
-            <exclude field="currencyUomId"/>
-            <exclude field="outstandingAmount"/>
-            <exclude field="baseEquivalentAmount"/>
-            <exclude field="issueDate"/>
-            <exclude field="expiryDate"/>
-            <exclude field="customerFacilityId"/>
-            <exclude field="beneficiaryName"/>
-            <exclude field="productEnumId"/>
         </alias-all>
         <alias-all entity-alias="tx"/>
         <alias entity-alias="prio" name="prioritySequence" field="sequenceNum"/>
         <alias entity-alias="aparty" name="applicantPartyName" field="partyName"/>
+        <alias entity-alias="aparty" name="applicantPartyId" field="partyId"/>
         <alias entity-alias="bparty" name="beneficiaryPartyName" field="partyName"/>
+        <alias entity-alias="bparty" name="beneficiaryPartyId" field="partyId"/>
     </view-entity>
 
     <entity entity-name="DummyTestEntity" package="trade.importlc">
