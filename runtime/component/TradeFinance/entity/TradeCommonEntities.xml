@@ -14,19 +14,12 @@
         <field name="currencyUomId" type="id"/>
         <field name="outstandingAmount" type="number-decimal"/>
         <field name="baseEquivalentAmount" type="number-decimal"/>
-        <field name="applicantPartyId" type="id"/>
-        <field name="beneficiaryPartyId" type="id"/>
         <field name="issueDate" type="date"/>
         <field name="expiryDate" type="date"/>
         <field name="customerFacilityId" type="id"/>
         
-        <field name="reimbursingBankBic" type="text-short"/> <!-- Tag 53A: valid 8/11 BIC -->
-        <field name="reimbursingBankName" type="text-long"/> <!-- Tag 53D: max 4x35, X charset. Alt to BIC -->
-        <field name="adviseThroughBankBic" type="text-short"/> <!-- Tag 57A: valid 8/11 BIC -->
-        <field name="adviseThroughBankName" type="text-long"/> <!-- Tag 57D: max 4x35, X charset. Alt to BIC -->
         <field name="preAdviceRef" type="text-short"/> <!-- Tag 23: max 16, X charset, slash rules -->
         <field name="senderToReceiverInfo" type="text-long"/> <!-- Tag 72Z: max 6x35, X charset -->
-        <field name="beneficiaryName" type="text-long"/> <!-- Tag 59: max 4x35, X charset -->
     </entity>
 
     <entity entity-name="CustomerFacility" package="trade">
@@ -78,14 +71,39 @@
     </entity>
     <entity entity-name="TradeParty" package="trade">
         <field name="partyId" type="id" is-pk="true"/>
+        <field name="partyTypeEnumId" type="id"/> <!-- PARTY_COMMERCIAL or PARTY_BANK -->
         <field name="partyName" type="text-medium"/>
+        <field name="accountNumber" type="text-short"/> <!-- IBAN or domestic account. See requirements §accountNumber -->
+        <field name="registeredAddress" type="text-long"/> <!-- 4x35 SWIFT format -->
         <field name="kycStatus" type="text-short"/> <!-- Active, Expired -->
         <field name="kycExpiryDate" type="date"/>
-        <field name="sanctionsStatus" type="text-short"/> <!-- Clear, Suspended, Blocked -->
+        <field name="sanctionsStatus" type="text-short"/> <!-- SANCTION_CLEAR, SANCTION_PENDING, SANCTION_BLOCKED -->
         <field name="countryOfRisk" type="id"/> <!-- ISO Country Code -->
-        <field name="swiftBic" type="text-short"/>
-        <field name="registeredAddress" type="text-long"/> <!-- 4x35 SWIFT format -->
-        <field name="partyRoleEnumId" type="id"/>
+    </entity>
+
+    <entity entity-name="TradePartyBank" package="trade">
+        <field name="partyId" type="id" is-pk="true"/>
+        <field name="swiftBic" type="text-short"/> <!-- Valid 8/11 char SWIFT BIC -->
+        <field name="clearingCode" type="text-short"/> <!-- National routing code for Option C -->
+        <field name="hasActiveRMA" type="text-indicator"/> <!-- Y/N -->
+        <field name="nostroAccountRef" type="text-medium"/> <!-- Our Nostro account at this bank -->
+        <field name="fiLimitAvailable" type="number-decimal"/>
+        <field name="fiLimitCurrencyUomId" type="id"/>
+        <relationship type="one" related="trade.TradeParty">
+            <key-map field-name="partyId"/>
+        </relationship>
+    </entity>
+
+    <entity entity-name="TradeInstrumentParty" package="trade">
+        <field name="instrumentId" type="id" is-pk="true"/>
+        <field name="roleEnumId" type="id" is-pk="true"/>
+        <field name="partyId" type="id"/>
+        <relationship type="one" related="trade.TradeInstrument">
+            <key-map field-name="instrumentId"/>
+        </relationship>
+        <relationship type="one" related="trade.TradeParty">
+            <key-map field-name="partyId"/>
+        </relationship>
     </entity>
     
     <entity entity-name="FeeConfiguration" package="trade">

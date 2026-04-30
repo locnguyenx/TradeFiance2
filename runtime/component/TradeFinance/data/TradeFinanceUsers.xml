@@ -27,6 +27,8 @@
     <moqui.security.ArtifactGroupMember artifactGroupId="TRADE_FINANCE_ENTITIES" artifactName="trade.importlc.ImportLetterOfCredit" artifactTypeEnumId="AT_ENTITY" inheritAuthz="Y"/>
     <moqui.security.ArtifactGroupMember artifactGroupId="TRADE_FINANCE_ENTITIES" artifactName="trade.importlc.ImportLetterOfCreditDetail" artifactTypeEnumId="AT_ENTITY" inheritAuthz="Y"/>
     <moqui.security.ArtifactGroupMember artifactGroupId="TRADE_FINANCE_ENTITIES" artifactName="trade.TradeInstrumentParty" artifactTypeEnumId="AT_ENTITY" inheritAuthz="Y"/>
+    <moqui.security.ArtifactGroupMember artifactGroupId="TRADE_FINANCE_ENTITIES" artifactName="trade.TradeParty" artifactTypeEnumId="AT_ENTITY" inheritAuthz="Y"/>
+    <moqui.security.ArtifactGroupMember artifactGroupId="TRADE_FINANCE_ENTITIES" artifactName="trade.TradePartyBank" artifactTypeEnumId="AT_ENTITY" inheritAuthz="Y"/>
 
     <moqui.security.ArtifactGroup artifactGroupId="TRADE_FINANCE_SERVICES" description="Trade Finance Services"/>
     <moqui.security.ArtifactGroupMember artifactGroupId="TRADE_FINANCE_SERVICES" artifactName="ImportLcServices\..*" artifactTypeEnumId="AT_SERVICE" nameIsPattern="Y" inheritAuthz="Y"/>

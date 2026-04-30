@@ -7,15 +7,19 @@
     <trade.UserAuthorityProfile userAuthorityId="T2-01" userId="trade.checker" delegationTierId="TIER_2" customLimit="1000000.00" currencyUomId="USD" isSuspended="N" makerCheckerFlag="CHECKER"/>
     
     <!-- Master Data: Trade Parties -->
-    <!-- Master Data: Trade Parties -->
-    <trade.TradeParty partyId="ACME_CORP_001" partyName="Acme Corporation Ltd" kycStatus="Active" kycExpiryDate="2027-12-31" sanctionsStatus="SANCTION_CLEAR" countryOfRisk="USA" registeredAddress="123 Acme Way, New York, NY"/>
-    <trade.TradeParty partyId="GLOBAL_EXP_002" partyName="Global Exports Inc" kycStatus="Active" kycExpiryDate="2027-06-30" sanctionsStatus="SANCTION_CLEAR" countryOfRisk="GBR" registeredAddress="45 Export St, London, UK"/>
-    <trade.TradeParty partyId="RISKY_BIZ_003" partyName="Risky Business Trading" kycStatus="Expired" kycExpiryDate="2024-01-01" sanctionsStatus="SANCTION_PENDING" countryOfRisk="PAN" registeredAddress="99 Shadow Alley, Panama City"/>
-    <trade.TradeParty partyId="BANNED_ENTITY_004" partyName="Banned Corp" kycStatus="Active" kycExpiryDate="2028-01-01" sanctionsStatus="SANCTION_BLOCKED" countryOfRisk="NK" registeredAddress="1 Terminal Rd, Pyongyang"/>
-    
-    <trade.TradeParty partyId="ISSUING_BANK_001" partyName="Trade Finance Bank" kycStatus="Active" sanctionsStatus="SANCTION_CLEAR" countryOfRisk="VNM"/>
-    <trade.TradeParty partyId="ADVISING_BANK_001" partyName="Overseas Banking Corp" kycStatus="Active" sanctionsStatus="SANCTION_CLEAR" countryOfRisk="SGP"/>
-    <trade.TradeParty partyId="ORG_ZIZI_CORP" partyName="Zizi Corp" kycStatus="Active" sanctionsStatus="SANCTION_CLEAR" countryOfRisk="VNM"/>
+    <!-- Commercial Parties -->
+    <trade.TradeParty partyId="ACME_CORP_001" partyTypeEnumId="PARTY_COMMERCIAL" partyName="Acme Corporation Ltd" kycStatus="Active" kycExpiryDate="2027-12-31" sanctionsStatus="SANCTION_CLEAR" countryOfRisk="USA" registeredAddress="123 Acme Way, New York, NY"/>
+    <trade.TradeParty partyId="GLOBAL_EXP_002" partyTypeEnumId="PARTY_COMMERCIAL" partyName="Global Exports Inc" kycStatus="Active" kycExpiryDate="2027-06-30" sanctionsStatus="SANCTION_CLEAR" countryOfRisk="GBR" registeredAddress="45 Export St, London, UK"/>
+    <trade.TradeParty partyId="RISKY_BIZ_003" partyTypeEnumId="PARTY_COMMERCIAL" partyName="Risky Business Trading" kycStatus="Expired" kycExpiryDate="2024-01-01" sanctionsStatus="SANCTION_PENDING" countryOfRisk="PAN" registeredAddress="99 Shadow Alley, Panama City"/>
+    <trade.TradeParty partyId="BANNED_ENTITY_004" partyTypeEnumId="PARTY_COMMERCIAL" partyName="Banned Corp" kycStatus="Active" kycExpiryDate="2028-01-01" sanctionsStatus="SANCTION_BLOCKED" countryOfRisk="NK" registeredAddress="1 Terminal Rd, Pyongyang"/>
+    <trade.TradeParty partyId="ORG_ZIZI_CORP" partyTypeEnumId="PARTY_COMMERCIAL" partyName="Zizi Corp" kycStatus="Active" sanctionsStatus="SANCTION_CLEAR" countryOfRisk="VNM"/>
+
+    <!-- Bank Parties -->
+    <trade.TradeParty partyId="ISSUING_BANK_001" partyTypeEnumId="PARTY_BANK" partyName="Trade Finance Bank" kycStatus="Active" sanctionsStatus="SANCTION_CLEAR" countryOfRisk="VNM"/>
+    <trade.TradePartyBank partyId="ISSUING_BANK_001" swiftBic="TFBKVNVX" hasActiveRMA="Y" nostroAccountRef="NOSTRO-USD-TFB-001"/>
+
+    <trade.TradeParty partyId="ADVISING_BANK_001" partyTypeEnumId="PARTY_BANK" partyName="Overseas Banking Corp" kycStatus="Active" sanctionsStatus="SANCTION_CLEAR" countryOfRisk="SGP"/>
+    <trade.TradePartyBank partyId="ADVISING_BANK_001" swiftBic="OBCSGSGX" hasActiveRMA="Y" nostroAccountRef="NOSTRO-USD-OBC-001" fiLimitAvailable="10000000.00" fiLimitCurrencyUomId="USD"/>
 
     <!-- Master Data: Customer Facilities -->
     <trade.CustomerFacility facilityId="FAC-ACME-001" ownerPartyId="ACME_CORP_001" totalApprovedLimit="10000000.00" utilizedAmount="2500000.00" facilityExpiryDate="2027-12-31" description="Core Working Capital Line"/>
@@ -46,17 +50,51 @@
     <moqui.basic.EnumerationType enumTypeId="AcctgTransType" description="Accounting Transaction Type"/>
     <moqui.basic.Enumeration enumId="AttInternal" enumTypeId="AcctgTransType" description="Internal Transfer"/>
 
+    <!-- Party Type Enumerations -->
+    <moqui.basic.EnumerationType enumTypeId="TradePartyType" description="Trade Party Type"/>
+    <moqui.basic.Enumeration enumId="PARTY_COMMERCIAL" enumTypeId="TradePartyType" description="Commercial Entity"/>
+    <moqui.basic.Enumeration enumId="PARTY_BANK" enumTypeId="TradePartyType" description="Financial Institution"/>
+
+    <!-- Party Role Enumerations -->
+    <moqui.basic.EnumerationType enumTypeId="TradePartyRole" description="Trade Party Role on Instrument"/>
+    <moqui.basic.Enumeration enumId="TP_APPLICANT" enumTypeId="TradePartyRole" description="Applicant" sequenceNum="1"/>
+    <moqui.basic.Enumeration enumId="TP_BENEFICIARY" enumTypeId="TradePartyRole" description="Beneficiary" sequenceNum="2"/>
+    <moqui.basic.Enumeration enumId="TP_ISSUING_BANK" enumTypeId="TradePartyRole" description="Issuing Bank" sequenceNum="10"/>
+    <moqui.basic.Enumeration enumId="TP_APPLICANT_BANK" enumTypeId="TradePartyRole" description="Applicant Bank" sequenceNum="11"/>
+    <moqui.basic.Enumeration enumId="TP_ADVISING_BANK" enumTypeId="TradePartyRole" description="Advising Bank" sequenceNum="12"/>
+    <moqui.basic.Enumeration enumId="TP_ADVISE_THROUGH_BANK" enumTypeId="TradePartyRole" description="Advise Through Bank" sequenceNum="13"/>
+    <moqui.basic.Enumeration enumId="TP_CONFIRMING_BANK" enumTypeId="TradePartyRole" description="Confirming Bank" sequenceNum="14"/>
+    <moqui.basic.Enumeration enumId="TP_REIMBURSING_BANK" enumTypeId="TradePartyRole" description="Reimbursing Bank" sequenceNum="15"/>
+    <moqui.basic.Enumeration enumId="TP_NEGOTIATING_BANK" enumTypeId="TradePartyRole" description="Negotiating Bank" sequenceNum="16"/>
+    <moqui.basic.Enumeration enumId="TP_DRAWEE_BANK" enumTypeId="TradePartyRole" description="Drawee Bank" sequenceNum="17"/>
+    <moqui.basic.Enumeration enumId="TP_PRESENTING_BANK" enumTypeId="TradePartyRole" description="Presenting Bank" sequenceNum="20"/>
+    <moqui.basic.Enumeration enumId="TP_INTERMEDIARY_BANK" enumTypeId="TradePartyRole" description="Intermediary Bank" sequenceNum="30"/>
+    <moqui.basic.Enumeration enumId="TP_SENDERS_CORRESPONDENT" enumTypeId="TradePartyRole" description="Sender Correspondent" sequenceNum="31"/>
+    <moqui.basic.Enumeration enumId="TP_RECEIVERS_CORRESPONDENT" enumTypeId="TradePartyRole" description="Receiver Correspondent" sequenceNum="32"/>
+
+    <!-- Available With Enumerations -->
+    <moqui.basic.EnumerationType enumTypeId="AvailableWithType" description="Available With Bank Selection"/>
+    <moqui.basic.Enumeration enumId="AVAIL_ANY_BANK" enumTypeId="AvailableWithType" description="Any Bank"/>
+    <moqui.basic.Enumeration enumId="AVAIL_SPECIFIC_BANK" enumTypeId="AvailableWithType" description="Specific Bank"/>
+
     <!-- Sample Utilization Data for Dashboard -->
-    <!-- Sample Utilization Data for Dashboard -->
-    <trade.TradeInstrument instrumentId="LC240001" transactionRef="TF-ACME-100" baseEquivalentAmount="2000000.00" customerFacilityId="FAC-ACME-001" instrumentTypeEnumId="INST_LC" applicantPartyId="ACME_CORP_001" beneficiaryPartyId="GLOBAL_EXP_002" issueDate="2026-04-20"/>
+    <trade.TradeInstrument instrumentId="LC240001" transactionRef="TF-ACME-100" baseEquivalentAmount="2000000.00" customerFacilityId="FAC-ACME-001" instrumentTypeEnumId="INST_LC" issueDate="2026-04-20"/>
+    <trade.TradeInstrumentParty instrumentId="LC240001" roleEnumId="TP_APPLICANT" partyId="ACME_CORP_001"/>
+    <trade.TradeInstrumentParty instrumentId="LC240001" roleEnumId="TP_BENEFICIARY" partyId="GLOBAL_EXP_002"/>
+    <trade.TradeInstrumentParty instrumentId="LC240001" roleEnumId="TP_ISSUING_BANK" partyId="ISSUING_BANK_001"/>
+    <trade.TradeInstrumentParty instrumentId="LC240001" roleEnumId="TP_ADVISING_BANK" partyId="ADVISING_BANK_001"/>
     <trade.importlc.ImportLetterOfCredit instrumentId="LC240001" effectiveAmount="2000000.00" effectiveOutstandingAmount="2000000.00" businessStateId="LC_ISSUED"/>
     <trade.TradeTransaction transactionId="TXN240001" instrumentId="LC240001" transactionDate="2026-04-20" transactionStatusId="TX_APPROVED" transactionTypeEnumId="TXN_IMP_NEW" makerUserId="trade.maker" makerTimestamp="2026-04-20 09:00:00.000" checkerUserId="trade.checker" checkerTimestamp="2026-04-20 11:00:00.000"/>
 
-    <trade.TradeInstrument instrumentId="LC240002" transactionRef="TF-ACME-101" baseEquivalentAmount="500000.00" customerFacilityId="FAC-ACME-001" instrumentTypeEnumId="INST_LC" applicantPartyId="ACME_CORP_001" beneficiaryPartyId="GLOBAL_EXP_002" issueDate="2026-04-21"/>
+    <trade.TradeInstrument instrumentId="LC240002" transactionRef="TF-ACME-101" baseEquivalentAmount="500000.00" customerFacilityId="FAC-ACME-001" instrumentTypeEnumId="INST_LC" issueDate="2026-04-21"/>
+    <trade.TradeInstrumentParty instrumentId="LC240002" roleEnumId="TP_APPLICANT" partyId="ACME_CORP_001"/>
+    <trade.TradeInstrumentParty instrumentId="LC240002" roleEnumId="TP_BENEFICIARY" partyId="GLOBAL_EXP_002"/>
     <trade.importlc.ImportLetterOfCredit instrumentId="LC240002" effectiveAmount="500000.00" effectiveOutstandingAmount="500000.00" businessStateId="LC_DRAFT"/>
     <trade.TradeTransaction transactionId="TXN240002" instrumentId="LC240002" transactionDate="2026-04-21" transactionStatusId="TX_PENDING" transactionTypeEnumId="TXN_IMP_NEW" makerUserId="trade.maker" makerTimestamp="2026-04-21 10:00:00.000"/>
 
-    <trade.TradeInstrument instrumentId="LC240003" transactionRef="TF-GLBL-200" baseEquivalentAmount="4800000.00" customerFacilityId="FAC-GLOBAL-002" instrumentTypeEnumId="INST_LC" applicantPartyId="GLOBAL_EXP_002" beneficiaryPartyId="ACME_CORP_001" issueDate="2026-04-22"/>
+    <trade.TradeInstrument instrumentId="LC240003" transactionRef="TF-GLBL-200" baseEquivalentAmount="4800000.00" customerFacilityId="FAC-GLOBAL-002" instrumentTypeEnumId="INST_LC" issueDate="2026-04-22"/>
+    <trade.TradeInstrumentParty instrumentId="LC240003" roleEnumId="TP_APPLICANT" partyId="GLOBAL_EXP_002"/>
+    <trade.TradeInstrumentParty instrumentId="LC240003" roleEnumId="TP_BENEFICIARY" partyId="ACME_CORP_001"/>
     <trade.importlc.ImportLetterOfCredit instrumentId="LC240003" effectiveAmount="4800000.00" effectiveOutstandingAmount="4800000.00" businessStateId="LC_ISSUED"/>
     <trade.TradeTransaction transactionId="TXN240003" instrumentId="LC240003" transactionDate="2026-04-22" transactionStatusId="TX_APPROVED" transactionTypeEnumId="TXN_IMP_NEW" makerUserId="trade.maker" makerTimestamp="2026-04-22 14:00:00.000" checkerUserId="trade.checker" checkerTimestamp="2026-04-22 16:00:00.000"/>
 
