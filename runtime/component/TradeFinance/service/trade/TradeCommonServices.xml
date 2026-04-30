@@ -359,4 +359,80 @@
             </script>
         </actions>
     </service>
+    <service verb="create" noun="TradeParty">
+        <in-parameters>
+            <auto-parameters entity-name="trade.TradeParty" include="nonpk"/>
+            <parameter name="partyId"/>
+            <!-- Bank-specific fields -->
+            <parameter name="swiftBic"/>
+            <parameter name="clearingCode"/>
+            <parameter name="hasActiveRMA" type="Boolean" default="false"/>
+            <parameter name="nostroAccountRef"/>
+            <parameter name="fiLimitAvailable" type="BigDecimal"/>
+            <parameter name="fiLimitCurrencyUomId"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="partyId" required="true"/>
+        </out-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <log message="Creating TradeParty with context: ${context}"/>
+            <service-call name="create#trade.TradeParty" in-map="context" out-map="partyOut"/>
+            <set field="partyId" from="partyOut.partyId"/>
+            <log message="Created TradeParty ID: ${partyId}, Type: ${partyTypeEnumId}"/>
+            <if condition="partyTypeEnumId == 'PARTY_BANK'">
+                <log message="Creating Bank Extension for ${partyId}"/>
+                <service-call name="create#trade.TradePartyBank" 
+                              in-map="context + [partyId: partyId, hasActiveRMA: hasActiveRMA ? 'Y' : 'N']"/>
+            </if>
+        </actions>
+    </service>
+
+    <service verb="assign" noun="InstrumentParty">
+        <in-parameters>
+            <parameter name="instrumentId" required="true"/>
+            <parameter name="roleEnumId" required="true"/>
+            <parameter name="partyId" required="true"/>
+        </in-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <log message="Assigning Party ${partyId} to Instrument ${instrumentId} as ${roleEnumId}"/>
+            
+            <!-- 1. Resolve Party and Type -->
+            <entity-find-one entity-name="trade.TradeParty" value-field="party"/>
+            <if condition="party == null"><return error="true" message="Party ${partyId} not found"/></if>
+            
+            <!-- 2. Eligibility Checks for Banks -->
+            <log message="Party Type: ${party.partyTypeEnumId}"/>
+            <if condition="party.partyTypeEnumId == 'PARTY_BANK'">
+                <entity-find-one entity-name="trade.TradePartyBank" value-field="bank"/>
+                
+                <!-- RMA Check (Required for Advising/Confirming/Negotiating) -->
+                <if condition="['TP_ADVISING_BANK', 'TP_CONFIRMING_BANK', 'TP_NEGOTIATING_BANK'].contains(roleEnumId)">
+                    <if condition="bank?.hasActiveRMA != 'Y'">
+                        <return error="true" message="Bank ${party.partyName} (${bank?.swiftBic}) has no active RMA"/>
+                    </if>
+                </if>
+                
+                <!-- Nostro Check (Required for Reimbursing/Drawee) -->
+                <if condition="['TP_REIMBURSING_BANK', 'TP_DRAWEE_BANK'].contains(roleEnumId)">
+                    <if condition="!bank?.nostroAccountRef">
+                        <return error="true" message="Bank ${party.partyName} has no Nostro account configured"/>
+                    </if>
+                </if>
+                
+                <!-- FI Limit Check (Required for Confirming) -->
+                <if condition="roleEnumId == 'TP_CONFIRMING_BANK'">
+                    <entity-find-one entity-name="trade.TradeInstrument" value-field="inst"/>
+                    <set field="availLimit" from="bank?.fiLimitAvailable ?: 0.0" type="BigDecimal"/>
+                    <if condition="availLimit &lt; inst?.amount">
+                        <return error="true" message="Insufficient FI Limit for ${party.partyName}: Required ${inst?.amount}, Available ${availLimit}"/>
+                    </if>
+                </if>
+            </if>
+            
+            <!-- 3. Store Junction Record (Enforces uniqueness via PK) -->
+            <service-call name="create#trade.TradeInstrumentParty" in-map="context"/>
+        </actions>
+    </service>
 </services>
