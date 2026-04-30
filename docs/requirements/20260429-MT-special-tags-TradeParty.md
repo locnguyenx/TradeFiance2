@@ -372,3 +372,126 @@ To enforce these requirements seamlessly without hardcoding logic, the Trade Par
 2.  **`nostroAccountRef` (String/FK):** If the Maker selects a bank as the "Reimbursing Bank," the system checks if this field is populated. If null, it throws a validation error: *"Cannot designate as Reimbursing Bank: No active Nostro account found."*
 3.  **`fiLimitAvailable` (Currency):** If our bank is acting as the Confirming Bank on an *Export LC*, the system must check this balance against the foreign Issuing Bank's profile before allowing authorization.
 
+
+## Explain `accountNumber` field
+
+This time, we added `accountNumber` to the `TradeParty` database entity while it was largely ignored in the MT 700 mapping logic we discussed before. 
+
+This omission is not an error, but rather a reflection of the fundamental difference between **Letters of Credit (Category 7)** and **Payments (Category 1 & 2)** in the SWIFT network. 
+
+Here is exactly what this field is, how it functions in SWIFT formatting, and why it is suppressed in tags like 41a but becomes absolutely critical later in the lifecycle.
+
+---
+
+### 1. What is the `accountNumber` field in SWIFT?
+
+In the SWIFT Standards Release Guide (SRG), almost every party field (Option A or Option D) actually allows for an optional **"Party Identifier"** line before the BIC or the Name/Address.
+
+The format looks like this:
+`[/1!a][/34x]` *(Optional Party Identifier / Account Number)*
+`4!a2!a2!c[3!c]` *(Mandatory BIC)*
+
+If a party has an account number (like an IBAN or a domestic account number), SWIFT dictates that it must be placed on the very first line of the block, strictly preceded by a forward slash `/`. 
+
+**Example of a Tag 59 (Beneficiary) with an Account Number:**
+```text
+:59:/VN12VCOM01234567890123
+VIETNAM TEXTILES JSC
+DISTRICT 1, HO CHI MINH CITY
+VIETNAM
+```
+
+---
+
+### 2. Usage of the "Account Number" in MT messages
+
+In the SWIFT Standards Release Guide (SRG), the "Account Number" is officially referred to as the **Party Identifier**. It is formatted as the very first line of a party block, strictly preceded by a slash (e.g., `/123456789` or `/VN89VCOM...`).
+
+Here is the exhaustive master list of every tag across the Trade Finance (Category 7) and Payment (Categories 1 & 2) messages that supports this field, along with the strict rules on whether it is Optional or Mandatory.
+
+***
+
+#### 1. The Commercial Party Tags (Clients)
+These tags represent the corporate clients. The requirement for an account number shifts dramatically depending on whether you are issuing a contract (MT 700) or moving money (MT 103).
+
+| SWIFT Tag | Role / Description | Applicable MT Messages | Account Number Requirement |
+| :--- | :--- | :--- | :--- |
+| **50 / 50a** | Ordering Customer (Applicant) | **MT 700** (Issue LC)<br>**MT 103** (Customer Payment) | **Optional** in MT 700 (rarely used).<br>**Mandatory** in MT 103 (if paying from a specific account, often required by local AML laws). |
+| **59 / 59a** | Beneficiary | **MT 700** (Issue LC)<br>**MT 740** (Auth to Reimburse)<br>**MT 103** (Customer Payment) | **Optional** in MT 700/740.<br>**Mandatory** in MT 103 (Requires an IBAN or domestic account number to credit the retail customer; otherwise, the payment will reject). |
+
+---
+
+#### 2. The Bank Routing Tags (The 50-Series)
+These tags are used to route messages and money between financial institutions. 
+
+**The Golden SWIFT Rule for Banks:** From a strict structural perspective, SWIFT defines the Party Identifier (Account Number) as **Optional** for *all* 50-series bank tags. However, correspondent banking agreements often make them **Business Mandatory** to ensure automated Straight-Through Processing (STP).
+
+| SWIFT Tag | Role / Description | Applicable MT Messages | Account Number Requirement |
+| :--- | :--- | :--- | :--- |
+| **51a** | Applicant Bank | **MT 700** (Issue LC) | **Optional** (Usually omitted; the BIC is sufficient). |
+| **52a** | Ordering Institution | **MT 202** (Bank Transfer)<br>**MT 103** (Customer Payment) | **Optional** |
+| **53a** | Sender's Correspondent /<br>Reimbursing Bank | **MT 700** (Issue LC)<br>**MT 740** (Auth to Reimburse)<br>**MT 202** (Bank Transfer) | **Optional** in MT 700/740.<br>**Highly Recommended** in MT 202 (So your correspondent knows exactly which Nostro account to debit). |
+| **54a** | Receiver's Correspondent | **MT 202** (Bank Transfer) | **Optional** (Typically omitted unless the receiver operates multiple Nostro accounts with the same correspondent). |
+| **55a** | Third Reimbursement Inst. | **MT 202** (Bank Transfer) | **Optional** |
+| **56a** | Intermediary Institution | **MT 202** (Bank Transfer)<br>**MT 103** (Customer Payment) | **Optional** (Used if you need to designate a specific clearing account at the intermediary). |
+| **57a** | Account With Institution /<br>'Advise Through' Bank | **MT 700** (Issue LC)<br>**MT 202** (Bank Transfer)<br>**MT 103** (Customer Payment) | **Optional** in MT 700.<br>**Optional** in MT 202/103 (The receiving bank's BIC is usually enough for the correspondent to route it). |
+| **58a** | Beneficiary Institution /<br>Confirming Bank | **MT 700** (Issue LC)<br>**MT 740** (Auth to Reimburse)<br>**MT 202** (Bank Transfer) | **Optional** in MT 700/740.<br>**Optional** in MT 202. |
+
+---
+
+#### 3. Tags Where Account Numbers are STRICTLY FORBIDDEN
+To prevent your Moqui SWIFT builder from generating fatal NACKs (Negative Acknowledgements), your code must specifically strip the `/AccountNumber` logic if it is processing any of the following tags, even if the database has one on file.
+
+| SWIFT Tag | Role / Description | Applicable MT Messages | Why it is Forbidden |
+| :--- | :--- | :--- | :--- |
+| **41a** | Available With... (Negotiating Bank) | **MT 700** (Issue LC) | This tag designates the legal entity (bank) authorized to examine documents under UCP 600. You authorize a bank branch, not an account. |
+| **42a** | Drawee | **MT 700** (Issue LC) | This indicates the entity upon which the Bill of Exchange (draft) is drawn. Drafts are drawn on entities, not accounts. |
+| **50** (If used in MT 707) | Applicant (Amendments) | **MT 707** (Amendment) | In an MT 707, Tag 50 is strictly a flat 4x35 text block just to reference the Applicant name. It drops the "a" option entirely. |
+
+---
+
+#### Explain Why wasn't it mapped in MT 700?
+
+A Letter of Credit (MT 700) is a **legal contract**, not a payment instruction. Therefore, account numbers are often legally irrelevant or technically forbidden during the issuance phase.
+
+* **Why it is ignored in Tag 41a (Available With):** 
+  Tag 41a designates *which bank* is authorized to negotiate the documents. You negotiate with a legal entity (a bank), not with a bank account. SWIFT strictly forbids putting an account number in Tag 41a because it makes no logical sense in the context of UCP 600.
+* **Why it is ignored for Banks (Tags 51a, 57a, 58a):** 
+  When dealing with interbank routing, banks rely on their BICs and pre-established Nostro/Vostro accounts. If you send an LC to Citibank London (Tag 57a), you do not need to tell them their own account number; the BIC is sufficient for them to identify themselves.
+* **Why it is usually ignored for the Beneficiary (Tag 59) in MT 700:** 
+  At the time of LC issuance, the Issuing Bank rarely knows the Beneficiary's actual bank account number, nor do they care. The Issuing Bank's only job is to guarantee payment to the *entity* (the name and address). It is up to the Advising Bank to figure out where to deposit the money once the documents are presented.
+
+---
+
+#### When does `accountNumber` become critical?
+
+The `accountNumber` field sits dormant in your `TradeParty` database table during Process 3.1 (Issuance) and Process 3.2 (Amendments). 
+
+However, it "wakes up" and becomes **mandatory** during Process 3.4 (Settlement) and Process 3.7 (Reimbursements). When the legal contract turns into actual money movement, account numbers are required.
+
+**Scenario A: The Reimbursement Claim (MT 742)**
+When the Negotiating Bank claims funds from the Reimbursing Bank, they must use **Tag 57a (Account With Bank)** or **Tag 58a (Beneficiary Bank)** to explicitly state: *"Deposit the money into our Nostro Account Number 12345678 held at Bank of America."*
+
+**Scenario B: Final Settlement (MT 202)**
+When generating the MT 202 to move the money, **Tag 53a (Sender's Correspondent)** often requires the Issuing Bank's account number so the Correspondent knows exactly which Nostro account to debit. 
+
+**Scenario C: Direct Customer Payments (MT 103)**
+If the settlement involves an MT 103 (a direct payment to a corporate client rather than a bank), **Tag 59 (Beneficiary)** absolutely must include the `/AccountNumber` (usually an IBAN). If it doesn't, the receiving bank will reject the payment because they won't know whose retail account to credit.
+
+---
+
+### 3. System Implementation Rule
+
+Because the system uses a universal `TradeParty` entity, the SWIFT generation service (`Swift Services`) needs a specific rule for handling the `accountNumber` string:
+
+1. **Check the Tag Context:** Is the system currently generating an MT 700? If yes, and the tag is 41a, 51a, or 58a, **ignore** the `accountNumber` entirely, even if the database has one.
+2. **Format with Slash:** If the context allows it (e.g., Tag 59, or generating an MT 202), and the `accountNumber` is not null, the system must automatically prepend it with a `/` and append a carriage return (`\r\n`) *before* writing the BIC or the Name/Address line. 
+
+
+**Summary for Development:**
+When writing the data-mapping logic for the `accountNumber` variable, using this simple cheat sheet:
+
+1. **Is it an MT 103 (Customer Payment)?** The account number in Tag 59 is basically **Mandatory**.
+2. **Is it an MT 202 (Bank Settlement)?** Include it in Tag 53a if you have it; otherwise, it is structurally **Optional**.
+3. **Is it an MT 700/740 (Trade Finance)?** It is structurally **Optional** for all 5X tags, but generally ignored in practice.
+4. **Is it Tag 41a or 42a?** **Forbidden.** Strip the slash and account number entirely.
