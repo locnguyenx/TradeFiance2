@@ -56,7 +56,7 @@ describe('IssuanceStepper v3.0 (BDD-IMP-FLOW-01, BDD-CMN-VAL-05)', () => {
             fireEvent.change(screen.getByLabelText(/Applicant/i), { target: { value: 'GLOBAL_CORP' } });
         });
         fireEvent.change(screen.getByLabelText(/LC Product/i), { target: { value: 'IMP_LC_STANDARD' } });
-        fireEvent.change(screen.getByLabelText(/Beneficiary \(Tag 59\)/i), { target: { value: 'Beneficiary Name\nAddress' } });
+        fireEvent.change(screen.getByLabelText(/Beneficiary \(Tag 59\)/i), { target: { value: 'GLOBAL_CORP' } });
     };
 
     const completeStep1 = async () => {
@@ -203,13 +203,13 @@ describe('IssuanceStepper v3.0 (BDD-IMP-FLOW-01, BDD-CMN-VAL-05)', () => {
         expect(await screen.findByText(/Submission Successful/i)).toBeInTheDocument();
     });
 
-    it('renders all required BIC fields in Step 1 and 2', async () => {
+    it('renders all required Bank fields in Step 1 and 2', async () => {
         await act(async () => {
             render(<IssuanceStepper />);
         });
         // Step 1 (Parties)
-        expect(screen.getByLabelText(/Advising Through Bank BIC/i)).toBeInTheDocument();
-        expect(screen.getByLabelText(/Advising Bank BIC/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/Advising Through Bank/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/Advising Bank/i)).toBeInTheDocument();
         
         await completeStep0();
         await act(async () => {
@@ -219,8 +219,9 @@ describe('IssuanceStepper v3.0 (BDD-IMP-FLOW-01, BDD-CMN-VAL-05)', () => {
         // Wait for transition to Step 2 (Financials)
         await waitFor(() => expect(screen.getByText(/Step 2/i)).toBeInTheDocument());
         
-        expect(screen.getByLabelText(/Available With BIC/i)).toBeInTheDocument();
-        expect(screen.getByLabelText(/Drawee Bank BIC/i)).toBeInTheDocument();
-        expect(screen.getByLabelText(/Issuing Bank BIC/i)).toBeInTheDocument();
+        expect(screen.getByText(/Available With \(Tag 41A\/D\)/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/Any Bank/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/Specific Bank/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/Drawee Bank/i)).toBeInTheDocument();
     });
 });
