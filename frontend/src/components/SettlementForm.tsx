@@ -77,7 +77,7 @@ export const SettlementForm: React.FC<SettlementFormProps> = ({ instrumentId, pr
             <div className="lc-summary">
                 <div className="summary-item">
                     <span className="label">Beneficiary</span>
-                    <span className="value">{lc.beneficiaryName}</span>
+                    <span className="value">{lc.beneficiaryPartyName}</span>
                 </div>
                 <div className="summary-item">
                     <span className="label">Current Outstanding</span>

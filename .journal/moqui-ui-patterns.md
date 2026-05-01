@@ -1,32 +1,31 @@
 # Moqui UI & Screen Patterns
 
-> Verified against SimpleScreens (811 form-list patterns) and TradeFinance component
+> Verified against Moqui Framework and SimpleScreens component
 
 ## 1. Form-List Pattern
 
 ### Standard Find Screen List
 ```xml
-<form-list name="FindEntityList" list="entityList" skip-form="true" header-dialog="true">
-    <entity-find entity-name="trade.LetterOfCredit" list="entityList" use-clone="true">
+<form-list name="ListExamples" list="exampleList" skip-form="true" header-dialog="true">
+    <entity-find entity-name="moqui.example.Example" list="exampleList">
         <search-form-inputs default-order-by="-date"/>
-        <econdition field-name="lcStatusId" operator="not-equals" value="LcCancelled"/>
     </entity-find>
     
-    <field name="lcNumber">
-        <header-field title="Ref #" show-order-by="case-insensitive">
+    <field name="exampleName">
+        <header-field title="Name" show-order-by="case-insensitive">
             <text-find size="15" hide-options="true"/>
         </header-field>
         <default-field>
-            <link url="../MainLC" text="${lcNumber}" style="text-weight-bold"/>
+            <link url="../ExampleDetails" text="${exampleName}"/>
         </default-field>
     </field>
     
-    <field name="lcStatusId">
+    <field name="statusId">
         <header-field title="Status">
             <drop-down allow-empty="true">
                 <entity-options key="${statusId}" text="${description}">
                     <entity-find entity-name="moqui.basic.StatusItem">
-                        <econdition field-name="statusId" operator="in" value="LcDraft,LcApproved,LcIssued"/>
+                        <econdition field-name="statusTypeId" value="ExampleStatus"/>
                     </entity-find>
                 </entity-options>
             </drop-down>
@@ -34,11 +33,6 @@
         <default-field>
             <display-entity entity-name="moqui.basic.StatusItem"/>
         </default-field>
-    </field>
-    
-    <field name="lcAmount">
-        <header-field title="Amount" show-order-by="true"><range-find/></header-field>
-        <default-field><display format="#,##0.00"/></default-field>
     </field>
 </form-list>
 ```
@@ -62,67 +56,54 @@
             </form-single>
         </action>
     </row-selection>
-    
-    <!-- Field definitions -->
 </form-list>
 ```
 
-### Form-List Column Layout (SIMPLE SCREENS STANDARD)
+### Form-List Column Layout
 ```xml
 <form-list-column>
-    <field-ref name="fieldName1"/><field-ref name="fieldName2"/>
+    <field-ref name="name"/><field-ref name="description"/>
 </form-list-column>
 <form-list-column>
     <field-ref name="statusId"/><field-ref name="dateField"/>
 </form-list-column>
 ```
-
 **CRITICAL**: Use `<field-ref>` NOT `<field>` inside `<form-list-column>`
 
-## 2. Screen Hierarchy Pattern (Clean Parent)
+## 2. Screen Hierarchy Pattern
 
-### Parent Shell Screen (No Parameters)
+### Parent Shell Screen
 ```xml
-<!-- Lc.xml (Parent) -->
 <actions>
-    <set field="lcId" from="lcId ?: lcSeqId"/>
-    <if condition="lcId">
-        <entity-find-one entity-name="trade.LetterOfCredit" value-field="lc"/>
+    <set field="exampleId" from="exampleId ?: exampleSeqId"/>
+    <if condition="exampleId">
+        <entity-find-one entity-name="moqui.example.Example" value-field="example"/>
     </if>
 </actions>
 
 <widgets>
-    <!-- Visibility handled by entity presence -->
-    <section name="LcHeader" condition="lc">
-        <widgets>
-            <!-- Status chips, routing buttons -->
-        </widgets>
-    </section>
-    
-    <subscreens-panel type="tab" parent-name="Lc" if-active="true"/>
+    <subscreens-panel type="tab" parent-name="Example" if-active="true"/>
 </widgets>
 ```
 
-### Detail Sub-screen (REQUIRED Parameters)
+### Details Sub-screen
 ```xml
-<!-- MainLC.xml -->
-<parameter name="lcId" required="true"/>
+<parameter name="exampleId" required="true"/>
 
 <actions>
-    <entity-find-one entity-name="trade.LetterOfCredit" value-field="lc"/>
+    <entity-find-one entity-name="moqui.example.Example" value-field="example"/>
 </actions>
 ```
 
-### Menu Clearing (Entry Point)
+### Menu Clearing
 ```xml
-<!-- ImportLc.xml (menu) -->
-<subscreens-item name="Lc" location="." parameter-map="[lcId:null]"/>
+<subscreens-item name="Example" location="." parameter-map="[exampleId:null]"/>
 ```
 
 ### Visibility Regex Guard
 ```xml
 <section name="DetailHeader" 
-         condition="lc &amp;&amp; sri.screenUrlInfo.extraPathNameList">
+         condition="example &amp;&amp; sri.screenUrlInfo.extraPathNameList">
     <!-- Only shows when entity exists AND sub-path present -->
 </section>
 ```
@@ -131,38 +112,21 @@
 
 ### Standard Create Form
 ```xml
-<form-single name="CreateEntity" transition="createEntity">
-    <field name="lcNumber">
-        <default-field title="LC Number">
-            <text-line required="true" size="20"/>
-        </default-field>
+<form-single name="CreateExample" transition="createExample">
+    <field name="exampleName">
+        <default-field title="Name"><text-line required="true"/></default-field>
     </field>
-    
-    <field name="lcStatusId">
-        <default-field title="Status">
-            <drop-down>
-                <entity-options key="${statusId}" text="${description}">
-                    <entity-find entity-name="moqui.basic.StatusItem">
-                        <econdition field-name="statusId" operator="like" value="Lc%"/>
-                    </entity-find>
-                </entity-options>
-            </drop-down>
-        </default-field>
-    </field>
-    
     <field name="submitButton">
-        <default-field title="Create">
-            <submit/>
-        </default-field>
+        <default-field title="Create"><submit/></default-field>
     </field>
 </form-single>
 ```
 
 ### Container Dialog Pattern
 ```xml
-<container-dialog id="CreateDialog" button-text="Create LC">
-    <form-single name="CreateLc" transition="createLc">
-        <field name="lcNumber"><default-field><text-line required="true"/></default-field></field>
+<container-dialog id="CreateDialog" button-text="Create New">
+    <form-single name="CreateRecord" transition="createRecord">
+        <field name="name"><default-field><text-line required="true"/></default-field></field>
         <field name="submitButton"><default-field><submit/></default-field></field>
     </form-single>
 </container-dialog>
@@ -170,99 +134,57 @@
 
 ## 4. Transition Patterns
 
-### Create Transition
+### Relative Redirect
 ```xml
-<transition name="createLc">
-    <service-call name="trade.TradeFinanceServices.create#LetterOfCredit"/>
-    <default-response url="."/>
-</transition>
+<default-response url="./Details" parameter-map="[id:id]"/>
 ```
 
 ### Delete with Confirmation
 ```xml
-<transition name="deleteLc">
-    <service-call name="trade.TradeFinanceServices.delete#LetterOfCredit"/>
+<transition name="deleteRecord">
+    <service-call name="moqui.example.ExampleServices.delete#Example"/>
     <default-response url="."/>
 </transition>
 
 <!-- In form-list -->
 <field name="actions">
     <default-field title="">
-        <link url="deleteLc" text="Delete" style="text-negative"
-              parameter-map="[lcId:lcSeqId]"
+        <link url="deleteRecord" text="Delete" style="text-negative"
+              parameter-map="[id:id]"
               confirmation="Confirm deletion?"/>
     </default-field>
 </field>
 ```
 
-### Relative Redirect (Quasar-safe)
-```xml
-<default-response url="./MainLC" parameter-map="[lcId:lcId]"/>
-```
+## 5. Quasar Styling & Widgets
 
-## 5. Quasar Styling
-
-### Container Styling (NOT class attribute)
+### Container Styling
+Use `style=` not `class=` for Quasar classes in XML widgets.
 ```xml
 <container style="q-card shadow-2 q-pa-md">
     <label style="q-chip bg-primary text-white">Status</label>
 </container>
 ```
 
-### Button Text Conventions
-| Action | Text |
-|--------|------|
-| Primary | `Create`, `Save` |
-| Danger | `Delete` (style: `text-negative`) |
-| Navigation | `text-weight-bold` |
+### Button Styling
+Use `style="text-negative"` for dangerous actions.
 
-## 6. Common Widgets
+### widget-templates
+Use `statusDropDown` and `enumDropDown` for consistent UI.
 
-### Status Dropdown
-```xml
-<widget-template-include location="component://webroot/template/screen/BasicWidgetTemplates.xml#statusDropDown">
-    <set field="statusTypeId" value="WorkEffort"/>
-    <set field="allowMultiple" value="true"/>
-</widget-template-include>
-```
-
-### Enum Dropdown
-```xml
-<widget-template-include location="component://webroot/template/screen/BasicWidgetTemplates.xml#enumDropDown">
-    <set field="enumTypeId" value="LcType"/>
-    <set field="allowEmpty" value="true"/>
-</widget-template-include>
-```
-
-### Dynamic Options (AJAX)
-```xml
-<drop-down>
-    <dynamic-options transition="searchPartyList" server-search="true" min-length="2"/>
-</drop-down>
-```
-
-## 7. XML Validation (MANDATORY)
-
+## 6. XML Validation
+Always validate before testing:
 ```bash
-# Always validate before testing
-xmllint --noout runtime/component/TradeFinance/screen/.../Screen.xml
+xmllint --noout path/to/Screen.xml
 ```
 
-### Common Errors
-- Duplicate field definitions
-- Unclosed tags (`</form-single>`, `</widgets>`)
-- Extra closing tags
-- Whitespace before XML prolog
-
-## 8. Stale UI Cache Fix
-
+## 7. Stale UI Cache Fix
 ```bash
 ./gradlew cleanAll
 # Browser: Cmd+Shift+R (hard refresh)
 ```
 
-## 9. Field Layout Rules
-
+## 8. Field Layout Rules
 | Rule | Implementation |
 |------|----------------|
 | Links in list | Wrap in `<field>`, use `<field-ref>` |
@@ -270,48 +192,38 @@ xmllint --noout runtime/component/TradeFinance/screen/.../Screen.xml
 | Buttons | `Create`, `Save`, `Delete` (text-negative) |
 | Back navigation | `${lastScreenUrl ?: '.'}` |
 
-## 10. Shared Fragments (transition-include)
-
-### Shared Transition File
+## 9. Shared Fragments (transition-include)
 ```xml
-<!-- template/lc/LcTransitions.xml -->
-<transition name="createLc">
-    <service-call name="trade.TradeFinanceServices.create#LetterOfCredit"/>
-    <default-response url="../MainLC" parameter-map="[lcId:lcId]"/>
-</transition>
+<transition-include name="createRecord" location="component://.../template/SharedTransitions.xml"/>
 ```
 
-### Include in Screen
+## 10. Conditional Logic
+**CRITICAL**: `<else>` must be INSIDE `<if>`, not as sibling.
 ```xml
-<transition-include name="createLc" location="component://.../template/lc/LcTransitions.xml"/>
+<if condition="active">
+    <set field="label" value="success"/>
+    <else>
+        <set field="label" value="danger"/>
+    </else>
+</if>
 ```
 
-## 11. Additional UI Patterns (From patterns)
+## 11. Additional UI Patterns
+
 ### Screen Rendering (formInstance was null)
 **Symptom**: `expression 'formInstance' was null`
-**Cause**: Using `<include-screen>` for dialog with missing context
-**Solution**: Inline dialogs or ensure context parameters exist
+**Cause**: Using `<include-screen>` for a dialog or form with missing context parameters.
+**Solution**: Inline the dialogs within the screen or ensure the parent context passes all required parameters to the `<include-screen>` tag.
 
 ### Form Submit Issues
-- Static `<option>` tags may not submit correctly
-- Use `entity-options` for reliable behavior
-- `<text-line>` for manual input
+- Static `<option>` tags may not submit selected values correctly in some Moqui versions.
+- **Solution**: Use `<entity-options>` or dynamic `<list-options>` for reliable behavior.
+- Use `<text-line>` for manual text input instead of complex dropdowns if validation is simple.
 ```xml
-<!-- Reliable -->
+<!-- Reliable Pattern -->
 <drop-down>
     <entity-options key="${uomId}" text="${uomId}">
         <entity-find entity-name="moqui.basic.Uom"/>
     </entity-options>
 </drop-down>
-```
-
-### Conditional Logic
-**CRITICAL**: `<else>` must be INSIDE `<if>`, not as sibling.
-```xml
-<if condition="status == 'Active'">
-    <set field="label" value="label-success"/>
-    <else>
-        <set field="label" value="label-danger"/>
-    </else>
-</if>
 ```

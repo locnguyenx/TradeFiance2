@@ -24,6 +24,7 @@ class ComplianceServicesSpec extends Specification {
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", lcId).deleteAll()
         ec.entity.find("trade.TradeTransaction").condition("instrumentId", lcId).deleteAll()
         ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", lcId).deleteAll()
+        ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", lcId).deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", lcId).deleteAll()
     }
 
@@ -84,6 +85,7 @@ class ComplianceServicesSpec extends Specification {
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", lcId).deleteAll()
         ec.entity.find("trade.TradeTransaction").condition("instrumentId", lcId).deleteAll()
         ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", lcId).deleteAll()
+        ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", lcId).deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", lcId).deleteAll()
     }
 }

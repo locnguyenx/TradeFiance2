@@ -1,16 +1,16 @@
 # Moqui Testing Patterns
 
-> Verified patterns for Spock/Groovy testing in TradeFinance
+> Verified patterns for Spock/Groovy testing in Moqui
 
 ## 1. Test Environment
 
 ### Always Use reloadSave (MANDATORY)
 ```bash
 # Before EVERY test run
-./gradlew reloadSave :runtime:component:TradeFinance:test
+./gradlew reloadSave :runtime:component:Example:test
 
 # For specific test
-./gradlew reloadSave :runtime:component:TradeFinance:test --tests trade.TradeFinanceScreensSpec
+./gradlew reloadSave :runtime:component:Example:test --tests moqui.example.ExampleSpec
 ```
 
 ### Reset Patterns
@@ -30,12 +30,14 @@
 
 ### Standard Spec
 ```groovy
-package trade
+package moqui.example
 
+import org.moqui.context.ExecutionContext
 import moqui.Moqui
 import spock.lang.Specification
+import spock.lang.Shared
 
-class TradeFinanceServicesSpec extends Specification {
+class ExampleServicesSpec extends Specification {
     
     @Shared ExecutionContext ec
     
@@ -43,16 +45,12 @@ class TradeFinanceServicesSpec extends Specification {
         ec = Moqui.getExecutionContext()
         ec.artifactExecution.disableAuthz()
         ec.entity.makeDataLoader().load()
-        ec.user.loginUser("tf-admin", "moqui")
+        ec.user.loginUser("admin", "moqui")
     }
     
     def setup() {
         ec.message.clearAll()
         ec.artifactExecution.enableAuthz()
-    }
-    
-    def cleanup() {
-        // cleanup test data
     }
     
     def cleanupSpec() {
@@ -63,15 +61,15 @@ class TradeFinanceServicesSpec extends Specification {
 
 ### Test Naming
 ```groovy
-def "should create LetterOfCredit when valid data provided"() {
+def "should create Example when valid data provided"() {
     when:
     def result = ec.service.sync()
-        .name("trade.TradeFinanceServices.create#LetterOfCredit")
-        .parameters([lcNumber: "DEMO-001", lcAmount: 10000])
+        .name("moqui.example.ExampleServices.create#Example")
+        .parameters([name: "DEMO-001", amount: 10000])
         .call()
     
     then:
-    result.lcId
+    result.id
     result.success == true || result.success == "true"
 }
 ```
@@ -84,33 +82,20 @@ def "should create LetterOfCredit when valid data provided"() {
 assert result.success == true || result.success == "true"
 
 // Avoid exact size checks
-assert history.size() >= 5
-assert history.find { it.field == value }
+assert list.size() >= 1
+assert list.find { it.field == value }
 ```
 
 ### Screen Test
 ```groovy
-def "should render LC list screen"() {
+def "should render list screen"() {
     when:
-    ScreenTestRender str = screenTest.render("TradeFinance/ImportLc/Lc/FindLc", [:], null)
+    ScreenTestRender str = screenTest.render("Example/FindExample", [:], null)
     
     then:
     !str.errorMessages
     !str.output.contains("Error rendering")
-    str.assertContains("Letter of Credit")
-}
-```
-
-### Parent Screen Visibility
-```groovy
-def "parent screen with ID does NOT render detail tabs"() {
-    when:
-    ScreenTestRender str = screenTest.render("TradeFinance/ImportLc/Lc", [lcId: "DEMO_01"], null)
-    
-    then:
-    !str.errorMessages
-    str.assertContains("Find LC") // List header
-    !str.output.contains("Detail Header") // No detail tabs
+    str.assertContains("Expected Header")
 }
 ```
 
@@ -118,34 +103,31 @@ def "parent screen with ID does NOT render detail tabs"() {
 
 ### Sequence Safety (Auto-increment PKs)
 ```groovy
-def setupSpec() {
-    // ...
-    // Set sequence to avoid collisions
-    ec.entity.tempSetSequencedIdPrimary("trade.LetterOfCredit", 960000, 100)
-}
+ec.entity.tempSetSequencedIdPrimary("moqui.example.Example", 960000, 100)
 ```
 
 ### Authorization Bypass (Setup Only)
 ```groovy
-def setupSpec() {
-    ec = Moqui.getExecutionContext()
-    ec.artifactExecution.disableAuthz() // Only for setup
-    ec.entity.makeDataLoader().load()
-    ec.user.loginUser("tf-admin", "moqui")
-}
-
-def setup() {
-    ec.artifactExecution.enableAuthz() // Re-enable for tests
-}
+ec.artifactExecution.disableAuthz() 
 ```
 
-### Cleanup Pattern
+#### Transactional Robust Cleanup
+Used in `TradePartySpec.groovy` to handle complex dependency chains safely.
 ```groovy
-def cleanupProvision(String lcId) {
-    def provisions = ec.entity.find("trade.LcProvision")
-        .condition("lcId", lcId)
-        .list()
-    provisions.each { it.delete() }
+def setupSpec() {
+    ec = Moqui.getExecutionContext()
+    // ... setup ...
+    boolean began = ec.transaction.begin(60)
+    try {
+        // Order matters for FK constraints
+        ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", EntityCondition.LIKE, "SPEC_%").deleteAll()
+        ec.entity.find("trade.TradePartyBank").condition("partyId", EntityCondition.LIKE, "SPEC_%").deleteAll()
+        ec.entity.find("trade.TradeParty").condition("partyId", EntityCondition.LIKE, "SPEC_%").deleteAll()
+        ec.transaction.commit(began)
+    } catch (Exception e) {
+        ec.transaction.rollback(began, "Error in setupSpec", e)
+        throw e
+    }
 }
 ```
 
@@ -153,86 +135,27 @@ def cleanupProvision(String lcId) {
 
 ### Full Service Path
 ```groovy
-// Use full path
 ec.service.sync()
-    .name("trade.TradeFinanceServices.create#LetterOfCredit")
+    .name("moqui.example.ExampleServices.create#Example")
     .call()
-
-// NOT short name
-ec.service.sync().name("create#LcDrawing") // May fail
 ```
 
 ### Check Errors
 ```groovy
 if (ec.message.hasError()) {
-    logger.info("Errors: ${ec.message.errors}")
+    logger.info("Service errors: ${ec.message.errors}")
 }
 ```
 
-### Verify Database State
+### Verify Persisted State
 ```groovy
-// After service call, verify persisted state
-def lc = ec.entity.find("trade.LetterOfCredit")
-    .condition("lcId", lcId)
+def record = ec.entity.find("moqui.example.Example")
+    .condition("id", id)
     .one()
-assert lc.lcStatusId == "LcApproved"
+assert record.statusId == "Approved"
 ```
 
-### Read-Refresh-Update Pattern
-```groovy
-def "status transition updates parent record"() {
-    when:
-    // Create LC
-    def createResult = ec.service.sync()
-        .name("trade.TradeFinanceServices.create#LetterOfCredit")
-        .parameters([lcNumber: "DEMO-001"])
-        .call()
-    
-    def lcId = createResult.lcId
-    
-    // Transition
-    ec.service.sync()
-        .name("trade.TradeFinanceServices.transition#Status")
-        .parameters([lcId: lcId, toStatusId: "LcApproved"])
-        .call()
-    
-    then:
-    // CRITICAL: Query fresh from DB, not from cache
-    def lc = ec.entity.find("trade.LetterOfCredit")
-        .condition("lcId", lcId)
-        .one()
-    lc.lcStatusId == "LcApproved"
-}
-```
-
-## 6. TDD Workflow
-
-### RED: Test the Workflow
-```groovy
-def "adding entry updates collected amount"() {
-    when:
-    // Create collection
-    def createResult = ec.service.sync()
-        .name("trade.ProvisionCollectionServices.create#Collection")
-        .call()
-    def collectionId = createResult.collectionId
-    
-    // Add entry (this SHOULD populate collectedAmount)
-    ec.service.sync()
-        .name("trade.ProvisionCollectionServices.add#CollectionEntry")
-        .parameters([collectionId: collectionId, amount: 5000])
-        .call()
-    
-    then:
-    // CRITICAL: Verify DB state, not service output
-    def coll = ec.entity.find("trade.LcProvisionCollection")
-        .condition("collectionId", collectionId)
-        .one()
-    coll.collectedAmount == 5000
-}
-```
-
-## 7. UI Test (ScreenTestRender)
+## 6. UI Test (ScreenTestRender)
 
 ### Strict Assertions
 ```groovy
@@ -244,43 +167,18 @@ expect:
 str.assertContains("Expected UI Text")
 ```
 
-### @Ignore Legacy Tests
-```groovy
-@Ignore("Quasar lazy loading causes false failures")
-def "should show all fields"() {
-    // Legacy screen rendering test
-}
-```
-
-## 8. Common Errors
+## 7. Common Errors
 
 ### NoClassDefFoundError
 ```bash
 ./gradlew cleanAll loadSave
 ```
 
-### Data Integrity Violation
-```bash
-./gradlew cleanDb loadSave
-```
-
-### Sequence Collision
-```groovy
-ec.entity.tempSetSequencedIdPrimary("EntityName", 960000, 100)
-```
-
-## 9. Debugging
+## 8. Debugging
 
 ### Log Variables
 ```groovy
-logger.info("lcId: ${lcId}, status: ${lc?.lcStatusId}")
-```
-
-### Check Messages
-```groovy
-if (ec.message.hasError()) {
-    logger.info("Service errors: ${ec.message.errors}")
-}
+logger.info("id: ${id}, status: ${status}")
 ```
 
 ### Check Log File
@@ -288,30 +186,19 @@ if (ec.message.hasError()) {
 tail -f runtime/log/moqui.log
 ```
 
-## 10. Mantle GL Configuration (Required for Financial Tests)
-
-### Prerequisites for Invoice/Payment
-1. Party has `OrgInternal` role
-2. GL Mappings configured (`mantle.ledger.config.ItemTypeGlAccount`)
-3. Internal Account Links (`mantle.ledger.account.GlAccountOrganization`)
-4. Accounting Preference (`mantle.ledger.config.PartyAcctgPreference`)
-5. Open FiscalMonth for organization
-6. InvoiceTypeTransType mapping exists
-
-## 11. ScreenTest & Testing Limitations (From patterns)
+## 9. ScreenTest & Testing Limitations
 * **WebFacadeStub Limitations**: `ScreenTest` uses a stubbed web context. If a service call triggers `ec.message.addError()`, the framework attempts to save it to the session. The stub is not a full `WebFacadeImpl` and this triggers a `NullPointerException`. Always check if errors are originating from missing parameters causing error reporting NPEs.
 * **JSON Parsing in Spock**: `ScreenTestRender.getJsonObject()` is unreliable in the Spock test runner. Use `groovy.json.JsonSlurper().parseText(str.output)` for consistent results and better error messages.
 * **Log Buffering**: Redirect test output to a temp file (like `/tmp/diag.txt`) to inspect full JSON payloads and stack traces that Gradle truncates.
-* **Namespace Consistency**: Moving specs to the correct package (e.g., `trade`) is critical for accurate discovery by the Moqui test runner.
+* **Namespace Consistency**: Moving specs to the correct package is critical for accurate discovery by the Moqui test runner.
 
-## 12. Master Data & Referential Integrity
-* **Test Isolation**: Integration tests will fail on a blank environment due to missing core enumerations (`InternalOrganization`, `AcctgTransType`, etc.). Consolidate these into a master seed file (`TradeFinanceMasterData.xml`) to ensure a "bootstrappable" testing environment.
+## 10. Master Data & Referential Integrity
+* **Test Isolation**: Integration tests will fail on a blank environment due to missing core enumerations (`InternalOrganization`, `AcctgTransType`, etc.). Consolidate these into a master seed file (e.g. `MasterData.xml`) to ensure a "bootstrappable" testing environment.
 * **Data Dependency**: Always seed master data (`reloadSave`) before test runs to ensure referential integrity.
 
-## 13. Double Test Execution
+## 11. Double Test Execution
 ### Problem
-JUnit Suite + Spock discovery = tests run twice
-
+JUnit Suite + Spock discovery = tests run twice.
 ### Solution (build.gradle)
 ```gradle
 test {

@@ -29,8 +29,13 @@ class BddImportLcModuleSpec extends Specification {
         def ref = "TF-LC-" + refSuffix + "-" + System.currentTimeMillis()
         def fid = findOrCreateFacility()
         def expiryDate = new java.sql.Date(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000)
+        // Ensure BEN-01 exists and is Active
+        ec.entity.makeValue("trade.TradeParty").setAll([partyId: "BEN-01", partyName: "Beneficiary 01", partyTypeEnumId: 'PARTY_COMMERCIAL', kycStatus: 'Active']).createOrUpdate()
+        
         def res = service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: amount, lcCurrencyUomId: "USD", beneficiaryPartyId: "BEN-01", 
+            .parameters([transactionRef: ref, lcAmount: amount, lcCurrencyUomId: "USD", 
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: "BEN-01"]],
                          expiryDate: expiryDate, tolerancePositive: 0.10, toleranceNegative: 0.10, 
                          isRevolving: isRevolving, customerFacilityId: fid]).call()
         service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit")
@@ -70,6 +75,7 @@ class BddImportLcModuleSpec extends Specification {
         ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "3000000").deleteAll()
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "3000000").deleteAll()
         ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "3000000").deleteAll()
+        ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "3000000").deleteAll()
         ec.entity.find("trade.TradeTransaction").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "3000000").deleteAll()
         ec.entity.find("trade.TradeProductCatalog").condition("productId", EntityCondition.LIKE, "CAT-%").deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "3000000").deleteAll()
@@ -106,7 +112,9 @@ class BddImportLcModuleSpec extends Specification {
         
         when: "The Save method is invoked"
         def result = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD"]).call()
+            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
             
         then: "The database establishes logical entry in Draft"
         !result.errorMessage
@@ -118,7 +126,9 @@ class BddImportLcModuleSpec extends Specification {
         given: "A Draft LC"
         def ref = "TF-SUBMIT-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD"]).call()
+            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
             
         when: "User fires Submit for Approval"
         ec.service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit")
@@ -133,7 +143,9 @@ class BddImportLcModuleSpec extends Specification {
         given: "A Pending Approval LC"
         def ref = "TF-AUTH-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD"]).call()
+            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         ec.service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit")
             .parameters([instrumentId: res.instrumentId, businessStateId: "LC_PENDING"]).call()
         
@@ -187,7 +199,9 @@ class BddImportLcModuleSpec extends Specification {
             
         def ref = "TF-SETTLE-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD", customerFacilityId: fid]).call()
+            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD", customerFacilityId: fid,
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         def instrumentId = res.instrumentId
         ec.service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit")
             .parameters([instrumentId: instrumentId, businessStateId: "LC_PENDING"]).call()
@@ -230,7 +244,9 @@ class BddImportLcModuleSpec extends Specification {
         given: 'An LC with $10,000 value and 10% positive tolerance'
         def ref = "TF-TOL-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 10000.0, lcCurrencyUomId: "USD", tolerancePositive: 0.10]).call()
+            .parameters([transactionRef: ref, lcAmount: 10000.0, lcCurrencyUomId: "USD", tolerancePositive: 0.10,
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         def instrumentId = res.instrumentId
         ec.service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit")
             .parameters([instrumentId: instrumentId, businessStateId: "LC_PENDING"]).call()
@@ -252,7 +268,9 @@ class BddImportLcModuleSpec extends Specification {
         def yesterday = new Date(System.currentTimeMillis() - 86400000)
         def ref = "TF-LATE-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD", expiryDate: yesterday]).call()
+            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD", expiryDate: yesterday,
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         def instrumentId = res.instrumentId
         ec.service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit")
             .parameters([instrumentId: instrumentId, businessStateId: "LC_PENDING"]).call()
@@ -275,7 +293,9 @@ class BddImportLcModuleSpec extends Specification {
             .setAll([productId: "CAT-REV-BDD", productName: "Revolving LC", allowRevolving: "Y"]).create()
         def ref = "TF-REVOLVE-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD", productCatalogId: "CAT-REV-BDD"]).call()
+            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD", productCatalogId: "CAT-REV-BDD",
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         
         when: "Applying reinstatement logic"
         def result = ec.service.sync().name("trade.TradeCommonServices.evaluate#Reinstatement")
@@ -289,7 +309,9 @@ class BddImportLcModuleSpec extends Specification {
         given: "An LC with goods description in Vietnam"
         def ref = "TF-VN-" + System.currentTimeMillis()
         ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD", goodsDescription: "Rice Export"]).call()
+            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD", goodsDescription: "Rice Export",
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         
         when: "The compliance routine check is executed"
         def result = ec.service.sync().name("trade.TradeComplianceServices.check#Sanctions")
@@ -495,7 +517,9 @@ class BddImportLcModuleSpec extends Specification {
             .setAll([facilityId: fid, totalApprovedLimit: 1000000.0, utilizedAmount: 500000.0]).create()
             
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: "TF-CAN-REV", lcAmount: 500000.0, lcCurrencyUomId: "USD", customerFacilityId: fid]).call()
+            .parameters([transactionRef: "TF-CAN-REV", lcAmount: 500000.0, lcCurrencyUomId: "USD", customerFacilityId: fid,
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         def instrumentId = res.instrumentId
         ec.service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit")
             .parameters([instrumentId: instrumentId, outstandingAmount: 500000.0]).call()
@@ -513,7 +537,9 @@ class BddImportLcModuleSpec extends Specification {
         given: "An LC with Expiry Date = T-1"
         def yesterday = new Date(System.currentTimeMillis() - 86400000)
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: "TF-AUTOEX", lcAmount: 1000.0, lcCurrencyUomId: "USD", expiryDate: yesterday]).call()
+            .parameters([transactionRef: "TF-AUTOEX", lcAmount: 1000.0, lcCurrencyUomId: "USD", expiryDate: yesterday,
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         def instrumentId = res.instrumentId
         ["LC_PENDING", "LC_ISSUED"].each { state ->
             ec.service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit")
@@ -535,7 +561,9 @@ class BddImportLcModuleSpec extends Specification {
         given: "An Import LC with invalid characters"
         def ref = "TF-SWT-01-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD", goodsDescription: "Price @ 5.00 #1"]).call()
+            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD", goodsDescription: "Price @ 5.00 #1",
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         
         when: "Formatting for SWIFT X-set"
         def result = ec.service.sync().name("trade.SwiftGenerationServices.format#XCharacter")
@@ -679,7 +707,9 @@ class BddImportLcModuleSpec extends Specification {
     def "BDD-IMP-SWT-07: MT700: Continuation Message MT701 Logic"() {
         given: "An LC with long goods description"
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: "TF-701", lcAmount: 1000.0, lcCurrencyUomId: "USD", goodsDescription: "A" * 6600]).call()
+            .parameters([transactionRef: "TF-701", lcAmount: 1000.0, lcCurrencyUomId: "USD", goodsDescription: "A" * 6600,
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         def instrumentId = res.instrumentId
         ["LC_PENDING", "LC_ISSUED"].each { state ->
             ec.service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit")

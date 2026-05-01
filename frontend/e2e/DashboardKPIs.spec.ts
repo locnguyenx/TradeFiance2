@@ -16,7 +16,7 @@ test.describe('Dashboard Functions (True E2E)', () => {
         await page.reload();
         await page.waitForLoadState('networkidle');
     }
-    await expect(page.getByText('Active Instrument Data Table')).toBeVisible({ timeout: 20000 });
+    await expect(page.getByText('Import LC Portfolio')).toBeVisible({ timeout: 20000 });
 
     // Assert on real KPI elements individually
     await expect(page.getByText('Drafts Awaiting My Submission')).toBeVisible();

@@ -11,8 +11,8 @@ jest.mock('../api/tradeApi', () => ({
             lcList: [{ 
                 instrumentId: '1', 
                 transactionRef: 'LC-2026-001', 
-                applicantName: 'Global Corp',
-                beneficiaryName: 'Export Ltd',
+                applicantPartyName: 'Global Corp',
+                beneficiaryPartyName: 'Export Ltd',
                 amount: 50000,
                 currency: 'USD',
                 expiryDate: '2026-12-31',

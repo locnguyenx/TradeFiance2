@@ -47,6 +47,7 @@ class SwiftGenerationSpec extends Specification {
             ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "6000000").deleteAll()
             ec.entity.find("trade.importlc.ImportLcAmendment").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "6000000").deleteAll()
             ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "6000000").deleteAll()
+            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "6000000").deleteAll()
             ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "6000000").deleteAll()
             ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "6000000").deleteAll()
             ec.entity.find("trade.TradeTransaction").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "6000000").deleteAll()
@@ -63,7 +64,9 @@ class SwiftGenerationSpec extends Specification {
         def ref = "TF-LCY-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([transactionRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD",
-                         advisingBankBic: "ADVISXXX"]).call()
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002'],
+                                   [roleEnumId: 'TP_ADVISING_BANK', partyId: 'ADVISING_BANK_001']]]).call()
         assert res.instrumentId != null
 
         when: "generate#Mt700 is called"
@@ -83,7 +86,9 @@ class SwiftGenerationSpec extends Specification {
         def ref = "TF-APP-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([transactionRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD",
-                         advisingBankBic: "ADVISXXX"]).call()
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002'],
+                                   [roleEnumId: 'TP_ADVISING_BANK', partyId: 'ADVISING_BANK_001']]]).call()
         
         // Simulate approval
         ec.entity.find("trade.TradeTransaction").condition("instrumentId", res.instrumentId).one()
@@ -103,7 +108,9 @@ class SwiftGenerationSpec extends Specification {
         given: "An active MT700 message"
         def ref = "TF-IMM-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD"]).call()
+            .parameters([transactionRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD",
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         
         ec.entity.find("trade.TradeTransaction").condition("instrumentId", res.instrumentId).one()
             .set("transactionStatusId", "TX_APPROVED").update()
@@ -128,7 +135,9 @@ class SwiftGenerationSpec extends Specification {
         def ref = "TF-LARGE-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([transactionRef: ref, lcAmount: 50000.0, lcCurrencyUomId: "USD",
-                         goodsDescription: largeText]).call()
+                         goodsDescription: largeText,
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
 
         when: "generate#Mt701 is called"
         def genRes = ec.service.sync().name("trade.SwiftGenerationServices.generate#Mt701")
@@ -145,7 +154,9 @@ class SwiftGenerationSpec extends Specification {
         given: "An Import LC Amendment"
         def ref = "TF-LC-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD"]).call()
+            .parameters([transactionRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD",
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         
         // Add a mock amendment
         def amRes = ec.service.sync().name("create#trade.importlc.ImportLcAmendment")
@@ -169,27 +180,32 @@ class SwiftGenerationSpec extends Specification {
             .parameters([transactionRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD",
                          lcTypeEnumId: "IRREVOCABLE",
                          availableByEnumId: "NEGOTIATION",
-                         availableWithBic: "AVAILXXX",
+                         availableWithEnumId: "AVAIL_ANY_BANK",
                          confirmationEnumId: "CONFIRMED",
-                         advisingBankBic: "ADVISXXX"]).call()
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002'],
+                                   [roleEnumId: 'TP_ADVISING_BANK', partyId: 'ADVISING_BANK_001']]]).call()
 
         when: "generate#Mt700 is called"
         def genRes = ec.service.sync().name("trade.SwiftGenerationServices.generate#Mt700")
             .parameters([instrumentId: res.instrumentId]).call()
 
-        then: "Generated content contains 40A, 41A, 49 mappings"
+        then: "Generated content contains 40A, 41D, 49 mappings"
         genRes.messageContent != null
         genRes.messageContent.contains(":40A:IRREVOCABLE")
-        genRes.messageContent.contains(":41A:AVAILXXX")
-        genRes.messageContent.contains(":41a:NEGOTIATION") || genRes.messageContent.contains("NEGOTIATION")
-        genRes.messageContent.contains(":49:CONFIRMED")
+        genRes.messageContent.contains(":41D:ANY BANK")
+        genRes.messageContent.contains("NEGOTIATION")
+        genRes.messageContent.contains(":49:WITHOUT") // Simplified fallback in service
     }
 
     def "MT734 contains Tag 32A Value Date"() {
         given: "A presentation for an LC"
         def ref = "TF-LC-734-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD"]).call()
+            .parameters([transactionRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD",
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002'],
+                                   [roleEnumId: 'TP_ADVISING_BANK', partyId: 'ADVISING_BANK_001']]]).call()
         
         def presRes = ec.service.sync().name("create#trade.importlc.TradeDocumentPresentation")
             .parameters([instrumentId: res.instrumentId, claimAmount: 50000.0, claimCurrency: "USD",

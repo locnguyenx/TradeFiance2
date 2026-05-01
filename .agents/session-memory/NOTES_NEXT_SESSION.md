@@ -1,28 +1,25 @@
 # Notes for Next Session
 
 **Project:** Digital Trade Finance Platform
-**Date:** 2026-04-26
+**Date:** 2026-05-01
 
 ## 🚀 Status Summary
-The Trade Finance platform has reached a state of **100% functional stability** across both backend and frontend.
-- `TradeFinanceMoquiSuite` passes 296/296 backend tests.
-- Playwright E2E suite passes 20/20 frontend tests.
-- Service namespaces are synchronized under `trade.importlc`.
-- End-user and Developer guides are comprehensively updated.
+- The Trade Finance backend has successfully migrated to the `TradeInstrumentParty` role-based junction architecture.
+- **Backend (Spock)**: 100% stable (104 scenarios verified for refactor).
+- **Frontend (Jest)**: 100% stable for party-related components.
+- **Task Status**: Tasks 5 and 6 are 100% complete. Tasks 1-4 are ready for final review.
 
 ## 🎯 Next Objectives
-1. **Phase 3: Export LC Module Reconstruction**:
-   - Begin porting legacy Export LC logic to the hardened architecture.
-   - Standardize `ExportLetterOfCredit` entities and services.
-2. **Production Staging**:
-   - Verify performance under load for high-volume MT700 generation.
-   - Conduct security audit on Dual Approval thresholds for Tier 4 transactions.
+1. **Final PR Review**:
+   - Verify Tasks 1-4 implementation against the BRD.
+   - Conclude the branch stabilization.
+2. **E2E Test Finalization**:
+   - Run full Playwright suite to ensure no regressions in common workflows.
 
 ## 💡 Technical Context for "Next You"
-- **Master Data**: Always run `./gradlew reloadSave` before major test runs to ensure referential integrity for `PROD_IMP_LC` and `TF_TEST_FACILITY`.
-- **E2E Testing**: Use `npx playwright test` in `frontend` for verification. The `api-mock.ts` file is the source of truth for deterministic data.
-- **Ambiguity Guards**: In E2E tests, Use `.first()` or specific ARIA roles to resolve strict mode violations in master-detail views.
-- **Authorization**: Keep `ec.artifactExecution.disableAuthz()` in mind for unit testing service internals without hitting the full security filter.
+- **Strict Documentation Boundary**: Do NOT mix business domain examples (like LC issuance or SWIFT messages) into `moqui-*.md` journal files. Use generic examples (like `Order` or `Product`). Put all Trade Finance logic in `trade-finance-*.md`.
+- **Master Data**: Always run `./gradlew reloadSave :runtime:component:TradeFinance:test` before major test runs to ensure referential integrity.
+- **Immutability**: Be aware that updating an LC that is in the `LC_ISSUED` state will now fail if financial fields (amount, currency) are modified via the standard `update` service.
 
 ## 🛠️ Cleanup Actions
 - None required. All temp files have been removed.

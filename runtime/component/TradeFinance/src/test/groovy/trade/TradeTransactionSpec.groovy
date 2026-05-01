@@ -52,6 +52,7 @@ class TradeTransactionSpec extends Specification {
         
         cleanup:
         ec.entity.find("trade.TradeTransaction").condition("transactionId", "TX-TEST-01").deleteAll()
+        ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", "TX-TEST-INST-01").deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", "TX-TEST-INST-01").deleteAll()
     }
 

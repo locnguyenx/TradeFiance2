@@ -54,11 +54,21 @@ export const IssuanceStepper: React.FC = () => {
         chargeAllocationEnumId: 'APPLICANT',
         confirmationEnumId: 'WITHOUT',
         latestShipmentDate: '',
-        lcTypeEnumId: 'SIGHT',
+        lcTypeEnumId: 'IRREVOCABLE',
+        tenorTypeId: 'SIGHT',
         usanceDays: 0,
+        usanceBaseDate: '',
         expiryPlace: '',
         partialShipmentEnumId: 'ALLOWED',
         transhipmentEnumId: 'ALLOWED',
+        availableByEnumId: 'SIGHT',
+        availableWithEnumId: 'AVAIL_ANY_BANK',
+        shipmentPeriodText: '',
+        advisingBankPartyId: '',
+        advisingThroughBankPartyId: '',
+        negotiatingBankPartyId: '',
+        draweeBankPartyId: '',
+        issuingBankBic: '',
         marginType: 'None',
         marginPercentage: '100',
         marginAmount: '0',
@@ -66,17 +76,7 @@ export const IssuanceStepper: React.FC = () => {
         charges: [
             { type: 'Issuance Commission', rate: '0.125', amount: '0', account: '' }
         ],
-        instrumentId: '',
-        
-        // Party Junction Fields
-        advisingBankPartyId: '',
-        advisingThroughBankPartyId: '',
-        availableWithEnumId: 'AVAIL_ANY_BANK',
-        negotiatingBankPartyId: '',
-        draweeBankPartyId: '',
-        
-        availableByEnumId: 'SIGHT',
-        shipmentPeriodText: ''
+        instrumentId: ''
     });
     const [swiftErrors, setSwiftErrors] = useState<Record<string, string>>({});
 
@@ -85,7 +85,14 @@ export const IssuanceStepper: React.FC = () => {
 
     useEffect(() => {
         tradeApi.getProductCatalog().then(res => setProducts(res.productList || []));
-        tradeApi.getParties().then(res => setParties(res.partyList || []));
+        tradeApi.getParties().then(res => {
+            // Deduplicate parties by partyId to avoid React key warnings
+            const unique = (res.partyList || []).reduce((acc: TradeParty[], curr: TradeParty) => {
+                if (!acc.find(p => p.partyId === curr.partyId)) acc.push(curr);
+                return acc;
+            }, []);
+            setParties(unique);
+        });
     }, []);
 
     // Load existing draft if ID is provided
@@ -187,10 +194,12 @@ export const IssuanceStepper: React.FC = () => {
     // Proactively fetch facilities whenever applicant changes (essential for drafts)
     useEffect(() => {
         if (formData.applicantPartyId) {
+            console.log(`[IssuanceStepper] Fetching facilities for applicant: ${formData.applicantPartyId}`);
             tradeApi.getCustomerFacilities(formData.applicantPartyId).then(res => {
+                console.log(`[IssuanceStepper] Facilities received for ${formData.applicantPartyId}:`, res.facilityList);
                 setFacilities(res.facilityList || []);
             }).catch(e => {
-                console.error('Failed to fetch facilities:', e);
+                console.error('[IssuanceStepper] Failed to fetch facilities:', e);
                 setFacilities([]);
             });
         } else {
@@ -214,8 +223,6 @@ export const IssuanceStepper: React.FC = () => {
             else delete updated[field];
             return updated;
         });
-
-        // Bug fix in my thought: it should be delete updated[field]
     };
 
     const handleNext = async () => {
@@ -231,7 +238,7 @@ export const IssuanceStepper: React.FC = () => {
             if (!formData.expiryPlace) missingFields.push('Expiry Place');
             if (!formData.latestShipmentDate && !formData.shipmentPeriodText) missingFields.push('Latest Shipment Date or Shipment Period');
             if (!formData.goodsDescription) missingFields.push('Goods Description');
-            if (formData.lcTypeEnumId === 'USANCE' && !formData.usanceDays) missingFields.push('Usance Days');
+            if (formData.tenorTypeId === 'USANCE' && !formData.usanceDays) missingFields.push('Usance Days');
         } else if (stepIndex === 2) {
             if (!formData.chargeAllocationEnumId) missingFields.push('Charge Allocation');
             if (!formData.customerFacilityId) missingFields.push('Customer Facility');
@@ -279,7 +286,8 @@ export const IssuanceStepper: React.FC = () => {
                 setSwiftErrors(newErrors);
                 
                 if (res.errors && res.errors.length > 0) {
-                    setErrorMessage(`SWIFT Validation: ${res.errors.length} violation(s) detected. Please check flagged fields.`);
+                    const failingFields = res.errors.map((e: any) => `${e.fieldName}: ${e.message}`).join(' | ');
+                    setErrorMessage(`SWIFT Validation: ${res.errors.length} violation(s) detected (${failingFields}).`);
                     return; // Block transition to ensure user sees errors
                 }
             } catch (e) {
@@ -336,7 +344,7 @@ export const IssuanceStepper: React.FC = () => {
         const missingFields = [];
         // Step 0
         if (!formData.productCatalogId) missingFields.push('LC Product');
-        if (!formData.applicant) missingFields.push('Applicant');
+        if (!formData.applicantPartyId) missingFields.push('Applicant');
         
         // If it's a final save, we expect more, but for step transition we are lenient
         if (stepIndex > 0) {
@@ -367,7 +375,7 @@ export const IssuanceStepper: React.FC = () => {
                 latestShipmentDate: formData.latestShipmentDate || undefined,
                 usanceBaseDate: formData.usanceBaseDate || formData.issueDate || new Date().toISOString().split('T')[0],
                 businessStateId: 'LC_DRAFT',
-                parties: buildPartiesPayload(),
+                instrumentParties: buildPartiesPayload(),
                 availableWithEnumId: formData.availableWithEnumId
             };
             
@@ -423,7 +431,7 @@ export const IssuanceStepper: React.FC = () => {
                 applicantPartyId: formData.applicantPartyId,
                 customerFacilityId: formData.customerFacilityId,
                 transactionRef: formData.transactionRef || undefined,
-                parties: buildPartiesPayload(),
+                instrumentParties: buildPartiesPayload(),
                 availableWithEnumId: formData.availableWithEnumId
             };
             
@@ -523,18 +531,17 @@ export const IssuanceStepper: React.FC = () => {
                         <section id="parties-&-limits" className="form-grid">
                             <h3 className="section-title">Parties & Limits</h3>
                             <div className="field-group">
-                                <label htmlFor="lcTypeEnumId" className="required-label">LC Type</label>
+                                <label htmlFor="tenorTypeId" className="required-label">LC Type</label>
                                 <select 
-                                    id="lcTypeEnumId"
-                                    disabled={status === 'SUBMITTED'}
-                                    value={formData.lcTypeEnumId}
-                                    onChange={e => setFormData({...formData, lcTypeEnumId: e.target.value})}
-                                    className={swiftErrors.lcTypeEnumId ? 'is-invalid' : ''}
+                                    id="tenorTypeId"
+                                    value={formData.tenorTypeId}
+                                    onChange={e => setFormData({...formData, tenorTypeId: e.target.value})}
+                                    className={swiftErrors.tenorTypeId ? 'is-invalid' : ''}
                                 >
                                     <option value="SIGHT">Sight LC</option>
                                     <option value="USANCE">Usance LC</option>
                                 </select>
-                                {swiftErrors.lcTypeEnumId && <p className="error-text text-xs mt-1">{swiftErrors.lcTypeEnumId}</p>}
+                                {swiftErrors.tenorTypeId && <p className="error-text text-xs mt-1">{swiftErrors.tenorTypeId}</p>}
                             </div>
                             <div className="field-group">
                                 <label htmlFor="confirmationEnumId">Confirmation Instruction</label>
@@ -588,13 +595,31 @@ export const IssuanceStepper: React.FC = () => {
                                     className={(swiftErrors.applicantName || swiftErrors.applicant) ? 'is-invalid' : ''}
                                 >
                                     <option value="">Select Applicant...</option>
-                                    {parties.map(p => <option key={p.partyId} value={p.partyId}>{p.partyName}</option>)}
+                                    {commercialParties.map(p => (
+                                        <option key={p.partyId} value={p.partyId}>{p.partyName}</option>
+                                    ))}
                                 </select>
                                 {(swiftErrors.applicantName || swiftErrors.applicant) && <p className="error-text text-xs mt-1">{swiftErrors.applicantName || swiftErrors.applicant}</p>}
                                 <div className="helper-box">
                                     <p>Available Facility Limit: $1,000,000</p>
                                     <p>KYC Status: <span className="text-success">VERIFIED</span></p>
                                 </div>
+                            </div>
+                            <div className="field-group mb-4 full-width">
+                                <label htmlFor="customerFacilityId" className="required-label">Customer Facility (Optional for Draft)</label>
+                                <select 
+                                    id="customerFacilityId"
+                                    data-testid="facility-select"
+                                    value={formData.customerFacilityId}
+                                    onChange={e => setFormData({...formData, customerFacilityId: e.target.value})}
+                                >
+                                    <option value="">Select Facility...</option>
+                                    {facilities.map(f => (
+                                        <option key={f.facilityId} value={f.facilityId}>
+                                            {f.description || f.facilityId} - ${f.limitAmount?.toLocaleString()}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
                             <div className="field-group">
                                 <label htmlFor="advisingThroughBankPartyId">Advising Through Bank (Tag 58A)</label>
@@ -621,7 +646,7 @@ export const IssuanceStepper: React.FC = () => {
                                     className={(swiftErrors.beneficiaryName || swiftErrors.beneficiary) ? 'is-invalid' : ''}
                                 >
                                     <option value="">Select Beneficiary...</option>
-                                    {commercialParties.map(p => <option key={p.partyId} value={p.partyId}>{p.partyName}</option>)}
+                                    {commercialParties.map(p => <option key={`${p.partyId}-beneficiary`} value={p.partyId}>{p.partyName}</option>)}
                                 </select>
                                 {(swiftErrors.beneficiaryName || swiftErrors.beneficiary) && <p className="error-text text-xs mt-1">{swiftErrors.beneficiaryName || swiftErrors.beneficiary}</p>}
                             </div>
@@ -711,7 +736,7 @@ export const IssuanceStepper: React.FC = () => {
                                     />
                                     {swiftErrors.shipmentPeriodText && <p className="error-text text-xs mt-1">{swiftErrors.shipmentPeriodText}</p>}
                                 </div>
-                                {formData.lcTypeEnumId === 'USANCE' && (
+                                {formData.tenorTypeId === 'USANCE' && (
                                     <>
                                         <div className="field-group">
                                             <label htmlFor="usanceDays">Usance Days</label>
@@ -912,21 +937,7 @@ export const IssuanceStepper: React.FC = () => {
                                         <option value="SHARED">Shared (70/30)</option>
                                     </select>
                                 </div>
-                                <div className="field-group mb-4 full-width">
-                                    <label htmlFor="customerFacilityId" className="required-label">Customer Facility (Optional for Draft)</label>
-                                    <select 
-                                        id="customerFacilityId"
-                                        value={formData.customerFacilityId}
-                                        onChange={e => setFormData({...formData, customerFacilityId: e.target.value})}
-                                    >
-                                        <option value="">Select Facility...</option>
-                                        {facilities.map(f => (
-                                            <option key={f.facilityId} value={f.facilityId}>
-                                                {f.description || f.facilityId} - ${f.limitAmount?.toLocaleString()}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
+
                                 <div className="helper-box">
                                     <p>Issuance Commission (Default): 0.125%</p>
                                     <p>Estimated Charge: {formData.amount ? (Number(formData.amount) * 0.00125).toFixed(2) : '0.00'}</p>
@@ -969,7 +980,7 @@ export const IssuanceStepper: React.FC = () => {
                             <button 
                                 data-testid="next-button" 
                                 className="primary-btn" 
-                                disabled={status === 'SUBMITTED'}
+                                disabled={status === 'SUBMITTED' || loading}
                                 onClick={handleNext}
                             >
                                 Next

@@ -1,58 +1,56 @@
 # Moqui Service Patterns
 
-> Verified against Moqui Framework (174+ service definitions)
+> Verified against Moqui Framework
 
 ## 1. Service Naming Convention
 
 ### verb#noun Pattern
 | Verb | Purpose | Example |
 |------|---------|---------|
-| `create` | New record | `create#LetterOfCredit` |
-| `update` | Modify record | `update#LetterOfCredit` |
-| `delete` | Remove record | `delete#LetterOfCredit` |
-| `get` | Retrieve data | `get#LcDetails` |
-| `find` | Search records | `find#LcByStatus` |
+| `create` | New record | `create#Order` |
+| `update` | Modify record | `update#Order` |
+| `delete` | Remove record | `delete#Order` |
+| `get` | Retrieve data | `get#OrderDetails` |
+| `find` | Search records | `find#OrderByStatus` |
 | `transition` | Status change | `transition#Status` |
-| `validate` | Business rule check | `validate#Amendment` |
+| `validate` | Business rule check | `validate#Record` |
 
 ### Full Path
 ```xml
-<service verb="create" noun="LetterOfCredit" 
+<service verb="create" noun="Order" 
          type="interface"
-         location="moqui.service.sec.SimpleServices">
+         location="moqui.service.ExampleServices">
 ```
-- Use full package path: `trade.TradeFinanceServices.create#LcDrawing`
+- Use full package path: `moqui.example.ExampleServices.create#Example`
 
 ## 2. Service Definition Structure
 
 ### Standard CRUD Service
 ```xml
-<service verb="create" noun="LetterOfCredit">
-    <description>Create a new Letter of Credit</description>
+<service verb="create" noun="Example">
+    <description>Create a new Example record</description>
     <in-parameters>
-        <parameter name="lcNumber" type="String" required="true"/>
-        <parameter name="lcAmount" type="BigDecimal" required="false"/>
-        <parameter name="lcStatusId" type="String" default-value="LcDraft"/>
+        <parameter name="exampleName" type="String" required="true"/>
+        <parameter name="statusId" type="String" default-value="Draft"/>
     </in-parameters>
     <out-parameters>
-        <parameter name="lcId" type="String"/>
+        <parameter name="exampleId" type="String"/>
     </out-parameters>
     <actions>
         <!-- Validation -->
-        <if condition="!lcNumber">
-            <return error="true" message="LC Number is required"/>
+        <if condition="!exampleName">
+            <return error="true" message="Name is required"/>
         </if>
         
         <!-- Create -->
-        <make-value entity-name="trade.LetterOfCredit" value-field="lc"/>
-        <set field="lc.lcId" from="ec.entity.generatePk('trade.LetterOfCredit')"/>
-        <set field="lc.lcNumber" from="lcNumber"/>
-        <set field="lc.lcAmount" from="lcAmount ?: 0"/>
-        <set field="lc.lcStatusId" from="lcStatusId"/>
+        <make-value entity-name="moqui.example.Example" value-field="newValue"/>
+        <set field="newValue.exampleId" from="ec.entity.generatePk('moqui.example.Example')"/>
+        <set field="newValue.exampleName" from="exampleName"/>
+        <set field="newValue.statusId" from="statusId"/>
         
-        <entity-create value-field="lc"/>
+        <entity-create value-field="newValue"/>
         
-        <return from="lc.lcId"/>
+        <return from="newValue.exampleId"/>
     </actions>
 </service>
 ```
@@ -63,13 +61,13 @@
 <service verb="transition" noun="Status" type="interface"/>
 
 <!-- Implementation -->
-<service verb="transition" noun="Status" location="moqui.service.facility.FacilityServices">
+<service verb="transition" noun="Status" location="moqui.service.ExampleServices">
     <in-parameters>
-        <parameter name="lcId" required="true"/>
+        <parameter name="exampleId" required="true"/>
         <parameter name="toStatusId"/>
     </in-parameters>
     <actions>
-        <!-- Implementation -->
+        <!-- Implementation logic -->
     </actions>
 </service>
 ```
@@ -86,43 +84,37 @@
 </actions>
 ```
 
-### AVOID
-```xml
-<!-- DON'T USE - doesn't set error state -->
-<message error="true">Invalid record</message>
-```
-
 ### Return with Error
 ```xml
-<return error="true" message="Status transition not allowed"/>
+<return error="true" message="Action not allowed"/>
 ```
 
 ## 4. Service Call Patterns
 
 ### Sync Call
 ```xml
-<service-call name="trade.TradeFinanceServices.create#LcDrawing"
-             in-map="[lcId:lcId, amount:drawingAmount]"
+<service-call name="moqui.example.ExampleServices.create#Example"
+             in-map="[name:name, type:type]"
              out-map="/result"/>
 ```
 
 ### Async Call (Background)
 ```xml
-<service-call name="trade.TradeFinanceServices.processAmendment"
+<service-call name="moqui.example.ExampleServices.processData"
              transaction="async"/>
 ```
 
 ### Require New Transaction (Force Commit)
 ```xml
-<service-call name="trade.AuditServices.log#StatusChange"
+<service-call name="moqui.AuditServices.log#Change"
              transaction="force"/>
 ```
 
 ### Groovy Service Call
 ```groovy
 def result = ec.service.sync()
-    .name("trade.TradeFinanceServices.create#LcDrawing")
-    .parameters([lcId: lcId, amount: amount])
+    .name("moqui.example.ExampleServices.create#Example")
+    .parameters([name: name])
     .call()
 
 if (result.success) {
@@ -151,19 +143,18 @@ if (result.success) {
 
 ### Pattern for Custom Status Fields
 ```xml
-<service verb="transition" noun="TransactionStatus">
+<service verb="transition" noun="Status">
     <in-parameters>
-        <parameter name="lcId" required="true"/>
+        <parameter name="exampleId" required="true"/>
         <parameter name="toStatusId"/>
     </in-parameters>
     <actions>
-        <entity-find-one entity-name="trade.LetterOfCredit" value-field="lc"/>
+        <entity-find-one entity-name="moqui.example.Example" value-field="example"/>
         
         <!-- Auto-detect single valid transition -->
         <if condition="!toStatusId">
             <entity-find entity-name="moqui.basic.StatusFlowTransition" list="transitions">
-                <econdition field-name="statusFlowId" value="LcTransaction"/>
-                <econdition field-name="statusId" from="lc.transactionStatusId"/>
+                <econdition field-name="statusId" from="example.statusId"/>
             </entity-find>
             <if condition="transitions.size() == 1">
                 <set field="toStatusId" from="transitions[0].toStatusId"/>
@@ -172,19 +163,18 @@ if (result.success) {
         
         <!-- Validate -->
         <entity-find entity-name="moqui.basic.StatusFlowTransition" list="valid">
-            <econdition field-name="statusFlowId" value="LcTransaction"/>
-            <econdition field-name="statusId" from="lc.transactionStatusId"/>
+            <econdition field-name="statusId" from="example.statusId"/>
             <econdition field-name="toStatusId" from="toStatusId"/>
         </entity-find>
         
         <if condition="!valid">
-            <script>ec.message.addError("Invalid transition from ${lc.transactionStatusId} to ${toStatusId}")</script>
+            <script>ec.message.addError("Invalid transition")</script>
             <return/>
         </if>
         
         <!-- Apply -->
-        <set field="lc.transactionStatusId" from="toStatusId"/>
-        <entity-update value-field="lc"/>
+        <set field="example.statusId" from="toStatusId"/>
+        <entity-update value-field="example"/>
     </actions>
 </service>
 ```
@@ -193,63 +183,55 @@ if (result.success) {
 
 ### Default (authenticate required)
 ```xml
-<service verb="update" noun="LetterOfCredit">
+<service verb="update" noun="Example">
     <!-- authenticate="true" is default -->
 </service>
 ```
 
 ### Public Service
 ```xml
-<service verb="calculate" noun="ShippingRate" authenticate="false">
+<service verb="calculate" noun="Rate" authenticate="false">
 ```
 
 ### Permission-based
 ```xml
-<sec-permission service-permission="TRADE_FINANCE -LC_UPDATE"/>
+<sec-permission service-permission="EXAMPLE_MODULE -RECORD_UPDATE"/>
 ```
 
 ## 8. Entity Auto Services
 
 ### Auto CRUD
 ```xml
-<!-- Framework generates: create, update, delete, find for entity -->
-<service verb="create" noun="LetterOfCredit" type="interface"/>
-<service verb="update" noun="LetterOfCredit" type="interface"/>
-<service verb="delete" noun="LetterOfCredit" type="interface"/>
-<service verb="find" noun="LetterOfCredit" type="interface"/>
+<service verb="create" noun="Example" type="interface"/>
+<service verb="update" noun="Example" type="interface"/>
+<service verb="delete" noun="Example" type="interface"/>
+<service verb="find" noun="Example" type="interface"/>
 ```
-
-### Auto Service Runner
-- Only works for entities named exactly in service noun
-- Only validates `statusId` field name
-- Custom status fields need dedicated transition services
 
 ## 9. Common Patterns
 
 ### Find-or-Create
 ```xml
-<entity-find entity-name="trade.LcCharge" list="existing">
-    <econdition field-name="lcId"/>
-    <econdition field-name="chargeTypeEnumId"/>
+<entity-find entity-name="moqui.example.Example" list="existing">
+    <econdition field-name="exampleId"/>
 </entity-find>
 
 <if condition="existing">
-    <set field="charge" from="existing[0]"/>
+    <set field="example" from="existing[0]"/>
 <else>
-    <make-value entity-name="trade.LcCharge" value-field="charge"/>
-    <set field="charge.lcId" from="lcId"/>
-    <entity-create value-field="charge"/>
+    <make-value entity-name="moqui.example.Example" value-field="example"/>
+    <entity-create value-field="example"/>
 </else>
 ```
 
 ### Cascade Update
 ```xml
-<entity-find entity-name="trade.LcCharge" list="charges">
-    <econdition field-name="lcId"/>
+<entity-find entity-name="moqui.example.Child" list="children">
+    <econdition field-name="parentId"/>
 </entity-find>
-<iterate list="charges" entry="charge">
-    <set field="charge.lcStatusId" from="toStatusId"/>
-    <entity-update value-field="charge"/>
+<iterate list="children" entry="child">
+    <set field="child.statusId" from="toStatusId"/>
+    <entity-update value-field="child"/>
 </iterate>
 ```
 
@@ -257,47 +239,16 @@ if (result.success) {
 ```xml
 <actions>
     <!-- Fetch -->
-    <entity-find-one entity-name="trade.LetterOfCredit" value-field="lc"/>
+    <entity-find-one entity-name="moqui.example.Example" value-field="example"/>
     
-    <!-- Call service that modifies lc -->
-    <service-call name="trade.TradeFinanceServices.transition#Status"
-                  in-map="[lcId:lcId, toStatusId:'LcApproved']"/>
+    <!-- Call service that modifies record -->
+    <service-call name="moqui.example.ExampleServices.transition#Status"
+                  in-map="[id:id, toStatusId:'Approved']"/>
     
     <!-- RE-FETCH after child service -->
-    <entity-find-one entity-name="trade.LetterOfCredit" value-field="lc"/>
+    <entity-find-one entity-name="moqui.example.Example" value-field="example"/>
     
     <!-- Now safe to update -->
-    <entity-update value-field="lc"/>
+    <entity-update value-field="example"/>
 </actions>
-```
-
-## 10. Service Location Organization
-
-```
-service/
-├── moqui.service.ExampleServices.xml        # Framework services
-├── moqui.service.facility.FacilityServices.xml
-└── TradeFinance/
-    ├── TradeFinanceServices.xml              # Main services
-    ├── LcAmendmentServices.xml
-    └── LcDrawingServices.xml
-```
-
-## 11. Testing Services
-
-### Full Path Required
-```groovy
-// CORRECT
-ec.service.sync().name("trade.TradeFinanceServices.create#LetterOfCredit")
-
-// MAY FAIL
-ec.service.sync().name("create#LetterOfCredit")
-```
-
-### Check for Errors
-```groovy
-if (ec.message.hasError()) {
-    logger.info("Errors: ${ec.message.errors}")
-    return
-}
 ```

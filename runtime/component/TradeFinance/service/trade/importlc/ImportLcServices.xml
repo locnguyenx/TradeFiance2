@@ -16,6 +16,11 @@
             <parameter name="expiryDate" type="Date"/>
             <parameter name="latestShipmentDate" type="Date"/>
             <parameter name="isRevolving" default-value="N"/>
+            
+            <parameter name="instrumentParties" type="List"><parameter name="party" type="Map">
+                <parameter name="roleEnumId" required="true"/>
+                <parameter name="partyId" required="true"/>
+            </parameter></parameter>
         </in-parameters>
         <out-parameters>
             <parameter name="instrumentId" required="true"/>
@@ -31,6 +36,7 @@
             <!-- 1. Create TradeInstrument -->
             <service-call name="create#trade.TradeInstrument" out-map="createInstOut"
                 in-map="[
+                    instrumentId: instrumentId,
                     transactionRef: transactionRef,
                     instrumentTypeEnumId: 'IMPORT_LC',
                     businessStateId: 'LC_DRAFT',
@@ -54,9 +60,34 @@
                 ]"/>
             <set field="transactionId" from="txOut.transactionId"/>
 
-            <!-- 2. Create ImportLetterOfCredit -->
+            <!-- 3. Assign Parties -->
+            <log message="Assigning parties for Instrument ${instrumentId}: ${instrumentParties}"/>
+            <iterate list="instrumentParties" entry="partyMap">
+                <log message="Ensuring party exists: ${partyMap.partyId} for role ${partyMap.roleEnumId}"/>
+                <service-call name="trade.TradeCommonServices.create#TradeParty" in-map="partyMap"/>
+                <log message="Calling assign#InstrumentParty for ${partyMap}"/>
+                <service-call name="trade.TradeCommonServices.assign#InstrumentParty"
+                    in-map="partyMap + [instrumentId: instrumentId]"/>
+            </iterate>
+            
+            <!-- 4. Mandatory Role Validation -->
+            <entity-find entity-name="trade.TradeInstrumentParty" list="roleList">
+                <econdition field-name="instrumentId"/>
+            </entity-find>
+            <set field="roles" from="roleList*.roleEnumId"/>
+            <if condition="!roles.contains('TP_APPLICANT') || !roles.contains('TP_BENEFICIARY')">
+                <return error="true" message="Applicant and Beneficiary are mandatory for LC issuance"/>
+            </if>
+            <if condition="availableWithEnumId == 'AVAIL_SPECIFIC_BANK' &amp;&amp; !roles.contains('TP_NEGOTIATING_BANK')">
+                <return error="true" message="Negotiating Bank is mandatory when 'Available With Bank' is selected"/>
+            </if>
+
+            <!-- 5. Create ImportLetterOfCredit -->
+            <!-- Clean up context to avoid recursive creation of short-alias matches like 'parties' -->
+            <set field="createLcIn" from="new HashMap(context)"/>
+            <script>createLcIn.remove('instrumentParties')</script>
             <service-call name="create#trade.importlc.ImportLetterOfCredit" out-map="createLcOut"
-                in-map="context + [
+                in-map="createLcIn + [
                     instrumentId: instrumentId,
                     businessStateId: 'LC_DRAFT',
                     effectiveAmount: lcAmount,
@@ -64,16 +95,7 @@
                     effectiveExpiryDate: expiryDate,
                     effectiveShipmentDate: latestShipmentDate,
                     effectiveCurrencyUomId: lcCurrencyUomId,
-                    productEnumId: 'IMPORT_LC',
-                    applicantPartyId: applicantPartyId,
-                    currencyUomId: lcCurrencyUomId,
-                    amount: lcAmount,
-                    outstandingAmount: lcAmount,
-                    baseEquivalentAmount: lcAmount,
-                    issueDate: ec.user.nowTimestamp,
-                    isRevolving: isRevolving ?: 'N',
-                    expiryDate: expiryDate,
-                    customerFacilityId: customerFacilityId
+                    isRevolving: isRevolving ?: 'N'
                 ]"/>
             <set field="instrumentId" from="instrumentId"/>
         </actions>
@@ -89,6 +111,11 @@
             <parameter name="expiryDate" type="Date"/>
             <parameter name="latestShipmentDate" type="Date"/>
             <parameter name="businessStateId"/>
+            
+            <parameter name="instrumentParties" type="List"><parameter name="party" type="Map">
+                <parameter name="roleEnumId" required="true"/>
+                <parameter name="partyId" required="true"/>
+            </parameter></parameter>
         </in-parameters>
         <out-parameters>
             <parameter name="instrumentId" required="true"/>
@@ -106,6 +133,12 @@
                 <order-by field-name="-transactionId"/>
             </entity-find>
             <set field="tx" from="txList ? txList[0] : null"/>
+
+            <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc"/>
+            <!-- FR-LIF-35: Immutability Guard for Issued Instruments -->
+            <if condition="lc?.businessStateId == 'LC_ISSUED' &amp;&amp; (amount != null || lcAmount != null || currencyUomId != null || lcCurrencyUomId != null)">
+                <return message="Cannot modify financial terms of an Issued LC via update. Use Amendment workflow."/>
+            </if>
             
             <if condition="tx?.transactionStatusId == 'TX_APPROVED'">
                 <service-call name="create#trade.TradeTransaction" out-map="newTxOut"
@@ -131,7 +164,6 @@
             <if condition="lcAmount != null">
                 <set field="lc.effectiveAmount" from="lcAmount"/>
                 <set field="lc.effectiveOutstandingAmount" from="lcAmount"/>
-                <set field="lc.outstandingAmount" from="lcAmount"/>
             </if>
             <if condition="lcCurrencyUomId != null"><set field="lc.effectiveCurrencyUomId" from="lcCurrencyUomId"/></if>
             <if condition="expiryDate != null"><set field="lc.effectiveExpiryDate" from="expiryDate"/></if>
@@ -146,13 +178,41 @@
                     <service-call name="update#trade.TradeTransaction" in-map="[transactionId: tx.transactionId, transactionStatusId: 'TX_APPROVED']"/>
                 </if>
                 <set field="lc.businessStateId" from="businessStateId"/>
-                <if condition="outstandingAmount != null"><set field="lc.effectiveOutstandingAmount" from="outstandingAmount"/></if>
+                <if condition="effectiveOutstandingAmount != null"><set field="lc.effectiveOutstandingAmount" from="effectiveOutstandingAmount"/></if>
             </if>
             <if condition="businessStateId == 'LC_CANCELLED'">
                 <service-call name="trade.LimitServices.reverse#Limit" in-map="[instrumentId: instrumentId]"/>
             </if>
             <entity-set value-field="lc" include="nonpk"/>
             <entity-update value-field="lc"/>
+
+            <!-- Update Parties if passed -->
+            <if condition="instrumentParties != null">
+                <entity-find entity-name="trade.TradeInstrumentParty" list="existingParties">
+                    <econdition field-name="instrumentId"/>
+                </entity-find>
+                <iterate list="existingParties" entry="ep">
+                    <entity-delete value-field="ep"/>
+                </iterate>
+                <iterate list="instrumentParties" entry="partyMap">
+                    <service-call name="trade.TradeCommonServices.create#TradeParty" in-map="partyMap"/>
+                    <service-call name="trade.TradeCommonServices.assign#InstrumentParty"
+                        in-map="partyMap + [instrumentId: instrumentId]"/>
+                </iterate>
+            </if>
+            
+            <!-- Mandatory Role Validation -->
+            <entity-find entity-name="trade.TradeInstrumentParty" list="roleList">
+                <econdition field-name="instrumentId"/>
+            </entity-find>
+            <set field="roles" from="roleList*.roleEnumId"/>
+            <if condition="!roles.contains('TP_APPLICANT') || !roles.contains('TP_BENEFICIARY')">
+                <return error="true" message="Applicant and Beneficiary are mandatory for LC issuance"/>
+            </if>
+            <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lcCheck" auto-field-map="true"/>
+            <if condition="lcCheck.availableWithEnumId == 'AVAIL_SPECIFIC_BANK' &amp;&amp; !roles.contains('TP_NEGOTIATING_BANK')">
+                <return error="true" message="Negotiating Bank is mandatory when 'Available With Bank' is selected"/>
+            </if>
             <set field="transactionRef" from="instrument.transactionRef"/>
         </actions>
     </service>
@@ -680,16 +740,5 @@
             <script>ec.artifactExecution.enableAuthz()</script>
         </actions>
     </service>
-    <service verb="update" noun="ImportLetterOfCredit">
-        <in-parameters>
-            <auto-parameters entity-name="trade.importlc.ImportLetterOfCredit" include="pk"/>
-            <auto-parameters entity-name="trade.importlc.ImportLetterOfCredit" include="nonpk"/>
-        </in-parameters>
-        <actions>
-            <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" for-update="true"/>
-            <if condition="lc == null"><return-error message="Letter of Credit not found for instrument ${instrumentId}"/></if>
-            <entity-set value-field="lc" include="nonpk"/>
-            <entity-update value-field="lc"/>
-        </actions>
-    </service>
+    <!-- REMOVED duplicate update#ImportLetterOfCredit -->
 </services>

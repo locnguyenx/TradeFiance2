@@ -45,9 +45,7 @@ class TradeCommonEntitiesSpec extends Specification {
             kycExpiryDate: "2027-01-01",
             sanctionsStatus: "CLEAR",
             countryOfRisk: "SGP",
-            swiftBic: "TESTSGSGXXX",
-            registeredAddress: "123 Marina Bay, Singapore",
-            partyRoleEnumId: "APPLICANT"
+            registeredAddress: "123 Marina Bay, Singapore"
         ]).call()
         def party = ec.entity.find("trade.TradeParty")
                 .condition("partyId", "PARTY_TEST").one()
@@ -55,10 +53,8 @@ class TradeCommonEntitiesSpec extends Specification {
         then:
         party != null
         party.sanctionsStatus == "CLEAR"
-        party.swiftBic == "TESTSGSGXXX"
         party.countryOfRisk == "SGP"
         party.registeredAddress == "123 Marina Bay, Singapore"
-        party.partyRoleEnumId == "APPLICANT"
 
         cleanup:
         ec.entity.find("trade.TradeParty")

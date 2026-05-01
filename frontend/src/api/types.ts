@@ -84,15 +84,9 @@ export interface ImportLetterOfCredit {
   marginType?: string;
   marginPercentage?: string;
   marginAmount?: string;
-  marginDebitAccount?: string;
-  availableByEnumId?: string;
-  availableWithName?: string;
-  shipmentPeriodText?: string;
   // UI Friendly fields
   applicantName?: string;
   applicantPartyName?: string;
-  beneficiaryName?: string;
-  beneficiaryPartyName?: string;
   currency?: string;
   slaDaysRemaining?: number;
   // v3.0 effective values
@@ -108,23 +102,14 @@ export interface ImportLetterOfCredit {
 
 export interface TradeParty {
   partyId: string;
+  partyTypeEnumId: string;
   partyName: string;
-  partyTypeEnumId?: string;
-  accountNumber?: string;
-  roleTypeId: string;
-  swiftBic?: string;
-  address1?: string;
-  city?: string;
-  countryGeoId?: string;
-  kycStatusEnumId?: string;
-  sanctionsStatusEnumId?: string;
-  lastKycUpdate?: string;
-  riskRating?: string;
-  description?: string;
-  countryOfRisk?: string;
   swiftBic?: string;
   registeredAddress?: string;
-  partyRoleEnumId?: string;
+  accountNumber?: string;
+  countryOfRisk?: string;
+  kycStatus?: string;
+  sanctionsStatus?: string;
 }
 
 export interface TradeProductCatalog {

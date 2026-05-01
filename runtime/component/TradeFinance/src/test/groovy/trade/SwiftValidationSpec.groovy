@@ -18,6 +18,12 @@ class SwiftValidationSpec extends Specification {
         try {
             ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrument", 9000000, 1000)
             ec.entity.tempSetSequencedIdPrimary("trade.importlc.ImportLetterOfCredit", 9000000, 1000)
+            
+            // Restore seed bank for BIC tests
+            if (ec.entity.find("trade.TradePartyBank").condition("partyId", "ADVISING_BANK_001").count() == 0) {
+                ec.entity.makeValue("trade.TradeParty").setAll([partyId: "ADVISING_BANK_001", partyTypeEnumId: "PARTY_BANK", partyName: "Overseas Banking Corp", kycStatus: "Active"]).createOrUpdate()
+                ec.entity.makeValue("trade.TradePartyBank").setAll([partyId: "ADVISING_BANK_001", swiftBic: "OBCSGSGX", hasActiveRMA: "Y"]).createOrUpdate()
+            }
         } finally {
             ec.artifactExecution.enableAuthz()
             ec.destroy()
@@ -42,10 +48,8 @@ class SwiftValidationSpec extends Specification {
         ec.artifactExecution.disableAuthz()
         try {
             ec.entity.find("trade.importlc.ImportLcAmendment").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "9000000").deleteAll()
-            ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "9000000").deleteAll()
-            ec.entity.find("trade.importlc.ImportLcSettlement").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "9000000").deleteAll()
-            ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "9000000").deleteAll()
             ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "9000000").deleteAll()
+            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "9000000").deleteAll()
             ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "9000000").deleteAll()
             ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "9000000").deleteAll()
             ec.entity.find("trade.TradeTransaction").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "9000000").deleteAll()
@@ -63,7 +67,9 @@ class SwiftValidationSpec extends Specification {
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
                          goodsDescription: "STEEL PIPES @100MM & FITTINGS",
-                         portOfLoading: "HO CHI MINH CITY #1 PORT"]).call()
+                         portOfLoading: "HO CHI MINH CITY #1 PORT",
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         assert res.instrumentId != null
 
         when: "validate#SwiftFields is called"
@@ -82,7 +88,9 @@ class SwiftValidationSpec extends Specification {
         given: "An amendment with both valid and invalid Z charset characters"
         def ref = "TF-AMD-" + System.currentTimeMillis()
         def lcRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD"]).call()
+            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         
         def amdRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#Amendment")
             .parameters([instrumentId: lcRes.instrumentId, amendmentNarrative: "Valid Z characters: @#=!\nInvalid: ^",
@@ -103,7 +111,9 @@ class SwiftValidationSpec extends Specification {
         given: "A TradeInstrument with a very long reference"
         def longRef = "TF-REF-TOO-LONG-REFERENCE-12345"
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: longRef, lcAmount: 1000.0, lcCurrencyUomId: "USD"]).call()
+            .parameters([transactionRef: longRef, lcAmount: 1000.0, lcCurrencyUomId: "USD",
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
 
         when: "validate#SwiftFields is called"
         def result = ec.service.sync().name("trade.importlc.ImportLcValidationServices.validate#SwiftFields")
@@ -120,7 +130,11 @@ class SwiftValidationSpec extends Specification {
         def ref = "TF-BIC2-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
-                         advisingBankBic: "BAN1"]).call()
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002'],
+                                   [roleEnumId: 'TP_ADVISING_BANK', partyId: 'ADVISING_BANK_001']]]).call()
+        // Override BIC to test length validation on the extension
+        ec.entity.find("trade.TradePartyBank").condition("partyId", "ADVISING_BANK_001").one().set("swiftBic", "BAN1").update()
 
         when: "validate#SwiftFields is called"
         def result = ec.service.sync().name("trade.importlc.ImportLcValidationServices.validate#SwiftFields")
@@ -129,6 +143,9 @@ class SwiftValidationSpec extends Specification {
         then: "Error for BIC length"
         result.errors != null
         result.errors.any { it.fieldName == "advisingBankBic" && it.message.contains("8 or 11") }
+
+        cleanup: "Revert the BIC back to original"
+        ec.entity.find("trade.TradePartyBank").condition("partyId", "ADVISING_BANK_001").one().set("swiftBic", "OBCSGSGX").update()
     }
 
     // BDD-SWV-LIN-02: Multiline format violation for Name field
@@ -138,7 +155,10 @@ class SwiftValidationSpec extends Specification {
         def ref = "TF-LIN2-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
-                         applicantName: longName]).call()
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
+        // Update applicant name on TradeParty entity for line count test
+        ec.entity.find("trade.TradeParty").condition("partyId", "ACME_CORP_001").one().set("partyName", longName).update()
 
         when: "validate#SwiftFields is called"
         def result = ec.service.sync().name("trade.importlc.ImportLcValidationServices.validate#SwiftFields")
@@ -147,6 +167,9 @@ class SwiftValidationSpec extends Specification {
         then: "Error for too many lines"
         result.errors != null
         result.errors.any { it.fieldName == "applicantName" && it.message.contains("maximum 4 lines") }
+
+        cleanup:
+        ec.entity.find("trade.TradeParty").condition("partyId", "ACME_CORP_001").one().set("partyName", "Acme Corporation Ltd").update()
     }
 
     // Existing test cases preserved and hardened...
@@ -156,7 +179,9 @@ class SwiftValidationSpec extends Specification {
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
                          goodsDescription: "STEEL PIPES 100MM, GRADE A (STANDARD)",
-                         portOfLoading: "HO CHI MINH CITY"]).call()
+                         portOfLoading: "HO CHI MINH CITY",
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         assert res.instrumentId != null
 
         when: "validate#SwiftFields is called"
@@ -172,7 +197,9 @@ class SwiftValidationSpec extends Specification {
         given: "A TradeInstrument with slash rule violations"
         def ref = "/TF-REF-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD"]).call()
+            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
 
         when: "validate#SwiftFields is called on the TradeInstrument"
         def result = ec.service.sync().name("trade.importlc.ImportLcValidationServices.validate#SwiftFields")
@@ -188,7 +215,9 @@ class SwiftValidationSpec extends Specification {
         def ref = "TF-MEX-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
-                         tolerancePositive: 0.10, toleranceNegative: 0.05]).call()
+                         tolerancePositive: 0.10, toleranceNegative: 0.05,
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         
         def lc = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", res.instrumentId).one()
         lc.set("maxCreditAmountFlag", "Y").update()
@@ -206,7 +235,9 @@ class SwiftValidationSpec extends Specification {
         given: "An LC with tenor USANCE but missing usanceDays/usanceBaseDate"
         def ref = "TF-CND-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD"]).call()
+            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         
         def lc = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", res.instrumentId).one()
         lc.setAll([tenorTypeId: "USANCE", usanceDays: null, usanceBaseDate: null]).update()
@@ -226,7 +257,9 @@ class SwiftValidationSpec extends Specification {
         def ref = "TF-SVC-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
-                         goodsDescription: "PIPES @100MM"]).call()
+                         goodsDescription: "PIPES @100MM",
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         
         def lcEntity = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", res.instrumentId).one()
         lcEntity.setAll([maxCreditAmountFlag: "Y", tolerancePositive: 0.10, tenorTypeId: "USANCE", usanceDays: null]).update()
@@ -253,8 +286,8 @@ class SwiftValidationSpec extends Specification {
                          lcTypeEnumId: "IRREVOCABLE",
                          availableByEnumId: "SIGHT",
                          confirmationEnumId: "WITHOUT",
-                         applicantName: "VIETNAM IMPORT EXPORT CORP\nNO 1 LE LOI STREET\nHO CHI MINH CITY",
-                         beneficiaryName: "GLOBAL STEEL TRADING LTD\n123 MAIN ROAD\nLONDON, UK"]).call()
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
 
         when: "validate#SwiftFields is called"
         def result = ec.service.sync().name("trade.importlc.ImportLcValidationServices.validate#SwiftFields")
@@ -268,7 +301,9 @@ class SwiftValidationSpec extends Specification {
         given: "An LC missing mandatory SWIFT fields"
         def ref = "TF-MAND-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD"]).call()
+            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         
         def lc = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", res.instrumentId).one()
         lc.setAll([lcTypeEnumId: null, availableByEnumId: null, confirmationEnumId: null]).update()
@@ -290,7 +325,9 @@ class SwiftValidationSpec extends Specification {
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
                          latestShipmentDate: "2026-12-31", shipmentPeriodText: "DURING DECEMBER",
-                         lcTypeEnumId: "IRREVOCABLE", availableByEnumId: "SIGHT", confirmationEnumId: "WITHOUT"]).call()
+                         lcTypeEnumId: "IRREVOCABLE", availableByEnumId: "SIGHT", confirmationEnumId: "WITHOUT",
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
 
         when: "validate#SwiftFields is called"
         def result = ec.service.sync().name("trade.importlc.ImportLcValidationServices.validate#SwiftFields")
@@ -306,7 +343,9 @@ class SwiftValidationSpec extends Specification {
         def ref = "TF-PRES-LIN-" + System.currentTimeMillis()
         def lcRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
-                         lcTypeEnumId: "IRREVOCABLE", availableByEnumId: "SIGHT", confirmationEnumId: "WITHOUT"]).call()
+                         lcTypeEnumId: "IRREVOCABLE", availableByEnumId: "SIGHT", confirmationEnumId: "WITHOUT",
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         
         def longText = "LINE 1\nLINE 2\nLINE 3\nLINE 4\nLINE 5\nLINE 6\nLINE 7"
         def presId = "PRES-" + System.currentTimeMillis()
@@ -330,7 +369,9 @@ class SwiftValidationSpec extends Specification {
         def ref = "TF-PRES-LIN2-" + System.currentTimeMillis()
         def lcRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
-                         lcTypeEnumId: "IRREVOCABLE", availableByEnumId: "SIGHT", confirmationEnumId: "WITHOUT"]).call()
+                         lcTypeEnumId: "IRREVOCABLE", availableByEnumId: "SIGHT", confirmationEnumId: "WITHOUT",
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         
         def longText = "LINE 1\nLINE 2\nLINE 3\nLINE 4\nLINE 5\nLINE 6\nLINE 7"
         def presId = "PRES2-" + System.currentTimeMillis()

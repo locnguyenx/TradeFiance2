@@ -9,7 +9,7 @@ jest.mock('../api/tradeApi', () => ({
             amount: 500000,
             currencyUomId: 'USD',
             expiryDate: '2026-12-31',
-            beneficiaryPartyId: 'PARTY_EXP_1',
+            parties: [{ roleEnumId: 'TP_BENEFICIARY', partyId: 'PARTY_EXP_1' }],
             effectiveAmount: 500000,
             effectiveExpiryDate: '2026-12-31'
         }),

@@ -94,6 +94,17 @@
         </relationship>
     </entity>
 
+    <view-entity entity-name="TradePartyView" package="trade">
+        <member-entity entity-alias="tp" entity-name="trade.TradeParty"/>
+        <member-entity entity-alias="tpb" entity-name="trade.TradePartyBank" join-from-alias="tp" join-optional="true">
+            <key-map field-name="partyId"/>
+        </member-entity>
+        <alias-all entity-alias="tp"/>
+        <alias-all entity-alias="tpb">
+            <exclude field="partyId"/>
+        </alias-all>
+    </view-entity>
+
     <entity entity-name="TradeInstrumentParty" package="trade">
         <field name="instrumentId" type="id" is-pk="true"/>
         <field name="roleEnumId" type="id" is-pk="true"/>

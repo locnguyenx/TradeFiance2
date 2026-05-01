@@ -2,7 +2,7 @@
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.0.xsd">
 
     <!-- ABOUTME: TradeCommonServices provides utility services for trade operations, like sequence generation. -->
-
+    
     <service verb="get" noun="NextNumber" authenticate="false">
         <in-parameters>
             <parameter name="sequenceId" required="true"/>
@@ -347,7 +347,7 @@
                 <set field="result.proposedExpiryDate" from="amd?.newExpiryDate ?: inst?.expiryDate"/>
                 <set field="result.proposedCurrencyUomId" from="inst?.currencyUomId"/>
             </if>
-
+ 
             <!-- Final Fallback -->
             <if condition="!result.proposedAmount"><set field="result.proposedAmount" from="inst?.amount"/></if>
             <if condition="!result.proposedExpiryDate"><set field="result.proposedExpiryDate" from="inst?.expiryDate"/></if>
@@ -359,7 +359,7 @@
             </script>
         </actions>
     </service>
-    <service verb="create" noun="TradeParty">
+    <service verb="create" noun="TradeParty" authenticate="false">
         <in-parameters>
             <auto-parameters entity-name="trade.TradeParty" include="nonpk"/>
             <parameter name="partyId"/>
@@ -376,19 +376,60 @@
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
+            <log message="Ensuring TradeParty exists for ID: ${partyId}"/>
+            
+            <!-- Validate SWIFT X-charset for partyName -->
+            <if condition="partyName">
+                <script>
+                    if (partyName &amp;&amp; !(partyName ==~ /^[A-Z a-z0-9 \/\-\?\:\(\)\.,'\+]*$/)) {
+                        ec.message.addError("Party Name contains invalid SWIFT characters. Only A-Z, 0-9, space, / - ? : ( ) . , ' + are allowed.")
+                    }
+                </script>
+                <check-errors/>
+            </if>
+            
+            <!-- 1. Check if TradeParty already exists -->
+            <entity-find-one entity-name="trade.TradeParty" value-field="existingTradeParty"/>
+            <if condition="existingTradeParty != null">
+                <log message="TradeParty ${partyId} already exists, skipping creation."/>
+                <return/>
+            </if>
+ 
+            <!-- 2. Create mantle.party.Party if it doesn't exist -->
+            <entity-find-one entity-name="mantle.party.Party" value-field="existingParty"/>
+            <if condition="existingParty == null">
+                <log message="Creating mantle.party.Party for ${partyId}"/>
+                <service-call name="create#mantle.party.Party" in-map="[partyId:partyId, partyTypeEnumId:'PtyOrganization']"/>
+            </if>
+ 
+            <!-- 3. Infer partyTypeEnumId from roleEnumId if missing -->
+            <if condition="!partyTypeEnumId &amp;&amp; roleEnumId">
+                <if condition="['TP_ISSUING_BANK', 'TP_APPLICANT_BANK', 'TP_ADVISING_BANK', 'TP_CONFIRMING_BANK', 'TP_NEGOTIATING_BANK', 'TP_REIMBURSING_BANK', 'TP_PRESENTING_BANK'].contains(roleEnumId)">
+                    <set field="partyTypeEnumId" value="PARTY_BANK"/>
+                </if>
+                <else-if condition="['TP_APPLICANT', 'TP_BENEFICIARY'].contains(roleEnumId)">
+                    <set field="partyTypeEnumId" value="PARTY_COMMERCIAL"/>
+                </else-if>
+            </if>
+            
+            <!-- 4. Create trade.TradeParty -->
             <log message="Creating TradeParty with context: ${context}"/>
             <service-call name="create#trade.TradeParty" in-map="context" out-map="partyOut"/>
             <set field="partyId" from="partyOut.partyId"/>
-            <log message="Created TradeParty ID: ${partyId}, Type: ${partyTypeEnumId}"/>
+            
+            <!-- 4. Handle Bank Extension -->
             <if condition="partyTypeEnumId == 'PARTY_BANK'">
-                <log message="Creating Bank Extension for ${partyId}"/>
-                <service-call name="create#trade.TradePartyBank" 
-                              in-map="context + [partyId: partyId, hasActiveRMA: hasActiveRMA ? 'Y' : 'N']"/>
+                <entity-find-one entity-name="trade.TradePartyBank" value-field="existingBank"/>
+                <if condition="existingBank == null">
+                    <log message="Creating Bank Extension for ${partyId}"/>
+                    <service-call name="create#trade.TradePartyBank" 
+                                  in-map="context + [partyId: partyId, hasActiveRMA: hasActiveRMA ? 'Y' : 'N']"/>
+                </if>
             </if>
         </actions>
     </service>
-
-    <service verb="assign" noun="InstrumentParty">
+ 
+    <service verb="assign" noun="InstrumentParty" authenticate="false">
         <in-parameters>
             <parameter name="instrumentId" required="true"/>
             <parameter name="roleEnumId" required="true"/>
@@ -400,7 +441,30 @@
             
             <!-- 1. Resolve Party and Type -->
             <entity-find-one entity-name="trade.TradeParty" value-field="party"/>
-            <if condition="party == null"><return error="true" message="Party ${partyId} not found"/></if>
+            <if condition="party == null">
+                <log level="error" message="Party ${partyId} not found in trade.TradeParty during assign#InstrumentParty"/>
+                <return error="true" message="Party ${partyId} not found"/>
+            </if>
+            
+            <log level="trace" message="DEBUG_ASSIGN: Party ${partyId} has type: ${party.partyTypeEnumId}, Role: ${roleEnumId}"/>
+
+            <if condition="['TP_ISSUING_BANK', 'TP_APPLICANT_BANK', 'TP_ADVISING_BANK', 
+                'TP_ADVISE_THROUGH_BANK', 'TP_CONFIRMING_BANK', 'TP_REIMBURSING_BANK', 
+                'TP_NEGOTIATING_BANK', 'TP_DRAWEE_BANK', 'TP_PRESENTING_BANK',
+                'TP_INTERMEDIARY_BANK', 'TP_SENDERS_CORRESPONDENT', 'TP_RECEIVERS_CORRESPONDENT'].contains(roleEnumId) &amp;&amp; party.partyTypeEnumId != 'PARTY_BANK'">
+                <return error="true" message="Role ${roleEnumId} requires a Bank party."/>
+            </if>
+            <if condition="['TP_APPLICANT', 'TP_BENEFICIARY'].contains(roleEnumId) &amp;&amp; party.partyTypeEnumId != 'PARTY_COMMERCIAL'">
+                <return error="true" message="Role ${roleEnumId} requires a Commercial party."/>
+            </if>
+            
+            <!-- KYC Check -->
+            <if condition="party.kycStatus != 'Active'">
+                <return error="true" message="Party ${party.partyName} has no active KYC (Status: ${party.kycStatus ?: 'None'})"/>
+            </if>
+            <if condition="party.kycExpiryDate &amp;&amp; party.kycExpiryDate &lt; ec.user.nowTimestamp">
+                <return error="true" message="Party ${party.partyName} KYC has expired on ${party.kycExpiryDate}"/>
+            </if>
             
             <!-- 2. Eligibility Checks for Banks -->
             <log message="Party Type: ${party.partyTypeEnumId}"/>
@@ -410,7 +474,21 @@
                 <!-- RMA Check (Required for Advising/Confirming/Negotiating) -->
                 <if condition="['TP_ADVISING_BANK', 'TP_CONFIRMING_BANK', 'TP_NEGOTIATING_BANK'].contains(roleEnumId)">
                     <if condition="bank?.hasActiveRMA != 'Y'">
-                        <return error="true" message="Bank ${party.partyName} (${bank?.swiftBic}) has no active RMA"/>
+                        <!-- Exception: Advising Bank doesn't need RMA if Advise Through Bank is present (FR-TP-14) -->
+                        <set field="allowNoRma" from="false"/>
+                        <if condition="roleEnumId == 'TP_ADVISING_BANK'">
+                            <entity-find-one entity-name="trade.TradeInstrumentParty" value-field="adviseThrough">
+                                <field-map field-name="instrumentId"/>
+                                <field-map field-name="roleEnumId" value="TP_ADVISE_THROUGH_BANK"/>
+                            </entity-find-one>
+                            <if condition="adviseThrough != null">
+                                <set field="allowNoRma" from="true"/>
+                            </if>
+                        </if>
+                        
+                        <if condition="!allowNoRma">
+                            <return error="true" message="Bank ${party.partyName} (${bank?.swiftBic}) has no active RMA"/>
+                        </if>
                     </if>
                 </if>
                 
@@ -432,7 +510,99 @@
             </if>
             
             <!-- 3. Store Junction Record (Enforces uniqueness via PK) -->
-            <service-call name="create#trade.TradeInstrumentParty" in-map="context"/>
+            <service-call name="store#trade.TradeInstrumentParty" in-map="context"/>
+        </actions>
+    </service>
+ 
+    <service verb="load" noun="MasterData" authenticate="false">
+        <actions>
+            <script>
+                ec.artifactExecution.disableAuthz()
+                def facilities = [
+                    [facilityId: "FAC-ACME-001", ownerPartyId: "ACME_CORP_001", totalApprovedLimit: 10000000.00, utilizedAmount: 2500000.00, facilityExpiryDate: java.sql.Date.valueOf("2027-12-31"), description: "Core Working Capital Line"],
+                    [facilityId: "FAC-GLOBAL-002", ownerPartyId: "GLOBAL_EXP_002", totalApprovedLimit: 5000000.00, utilizedAmount: 4800000.00, facilityExpiryDate: java.sql.Date.valueOf("2027-01-01"), description: "Trade Export Line"],
+                    [facilityId: "FAC-EXPIRED-003", ownerPartyId: "ACME_CORP_001", totalApprovedLimit: 1000000.00, utilizedAmount: 0.00, facilityExpiryDate: java.sql.Date.valueOf("2024-12-31"), description: "Old Line"],
+                    [facilityId: "FAC-ZIZI-001", ownerPartyId: "ORG_ZIZI_CORP", totalApprovedLimit: 1000000.00, utilizedAmount: 0.00, facilityExpiryDate: java.sql.Date.valueOf("2027-12-31"), description: "Working Capital Line"]
+                ]
+                facilities.each { f ->
+                    ec.entity.makeValue("trade.CustomerFacility").setAll(f).createOrUpdate()
+                    ec.logger.info("Restored Facility: ${f.facilityId}")
+                }
+            </script>
+        </actions>
+    </service>
+
+    <!-- FR-TP-10: Update an existing TradeParty and its bank extension if applicable -->
+    <service verb="update" noun="TradeParty" authenticate="false">
+        <in-parameters>
+            <parameter name="partyId" required="true"/>
+            <auto-parameters entity-name="trade.TradeParty" include="nonpk"/>
+            <!-- Bank-specific fields -->
+            <parameter name="swiftBic"/>
+            <parameter name="clearingCode"/>
+            <parameter name="hasActiveRMA" type="Boolean"/>
+            <parameter name="nostroAccountRef"/>
+            <parameter name="fiLimitAvailable" type="BigDecimal"/>
+            <parameter name="fiLimitCurrencyUomId"/>
+        </in-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find-one entity-name="trade.TradeParty" value-field="party"/>
+            <if condition="party == null">
+                <return error="true" message="Party ${partyId} not found"/>
+            </if>
+            <set field="party" from="party.setAll(context)"/>
+            <entity-update value-field="party"/>
+            
+            <if condition="party.partyTypeEnumId == 'PARTY_BANK'">
+                <entity-find-one entity-name="trade.TradePartyBank" value-field="bank"/>
+                <if condition="bank != null">
+                    <set field="bank" from="bank.setAll(context)"/>
+                    <if condition="hasActiveRMA != null">
+                        <set field="bank.hasActiveRMA" from="hasActiveRMA ? 'Y' : 'N'"/>
+                    </if>
+                    <entity-update value-field="bank"/>
+                </if>
+            </if>
+        </actions>
+    </service>
+
+    <!-- FR-TP-11: Remove a party assignment from an instrument -->
+    <service verb="remove" noun="InstrumentParty" authenticate="false">
+        <in-parameters>
+            <parameter name="instrumentId" required="true"/>
+            <parameter name="roleEnumId" required="true"/>
+        </in-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find-one entity-name="trade.TradeInstrumentParty" value-field="junc"/>
+            <if condition="junc == null">
+                <return error="true" message="No party assigned for role ${roleEnumId} on instrument ${instrumentId}"/>
+            </if>
+            <entity-delete value-field="junc"/>
+        </actions>
+    </service>
+
+    <!-- FR-TP-11: Get all party assignments for an instrument -->
+    <service verb="get" noun="InstrumentParties" authenticate="false">
+        <in-parameters>
+            <parameter name="instrumentId" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="partyList" type="List"><parameter name="party" type="Map"/></parameter>
+        </out-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find entity-name="trade.TradeInstrumentParty" list="juncList">
+                <econdition field-name="instrumentId"/>
+            </entity-find>
+            <set field="partyList" from="[]"/>
+            <iterate list="juncList" entry="junc">
+                <entity-find-one entity-name="trade.TradePartyView" value-field="partyView">
+                    <field-map field-name="partyId" from="junc.partyId"/>
+                </entity-find-one>
+                <script>partyList.add(junc.getMap() + (partyView?.getMap() ?: [:]))</script>
+            </iterate>
         </actions>
     </service>
 </services>

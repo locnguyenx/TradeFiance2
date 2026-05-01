@@ -26,6 +26,7 @@ class DualApprovalSpec extends Specification {
             ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instId).deleteAll()
             ec.entity.find("trade.TradeTransaction").condition("instrumentId", instId).deleteAll()
             ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instId).deleteAll()
+            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", instId).deleteAll()
             ec.entity.find("trade.TradeInstrument").condition("instrumentId", instId).deleteAll()
 
             // Setup Users and Authority Profiles
@@ -135,6 +136,7 @@ class DualApprovalSpec extends Specification {
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instId).deleteAll()
         ec.entity.find("trade.TradeTransaction").condition("instrumentId", instId).deleteAll()
         ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instId).deleteAll()
+        ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", instId).deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", instId).deleteAll()
     }
 }

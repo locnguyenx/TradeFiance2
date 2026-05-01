@@ -52,6 +52,7 @@ class AuthorizationServicesSpec extends Specification {
         ec.entity.find("trade.UserAuthorityProfile").condition("userAuthorityId", "T1-02").deleteAll()
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "AUTH-1").deleteAll()
         ec.entity.find("trade.TradeTransaction").condition("instrumentId", "AUTH-1").deleteAll()
+        ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", "AUTH-1").deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", "AUTH-1").deleteAll()
     }
     
@@ -86,6 +87,7 @@ class AuthorizationServicesSpec extends Specification {
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "AUTH-AMD").deleteAll()
         ec.entity.find("trade.TradeTransaction").condition("instrumentId", "AUTH-AMD").deleteAll()
         ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", "AUTH-AMD").deleteAll()
+        ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", "AUTH-AMD").deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", "AUTH-AMD").deleteAll()
     }
 
@@ -116,10 +118,12 @@ class AuthorizationServicesSpec extends Specification {
         ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", "PRIO-LOW").deleteAll()
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "PRIO-LOW").deleteAll()
         ec.entity.find("trade.TradeTransaction").condition("instrumentId", "PRIO-LOW").deleteAll()
+        ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", "PRIO-LOW").deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", "PRIO-LOW").deleteAll()
         ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", "PRIO-HIGH").deleteAll()
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "PRIO-HIGH").deleteAll()
         ec.entity.find("trade.TradeTransaction").condition("instrumentId", "PRIO-HIGH").deleteAll()
+        ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", "PRIO-HIGH").deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", "PRIO-HIGH").deleteAll()
     }
 }

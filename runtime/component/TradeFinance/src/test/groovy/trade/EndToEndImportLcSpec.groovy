@@ -47,6 +47,11 @@ class EndToEndImportLcSpec extends Specification {
             lcAmount: 50000.0,
             lcCurrencyUomId: "USD",
             customerFacilityId: TEST_FACILITY_ID,
+            instrumentParties: [
+                [roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002'],
+                [roleEnumId: 'TP_ADVISING_BANK', partyId: 'ADVISING_BANK_001']
+            ],
             businessStateId: "LC_DRAFT"
         ]).call()
         def instrumentId = createResult.instrumentId
@@ -75,6 +80,7 @@ class EndToEndImportLcSpec extends Specification {
             ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).deleteAll()
+            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).deleteAll()
         }

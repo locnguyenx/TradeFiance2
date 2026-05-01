@@ -23,8 +23,10 @@ class DraftLcSpec extends Specification {
             .parameters([
                 lcAmount: 50000,
                 lcCurrencyUomId: 'USD',
-                applicantPartyId: 'ACME_CORP_001',
-                beneficiaryPartyId: 'GLOBAL_EXP_002',
+                instrumentParties: [
+                    [roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                    [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']
+                ],
                 customerFacilityId: 'FAC-ACME-001',
                 productCatalogId: 'PROD_IMP_LC'
             ]).call()
@@ -41,8 +43,10 @@ class DraftLcSpec extends Specification {
                 transactionRef: ref,
                 lcAmount: 50000,
                 lcCurrencyUomId: 'USD',
-                applicantPartyId: 'ACME_CORP_001',
-                beneficiaryPartyId: 'GLOBAL_EXP_002',
+                instrumentParties: [
+                    [roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                    [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']
+                ],
                 customerFacilityId: 'FAC-ACME-001',
                 productCatalogId: 'PROD_IMP_LC'
             ]).call()

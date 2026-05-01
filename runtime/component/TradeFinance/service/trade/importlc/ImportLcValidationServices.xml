@@ -168,19 +168,39 @@
                         validateXCharset("portOfDischarge", lc.portOfDischarge)
                         validateXCharset("goodsDescription", lc.goodsDescription)
                         validateXCharset("documentsRequired", lc.documentsRequired)
-                        validateXCharset("applicantName", lc.applicantName)
-                        validateXCharset("beneficiaryName", lc.beneficiaryName)
+
+                        // Fetch junction parties for validation
+                        def instrumentParties = ec.entity.find("trade.TradeInstrumentParty")
+                            .condition("instrumentId", entityId).list()
                         
-                        validateLineLimit("applicantName", lc.applicantName, 4)
-                        validateLineLimit("beneficiaryName", lc.beneficiaryName, 4)
+                        def getParty = { role ->
+                            def junc = instrumentParties.find { it.roleEnumId == role }
+                            if (!junc) return [:]
+                            def tp = ec.entity.find("trade.TradeParty").condition("partyId", junc.partyId).one()
+                            def tpb = ec.entity.find("trade.TradePartyBank").condition("partyId", junc.partyId).one()
+                            return [name: tp?.partyName, address: tp?.registeredAddress, bic: tpb?.swiftBic]
+                        }
+
+                        def applicant = getParty("TP_APPLICANT")
+                        def beneficiary = getParty("TP_BENEFICIARY")
+                        def advisingBank = getParty("TP_ADVISING_BANK")
+                        def issuingBank = getParty("TP_ISSUING_BANK")
+
+                        validateXCharset("applicantName", applicant.name)
+                        validateXCharset("beneficiaryName", beneficiary.name)
+                        validateLineLimit("applicantName", applicant.name, 4)
+                        validateLineLimit("beneficiaryName", beneficiary.name, 4)
                         
-                        validateBic("issuingBankBic", lc.issuingBankBic)
-                        validateBic("advisingBankBic", lc.advisingBankBic)
+                        validateBic("issuingBankBic", issuingBank.bic)
+                        validateBic("advisingBankBic", advisingBank.bic)
                         
                         // Mandatory Fields for MT700
                         if (!lc.lcTypeEnumId) addError("lcTypeEnumId", "Required (SWIFT Tag 40A)", "MANDATORY")
                         if (!lc.availableByEnumId) addError("availableByEnumId", "Required (SWIFT Tag 41a)", "MANDATORY")
                         if (!lc.confirmationEnumId) addError("confirmationEnumId", "Required (SWIFT Tag 49)", "MANDATORY")
+
+                        if (!applicant.name) addError("applicantPartyId", "Applicant is required (SWIFT Tag 50)", "MANDATORY")
+                        if (!beneficiary.name) addError("beneficiaryPartyId", "Beneficiary is required (SWIFT Tag 59)", "MANDATORY")
                         
                         // Mutual Exclusion: Tolerance vs Max Credit Amount
                         if (lc.maxCreditAmountFlag == 'Y' && (lc.tolerancePositive || lc.toleranceNegative)) {

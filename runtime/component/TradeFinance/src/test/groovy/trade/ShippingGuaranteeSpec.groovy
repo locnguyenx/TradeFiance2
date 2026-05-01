@@ -56,6 +56,7 @@ class ShippingGuaranteeSpec extends Specification {
         cleanup:
         ec.entity.find("trade.importlc.ImportLcShippingGuarantee").condition("instrumentId", "SG-LC-1").deleteAll()
         ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", "SG-LC-1").deleteAll()
+        ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", "SG-LC-1").deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", "SG-LC-1").deleteAll()
         ec.entity.find("trade.CustomerFacility").condition("facilityId", "SG-FAC-1").deleteAll()
     }

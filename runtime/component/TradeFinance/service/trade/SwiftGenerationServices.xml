@@ -48,13 +48,32 @@
             </entity-find-one>
             <set field="issuerBic" from="bicConfig?.configValue ?: 'ISSUERXX'"/>
 
+            <!-- Fetch Junction Parties -->
+            <entity-find entity-name="trade.TradeInstrumentParty" list="instrumentParties">
+                <econdition field-name="instrumentId"/>
+            </entity-find>
             <script package="trade"><![CDATA[
                 import trade.SwiftMessageBuilder
                 
+                def getParty(role) {
+                    def junc = instrumentParties.find { it.roleEnumId == role }
+                    if (!junc) return [:]
+                    def tp = ec.entity.find("trade.TradeParty").condition("partyId", junc.partyId).one()
+                    def tpb = ec.entity.find("trade.TradePartyBank").condition("partyId", junc.partyId).one()
+                    return [partyId: junc.partyId, name: tp?.partyName, address: tp?.registeredAddress, bic: tpb?.swiftBic]
+                }
+                
+                def applicant = getParty("TP_APPLICANT")
+                def beneficiary = getParty("TP_BENEFICIARY")
+                def advisingBank = getParty("TP_ADVISING_BANK")
+                def negotiatingBank = getParty("TP_NEGOTIATING_BANK")
+                def confirmBank = getParty("TP_CONFIRMING_BANK")
+                def draweeBank = getParty("TP_DRAWEE_BANK")
+
                 def builder = new SwiftMessageBuilder(ec)
                     .setMessageType("700")
                     .setSenderBic(issuerBic)
-                    .setReceiverBic(lc.advisingBankBic ?: "RECEIVXX")
+                    .setReceiverBic(advisingBank.bic ?: "RECEIVXX")
                     .setSenderRef(instrument.transactionRef)
                 
                 builder.addField("27", "1/1")
@@ -63,8 +82,13 @@
                 builder.addField("40E", "UCP LATEST VERSION")
                 builder.addField("31D", (instrument.expiryDate?.format("yyMMdd") ?: "") + (lc.expiryPlace ?: ""))
                 
-                builder.addField("50", builder.formatValue(lc.applicantName ?: "APPLICANT", 4, 35))
-                builder.addField("59", builder.formatValue(instrument.beneficiaryName ?: "BENEFICIARY", 4, 35))
+                // Tag 50: Applicant
+                def appText = (applicant.name ?: "APPLICANT") + (applicant.address ? "\r\n" + applicant.address : "")
+                builder.addField("50", builder.formatValue(appText, 4, 35))
+                
+                // Tag 59: Beneficiary
+                def benText = (beneficiary.name ?: "BENEFICIARY") + (beneficiary.address ? "\r\n" + beneficiary.address : "")
+                builder.addField("59", builder.formatValue(benText, 4, 35))
                 
                 def amountFormatted = String.format("%.2f", instrument.amount).replace(".", ",")
                 builder.addField("32B", (instrument.currencyUomId ?: "USD") + amountFormatted)
@@ -77,16 +101,18 @@
                 
                 // FR-SGC-04: Available With... By... (Tag 41a)
                 def availableBy = lc.availableByEnumId ?: "SIGHT"
-                if (lc.availableWithBic || !lc.availableWithName) {
-                    builder.addField("41A", (lc.availableWithBic ?: "ANY BANK") + "\r\nBY " + availableBy)
+                if (lc.availableWithEnumId == 'AVAIL_ANY_BANK') {
+                    builder.addField("41D", "ANY BANK\r\nBY " + availableBy)
                 } else {
-                    builder.addField("41D", builder.formatValue(lc.availableWithName, 4, 35) + "\r\nBY " + availableBy)
+                    // Use Negotiating Bank if provided, else fall back to Advising Bank or dummy
+                    def negBic = negotiatingBank.bic ?: advisingBank.bic ?: "NEGOTXXX"
+                    builder.addField("41A", negBic + "\r\nBY " + availableBy)
                 }
                 
                 if (lc.tenorTypeId == 'SIGHT') builder.addField("42C", "AT SIGHT")
                 else if (lc.usanceBaseDate) builder.addField("42C", builder.formatValue(lc.usanceBaseDate, 3, 35))
                 
-                builder.addField("42a", lc.draweeBankBic ?: "DRAWEE BANK")
+                builder.addField("42a", draweeBank.bic ?: advisingBank.bic ?: "DRAWEEXX")
                 builder.addField("43P", lc.partialShipmentEnumId ?: "ALLOWED")
                 builder.addField("43T", lc.transhipmentEnumId ?: "ALLOWED")
                 
@@ -103,7 +129,7 @@
                 builder.addField("47A", builder.formatValue(lc.additionalConditions, 100, 65))
                 builder.addField("71D", builder.formatValue(lc.chargeAllocationText, 6, 35))
                 builder.addField("48", lc.presentationPeriodDays ?: "21")
-                builder.addField("49", lc.confirmationEnumId ?: "WITHOUT")
+                builder.addField("49", confirmBank.bic ?: "WITHOUT") // Simplified for confirmed check
                 builder.addField("78", builder.formatValue(lc.bankToBankInstructions, 12, 65))
                 
                 messageContent = builder.build()
@@ -144,14 +170,19 @@
             <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument"/>
             <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc"/>
+            <entity-find entity-name="trade.TradeInstrumentParty" list="instrumentParties">
+                <econdition field-name="instrumentId"/>
+            </entity-find>
             <script package="trade"><![CDATA[
                 import trade.SwiftMessageBuilder
+                def advisingBankJunc = instrumentParties.find { it.roleEnumId == 'TP_ADVISING_BANK' }
+                def advisingBankBic = advisingBankJunc ? ec.entity.find("trade.TradePartyBank").condition("partyId", advisingBankJunc.partyId).one()?.swiftBic : "RECEIVXX"
+
                 def builder = new SwiftMessageBuilder(ec).setMessageType("701")
-                    .setSenderBic("ISSUERXX").setReceiverBic(lc.advisingBankBic ?: "RECEIVXX")
+                    .setSenderBic("ISSUERXX").setReceiverBic(advisingBankBic ?: "RECEIVXX")
                     .setSenderRef(instrument.transactionRef)
                 
                 builder.addField("27", "1/1")
-                // MT701 usually contains overflow logic. For now, we simulate with 45B for test verification.
                 builder.addField("45B", builder.formatValue(lc.goodsDescription, 100, 65))
                 messageContent = builder.build()
             ]]></script>
@@ -193,10 +224,16 @@
 
             <set field="messageStatusId" from="amendment.amendmentBusinessStateId == 'AMEND_APPROVED' ? 'SWIFT_MSG_ACTIVE' : 'SWIFT_MSG_DRAFT'"/>
             
+            <entity-find entity-name="trade.TradeInstrumentParty" list="instrumentParties">
+                <econdition field-name="instrumentId" from="amendment.instrumentId"/>
+            </entity-find>
             <script package="trade"><![CDATA[
                 import trade.SwiftMessageBuilder
+                def advisingBankJunc = instrumentParties.find { it.roleEnumId == 'TP_ADVISING_BANK' }
+                def advisingBankBic = advisingBankJunc ? ec.entity.find("trade.TradePartyBank").condition("partyId", advisingBankJunc.partyId).one()?.swiftBic : "ADVISINGXX"
+
                 def builder = new SwiftMessageBuilder(ec).setMessageType("707").setSenderBic("ISSUERXX")
-                    .setReceiverBic("ADVISINGXX").setSenderRef(instrument.transactionRef)
+                    .setReceiverBic(advisingBankBic ?: "ADVISINGXX").setSenderRef(instrument.transactionRef)
                 builder.addField("26E", amendment.amendmentNumber ?: "1")
                 builder.addField("31C", amendment.amendmentDate?.format("yyMMdd") ?: "260425")
                 if (amendment.amountAdjustment != null) builder.addField("32B", "USD" + String.format("%.2f", amendment.amountAdjustment).replace(".", ","))
@@ -239,8 +276,16 @@
             <entity-find-one entity-name="trade.TradeInstrument" value-field="inst"><field-map field-name="instrumentId" from="pres.instrumentId"/></entity-find-one>
             <script package="trade"><![CDATA[
                 import trade.SwiftMessageBuilder
+                
+                def getPartyBic(role) {
+                    def junc = ec.entity.find("trade.TradeInstrumentParty").condition(["instrumentId":inst.instrumentId, "roleEnumId":role]).one()
+                    if (!junc) return null
+                    def tpb = ec.entity.find("trade.TradePartyBank").condition("partyId", junc.partyId).one()
+                    return tpb?.swiftBic
+                }
+
                 def builder = new SwiftMessageBuilder(ec).setMessageType("750").setSenderBic("ISSUERXX")
-                    .setReceiverBic(pres.presentingBankBic ?: "BENEBANK").setSenderRef(inst.transactionRef)
+                    .setReceiverBic(getPartyBic("TP_PRESENTING_BANK") ?: "BENEBANK").setSenderRef(inst.transactionRef)
                 builder.addField("32B", (pres.claimCurrency ?: "USD") + String.format("%.2f", pres.claimAmount ?: 0).replace(".", ","))
                 
                 def discList = ec.entity.find("trade.importlc.PresentationDiscrepancy").condition("presentationId", presentationId).list()
@@ -269,10 +314,25 @@
             <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="pres"/>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="inst"><field-map field-name="instrumentId" from="pres.instrumentId"/></entity-find-one>
+            
+            <entity-find entity-name="trade.TradeInstrumentParty" list="instrumentParties">
+                <econdition field-name="instrumentId" from="pres.instrumentId"/>
+            </entity-find>
+            
             <script package="trade"><![CDATA[
                 import trade.SwiftMessageBuilder
+                
+                def getPartyBic(role) {
+                    def junc = instrumentParties.find { it.roleEnumId == role }
+                    if (!junc) return null
+                    def tpb = ec.entity.find("trade.TradePartyBank").condition("partyId", junc.partyId).one()
+                    return tpb?.swiftBic
+                }
+                
+                def presentingBankBic = getPartyBic("TP_PRESENTING_BANK") ?: getPartyBic("TP_ADVISING_BANK") ?: "PRESENTX"
+                
                 def builder = new SwiftMessageBuilder(ec).setMessageType("734").setSenderBic("ISSUERXX")
-                    .setReceiverBic(pres.presentingBankBic ?: "BENEBANK").setSenderRef(inst.transactionRef)
+                    .setReceiverBic(presentingBankBic).setSenderRef(inst.transactionRef)
                 def valDate = (pres.presentationDate ?: ec.user.nowTimestamp).format("yyMMdd")
                 builder.addField("32A", valDate + (pres.claimCurrency ?: "USD") + String.format("%.2f", pres.claimAmount ?: 0).replace(".", ","))
                 builder.addField("77J", builder.formatValue("DOCUMENTS REFUSED DUE TO DISCREPANCIES", 70, 50))
@@ -297,10 +357,25 @@
             <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="pres"/>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="inst"><field-map field-name="instrumentId" from="pres.instrumentId"/></entity-find-one>
+            
+            <entity-find entity-name="trade.TradeInstrumentParty" list="instrumentParties">
+                <econdition field-name="instrumentId" from="pres.instrumentId"/>
+            </entity-find>
+
             <script package="trade"><![CDATA[
                 import trade.SwiftMessageBuilder
+                
+                def getPartyBic(role) {
+                    def junc = instrumentParties.find { it.roleEnumId == role }
+                    if (!junc) return null
+                    def tpb = ec.entity.find("trade.TradePartyBank").condition("partyId", junc.partyId).one()
+                    return tpb?.swiftBic
+                }
+                
+                def presentingBankBic = getPartyBic("TP_PRESENTING_BANK") ?: getPartyBic("TP_ADVISING_BANK") ?: "PRESENTX"
+
                 def builder = new SwiftMessageBuilder(ec).setMessageType("752").setSenderBic("ISSUERXX")
-                    .setReceiverBic(pres.presentingBankBic ?: "BENEBANK").setSenderRef(inst.transactionRef)
+                    .setReceiverBic(presentingBankBic).setSenderRef(inst.transactionRef)
                 builder.addField("23", "FURTHER TO YOUR MT750")
                 builder.addField("32B", (pres.claimCurrency ?: "USD") + String.format("%.2f", pres.claimAmount ?: 0).replace(".", ","))
                 builder.addField("71B", "DETAILS OF CHARGES: ALL CHARGES PAID")
@@ -442,7 +517,9 @@
                     if (pos > 0 && neg == 0) neg = pos // BDD-IMP-SWT-03 alignment
                     swText = "${pos}/${neg}"
                 } else if (tag == "59") {
-                    swText = "/" + (lc?.beneficiaryPartyId ?: "BEN01")
+                    def benJunc = ec.entity.find("trade.TradeInstrumentParty")
+                        .condition([instrumentId: instrumentId, roleEnumId: 'TP_BENEFICIARY']).one()
+                    swText = "/" + (benJunc?.partyId ?: "BEN01")
                 } else {
                     swText = ""
                 }

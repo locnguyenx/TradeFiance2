@@ -33,7 +33,9 @@ class RestApiEndpointsSpec extends Specification {
         String ref = prefix + "-" + System.currentTimeMillis()
         ec.user.internalLoginUser("trade.maker")
         ScreenTestRender str = screenTest.render("s1/trade/import-lc",
-            [transactionRef: ref, lcAmount: 5000.0, lcCurrencyUomId: "USD"], "post")
+            [transactionRef: ref, lcAmount: 5000.0, lcCurrencyUomId: "USD",
+             instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                 [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]], "post")
         if (str.errorMessages) {
             throw new Exception("Failed to create LC: ${str.errorMessages}")
         }
@@ -99,9 +101,7 @@ class RestApiEndpointsSpec extends Specification {
         then:
         !str.errorMessages
         def json = new groovy.json.JsonSlurper().parseText(str.output)
-        json.lcList != null
-        json.lcList.size() >= 1
-        json.lcList[0].instrumentId == instrumentId
+        json.instrumentId == instrumentId
     }
 
     def "Test GET /trade/standard-clauses"() {
@@ -129,7 +129,9 @@ class RestApiEndpointsSpec extends Specification {
     def "Test POST /trade/import-lc creates new LC"() {
         given:
         String ref = "REST-CREATE-" + System.currentTimeMillis()
-        Map params = [transactionRef: ref, lcAmount: 25000.0, lcCurrencyUomId: "USD"]
+        Map params = [transactionRef: ref, lcAmount: 25000.0, lcCurrencyUomId: "USD",
+                      instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                          [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]
 
         when:
         ec.user.internalLoginUser("trade.maker")

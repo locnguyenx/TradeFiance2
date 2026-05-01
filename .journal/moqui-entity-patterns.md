@@ -5,17 +5,17 @@
 ## 1. Entity Structure & Conventions
 
 ### Naming
-- **Entity names**: PascalCase (e.g., `LetterOfCredit`, `LcAmendment`)
-- **Field names**: snake_case (e.g., `lc_id`, `lc_status_id`)
+- **Entity names**: PascalCase (e.g., `OrderHeader`, `OrderItem`)
+- **Field names**: snake_case (e.g., `order_id`, `status_id`)
 - **Package path**: Must match directory structure
 
 ### Primary Key
 - Use exactly ONE `<field is-pk="true">` with `type="id"`
 - Set `primary-key-sequence="true"` for auto-increment:
   ```xml
-  <entity entity-name="TradeFinance.LetterOfCredit" package="trade"
+  <entity entity-name="moqui.example.Example" package="moqui.example"
           primary-key-sequence="true">
-      <field name="lcId" type="id" is-pk="true"/>
+      <field name="exampleId" type="id" is-pk="true"/>
   ```
 
 ### Audit Stamps (Auto-injected)
@@ -33,8 +33,8 @@
 
 ### Many-to-One (Foreign Key)
 ```xml
-<relationship type="many" related="trade.LcAmendment">
-    <key-map field-name="lcId"/>
+<relationship type="many" related="moqui.example.ExampleItem">
+    <key-map field-name="exampleId"/>
 </relationship>
 ```
 
@@ -67,10 +67,10 @@
 ### Demo Data Strategy
 Use predictable IDs for testing:
 ```xml
-<LetterOfCredit lcId="DEMO_LC_01" lcStatusId="LcDraft" .../>
+<Example exampleId="DEMO_01" statusId="Draft" .../>
 ```
 
-## 5. Shadow Record Pattern (Amendments)
+## 5. Shadow Record Pattern (Draft/Proposed Changes)
 
 ### Concept
 Create a shadow entity to hold proposed changes before committing.
@@ -78,34 +78,26 @@ Create a shadow entity to hold proposed changes before committing.
 ### Implementation
 ```xml
 <!-- Master Entity -->
-<entity entity-name="LetterOfCredit">
-    <field name="lcId" type="id" is-pk="true"/>
-    <field name="lcStatusId" type="id"/>
+<entity entity-name="WorkEffort">
+    <field name="workEffortId" type="id" is-pk="true"/>
+    <field name="statusId" type="id"/>
     <!-- All amendable fields -->
 </entity>
 
-<!-- Shadow Entity (LcAmendment) -->
-<entity entity-name="LcAmendment">
-    <field name="amendmentId" type="id" is-pk="true"/>
-    <field name="lcId" type="id"/>
-    <!-- Mirror of amendable fields with _NEW suffix -->
-    <field name="lcStatusIdNew" type="id"/>
-</entity>
-
-<!-- Transaction Entity (LcTransaction) -->
-<entity entity-name="LcTransaction">
-    <field name="txId" type="id" is-pk="true"/>
-    <field name="amendmentId" type="id"/>
-    <field name="txTypeEnumId" type="id"/>
+<!-- Shadow Entity (Proposed Changes) -->
+<entity entity-name="WorkEffortProposed">
+    <field name="proposalId" type="id" is-pk="true"/>
+    <field name="workEffortId" type="id"/>
+    <!-- Mirror of fields with _NEW suffix -->
+    <field name="statusIdNew" type="id"/>
 </entity>
 ```
 
 ### Workflow
-1. Create `LcAmendment` record (status: Draft)
+1. Create shadow record
 2. User edits shadow record
-3. On approval, create `LcTransaction` 
-4. Apply changes to master via service
-5. Delete shadow record
+3. On approval, apply changes to master via service
+4. Delete shadow record
 
 ## 6. Idempotent Service Pattern
 
@@ -114,22 +106,20 @@ Services creating records can cause duplicates on retries.
 
 ### Solution
 ```xml
-<service verb="create" noun="LcProvision">
+<service verb="create" noun="Example">
     <in-parameters>
-        <parameter name="lcId" required="true"/>
+        <parameter name="exampleId" required="true"/>
     </in-parameters>
     <actions>
         <!-- Check if already exists -->
-        <entity-find entity-name="trade.LcProvision" list="existing">
-            <econdition field-name="lcId"/>
-        </entity-find>
+        <entity-find-one entity-name="moqui.example.Example" value-field="existing"/>
         <if condition="existing">
             <return/>
         </if>
         <!-- Create new record -->
-        <make-value entity-name="trade.LcProvision" value-field="prov"/>
-        <set field="prov.lcId" from="lcId"/>
-        <entity-create value-field="prov"/>
+        <make-value entity-name="moqui.example.Example" value-field="newValue"/>
+        <set field="newValue.exampleId" from="exampleId"/>
+        <entity-create value-field="newValue"/>
     </actions>
 </service>
 ```
@@ -137,27 +127,26 @@ Services creating records can cause duplicates on retries.
 ## 7. Status Guard Pattern
 
 ### Problem
-Modifying children after parent advances breaks audit trails.
+Modifying records after they advance to a terminal state.
 
 ### Solution
 ```xml
-<service verb="transition" noun="TransactionStatus">
+<service verb="transition" noun="Status">
     <in-parameters>
-        <parameter name="lcId" required="true"/>
+        <parameter name="exampleId" required="true"/>
         <parameter name="toStatusId"/>
     </in-parameters>
     <actions>
-        <entity-find-one entity-name="trade.LetterOfCredit" value-field="lc"/>
+        <entity-find-one entity-name="moqui.example.Example" value-field="example"/>
         
-        <!-- Status Guard: Only allow changes in Draft state -->
-        <if condition="lc.transactionStatusId != 'LcTxDraft'">
-            <return error="true" message="Cannot modify in ${lc.transactionStatusId} state"/>
+        <!-- Status Guard -->
+        <if condition="example.statusId == 'Finalized'">
+            <return error="true" message="Cannot modify in ${example.statusId} state"/>
         </if>
         
         <!-- Validate transition -->
         <entity-find entity-name="moqui.basic.StatusFlowTransition" list="validTransitions">
-            <econdition field-name="statusFlowId" value="LcTransaction"/>
-            <econdition field-name="statusId" from="lc.transactionStatusId"/>
+            <econdition field-name="statusId" from="example.statusId"/>
             <econdition field-name="toStatusId" from="toStatusId"/>
         </entity-find>
         
@@ -166,8 +155,8 @@ Modifying children after parent advances breaks audit trails.
         </if>
         
         <!-- Apply -->
-        <set field="lc.transactionStatusId" from="toStatusId"/>
-        <entity-update value-field="lc"/>
+        <set field="example.statusId" from="toStatusId"/>
+        <entity-update value-field="example"/>
     </actions>
 </service>
 ```
@@ -179,56 +168,57 @@ Calling child service modifies record, parent EntityValue becomes stale.
 
 ### Solution
 ```xml
-<service verb="update" noun="LetterOfCredit">
+<service verb="update" noun="Example">
     <actions>
-        <entity-find-one entity-name="trade.LetterOfCredit" value-field="lc"/>
+        <entity-find-one entity-name="moqui.example.Example" value-field="example"/>
         
-        <!-- Call service that modifies lc -->
-        <service-call name="trade.TradeFinanceServices.transition#Status"
-                      parameter-map="[lcId:lcId, toStatusId:'LcApproved']"/>
+        <!-- Call service that modifies example -->
+        <service-call name="moqui.example.ExampleServices.transition#Status"
+                      parameter-map="[exampleId:exampleId, toStatusId:'Approved']"/>
         
         <!-- RE-FETCH after child service call -->
-        <entity-find-one entity-name="trade.LetterOfCredit" value-field="lc"/>
+        <entity-find-one entity-name="moqui.example.Example" value-field="example"/>
         
         <!-- Now safe to update -->
-        <set field="lc.lastAmendmentDate" from="ec.user.nowTimestamp"/>
-        <entity-update value-field="lc"/>
+        <set field="example.lastUpdatedDate" from="ec.user.nowTimestamp"/>
+        <entity-update value-field="example"/>
     </actions>
 </service>
 ```
 
-## 9. Entity & Database Operations (From patterns)
-* **View-Entity Brittleness**: Moqui's `view-entity` engine can be brittle when resolving joined fields across packages. For high-stakes API services, use **Manual Groovy Joins** (sequential lookups and merging maps like `TI.getMap() + ILC.getMap()`) for predictability and avoiding registry resolution errors.
+## 9. Entity & Database Operations
+
+* **View-Entity Brittleness**: Moqui's `view-entity` engine can be brittle when resolving joined fields across packages. For high-stakes API services, use **Manual Groovy Joins** (sequential lookups and merging maps) for predictability and avoiding registry resolution errors.
 * **Composite Keys & Sequencing**: `<entity-sequenced-id>` is not valid in XML actions directly for composite keys. Use `<entity-make-value>` followed by `<entity-sequenced-id-secondary value-field="..."/>` to correctly increment secondary IDs relative to a primary key.
-* **Data Mapping**: Ensure explicit mapping between UI fields and backend entity fields in service actions (e.g. `amount` vs `baseEquivalentAmount`) to avoid silent failure of `auto-parameters`.
+* **Data Mapping**: Ensure explicit mapping between UI fields and backend entity fields in service actions to avoid silent failure of `auto-parameters`.
 * **XML Fragility**: Be careful with XML syntax. Accidental removal of `<actions>` or unclosed `<in-parameters>` tags can lead to services that load successfully but execute no logic.
 
 ### Entity Condition
 ```groovy
 // LIKE query
 import org.moqui.entity.EntityCondition
-ec.entity.find("trade.LetterOfCredit")
-    .condition("lcNumber", EntityCondition.LIKE, "DEMO%")
+ec.entity.find("moqui.example.Example")
+    .condition("exampleName", EntityCondition.LIKE, "DEMO%")
     .list()
 
 // IN query
 import org.moqui.entity.EntityCondition
-ec.entity.find("trade.LetterOfCredit")
-    .condition("statusId", EntityCondition.IN, ["LcDraft", "LcApproved"])
+ec.entity.find("moqui.example.Example")
+    .condition("statusId", EntityCondition.IN, ["Draft", "Approved"])
     .list()
 ```
 
 ### Cascade Delete
 ```groovy
 // Delete children first
-def children = ec.entity.find("trade.LcHistory")
-    .condition("lcId", lcId)
+def children = ec.entity.find("moqui.example.Child")
+    .condition("parentId", parentId)
     .list()
 children.each { it.delete() }
 
 // Then parent
-def lc = ec.entity.find("trade.LetterOfCredit")
-    .condition("lcId", lcId)
+def parent = ec.entity.find("moqui.example.Parent")
+    .condition("parentId", parentId)
     .one()
-lc.delete()
+parent.delete()
 ```

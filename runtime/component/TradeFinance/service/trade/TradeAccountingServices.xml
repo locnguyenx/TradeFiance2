@@ -23,12 +23,18 @@
                 <set field="amount" from="amount * 1.005"/>
             </if>
             
+            <entity-find entity-name="trade.TradeInstrumentParty" list="instParties">
+                <econdition field-name="instrumentId"/>
+                <econdition field-name="roleEnumId" value="TP_APPLICANT"/>
+            </entity-find>
+            <set field="applicantPartyId" from="instParties ? instParties[0].partyId : 'InternalOrganization'"/>
+            
             <!-- Constructing Moqui AcctgTrans (Conventional) via script for robust catch -->
             <script><![CDATA[
                 try {
                     Map transOut = ec.service.sync().name("mantle.ledger.transaction.AcctgTrans")
                         .parameters([acctgTransTypeEnumId:'AttInternal', 
-                                    organizationPartyId: (instrument.applicantPartyId ?: 'InternalOrganization'), 
+                                    organizationPartyId: applicantPartyId, 
                                     transactionDate: ec.user.nowTimestamp, isPosted: 'N']).call()
                     
                     if (transOut?.acctgTransId) {
@@ -70,8 +76,7 @@
             
             <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" for-update="true"/>
             <set field="lc.businessStateId" value="LC_SETTLED"/>
-            <set field="lc.outstandingAmount" from="(lc.outstandingAmount ?: 0) - principalAmount"/>
-            <set field="lc.effectiveOutstandingAmount" from="lc.outstandingAmount"/>
+            <set field="lc.effectiveOutstandingAmount" from="(lc.effectiveOutstandingAmount ?: 0) - principalAmount"/>
             <set field="lc.cumulativeDrawnAmount" from="(lc.cumulativeDrawnAmount ?: 0) + principalAmount"/>
 
             <set field="isZero" from="lc.effectiveOutstandingAmount == 0 || (lc.effectiveOutstandingAmount instanceof BigDecimal &amp;&amp; lc.effectiveOutstandingAmount.compareTo(BigDecimal.ZERO) == 0)"/>
@@ -80,8 +85,7 @@
             <!-- Auto-reinstatement for Revolving LC (BDD-IMP-VAL-03) -->
             <service-call name="trade.TradeCommonServices.evaluate#Reinstatement" in-map="[isRevolving: (lc.isRevolving == 'Y')]" out-map="reinstOut"/>
             <if condition="reinstOut.reinstated &amp;&amp; isZero">
-                <set field="lc.outstandingAmount" from="lc.amount"/>
-                <set field="lc.effectiveOutstandingAmount" from="lc.amount"/>
+                <set field="lc.effectiveOutstandingAmount" from="instrument.amount"/>
                 <set field="targetState" value="LC_ISSUED"/>
             </if>
 

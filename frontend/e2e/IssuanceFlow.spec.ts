@@ -1,71 +1,144 @@
 import { test, expect } from '@playwright/test';
-import { loginAsAdmin } from './helpers/auth-helper';
 
 test.describe('Issuance Life-Cycle (True E2E)', () => {
-  test.beforeEach(async ({ page }) => {
-    await loginAsAdmin(page);
-    // 1. Navigate to Dashboard
-    await page.goto('/import-lc');
-  });
-
   test('completes a full LC issuance from dashboard to submission', async ({ page }) => {
-    // 1. Navigate to Dashboard
-    await page.goto('/import-lc');
-    await expect(page.getByRole('heading', { name: 'Active Instrument Data Table' })).toBeVisible({ timeout: 15000 });
+    // Enable console log forwarding
+    page.on('console', msg => {
+        console.log(`BROWSER: ${msg.text()}`);
+    });
 
-    // 2. Start New Issuance
-    await page.getByRole('link', { name: 'New LC Issuance' }).click();
-    await expect(page.getByRole('heading', { name: 'Step 1: Parties & Limits' })).toBeVisible();
+    // 1. Login & Navigation
+    await page.goto('/issuance');
+    
+    // 2. Select Applicant (Triggering facility fetch)
+    console.log('Selecting Applicant: Acme Corporation Ltd');
+    await page.locator('select#applicant').selectOption({ label: 'Acme Corporation Ltd' });
+    
+    // 3. Inspect & Select LC Product
+    console.log('Selecting LC Product...');
+    await page.locator('select#productCatalogId').selectOption({ label: 'Standard Import LC' });
 
-    const txRef = `IMLC/2026/${Math.floor(Math.random() * 9000) + 1000}`;
-    await page.locator('#transactionRef').fill(txRef);
-    await page.selectOption('#productCatalogId', { label: 'Standard Import LC' });
+    // Wait for the specific log or just wait for the dropdown to have options
+    console.log('Waiting for facility-select options...');
+    const facilitySelect = page.getByTestId('facility-select');
+    await expect(facilitySelect).toBeVisible();
     
-    // 3. Select Applicant & Facility in Step 1 (Real Master Data)
-    const facilityPromise = page.waitForResponse(resp => resp.url().includes('/facilities/customer') && resp.status() === 200);
-    await page.locator('#applicant').selectOption({ label: 'Zizi Corp' });
-    await page.locator('#beneficiary').fill('Industrial Components Ltd\n123 Factory Road, Shanghai, China');
-    await facilityPromise; // Robust sync
-    await page.waitForTimeout(1000); 
+    // Robust wait for options to populate
+    await page.waitForFunction(() => {
+        const select = document.querySelector('[data-testid="facility-select"]') as HTMLSelectElement;
+        return select && select.options.length > 1;
+    }, { timeout: 10000 });
+
+    // 4. Select Facility
+    await facilitySelect.selectOption({ index: 1 });
+
+    // 5. Fill Step 1: Parties & Limits
+    console.log('Waiting for Beneficiary options...');
+    const beneficiarySelect = page.locator('select#beneficiary');
+    await page.waitForFunction(() => {
+        const select = document.querySelector('select#beneficiary') as HTMLSelectElement;
+        return select && select.options.length > 1;
+    }, { timeout: 10000 });
     
-    // Click Next and wait for Step 2 heading
+    console.log('Selecting Beneficiary...');
+    await beneficiarySelect.selectOption({ label: 'Global Exports Inc' });
+    
+    console.log('Waiting for Advising Bank options...');
+    const advisingBankSelect = page.locator('select#advisingBankPartyId');
+    await page.waitForFunction(() => {
+        const select = document.querySelector('select#advisingBankPartyId') as HTMLSelectElement;
+        return select && select.options.length > 1;
+    }, { timeout: 10000 });
+
+    console.log('Selecting Advising Bank...');
+    const bankOptions = await advisingBankSelect.evaluate((el) => {
+        return Array.from((el as HTMLSelectElement).options).map(o => o.label);
+    });
+    const selectedBank = bankOptions.find(o => o.includes('Overseas Banking Corp'));
+    if (!selectedBank) throw new Error('Overseas Banking Corp not found in advising bank options');
+    await advisingBankSelect.selectOption({ label: selectedBank });
+    
+    // Verify selection before moving next
+    const beneficiaryVal = await beneficiarySelect.inputValue();
+    if (!beneficiaryVal) throw new Error('Beneficiary selection failed');
+
+    // Move to Step 2
+    console.log('Moving to Step 2...');
     await page.getByTestId('next-button').click();
-    await expect(page.getByRole('heading', { name: 'Step 2: Main LC Information' })).toBeVisible({ timeout: 10000 });
 
-    // 4. Fill Step 2: Main LC Information
-    await expect(page.getByRole('heading', { name: 'Step 2: Main LC Information' })).toBeVisible();
-    await page.locator('#amount').fill('125000');
-    await page.locator('#expiryPlace').fill('AT OUR COUNTERS');
+    // 6. Step 2: Main LC Information
+    console.log('Filling Main LC Information...');
+    await expect(page.getByText(/Step 2: Main LC Information/i)).toBeVisible();
     
-    const futureDate = new Date();
-    futureDate.setFullYear(futureDate.getFullYear() + 1);
-    const dateStr = futureDate.toISOString().split('T')[0];
-    await page.locator('#expiryDate').fill(dateStr);
-    await page.locator('#latestShipmentDate').fill(dateStr);
+    console.log('Filling Amount...');
+    await page.locator('input#amount').fill('125000');
     
-    await page.locator('#goodsDescription').fill('Precision components for manufacturing');
-    await page.locator('#documentsRequired').fill('1. Commercial Invoice\n2. Packing List\n3. Bill of Lading');
+    console.log('Selecting Currency...');
+    await page.locator('select#currency').selectOption('USD');
     
+    const today = new Date();
+    const expiry = new Date();
+    expiry.setFullYear(today.getFullYear() + 1);
+    const shipmentDate = new Date();
+    shipmentDate.setMonth(today.getMonth() + 6);
+
+    console.log('Filling Expiry Date...');
+    await page.locator('input#expiryDate').fill(expiry.toISOString().split('T')[0]);
+    
+    console.log('Filling Expiry Place...');
+    await page.locator('input#expiryPlace').fill('SINGAPORE');
+
+    console.log('Filling Shipment Date...');
+    await page.locator('input#latestShipmentDate').fill(shipmentDate.toISOString().split('T')[0]);
+
+    console.log('Filling Goods Description...');
+    await page.locator('textarea#goodsDescription').fill('INDUSTRIAL RAW MATERIALS - GRADE A');
+    
+    console.log('Filling Documents Required...');
+    await page.locator('textarea#documentsRequired').fill('1. FULL SET OF CLEAN ON BOARD BILL OF LADING\n2. COMMERCIAL INVOICE IN 3 COPIES');
+
+    // Move to Step 3
+    console.log('Moving to Step 3...');
     await page.getByTestId('next-button').click();
     
-    // 5. Margin & Limits (Step 3) - Select Real Facility
-    await expect(page.getByRole('heading', { name: 'Step 3: Margin & Charges' })).toBeVisible(); 
-    
-    // Handle Facility selection if present in this step or Step 1
-    // The previous test had it in Step 3
-    // Step 3: Margin & Charges
-    await page.selectOption('#customerFacilityId', { value: 'FAC-ZIZI-001' });
-    
+    // Diagnostic: Check for error banner and field errors
+    const errorBanner = page.locator('.error-banner, .text-danger');
+    if (await errorBanner.isVisible()) {
+        const text = await errorBanner.innerText();
+        console.error('ERROR BANNER DETECTED:', text);
+        
+        // Find fields with 'is-invalid' class
+        const invalidFields = await page.evaluate(() => {
+            return Array.from(document.querySelectorAll('.is-invalid')).map(el => {
+                const label = document.querySelector(`label[for="${el.id}"]`);
+                return { id: el.id, label: label?.textContent || 'N/A', value: (el as any).value };
+            });
+        });
+        console.error('INVALID FIELDS:', JSON.stringify(invalidFields, null, 2));
+    }
+
+    // 7. Step 3: Margin & Charges
+    console.log('Verifying Margin & Charges...');
+    await page.waitForTimeout(2000); // Wait for API calls to complete
+    await page.screenshot({ path: 'step3-after-api.png' });
+    await expect(page.getByText(/Step 3: Margin & Charges/i)).toBeVisible({ timeout: 15000 });
     await page.getByTestId('next-button').click();
 
-    // 6. Review & Submit
-    await expect(page.getByRole('heading', { name: 'Step 4: Review & Submit' })).toBeVisible();
-    await expect(page.getByText('Amount: 125,000').first()).toBeVisible();
+    // 8. Step 4: Review & Submit
+    console.log('Reviewing LC...');
+    await page.screenshot({ path: 'step4-before.png' });
+    await expect(page.getByText(/Step 4: Review & Submit/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/125,000/)).toBeVisible();
 
-    // 7. Submit for Approval
+    // 9. Submit for Approval
+    console.log('Submitting LC...');
     await page.getByTestId('submit-button').click();
 
-    // 8. Verify Success Message and status transition to PENDING
-    await expect(page.getByRole('heading', { name: 'Submission Successful' })).toBeVisible({ timeout: 60000 });
+    // 10. Verify Success Redirect or Message
+    await expect(page.getByText(/Submitted Successfully/i)).toBeVisible({ timeout: 15000 });
+    
+    // Verify Dashboard context
+    await page.goto('/dashboard');
+    await expect(page.getByText('ACME_CORP_001')).toBeVisible();
   });
 });

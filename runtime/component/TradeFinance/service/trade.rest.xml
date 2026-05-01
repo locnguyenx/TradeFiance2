@@ -116,4 +116,9 @@
             </resource>
         </id>
     </resource>
+    <resource name="master-data">
+        <resource name="load">
+            <method type="post"><service name="trade.TradeCommonServices.load#MasterData"/></method>
+        </resource>
+    </resource>
 </resource>

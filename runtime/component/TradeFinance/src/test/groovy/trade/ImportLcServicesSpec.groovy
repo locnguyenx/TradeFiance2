@@ -46,6 +46,7 @@ class ImportLcServicesSpec extends Specification {
         ec.entity.find("trade.importlc.ImportLcSettlement").condition("presentationId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
         ec.entity.find("trade.importlc.ImportLcAmendment").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
         ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+        ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
     }
 
@@ -68,9 +69,11 @@ class ImportLcServicesSpec extends Specification {
         when:
         def result = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
             transactionRef: "TF-IMP-SERV-01",
-            applicantPartyId: "ACME_CORP_001",
-            beneficiaryPartyId: "GLOBAL_EXP_002",
-            issuingBankPartyId: "ISSUING_BANK_001",
+            instrumentParties: [
+                [roleEnumId: 'TP_APPLICANT', partyId: "ACME_CORP_001"],
+                [roleEnumId: 'TP_BENEFICIARY', partyId: "GLOBAL_EXP_002"],
+                [roleEnumId: 'TP_ISSUING_BANK', partyId: "ISSUING_BANK_001"]
+            ],
             lcAmount: 500000.0,
             lcCurrencyUomId: "USD",
             expiryDate: new Date(System.currentTimeMillis() + (90L * 24 * 60 * 60 * 1000)), 
@@ -97,6 +100,7 @@ class ImportLcServicesSpec extends Specification {
             ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).deleteAll()
+            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).deleteAll()
         }
     }
@@ -105,9 +109,11 @@ class ImportLcServicesSpec extends Specification {
         given:
         def createResult = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
             transactionRef: "TF-IMP-UPD-01",
-            applicantPartyId: "ACME_CORP_001",
-            beneficiaryPartyId: "GLOBAL_EXP_002",
-            issuingBankPartyId: "ISSUING_BANK_001",
+            instrumentParties: [
+                [roleEnumId: 'TP_APPLICANT', partyId: "ACME_CORP_001"],
+                [roleEnumId: 'TP_BENEFICIARY', partyId: "GLOBAL_EXP_002"],
+                [roleEnumId: 'TP_ISSUING_BANK', partyId: "ISSUING_BANK_001"]
+            ],
             lcAmount: 500000.0,
             lcCurrencyUomId: "USD",
             expiryDate: new Date(System.currentTimeMillis() + (90L * 24 * 60 * 60 * 1000)),
@@ -138,6 +144,7 @@ class ImportLcServicesSpec extends Specification {
             ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).deleteAll()
+            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).deleteAll()
         }
     }
@@ -146,9 +153,11 @@ class ImportLcServicesSpec extends Specification {
         given:
         def createResult = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
             transactionRef: "TF-IMP-APP-01",
-            applicantPartyId: "ACME_CORP_001",
-            beneficiaryPartyId: "GLOBAL_EXP_002",
-            issuingBankPartyId: "ISSUING_BANK_001",
+            instrumentParties: [
+                [roleEnumId: 'TP_APPLICANT', partyId: "ACME_CORP_001"],
+                [roleEnumId: 'TP_BENEFICIARY', partyId: "GLOBAL_EXP_002"],
+                [roleEnumId: 'TP_ISSUING_BANK', partyId: "ISSUING_BANK_001"]
+            ],
             lcAmount: 500000.0,
             lcCurrencyUomId: "USD",
             businessStateId: "LC_DRAFT"
@@ -179,6 +188,7 @@ class ImportLcServicesSpec extends Specification {
             ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).deleteAll()
+            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).deleteAll()
         }
     }
@@ -187,9 +197,11 @@ class ImportLcServicesSpec extends Specification {
         given:
         def createResult = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
             transactionRef: "TF-IMP-AMD-01",
-            applicantPartyId: "ACME_CORP_001",
-            beneficiaryPartyId: "GLOBAL_EXP_002",
-            issuingBankPartyId: "ISSUING_BANK_001",
+            instrumentParties: [
+                [roleEnumId: 'TP_APPLICANT', partyId: "ACME_CORP_001"],
+                [roleEnumId: 'TP_BENEFICIARY', partyId: "GLOBAL_EXP_002"],
+                [roleEnumId: 'TP_ISSUING_BANK', partyId: "ISSUING_BANK_001"]
+            ],
             lcAmount: 500000.0,
             lcCurrencyUomId: "USD",
             businessStateId: "LC_DRAFT"
@@ -222,6 +234,7 @@ class ImportLcServicesSpec extends Specification {
             ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).deleteAll()
+            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).deleteAll()
         }
     }
@@ -230,9 +243,11 @@ class ImportLcServicesSpec extends Specification {
         given:
         def createResult = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
             transactionRef: "TF-IMP-SET-01",
-            applicantPartyId: "ACME_CORP_001",
-            beneficiaryPartyId: "GLOBAL_EXP_002",
-            issuingBankPartyId: "ISSUING_BANK_001",
+            instrumentParties: [
+                [roleEnumId: 'TP_APPLICANT', partyId: "ACME_CORP_001"],
+                [roleEnumId: 'TP_BENEFICIARY', partyId: "GLOBAL_EXP_002"],
+                [roleEnumId: 'TP_ISSUING_BANK', partyId: "ISSUING_BANK_001"]
+            ],
             lcAmount: 100000.0,
             lcCurrencyUomId: "USD",
             businessStateId: "LC_DRAFT"
@@ -282,6 +297,7 @@ class ImportLcServicesSpec extends Specification {
             ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).deleteAll()
+            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).deleteAll()
         }
     }

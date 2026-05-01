@@ -47,8 +47,10 @@ class BddCommonModuleSpec extends Specification {
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
         ec.entity.find("trade.TradeTransaction").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
         ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
+        ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
-        ec.entity.find("trade.CustomerFacility").condition("facilityId", EntityCondition.LIKE, "FAC-%").deleteAll()
+        ec.entity.find("trade.CustomerFacility").condition("facilityId", EntityCondition.LIKE, "FAC-BDD-%").deleteAll()
+
 
         ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrument", 1000000, 1000)
         ec.entity.tempSetSequencedIdPrimary("trade.CustomerFacility", 1000000, 1000)
@@ -80,7 +82,9 @@ class BddCommonModuleSpec extends Specification {
         
         when:
         def result = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: 'USD']).call()
+            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: 'USD',
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         
         then:
         !ec.message.hasError()
@@ -93,11 +97,13 @@ class BddCommonModuleSpec extends Specification {
         given:
         def pid = "GOOD-BDD-" + System.currentTimeMillis()
         ec.entity.makeValue("trade.TradeParty")
-            .setAll([partyId: pid, partyName: "Good Corp", kycStatus: "Active"]).create()
+            .setAll([partyId: pid, partyName: "Good Corp", kycStatus: "Active", partyTypeEnumId: 'PARTY_COMMERCIAL']).create()
             
         when:
         def result = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: "TF-BDD-02", lcAmount: 1000.0, lcCurrencyUomId: 'USD', applicantPartyId: pid]).call()
+            .parameters([transactionRef: "TF-BDD-02", lcAmount: 1000.0, lcCurrencyUomId: 'USD', 
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: pid],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         
         then:
         !ec.message.hasError()
@@ -109,15 +115,17 @@ class BddCommonModuleSpec extends Specification {
         def pid = "BAD-BDD-" + System.currentTimeMillis()
         def yesterday = new Date(System.currentTimeMillis() - 86400000)
         ec.entity.makeValue("trade.TradeParty")
-            .setAll([partyId: pid, partyName: "Bad Corp", kycStatus: "Expired", kycExpiryDate: yesterday]).create()
+            .setAll([partyId: pid, partyName: "Bad Corp", kycStatus: "Expired", kycExpiryDate: yesterday, partyTypeEnumId: 'PARTY_COMMERCIAL']).create()
             
         when:
         def result = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: "TF-BDD-03", lcAmount: 1000.0, lcCurrencyUomId: 'USD', applicantPartyId: pid]).call()
+            .parameters([transactionRef: "TF-BDD-03", lcAmount: 1000.0, lcCurrencyUomId: 'USD', 
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: pid],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         
         then:
-        !ec.message.hasError()
-        result.instrumentId != null
+        ec.message.hasError()
+        ec.message.errors.any { it.contains("has no active KYC") }
     }
 
     def "BDD-CMN-ENT-04: Facility Limit Availability Earmark"() {
@@ -155,7 +163,9 @@ class BddCommonModuleSpec extends Specification {
         given:
         def ref = "TF-FLOW-" + System.currentTimeMillis()
         def createRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: 'USD']).call()
+            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: 'USD',
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
             
         when:
         ec.service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit")
@@ -203,7 +213,9 @@ class BddCommonModuleSpec extends Specification {
         ec.message.clearAll()
         def ref = "FX-BDD-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: 'USD']).call()
+            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: 'USD',
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         
         when:
         def result = ec.service.sync().name("trade.TradeAccountingServices.post#TradeEntry")
@@ -297,7 +309,9 @@ class BddCommonModuleSpec extends Specification {
         given:
         def ref = "TF-IMM-" + System.currentTimeMillis()
         def createRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: 'USD']).call()
+            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: 'USD',
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         ec.service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit")
             .parameters([instrumentId: createRes.instrumentId, businessStateId: "LC_ISSUED"]).call()
             
@@ -317,7 +331,9 @@ class BddCommonModuleSpec extends Specification {
         
         when:
         def result = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: "TF-DATE-ERR", lcAmount: 1000.0, lcCurrencyUomId: 'USD', issueDate: issue, expiryDate: expiry]).call()
+            .parameters([transactionRef: "TF-DATE-ERR", lcAmount: 1000.0, lcCurrencyUomId: 'USD', issueDate: issue, expiryDate: expiry,
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
             
         then:
         !ec.message.hasError()
@@ -417,7 +433,9 @@ class BddCommonModuleSpec extends Specification {
         
         when:
         def result = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 500.0, lcCurrencyUomId: 'USD']).call()
+            .parameters([transactionRef: ref, lcAmount: 500.0, lcCurrencyUomId: 'USD',
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         
         then:
         result.instrumentId != null

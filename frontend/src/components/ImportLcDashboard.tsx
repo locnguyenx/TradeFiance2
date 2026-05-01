@@ -109,8 +109,15 @@ export const ImportLcDashboard: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {lcs.length > 0 ? (
-                                    lcs.map(lc => {
+                            {(() => {
+                                // Deduplicate by instrumentId to avoid React key warnings from multiple transactions
+                                const uniqueLcs = lcs.reduce((acc: any[], curr: any) => {
+                                    if (!acc.find(item => item.instrumentId === curr.instrumentId)) acc.push(curr);
+                                    return acc;
+                                }, []);
+                                
+                                return uniqueLcs.length > 0 ? (
+                                    uniqueLcs.map(lc => {
                                          const displayAmount = (lc.effectiveAmount || lc.amount || 0);
                                          const displayExpiry = lc.effectiveExpiryDate || lc.expiryDate || '---';
                                          const isAmended = (lc.effectiveAmount !== undefined && lc.effectiveAmount !== lc.amount) || 
@@ -188,64 +195,57 @@ export const ImportLcDashboard: React.FC = () => {
                                     <tr>
                                         <td colSpan={11} className="empty-state">No active transactions found.</td>
                                     </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-    
-                <style jsx>{`
-                    .dashboard-container { display: flex; flex-direction: column; gap: 2rem; padding: 1rem; }
-                    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
-                    .kpi-item { display: flex; flex-direction: column; padding: 1.5rem; justify-content: center; }
-                    .kpi-label { font-size: 0.875rem; color: #64748b; font-weight: 500; margin-bottom: 0.5rem; }
-                    .kpi-value { font-size: 2rem; font-weight: 700; color: #1e293b; }
-                    .urgent .kpi-value { color: #dc2626; }
-                    .warning .kpi-value { color: #d97706; }
-                    
-                    .premium-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-                    .table-header { display: flex; justify-content: space-between; align-items: center; padding: 1.5rem; border-bottom: 1px solid #f1f5f9; }
-                    .table-header h2 { font-size: 1.25rem; font-weight: 700; color: #1e293b; }
-                    
-                    .transaction-section { overflow: hidden; }
-                    .table-responsive { overflow-x: auto; width: 100%; border-radius: 0 0 12px 12px; }
-                    .trade-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; min-width: 1000px; }
-                    .trade-table th { background: #f8fafc; text-align: left; padding: 1rem; color: #475569; font-weight: 600; }
-                    .trade-table td { padding: 1rem; border-bottom: 1px solid #f1f5f9; color: #334155; }
-                    .clickable-row { cursor: pointer; transition: background 0.1s; }
-                    .clickable-row:hover { background: #f8fafc !important; }
-                    .font-bold { font-weight: 600; color: #2563eb; }
-                    
-                    .status-container { display: flex; flex-direction: column; gap: 0.25rem; }
-                    .status-tag { padding: 0.25rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; width: fit-content; }
-                    .LC_ISSUED { background: #dcfce7; color: #166534; }
-                    .LC_DRAFT { background: #f1f5f9; color: #475569; }
-                    
-                    .amended-indicator { margin-left: 0.5rem; color: #2563eb; font-size: 1rem; cursor: help; }
-                    .sub-status { font-size: 0.7rem; color: #2563eb; font-weight: 700; text-transform: uppercase; margin-left: 0.5rem; }
-                    
-                    .text-urgent { color: #dc2626; font-weight: 700; }
-                    
-                    .action-wrapper { position: relative; }
-                    .action-trigger { background: none; border: none; cursor: pointer; font-size: 1.25rem; color: #94a3b8; padding: 0.5rem; transition: color 0.2s; }
-                    .action-trigger:hover { color: #2563eb; }
-                    
-                    .dropdown-menu { 
-                        position: absolute; right: 0; top: 100%; z-index: 10; min-width: 180px; 
-                        background: white; padding: 0.5rem; margin-top: 0.25rem;
-                        display: flex; flex-direction: column; overflow: hidden;
-                    }
-                    .menu-item { 
-                        text-align: left; padding: 0.625rem 1rem; background: none; border: none; 
-                        cursor: pointer; font-size: 0.875rem; color: #334155; border-radius: 6px;
-                        transition: all 0.2s;
-                    }
-                    .menu-item:hover { background: #f1f5f9; color: #2563eb; }
-                    
-                    .empty-state { text-align: center; padding: 3rem; color: #94a3b8; }
-                    
-                    .filter-select { padding: 0.5rem; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.875rem; outline: none; }
-                `}</style>
-            </div>
-        );
-    };
+                                );
+                            })()}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            <style jsx>{`
+                .dashboard-container { padding: 2rem; }
+                .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2rem; }
+                .premium-card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+                .kpi-item { display: flex; flex-direction: column; }
+                .kpi-label { font-size: 0.875rem; color: #64748b; }
+                .kpi-value { font-size: 1.5rem; font-weight: 700; color: #1e293b; }
+                
+                .transaction-section { padding: 0; }
+                .table-header { padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; }
+                .table-responsive { overflow-x: auto; }
+                .trade-table { width: 100%; border-collapse: collapse; text-align: left; }
+                .trade-table th { padding: 1rem 1.5rem; background: #f8fafc; font-size: 0.75rem; text-transform: uppercase; color: #64748b; }
+                .trade-table td { padding: 1rem 1.5rem; border-bottom: 1px solid #f1f5f9; font-size: 0.875rem; }
+                
+                .status-container { display: flex; flex-direction: column; gap: 0.25rem; }
+                .status-tag { padding: 0.25rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; width: fit-content; }
+                .LC_ISSUED { background: #dcfce7; color: #166534; }
+                .LC_DRAFT { background: #f1f5f9; color: #475569; }
+                
+                .amended-indicator { margin-left: 0.5rem; color: #2563eb; font-size: 1rem; cursor: help; }
+                .sub-status { font-size: 0.7rem; color: #2563eb; font-weight: 700; text-transform: uppercase; margin-left: 0.5rem; }
+                
+                .text-urgent { color: #dc2626; font-weight: 700; }
+                
+                .action-wrapper { position: relative; }
+                .action-trigger { background: none; border: none; cursor: pointer; font-size: 1.25rem; color: #94a3b8; padding: 0.5rem; transition: color 0.2s; }
+                .action-trigger:hover { color: #2563eb; }
+                
+                .dropdown-menu { 
+                    position: absolute; right: 0; top: 100%; z-index: 10; min-width: 180px; 
+                    background: white; padding: 0.5rem; margin-top: 0.25rem;
+                    display: flex; flex-direction: column; overflow: hidden;
+                }
+                .menu-item { 
+                    text-align: left; padding: 0.625rem 1rem; background: none; border: none; 
+                    cursor: pointer; font-size: 0.875rem; color: #334155; border-radius: 6px;
+                    transition: all 0.2s;
+                }
+                .menu-item:hover { background: #f1f5f9; color: #2563eb; }
+                
+                .empty-state { text-align: center; padding: 3rem; color: #94a3b8; }
+                
+                .filter-select { padding: 0.5rem; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.875rem; outline: none; }
+            `}</style>
+        </div>
+    );
+};

@@ -277,18 +277,22 @@ class ImportLcEntitiesSpec extends Specification {
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", "LC-AMEND-EXT").deleteAll()
     }
 
-    def "TradeDocumentPresentation persists presentingBankBic, presentingBankRef, claimCurrency, regulatoryDeadline"() {
+    def "TradeDocumentPresentation persists claimCurrency, regulatoryDeadline and uses junction for presenting bank"() {
         setup:
         ec.entity.makeValue("trade.TradeInstrument")
-                .setAll([instrumentId: "LC-PRES-EXT", transactionRef: "TF-LC-PR-EXT"]).create()
+                .setAll([instrumentId: "LC-PRES-EXT", transactionRef: "TF-LC-PR-EXT", instrumentTypeEnumId: "INST_LC"]).create()
         ec.entity.makeValue("trade.importlc.ImportLetterOfCredit")
                 .setAll([instrumentId: "LC-PRES-EXT", businessStateId: "LC_ISSUED"]).create()
+        
+        // Setup presenting bank junction
+        ec.entity.makeValue("trade.TradeParty").setAll([partyId: "PRES_BANK_1", partyName: "Presenting Bank", partyTypeEnumId: 'PARTY_BANK']).createOrUpdate()
+        ec.entity.makeValue("trade.TradeInstrumentParty").setAll([instrumentId: "LC-PRES-EXT", roleEnumId: "TP_PRESENTING_BANK", partyId: "PRES_BANK_1"]).create()
+        ec.entity.makeValue("trade.TradePartyBank").setAll([partyId: "PRES_BANK_1", swiftBic: "PRESBANK", hasActiveRMA: "Y"]).createOrUpdate()
 
         when:
         ec.service.sync().name("create#trade.importlc.TradeDocumentPresentation").parameters([
             presentationId: "PRES_EXT_01",
             instrumentId: "LC-PRES-EXT",
-            presentingBankBic: "DEUTDEFF",
             presentingBankRef: "BANKREF123",
             claimCurrency: "USD",
             regulatoryDeadline: "2026-06-30",
@@ -299,13 +303,19 @@ class ImportLcEntitiesSpec extends Specification {
 
         then:
         pr != null
-        pr.presentingBankBic == "DEUTDEFF"
         pr.presentingBankRef == "BANKREF123"
         pr.claimCurrency == "USD"
         pr.regulatoryDeadline == java.sql.Date.valueOf("2026-06-30")
+        
+        def junc = ec.entity.find("trade.TradeInstrumentParty").condition(["instrumentId": "LC-PRES-EXT", "roleEnumId": "TP_PRESENTING_BANK"]).one()
+        junc != null
+        junc.partyId == "PRES_BANK_1"
 
         cleanup:
         ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", "LC-PRES-EXT").deleteAll()
+        ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", "LC-PRES-EXT").deleteAll()
+        ec.entity.find("trade.TradePartyBank").condition("partyId", "PRES_BANK_1").deleteAll()
+        ec.entity.find("trade.TradeParty").condition("partyId", "PRES_BANK_1").deleteAll()
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "LC-PRES-EXT").deleteAll()
         ec.entity.find("trade.TradeTransaction").condition("instrumentId", "LC-PRES-EXT").deleteAll()
         ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", "LC-PRES-EXT").deleteAll()

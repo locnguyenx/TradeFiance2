@@ -10,7 +10,7 @@
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
-            <entity-find entity-name="trade.TradeParty" list="partyList">
+            <entity-find entity-name="trade.TradePartyView" list="partyList">
                 <econdition field-name="partyName" operator="like" from="'%' + (search ?: '') + '%'" ignore-if-empty="true"/>
                 <order-by field-name="partyName"/>
             </entity-find>

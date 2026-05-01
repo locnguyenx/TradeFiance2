@@ -15,6 +15,7 @@ class ImportLcValidationServicesSpec extends Specification {
 
     def setupSpec() {
         ec = Moqui.getExecutionContext()
+        ec.user.internalLoginUser("trade.maker")
         ec.artifactExecution.disableAuthz()
     }
 
@@ -31,20 +32,24 @@ class ImportLcValidationServicesSpec extends Specification {
                 goodsDescription: "Steel Rods @ 50mm diameter", 
                 lcAmount: 1000.0, 
                 lcCurrencyUomId: 'USD',
-                lcTypeEnumId: 'LC_TYPE_IRREVOCABLE',
-                availableByEnumId: 'AVAIL_BY_SIGHT',
-                confirmationEnumId: 'CONFIRM_WITHOUT'
+                lcTypeEnumId: 'IRREVOCABLE',
+                availableByEnumId: 'SIGHT',
+                confirmationEnumId: 'WITHOUT',
+                productCatalogId: 'PROD_IMP_LC',
+                expiryDate: '2026-12-31',
+                instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                    [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]
             ]).call()
+        if (ec.message.hasError()) throw new Exception("LC creation failed: " + ec.message.errorsString)
         def lc = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("goodsDescription", "Steel Rods @ 50mm diameter").one()
 
         when:
-        ec.service.sync().name("trade.importlc.ImportLcValidationServices.validate#SwiftFields")
+        def result = ec.service.sync().name("trade.importlc.ImportLcValidationServices.validate#SwiftFields")
             .parameters([entityType: 'ImportLetterOfCredit', entityId: lc.instrumentId]).call()
 
         then:
-        ec.message.hasError()
-        ec.message.errorsString.contains("goodsDescription")
-        ec.message.errorsString.contains("@")
+        result.errors != null
+        result.errors.any { it.fieldName == "goodsDescription" && it.message.contains("@") }
         
         cleanup:
         ec.message.clearAll()
@@ -59,18 +64,23 @@ class ImportLcValidationServicesSpec extends Specification {
                 goodsDescription: "Steel Rods - 50mm diameter (standard)", 
                 lcAmount: 1000.0, 
                 lcCurrencyUomId: 'USD',
-                lcTypeEnumId: 'LC_TYPE_IRREVOCABLE',
-                availableByEnumId: 'AVAIL_BY_SIGHT',
-                confirmationEnumId: 'CONFIRM_WITHOUT'
+                lcTypeEnumId: 'IRREVOCABLE',
+                availableByEnumId: 'SIGHT',
+                confirmationEnumId: 'WITHOUT',
+                productCatalogId: 'PROD_IMP_LC',
+                expiryDate: '2026-12-31',
+                instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                    [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]
             ]).call()
+        if (ec.message.hasError()) throw new Exception("LC creation failed: " + ec.message.errorsString)
         def lc = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("goodsDescription", "Steel Rods - 50mm diameter (standard)").one()
 
         when:
-        ec.service.sync().name("trade.importlc.ImportLcValidationServices.validate#SwiftFields")
+        def result = ec.service.sync().name("trade.importlc.ImportLcValidationServices.validate#SwiftFields")
             .parameters([entityType: 'ImportLetterOfCredit', entityId: lc.instrumentId]).call()
 
         then:
-        !ec.message.hasError()
+        result.errors == []
         
         cleanup:
         ec.message.clearAll()

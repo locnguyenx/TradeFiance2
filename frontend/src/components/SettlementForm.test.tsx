@@ -12,7 +12,7 @@ const mockLc = {
   instrumentId: 'LC_100',
   effectiveOutstandingAmount: 50000,
   currencyUomId: 'USD',
-  beneficiaryName: 'Global Supplier'
+  beneficiaryPartyName: 'Global Supplier'
 };
 
 describe('SettlementForm', () => {

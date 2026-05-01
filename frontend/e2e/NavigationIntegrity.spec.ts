@@ -77,7 +77,7 @@ test.describe('Navigation Integrity (True E2E)', () => {
     await page.getByRole('link', { name: 'LC Amendments' }).click();
     await page.getByRole('link', { name: 'Import LC Dashboard' }).click();
     await expect(page).toHaveURL(/\/import-lc/);
-    await expect(page.getByRole('heading', { name: 'Active Instrument Data Table' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Import LC Portfolio' })).toBeVisible();
   });
 
   test('REQ-NAV-01.3: Transaction Dashboard visibility and content', async ({ page }) => {

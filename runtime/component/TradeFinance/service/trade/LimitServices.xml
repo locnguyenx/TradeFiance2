@@ -223,9 +223,11 @@
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
+            <log message="Fetching facilities for partyId: ${partyId}"/>
             <entity-find entity-name="trade.CustomerFacility" list="rawList">
                 <econdition field-name="ownerPartyId" from="partyId"/>
             </entity-find>
+            <log message="Found ${rawList.size()} facilities for partyId: ${partyId}"/>
             <script>
                 facilityList = rawList.collect { f ->
                     [
