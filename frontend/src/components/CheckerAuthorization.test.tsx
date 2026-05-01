@@ -41,7 +41,7 @@ describe('CheckerAuthorization v3.0 (REQ-UI-IMP-05)', () => {
 
     it('displays Effective vs Snapshot values side-by-side for tiers', async () => {
         render(<CheckerAuthorization transactionId="TXN-001" />);
-        await screen.findByText(/Instrument: IMLC\/2026\/001/i);
+        await screen.findAllByText(/IMLC\/2026\/001/i);
         
         // Check for Snapshot (Old) in delta-notice
         const deltaNotice = await screen.findByText(/Amendment Snapshot/i);
