@@ -60,6 +60,16 @@ export const InstrumentDetails: React.FC<Props> = ({ instrument }) => {
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
+  const getPartyName = (role: string) => {
+    const party = instrument.parties?.find(p => p.roleEnumId === role);
+    return party?.partyName || party?.partyId || '';
+  };
+
+  const getBankBic = (role: string) => {
+    const party = instrument.parties?.find(p => p.roleEnumId === role);
+    return party?.swiftBic || '---';
+  };
+
   const DataField = ({ label, value, highlight = false }: { label: string; value: any; highlight?: boolean }) => {
     let displayValue = value;
     
@@ -136,13 +146,13 @@ export const InstrumentDetails: React.FC<Props> = ({ instrument }) => {
             <section className="audit-section">
               <SectionHeader id="parties" title="Parties & BICs" icon={<Users size={20} />} />
               <div className="data-table">
-                <DataField label="Applicant (Obligor)" value={instrument.applicantPartyName || instrument.applicantName || instrument.applicantPartyId} highlight />
-                <DataField label="Beneficiary (Payee)" value={instrument.beneficiaryPartyName || instrument.beneficiaryName || instrument.beneficiaryPartyId} highlight />
+                <DataField label="Applicant (Obligor)" value={getPartyName('TP_APPLICANT') || instrument.applicantPartyName || instrument.applicantName || instrument.applicantPartyId} highlight />
+                <DataField label="Beneficiary (Payee)" value={getPartyName('TP_BENEFICIARY') || instrument.beneficiaryPartyName || instrument.beneficiaryName || instrument.beneficiaryPartyId} highlight />
                 <div className="row-divider">Banking Network Details</div>
-                <DataField label="Issuing Bank BIC" value={instrument.issuingBankBic} />
-                <DataField label="Advising Bank BIC" value={instrument.advisingBankBic} />
-                <DataField label="Available with Bank" value={instrument.availableWithBic} />
-                <DataField label="Drawee Bank" value={instrument.draweeBankBic} />
+                <DataField label="Issuing Bank BIC" value={getBankBic('TP_ISSUING_BANK')} />
+                <DataField label="Advising Bank BIC" value={getBankBic('TP_ADVISING_BANK')} />
+                <DataField label="Available with Bank" value={instrument.availableWithEnumId === 'AVAIL_ANY_BANK' ? 'ANY BANK' : getBankBic('TP_NEGOTIATING_BANK')} />
+                <DataField label="Drawee Bank" value={getBankBic('TP_DRAWEE_BANK')} />
               </div>
             </section>
 
