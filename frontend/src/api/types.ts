@@ -40,6 +40,15 @@ export interface TradeInstrument {
   priorityEnumId?: string;
 }
 
+export interface TradeInstrumentParty {
+  instrumentId: string;
+  roleEnumId: string;
+  partyId: string;
+  partyName?: string;
+  swiftBic?: string;
+  partyTypeEnumId?: string;
+}
+
 export interface ImportLetterOfCredit {
   instrumentId: string;
   businessStateId: string;
@@ -62,6 +71,11 @@ export interface ImportLetterOfCredit {
   confirmationEnumId?: string;
   lcTypeEnumId?: string;
   productCatalogId?: string;
+  
+  // NEW Party Junction Fields
+  parties?: TradeInstrumentParty[];
+  availableWithEnumId?: string;
+
   issuingBankBic?: string;
   advisingBankBic?: string;
   advisingThroughBankBic?: string;
@@ -95,7 +109,13 @@ export interface ImportLetterOfCredit {
 export interface TradeParty {
   partyId: string;
   partyName: string;
+  partyTypeEnumId?: string;
+  accountNumber?: string;
   roleTypeId: string;
+  swiftBic?: string;
+  address1?: string;
+  city?: string;
+  countryGeoId?: string;
   kycStatusEnumId?: string;
   sanctionsStatusEnumId?: string;
   lastKycUpdate?: string;
