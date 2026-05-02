@@ -226,10 +226,10 @@ export const PartyDirectory: React.FC = () => {
                     border-radius: 12px;
                     border: 1px solid #e2e8f0;
                     overflow: hidden;
-                    height: 750px;
+                    height: calc(100vh - 200px);
+                    min-height: 500px;
                     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
                 }
-
 
                 .pane-header {
                     padding: 1.5rem;
@@ -274,6 +274,7 @@ export const PartyDirectory: React.FC = () => {
                     background: #f8fafc;
                     display: flex;
                     flex-direction: column;
+                    height: 100%;
                 }
 
                 .party-items {
@@ -283,8 +284,24 @@ export const PartyDirectory: React.FC = () => {
                     gap: 0.5rem;
                     overflow-y: auto;
                     flex: 1;
+                    min-height: 0;
+                    scrollbar-gutter: stable;
                 }
 
+                .party-items::-webkit-scrollbar {
+                    width: 6px;
+                }
+                .party-items::-webkit-scrollbar-track {
+                    background: #f1f5f9;
+                    border-radius: 3px;
+                }
+                .party-items::-webkit-scrollbar-thumb {
+                    background: #cbd5e1;
+                    border-radius: 3px;
+                }
+                .party-items::-webkit-scrollbar-thumb:hover {
+                    background: #94a3b8;
+                }
 
                 .party-item {
                     padding: 1rem;
@@ -308,9 +325,8 @@ export const PartyDirectory: React.FC = () => {
                     display: flex; 
                     flex-direction: column; 
                     height: 100%;
-                    overflow: hidden;
+                    min-height: 0;
                 }
-
 
                 .detail-header {
                     display: flex;
@@ -344,15 +360,30 @@ export const PartyDirectory: React.FC = () => {
                 .risk-indicator .label { font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; }
                 .risk-indicator .value { font-size: 1.125rem; font-weight: 800; color: #1e293b; }
 
-                .party-content { 
-                    padding: 2rem; 
-                    display: flex; 
-                    flex-direction: column; 
-                    gap: 2.5rem; 
+                .party-content {
+                    padding: 2rem;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 2.5rem;
                     overflow-y: auto;
                     flex: 1;
+                    min-height: 0;
                 }
 
+                .party-content::-webkit-scrollbar {
+                    width: 6px;
+                }
+                .party-content::-webkit-scrollbar-track {
+                    background: #f8fafc;
+                    border-radius: 3px;
+                }
+                .party-content::-webkit-scrollbar-thumb {
+                    background: #cbd5e1;
+                    border-radius: 3px;
+                }
+                .party-content::-webkit-scrollbar-thumb:hover {
+                    background: #94a3b8;
+                }
 
                 .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
 
