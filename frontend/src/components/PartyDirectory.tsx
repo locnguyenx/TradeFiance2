@@ -226,9 +226,10 @@ export const PartyDirectory: React.FC = () => {
                     border-radius: 12px;
                     border: 1px solid #e2e8f0;
                     overflow: hidden;
-                    min-height: 700px;
+                    height: 750px;
                     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
                 }
+
 
                 .pane-header {
                     padding: 1.5rem;
@@ -281,7 +282,9 @@ export const PartyDirectory: React.FC = () => {
                     flex-direction: column;
                     gap: 0.5rem;
                     overflow-y: auto;
+                    flex: 1;
                 }
+
 
                 .party-item {
                     padding: 1rem;
@@ -300,7 +303,14 @@ export const PartyDirectory: React.FC = () => {
                 .party-name { font-weight: 600; color: #1e293b; }
                 .party-id { font-size: 0.75rem; color: #64748b; }
 
-                .party-detail-pane { background: white; display: flex; flex-direction: column; }
+                .party-detail-pane { 
+                    background: white; 
+                    display: flex; 
+                    flex-direction: column; 
+                    height: 100%;
+                    overflow: hidden;
+                }
+
 
                 .detail-header {
                     display: flex;
@@ -334,7 +344,15 @@ export const PartyDirectory: React.FC = () => {
                 .risk-indicator .label { font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; }
                 .risk-indicator .value { font-size: 1.125rem; font-weight: 800; color: #1e293b; }
 
-                .party-content { padding: 2rem; display: flex; flex-direction: column; gap: 2.5rem; }
+                .party-content { 
+                    padding: 2rem; 
+                    display: flex; 
+                    flex-direction: column; 
+                    gap: 2.5rem; 
+                    overflow-y: auto;
+                    flex: 1;
+                }
+
 
                 .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
 
