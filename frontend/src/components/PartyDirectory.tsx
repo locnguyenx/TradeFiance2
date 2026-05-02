@@ -89,8 +89,8 @@ export const PartyDirectory: React.FC = () => {
     if (loading && (parties?.length || 0) === 0) return <div className="admin-loading">Loading directory...</div>;
 
     return (
-        <div className="party-directory-layout">
-            <aside className="party-list-pane">
+        <div className="party-directory-layout" style={{ display: 'grid', gridTemplateColumns: '320px 1fr', height: '100%', minHeight: 0, overflow: 'hidden' }}>
+            <aside className="party-list-pane" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
                 <header className="pane-header">
                     <div className="header-top">
                         <h3>Counterparties</h3>
@@ -106,7 +106,7 @@ export const PartyDirectory: React.FC = () => {
                         />
                     </div>
                 </header>
-                <div className="party-items">
+                <div className="party-items" style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
                     {(parties || []).map(p => (
                         <div 
                             key={p.partyId} 
@@ -120,7 +120,7 @@ export const PartyDirectory: React.FC = () => {
                 </div>
             </aside>
 
-            <main className="party-detail-pane">
+            <main className="party-detail-pane" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
                 {selectedParty ? (
                     <>
                         <header className="pane-header detail-header">
@@ -137,7 +137,7 @@ export const PartyDirectory: React.FC = () => {
                             </div>
                         </header>
 
-                        <div className="party-content">
+                        <div className="party-content" style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
                             <div className="status-grid">
                                 <div className="status-card">
                                     <span className="card-label">KYC Status</span>
@@ -226,8 +226,8 @@ export const PartyDirectory: React.FC = () => {
                     border-radius: 12px;
                     border: 1px solid #e2e8f0;
                     overflow: hidden;
-                    height: calc(100vh - 200px);
-                    min-height: 500px;
+                    height: 100%;
+                    min-height: 0;
                     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
                 }
 

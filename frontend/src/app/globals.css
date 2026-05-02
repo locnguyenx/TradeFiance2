@@ -91,12 +91,15 @@ body {
   display: flex;
   flex-direction: column;
   min-width: 0; /* Prevent flex blowout */
+  height: 100vh;
   background: var(--bg-slate);
 }
 
 .content {
   padding: 2rem;
   flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .top-banner {
@@ -463,4 +466,25 @@ input:focus { outline: 2px solid var(--primary-blue); border-color: transparent;
 
 .scroll-lock {
   overflow: hidden !important;
+}
+
+/* Enhanced Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 10px;
+  border: 2px solid #f8fafc;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #2563eb;
 }
