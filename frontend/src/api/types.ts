@@ -110,6 +110,11 @@ export interface TradeParty {
   countryOfRisk?: string;
   kycStatus?: string;
   sanctionsStatus?: string;
+  hasActiveRMA?: string | boolean;
+  clearingCode?: string;
+  nostroAccountRef?: string;
+  riskRating?: string;
+  lastKycUpdate?: string;
 }
 
 export interface TradeProductCatalog {

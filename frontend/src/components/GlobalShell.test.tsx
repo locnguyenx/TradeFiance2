@@ -22,7 +22,7 @@ describe('GlobalShell Modern Navigation Layout', () => {
         expect(screen.getByText('ADMINISTRATION')).toBeInTheDocument();
         
         // Items
-        expect(screen.getByText('Transaction Dashboard')).toBeInTheDocument();
+        expect(screen.getByText('Operations Dashboard')).toBeInTheDocument();
         expect(screen.getByText('Import LC Dashboard')).toBeInTheDocument();
         expect(screen.getByText('New LC Issuance')).toBeInTheDocument();
         expect(screen.getByText('Party & KYC Directory')).toBeInTheDocument();

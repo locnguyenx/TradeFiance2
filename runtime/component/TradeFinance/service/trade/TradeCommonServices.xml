@@ -605,4 +605,19 @@
             </iterate>
         </actions>
     </service>
+    <!-- FR-TP-11: Get full details for a single party -->
+    <service verb="get" noun="TradeParty" authenticate="false">
+        <in-parameters><parameter name="partyId" required="true"/></in-parameters>
+        <out-parameters>
+            <auto-parameters entity-name="trade.TradePartyView" include="all"/>
+        </out-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find-one entity-name="trade.TradePartyView" value-field="party"/>
+            <if condition="party == null">
+                <return error="true" message="Party ${partyId} not found"/>
+            </if>
+            <script>context.putAll(party)</script>
+        </actions>
+    </service>
 </services>

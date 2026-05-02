@@ -80,10 +80,10 @@ test.describe('Navigation Integrity (True E2E)', () => {
     await expect(page.getByRole('heading', { name: 'Import LC Portfolio' })).toBeVisible();
   });
 
-  test('REQ-NAV-01.3: Transaction Dashboard visibility and content', async ({ page }) => {
-    await page.getByRole('link', { name: 'Transaction Dashboard' }).click();
+  test('REQ-NAV-01.3: Operations Dashboard visibility and content', async ({ page }) => {
+    await page.getByRole('link', { name: 'Operations Dashboard' }).click();
     await expect(page).toHaveURL(/\/transactions/);
-    await expect(page.getByRole('heading', { name: 'Transaction Dashboard' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Operations Dashboard' })).toBeVisible();
     // Verify that at least the header or a table row appears without 404 error
     await expect(page.getByText('Unified operational view')).toBeVisible();
   });

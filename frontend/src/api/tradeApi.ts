@@ -273,6 +273,24 @@ export const tradeApi = {
     const res = await this._fetch(`${API_BASE}/parties/${partyId}`);
     return res.json();
   },
+  
+  async createParty(data: any): Promise<{ partyId: string }> {
+    const res = await this._fetch(`${API_BASE}/parties`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+
+  async updateParty(partyId: string, data: any): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/parties/${partyId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
 
   async getUserAuthorityProfiles(): Promise<{ profileList: UserAuthorityProfile[] }> {
     const res = await this._fetch(`${API_BASE}/authority-profiles`);

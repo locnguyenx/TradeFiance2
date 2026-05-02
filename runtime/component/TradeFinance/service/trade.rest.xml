@@ -88,6 +88,11 @@
 
     <resource name="parties">
         <method type="get"><service name="trade.MasterDataServices.get#Parties"/></method>
+        <method type="post"><service name="trade.TradeCommonServices.create#TradeParty"/></method>
+        <id name="partyId">
+            <method type="get"><service name="trade.TradeCommonServices.get#TradeParty"/></method>
+            <method type="post"><service name="trade.TradeCommonServices.update#TradeParty"/></method>
+        </id>
     </resource>
 
     <resource name="authority-profiles">

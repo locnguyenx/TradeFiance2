@@ -43,10 +43,16 @@ export const GlobalShell: React.FC<{ children: ReactNode }> = ({ children }) => 
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState('');
     const [searchContext, setSearchContext] = useState<'INSTRUMENT' | 'TRANSACTION'>('INSTRUMENT');
+    const [mounted, setMounted] = useState(false);
+
+    React.useEffect(() => {
+        setMounted(true);
+    }, []);
+
 
     const navSections: NavSection[] = [
         { group: 'OPERATIONS', items: [
-            { id: 'transactions', label: 'Transaction Dashboard', icon: <LayoutDashboard size={18} />, path: '/transactions' },
+            { id: 'transactions', label: 'Operations Dashboard', icon: <LayoutDashboard size={18} />, path: '/transactions' },
             { id: 'approvals', label: 'My Tasks', icon: <CheckCircle size={18} />, path: '/approvals' },
             { id: 'documents', label: 'Document Examination', icon: <FileSearch size={18} />, path: '/import-lc/documents' },
         ]},
@@ -75,7 +81,7 @@ export const GlobalShell: React.FC<{ children: ReactNode }> = ({ children }) => 
         const currentPath = (pathname || '/').replace(/\/$/, '') || '/';
         const targetPath = href.replace(/\/$/, '') || '/';
         
-        if (targetPath === '/import-lc' && currentPath === '/') return true;
+        if (targetPath === '/transactions' && currentPath === '/') return true;
         return currentPath === targetPath || (targetPath !== '/' && currentPath.startsWith(targetPath));
     };
 
@@ -132,8 +138,9 @@ export const GlobalShell: React.FC<{ children: ReactNode }> = ({ children }) => 
             <div className="main-wrapper">
                 <header className="top-banner">
                     <div className="header-breadcrumbs">
-                        <strong>Trade Finance</strong> / {pathname === '/import-lc' ? 'Dashboard' : (pathname || '').split('/').filter(p => !['import-lc', 'admin'].includes(p) && p !== '').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' / ') || 'Home'}
+                        <strong>Trade Finance</strong> / {!mounted ? '...' : (pathname === '/transactions' ? 'Dashboard' : (pathname || '').split('/').filter(p => !['import-lc', 'transactions', 'admin'].includes(p) && p !== '').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' / ') || 'Home')}
                     </div>
+
 
                     <form className="global-search-container" onSubmit={handleSearch}>
                         <div className="search-box">

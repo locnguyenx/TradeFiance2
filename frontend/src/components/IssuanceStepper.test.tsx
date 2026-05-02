@@ -57,19 +57,19 @@ describe('IssuanceStepper v3.0 (BDD-IMP-FLOW-01, BDD-CMN-VAL-05)', () => {
         });
         fireEvent.change(screen.getByLabelText(/LC Product/i), { target: { value: 'IMP_LC_STANDARD' } });
         fireEvent.change(screen.getByLabelText(/Beneficiary \(Tag 59\)/i), { target: { value: 'GLOBAL_CORP' } });
+        fireEvent.change(screen.getByLabelText(/Customer Facility \(Optional for Draft\)/i), { target: { value: 'FAC-001' } });
     };
 
     const completeStep1 = async () => {
-        fireEvent.change(screen.getByLabelText('Amount'), { target: { value: '100000' } });
-        fireEvent.change(screen.getByLabelText(/Currency/i), { target: { value: 'USD' } });
-        fireEvent.change(screen.getByLabelText(/Expiry Place/i), { target: { value: 'AT COUNTERS' } });
-        fireEvent.change(screen.getByLabelText(/Latest Shipment Date/i), { target: { value: '2026-12-31' } });
-        fireEvent.change(screen.getByLabelText(/Description of Goods/i), { target: { value: 'Electronic components' } });
+        fireEvent.change(await screen.findByLabelText('Amount'), { target: { value: '100000' } });
+        fireEvent.change(await screen.findByLabelText(/Currency/i), { target: { value: 'USD' } });
+        fireEvent.change(await screen.findByLabelText(/Expiry Place/i), { target: { value: 'AT COUNTERS' } });
+        fireEvent.change(await screen.findByLabelText(/Latest Shipment Date/i), { target: { value: '2026-12-31' } });
+        fireEvent.change(await screen.findByLabelText(/Description of Goods \(Tag 45A\)/i), { target: { value: 'Electronic components' } });
     };
 
     const completeStep2 = async () => {
         fireEvent.change(screen.getByLabelText(/Charge Allocation/i), { target: { value: 'BENEFICIARY' } });
-        fireEvent.change(screen.getByLabelText(/Customer Facility/i), { target: { value: 'FAC-001' } });
     };
 
     it('renders product catalog dropdown on Step 1', async () => {
@@ -157,11 +157,14 @@ describe('IssuanceStepper v3.0 (BDD-IMP-FLOW-01, BDD-CMN-VAL-05)', () => {
         
         await waitFor(() => {
             expect(tradeApi.validateLcSwiftFields).toHaveBeenCalled();
-            expect(screen.getByText(/Z-Charset violation/i)).toBeInTheDocument();
-            // Should STAY on Step 2 (label) because transition is blocked
-            expect(screen.getByText(/Step 2: Main LC Information/i)).toBeInTheDocument();
-            expect(screen.queryByText(/Step 3/i)).not.toBeInTheDocument();
         });
+        
+        await waitFor(() => {
+            expect(screen.getAllByText(/Z-Charset violation/i).length).toBeGreaterThan(0);
+        });
+        // Should STAY on Step 2 (label) because transition is blocked
+        expect(screen.getByText(/Step 2: Main LC Information/i)).toBeInTheDocument();
+        expect(screen.queryByText(/Step 3/i)).not.toBeInTheDocument();
     });
 
     it('shows Save Draft only on the final Review step and handles submission', async () => {

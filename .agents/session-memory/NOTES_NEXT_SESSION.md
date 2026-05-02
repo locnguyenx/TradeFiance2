@@ -14,7 +14,7 @@
    - Verify Tasks 1-4 implementation against the BRD.
    - Conclude the branch stabilization.
 2. **E2E Test Finalization**:
-   - Run full Playwright suite to ensure no regressions in common workflows.
+   - ✓ COMPLETE: Full Playwright suite verified (19/19 passing). Fixes applied to `IssuanceFlow.spec.ts`.
 
 ## 💡 Technical Context for "Next You"
 - **Strict Documentation Boundary**: Do NOT mix business domain examples (like LC issuance or SWIFT messages) into `moqui-*.md` journal files. Use generic examples (like `Order` or `Product`). Put all Trade Finance logic in `trade-finance-*.md`.

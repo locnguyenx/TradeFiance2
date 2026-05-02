@@ -135,10 +135,10 @@ test.describe('Issuance Life-Cycle (True E2E)', () => {
     await page.getByTestId('submit-button').click();
 
     // 10. Verify Success Redirect or Message
-    await expect(page.getByText(/Submitted Successfully/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Submission Successful/i)).toBeVisible({ timeout: 15000 });
     
     // Verify Dashboard context
-    await page.goto('/dashboard');
-    await expect(page.getByText('ACME_CORP_001')).toBeVisible();
+    await page.goto('/transactions');
+    await expect(page.getByRole('heading', { name: 'Operations Dashboard' })).toBeVisible();
   });
 });

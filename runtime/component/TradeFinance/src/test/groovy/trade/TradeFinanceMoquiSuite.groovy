@@ -23,6 +23,8 @@ import org.moqui.Moqui
     LimitServicesSpec.class,
     RestApiEndpointsSpec.class,
     ShippingGuaranteeSpec.class,
+    TradePartySpec.class,
+    TradePartyLcIntegrationSpec.class,
     TradeCommonEntitiesSpec.class,
     TradeSeedDataSpec.class
 ])

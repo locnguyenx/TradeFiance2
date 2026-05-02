@@ -99,6 +99,13 @@ Users with the `TRADE_CHECKER` role can authorize transactions via the **My Task
 2.  **Compare Proposed vs. Current**: The workspace displays the instrument data *as it will look* after the transaction (Proposed) alongside current recorded values.
 3.  **Submit Decision**: Actions are performed against the unique **Transaction ID**, ensuring atomicity regardless of the instrument's future versioning.
 
+### Structured Party Review
+When reviewing an LC, the Checker sees all assigned parties grouped by category:
+- **Commercial Parties**: Applicant (Obligor), Beneficiary (Payee) — with KYC status badge.
+- **Banking Parties**: Advising, Confirming, Reimbursing, Drawee banks — with BIC, RMA status, and FI Limit indicators.
+- **Multi-Role Assignments**: If one bank holds multiple roles, this is clearly indicated (e.g., "JP Morgan — Advising, Confirming").
+- **Eligibility Status**: Each bank party shows a compliance summary (KYC ✓, RMA ✓, FI Limit ✓).
+
 ---
 
 ## 6. Resuming Drafts
@@ -121,11 +128,17 @@ The platform ensures no data is lost during the issuance process.
 | **Confirmation** | 49 | Optional | - | Select CONFIRM, MAY ADD, or WITHOUT (Default). |
 | **Product Catalog**| - | **Mandatory** | - | Select the generic LC type to load default SLA/Tenor templates. |
 | **Transaction Ref**| 20 | Optional | **X-Charset** | Bank's internal reference. **Format**: `TF-IMP-YY-NNNN` (e.g., `TF-IMP-26-0001`). |
-| **Applicant** | 50 | **Mandatory** | **X-Charset** | Select corporate client. Name/Address mapped to **Max 4 Lines**. |
-| **Beneficiary** | 59 | **Mandatory** | **X-Charset** | Enter manually or select. Name/Address mapped to **Max 4 Lines**. |
-| **Advising Bank** | 57A | **Mandatory** | **BIC-11/8** | Enter 8 or 11 char BIC. System auto-verifies Bank Name. |
-| **Adv. Thru Bank** | 58A | Optional | **BIC-11/8** | Enter BIC for intermediary bank (Advising Through). |
-| **Credit Facility**| - | **Mandatory** | - | Must have sufficient available balance. Blocks flow if exceeded. |
+| **Applicant** | 50 | **Mandatory** | - | Select commercial client from directory. **Must have 'Active' KYC Status.** |
+| **Beneficiary** | 59 | **Mandatory** | - | Select commercial client from directory. **Must have 'Active' KYC Status.** |
+| **Advising Bank** | 57A | **Mandatory** | - | Select onboarded Bank from directory. **Must have Active RMA** (unless Adv. Thru Bank is provided). System auto-retrieves BIC. |
+| **Adv. Thru Bank** | 58A | Optional | - | Select onboarded Bank from directory. **Must have Active RMA**. Exempts Advising Bank from RMA check. |
+| **Confirming Bank**| - | Conditional | - | Required if Confirmation is requested. Select onboarded Bank. **Must have sufficient FI Limit** to cover LC Amount. |
+| **Credit Facility**| - | **Mandatory** | - | Select Applicant's facility. Must have sufficient available balance. Blocks flow if exceeded. |
+
+> [!IMPORTANT]
+> **Junction-Based Party Selection**: You **do not manually type** names or BICs for core parties. You select the legal entity from the master Party Directory. The system automatically retrieves the party's `swiftBic` and `registeredAddress` for SWIFT message generation.
+>
+> **Multi-Role Banks**: A single bank can serve multiple roles on the same LC (e.g., JP Morgan as Advising Bank + Confirming Bank + Negotiating Bank). Select the same bank from the dropdown for each applicable role. The system tracks each role assignment independently.
 
 ---
 
@@ -144,15 +157,15 @@ The platform ensures no data is lost during the issuance process.
 | **Shipment Period**| 44D | Conditional | **X-Charset** | Narrative shipment window. Mandatory if 44C is empty. |
 | **Usance Days** | 42C | Conditional | **Numeric** | Required if LC Type is USANCE. |
 | **Available By** | 41a | **Mandatory** | - | Select Payment Type (e.g., SIGHT, ACCEPTANCE, NEGOTIATION). |
-| **Available With** | 41A/D| **Mandatory** | **BIC or X** | **BIC (41A)** or **Narrative Name (41D)**. Name max **4 lines**. |
-| **Drawee Bank** | 42A | Optional | **BIC-11/8** | BIC of the bank that will accept/pay the drafts. |
+| **Available With** | 41A/D| **Mandatory** | - | Choose **"Any Bank"** or **"Specific Bank"** via radio toggle. If Specific, select the Negotiating Bank from directory. System generates Tag 41A (BIC) or 41D (Name/Address) automatically. |
+| **Drawee Bank** | 42A | Optional | - | Select from Bank directory. System auto-retrieves BIC for Tag 42A. |
 | **Partial Ship.** | 43P | Optional | - | Select ALLOWED or NOT ALLOWED. |
 | **Transhipment** | 43T | Optional | - | Select ALLOWED, NOT ALLOWED, or CONDITIONAL. |
 | **Port of Loading**| 44E | Optional | **X-Charset** | Port/Airport of taking in charge/dispatch. |
 | **Port of Disch.** | 44F | Optional | **X-Charset** | Port/Airport of destination. |
 | **Goods Desc.** | 45A | **Mandatory** | **X-Charset** | Detailed list of merchandise and Incoterms. |
 | **Docs Required** | 46A | **Mandatory** | **X-Charset** | List of required evidence (e.g., Bill of Lading, Invoice). |
-| **Issuing Bank** | 51A | Optional | **BIC-11/8** | BIC of the bank issuing the instrument (if not self). |
+| **Issuing Bank** | 51A | Optional | - | Select from Bank directory (if not self). System auto-retrieves BIC. |
 
 ---
 
@@ -178,7 +191,7 @@ Enforces strict 5-day UCP 600 examination rules.
 | **Pres. Date** | - | **Mandatory** | **Date** | - | Date documents were received at bank counter. |
 | **Claim Amount** | - | **Mandatory** | **Numeric** | 1 | Cannot exceed LC Balance + Tolerance. |
 | **Currency** | - | **Mandatory** | - | - | Mapped from instrument. |
-| **Presenting Bank**| 54A | **Mandatory** | **BIC-11/8** | 1 | BIC of the bank presenting the documents. |
+| **Presenting Bank**| 54A | **Mandatory** | - | Select onboarded Bank from directory. System auto-retrieves BIC. |
 | **Bank Reference** | 20 | **Mandatory** | **X-Charset** | 1 | The presenting bank's unique reference number. |
 | **Examination Date**| - | **Mandatory** | **Date** | - | SLA anchor. **Rule**: Presentation Date + 5 Business Days (UCP 600). |
 | **Document Matrix** | - | **Mandatory** | - | - | Count of Original/Copy for each document type. |

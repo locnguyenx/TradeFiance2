@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { tradeApi } from '../api/tradeApi';
 import { TradeParty } from '../api/types';
+import { PartyModal } from './PartyModal';
+
 
 // ABOUTME: PartyDirectory implements KYC and Sanctions status monitoring for v3.0.
 // ABOUTME: Master-Detail view for manageable trade finance counterparties.
@@ -13,10 +15,17 @@ export const PartyDirectory: React.FC = () => {
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [showModal, setShowModal] = useState(false);
+    const [editingParty, setEditingParty] = useState<TradeParty | null>(null);
+    const [isHydrated, setIsHydrated] = useState(false);
+
+
 
     useEffect(() => {
+        setIsHydrated(true);
         loadParties();
     }, [search]);
+
 
     const loadParties = async () => {
         try {
@@ -25,6 +34,10 @@ export const PartyDirectory: React.FC = () => {
             setParties(partyList);
             if (partyList.length > 0 && !selectedParty) {
                 setSelectedParty(partyList[0]);
+            } else if (selectedParty) {
+                // Refresh selected party if it exists
+                const updated = partyList.find(p => p.partyId === selectedParty.partyId);
+                if (updated) setSelectedParty(updated);
             }
         } catch (err) {
             setError('Failed to load party directory');
@@ -33,26 +46,45 @@ export const PartyDirectory: React.FC = () => {
         }
     };
 
-    const handleSelectParty = (partyId: string) => {
-        const party = (parties || []).find(p => p.partyId === partyId);
-        if (party) setSelectedParty(party);
+    const handleCreate = () => {
+        setEditingParty(null);
+        setShowModal(true);
     };
+
+    const handleEdit = () => {
+        setEditingParty(selectedParty);
+        setShowModal(true);
+    };
+
+
+    const handleSelectParty = async (partyId: string) => {
+        try {
+            const party = await tradeApi.getParty(partyId);
+            setSelectedParty(party);
+        } catch (err) {
+            console.error('Failed to load party details:', err);
+            // Fallback to list data
+            const party = (parties || []).find(p => p.partyId === partyId);
+            if (party) setSelectedParty(party);
+        }
+    };
+
 
     const getStatusColor = (status?: string) => {
         if (!status) return '#64748b';
-        switch (status) {
-            case 'KYC_PASSED':
-            case 'SANCTIONS_CLEAN':
-                return '#10b981';
-            case 'KYC_PENDING':
-                return '#f59e0b';
-            case 'SANCTIONS_CHECK_FAILED':
-            case 'KYC_REJECTED':
-                return '#ef4444';
-            default:
-                return '#64748b';
+        const s = status.toUpperCase();
+        if (s === 'ACTIVE' || s === 'PASSED' || s === 'KYC_PASSED' || s === 'SANCTION_CLEAR' || s === 'SANCTIONS_CLEAN' || s === 'CLEAR' || s === 'CLEAN') {
+            return '#10b981';
         }
+        if (s === 'PENDING' || s === 'KYC_PENDING' || s === 'SANCTION_PENDING') {
+            return '#f59e0b';
+        }
+        if (s === 'REJECTED' || s === 'KYC_REJECTED' || s === 'BLOCKED' || s === 'SANCTION_BLOCKED' || s === 'FAILED') {
+            return '#ef4444';
+        }
+        return '#64748b';
     };
+
 
     if (loading && (parties?.length || 0) === 0) return <div className="admin-loading">Loading directory...</div>;
 
@@ -60,8 +92,12 @@ export const PartyDirectory: React.FC = () => {
         <div className="party-directory-layout">
             <aside className="party-list-pane">
                 <header className="pane-header">
-                    <h3>Counterparties</h3>
+                    <div className="header-top">
+                        <h3>Counterparties</h3>
+                        <button className="add-party-btn" onClick={handleCreate}>+ New Party</button>
+                    </div>
                     <div className="search-box">
+
                         <input 
                             type="text" 
                             placeholder="Search parties..." 
@@ -89,10 +125,13 @@ export const PartyDirectory: React.FC = () => {
                     <>
                         <header className="pane-header detail-header">
                             <div className="title-group">
-                                <h2>{selectedParty.partyName}</h2>
+                                <div className="name-row">
+                                    <h2>{selectedParty.partyName}</h2>
+                                    <button className="edit-profile-btn" onClick={handleEdit}>Edit Profile</button>
+                                </div>
                                 <span className="id-badge">{selectedParty.partyId}</span>
                             </div>
-                            <div className="risk-indicator" style={{ borderLeft: `4px solid ${getStatusColor(selectedParty.kycStatusEnumId)}` }}>
+                            <div className="risk-indicator" style={{ borderLeft: `4px solid ${getStatusColor(selectedParty.kycStatus)}` }}>
                                 <span className="label">Risk Rating</span>
                                 <span className="value">{selectedParty.riskRating || 'UNRATED'}</span>
                             </div>
@@ -102,41 +141,82 @@ export const PartyDirectory: React.FC = () => {
                             <div className="status-grid">
                                 <div className="status-card">
                                     <span className="card-label">KYC Status</span>
-                                    <span className="card-value" style={{ color: getStatusColor(selectedParty.kycStatusEnumId) }}>
-                                        {selectedParty.kycStatusEnumId?.replace('KYC_', '') || 'UNKNOWN'}
+                                    <span className="card-value" style={{ color: getStatusColor(selectedParty.kycStatus) }}>
+                                        {selectedParty.kycStatus?.toUpperCase() || 'UNKNOWN'}
                                     </span>
                                     <span className="last-update">Last Updated: {selectedParty.lastKycUpdate || 'N/A'}</span>
                                 </div>
                                 <div className="status-card">
                                     <span className="card-label">Sanctions Status</span>
-                                    <span className="card-value" style={{ color: getStatusColor(selectedParty.sanctionsStatusEnumId) }}>
-                                        {selectedParty.sanctionsStatusEnumId?.replace('SANCTIONS_', '') || 'UNKNOWN'}
+                                    <span className="card-value" style={{ color: getStatusColor(selectedParty.sanctionsStatus) }}>
+                                        {selectedParty.sanctionsStatus?.replace('SANCTION_', '') || 'UNKNOWN'}
                                     </span>
                                     <span className="last-update">Real-time Check: ACTIVE</span>
                                 </div>
                             </div>
 
+
                             <section className="info-section">
                                 <h3>Organization Details</h3>
                                 <div className="detail-row">
                                     <span className="label">Role Type</span>
-                                    <span className="value">{selectedParty.roleTypeId}</span>
+                                    <span className="value">{selectedParty.partyTypeEnumId?.replace('PARTY_', '') || 'COMMERCIAL'}</span>
                                 </div>
                                 <div className="detail-row">
-                                    <span className="label">Tax Identifier</span>
-                                    <span className="value">Not Available in Directory</span>
+                                    <span className="label">Country of Risk</span>
+                                    <span className="value">{selectedParty.countryOfRisk || 'N/A'}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="label">Registered Address</span>
+                                    <span className="value">{selectedParty.registeredAddress || 'Not Provided'}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="label">Default Account</span>
+                                    <span className="value">{selectedParty.accountNumber || 'N/A'}</span>
                                 </div>
                             </section>
+
+                            {selectedParty.partyTypeEnumId === 'PARTY_BANK' && (
+                                <section className="info-section bank-details">
+                                    <h3>Banking & Connectivity</h3>
+                                    <div className="detail-row">
+                                        <span className="label">SWIFT BIC</span>
+                                        <span className="value">{selectedParty.swiftBic || 'N/A'}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="label">Active RMA</span>
+                                        <span className="value">{selectedParty.hasActiveRMA === 'Y' ? 'YES' : 'NO'}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="label">Clearing Code</span>
+                                        <span className="value">{selectedParty.clearingCode || 'N/A'}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="label">Nostro Reference</span>
+                                        <span className="value">{selectedParty.nostroAccountRef || 'None'}</span>
+                                    </div>
+                                </section>
+                            )}
 
                             <div className="compliance-banner">
                                 <p>Transaction processing is permitted only for parties with PASSED KYC and CLEAN Sanctions status.</p>
                             </div>
+
                         </div>
                     </>
                 ) : (
                     <div className="empty-selection">Select a party to view compliance details</div>
                 )}
             </main>
+
+            {showModal && (
+                <PartyModal 
+                    party={editingParty} 
+                    onClose={() => setShowModal(false)} 
+                    onSuccess={loadParties}
+                />
+            )}
+
 
             <style jsx>{`
                 .party-directory-layout {
@@ -155,6 +235,26 @@ export const PartyDirectory: React.FC = () => {
                     border-bottom: 1px solid #f1f5f9;
                     background: #f8fafc;
                 }
+
+                .header-top {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+
+                .add-party-btn {
+                    background: #2563eb;
+                    color: white;
+                    border: none;
+                    border-radius: 6px;
+                    padding: 0.4rem 0.8rem;
+                    font-size: 0.75rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: background 0.2s;
+                }
+                .add-party-btn:hover { background: #1d4ed8; }
+
 
                 .search-box {
                     margin-top: 1rem;
@@ -210,7 +310,20 @@ export const PartyDirectory: React.FC = () => {
                 }
 
                 .title-group h2 { margin: 0; font-size: 1.5rem; color: #1e293b; }
+                .name-row { display: flex; align-items: center; gap: 1rem; }
+                .edit-profile-btn {
+                    background: white;
+                    color: #2563eb;
+                    border: 1px solid #dbeafe;
+                    border-radius: 4px;
+                    padding: 0.25rem 0.5rem;
+                    font-size: 0.7rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                }
+                .edit-profile-btn:hover { background: #f0f7ff; }
                 .id-badge { font-size: 0.75rem; font-weight: 700; color: #64748b; background: #f1f5f9; padding: 0.2rem 0.5rem; border-radius: 4px; }
+
 
                 .risk-indicator {
                     padding-left: 1rem;
@@ -247,6 +360,14 @@ export const PartyDirectory: React.FC = () => {
                     border-bottom: 1px solid #f1f5f9;
                     padding-bottom: 0.5rem;
                 }
+
+                .bank-details {
+                    background: #f0f7ff;
+                    padding: 1rem;
+                    border-radius: 8px;
+                    border: 1px solid #dbeafe;
+                }
+
 
                 .detail-row {
                     display: flex;

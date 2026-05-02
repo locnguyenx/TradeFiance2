@@ -507,7 +507,7 @@ export const IssuanceStepper: React.FC = () => {
                                         <small>Instrument ID: {formData.instrumentId}</small>
                                     </p>
                                     <div style={{ display: 'flex', gap: '1rem' }}>
-                                        <a href="/import-lc" style={{ color: '#166534', fontWeight: 600, textDecoration: 'underline' }}>Back to Dashboard</a>
+                                        <a href="/transactions" style={{ color: '#166534', fontWeight: 600, textDecoration: 'underline' }}>Back to Dashboard</a>
                                         <span>|</span>
                                         <a href="/approvals" style={{ color: '#166534', fontWeight: 600, textDecoration: 'underline' }}>View Approvals Queue</a>
                                     </div>

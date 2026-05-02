@@ -60,7 +60,7 @@ export const TransactionDashboard: React.FC = () => {
         <div className="txn-dashboard-container">
             <header className="dashboard-header">
                 <div className="header-content">
-                    <h1>Transaction Dashboard</h1>
+                    <h1>Operations Dashboard</h1>
                     <p className="subtitle">Unified operational view of all maker/checker activities across instrument lifecycles.</p>
                 </div>
                 <div className="header-stats">

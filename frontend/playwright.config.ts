@@ -21,7 +21,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run dev -- -p 3001',
-    url: 'http://localhost:3001/import-lc',
+    url: 'http://localhost:3001/transactions',
     reuseExistingServer: true,
     timeout: 300000,
   },
