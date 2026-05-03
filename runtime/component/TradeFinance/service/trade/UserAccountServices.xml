@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.0.xsd">
+
+    <!-- ABOUTME: UserAccountServices handles authentication-related profile data and user self-service actions. -->
+
+    <service verb="get" noun="CurrentUser">
+        <out-parameters>
+            <parameter name="userId"/>
+            <parameter name="username"/>
+            <parameter name="firstName"/>
+            <parameter name="lastName"/>
+            <parameter name="emailAddress"/>
+            <parameter name="roles" type="List"/>
+            <parameter name="delegationTierId"/>
+            <parameter name="customLimit" type="BigDecimal"/>
+            <parameter name="currencyUomId"/>
+        </out-parameters>
+        <actions>
+            <set field="userId" from="userId ?: ec.user.userId"/>
+            <if condition="!userId"><return error="true" message="No user logged in"/></if>
+
+
+            <entity-find-one entity-name="moqui.security.UserAccount" value-field="userAccount">
+                <field-map field-name="userId" from="userId"/>
+            </entity-find-one>
+            <if condition="!userAccount"><return error="true" message="User ${userId} not found"/></if>
+
+            <set field="username" from="userAccount.username"/>
+            <set field="emailAddress" from="userAccount.emailAddress"/>
+            
+            <!-- Get names from Person (userId is usually partyId) -->
+            <entity-find-one entity-name="mantle.party.Person" value-field="person">
+                <field-map field-name="partyId" from="userId"/>
+            </entity-find-one>
+            <set field="firstName" from="person?.firstName"/>
+            <set field="lastName" from="person?.lastName"/>
+            
+
+            <!-- Get Roles (Direct Query to avoid cache issues in tests) -->
+            <entity-find entity-name="moqui.security.UserGroupMember" list="ugmList" use-cache="false">
+                <econdition field-name="userId" from="userId"/>
+            </entity-find>
+            <script>
+                roles = []
+                for (ugm in ugmList) roles.add(ugm.userGroupId)
+            </script>
+
+            <!-- Get Authority Profile -->
+            <entity-find entity-name="trade.UserAuthorityProfile" list="authProfileList">
+                <econdition field-name="userId" from="userId"/>
+            </entity-find>
+            <if condition="authProfileList">
+                <set field="authProfile" from="authProfileList[0]"/>
+                <set field="delegationTierId" from="authProfile.delegationTierId"/>
+                <set field="customLimit" from="authProfile.customLimit"/>
+                <set field="currencyUomId" from="authProfile.currencyUomId"/>
+            </if>
+        </actions>
+    </service>
+
+    <service verb="logout" noun="User">
+        <actions>
+            <script>ec.user.logoutUser()</script>
+        </actions>
+    </service>
+
+    <service verb="change" noun="OwnPassword">
+        <in-parameters>
+            <parameter name="oldPassword" required="true"/>
+            <parameter name="newPassword" required="true"/>
+            <parameter name="newPasswordVerify" required="true"/>
+        </in-parameters>
+        <actions>
+            <service-call name="org.moqui.impl.UserServices.update#Password" in-map="context + [userId: ec.user.userId]"/>
+            <!-- Capture Audit -->
+            <service-call name="create#trade.common.TradeAuditLog" in-map="[
+                changedByUserId: ec.user.userId,
+                actionName: 'CHANGE_PASSWORD',
+                deltaJson: '{&quot;userId&quot;: &quot;' + ec.user.userId + '&quot;}'
+            ]"/>
+        </actions>
+    </service>
+
+</services>

@@ -12,10 +12,12 @@ This guide provides exhaustive, step-by-step instructions for Administrative and
     - Click the **+ New Party** button.
     - Fill out the required **Identity Details** (Name, Address, Type).
     - If creating a Bank, provide the **SWIFT BIC** and **Active RMA** status.
-3.  **Viewing & Editing (Full-Screen View)**:
-    - Use the search bar to find an entity by Name or Legal ID.
-    - Click **View Details** to enter the full profile.
-    - Click **Edit Profile** to update expiring KYC documents, change the Sanctions status, or adjust FI Limits.
+3.  **Viewing & Editing (Dual-Pane View)**:
+    - **Counterparties List**: Use the scrollable left sidebar to browse all onboarded entities.
+    - **Live Search**: Use the search bar to filter the list by Name or Legal ID.
+    - **Quick View**: Select any party to load its full profile in the right-hand details pane.
+    - **Detailed Insights**: Review **Organization Details**, **KYC & Sanctions Status**, and **Banking Connectivity** (for FI parties).
+    - **Action**: Click **Edit Profile** at the top of the details pane to update records.
 4.  **Role Assignment & Bank Settings**:
     - Verify commercial roles (Applicant/Beneficiary) in the **Identity Card**.
     - **Bank Parties**: Ensure correct configuration of **RMA (Relationship Management Application)** status and **Financial Institution (FI) Limits**. 
@@ -84,9 +86,14 @@ This guide provides exhaustive, step-by-step instructions for Administrative and
 
 ## 3. System Administration & Audit
 
-### A. Managing Authority Tiers
-1.  Navigate to **Administration > Authority Tiers**.
-2.  The platform enforces **Dual Checker** logic for Tier 4 transactions automatically based on the configured amount thresholds.
+### A. Managing User Authority & Security
+1.  Navigate to **Administration > User Authority Tiers**.
+2.  **The User Authority Manager**:
+    - **User Selection**: Select a user from the left-hand pane to view their current profile.
+    - **Delegation Tiers**: Update the user's operational role (Tier 1-4). Tier 4 triggers dual-authorization requirements for high-value transactions.
+    - **Approval Limits**: Define the maximum financial amount the user can authorize. This is enforced in real-time during the Checker workflow.
+    - **Account Suspension**: Use the **Account Suspended** toggle to bridge all approval actions for a user. Suspended users can still log in but cannot perform or authorize trade transactions.
+3.  **Audit Persistence**: All changes to authority tiers and limits are captured in the System Audit Logs with a `UPDATE_USER_AUTHORITY` action tag.
 
 ### B. Analyzing Audit Logs
 1.  Navigate to **Administration > System Audit Logs**.

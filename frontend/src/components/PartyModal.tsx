@@ -18,6 +18,7 @@ export const PartyModal: React.FC<Props> = ({ party, onClose, onSuccess }) => {
   const isEdit = !!party;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [mounted, setMounted] = useState(false);
 
   const [formData, setFormData] = useState<any>({
@@ -58,10 +59,46 @@ export const PartyModal: React.FC<Props> = ({ party, onClose, onSuccess }) => {
 
   if (!mounted) return null;
 
+  const validateSwiftX = (text: string) => {
+    // SWIFT X Character Set: A-Z a-z 0-9 / - ? : ( ) . , ' + [space]
+    const pattern = /^[A-Za-z0-9/ \-?:\().,'+\n\r]*$/;
+    return pattern.test(text);
+  };
+
+  const validateBic = (bic: string) => {
+    if (!bic) return true; // Optional field
+    const pattern = /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/;
+    return pattern.test(bic);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setFieldErrors({});
+
+    const newFieldErrors: Record<string, string> = {};
+
+    // Validate SWIFT X Charset
+    if (!validateSwiftX(formData.partyName)) {
+      newFieldErrors.partyName = 'Contains invalid characters for SWIFT (use only A-Z, 0-9, and standard punctuation)';
+    }
+    if (formData.registeredAddress && !validateSwiftX(formData.registeredAddress)) {
+      newFieldErrors.registeredAddress = 'Contains invalid characters for SWIFT';
+    }
+
+    // Validate BIC format
+    if (formData.partyTypeEnumId === 'PARTY_BANK' && formData.swiftBic) {
+      if (!validateBic(formData.swiftBic)) {
+        newFieldErrors.swiftBic = 'Invalid BIC format (must be 8 or 11 uppercase alphanumeric characters)';
+      }
+    }
+
+    if (Object.keys(newFieldErrors).length > 0) {
+      setFieldErrors(newFieldErrors);
+      setLoading(false);
+      return;
+    }
 
     try {
       if (isEdit) {
@@ -110,6 +147,7 @@ export const PartyModal: React.FC<Props> = ({ party, onClose, onSuccess }) => {
                     disabled={isEdit}
                     placeholder="e.g. ACME_CORP_001"
                   />
+                  {fieldErrors.partyId && <span className="field-error-text">{fieldErrors.partyId}</span>}
                 </div>
                 <div className="input-group">
                   <label>Full Legal Name</label>
@@ -119,7 +157,9 @@ export const PartyModal: React.FC<Props> = ({ party, onClose, onSuccess }) => {
                     onChange={handleChange} 
                     required 
                     placeholder="Official registered name"
+                    className={fieldErrors.partyName ? 'input-error' : ''}
                   />
+                  {fieldErrors.partyName && <span className="field-error-text">{fieldErrors.partyName}</span>}
                 </div>
                 <div className="input-group">
                   <label>Party Type</label>
@@ -140,7 +180,9 @@ export const PartyModal: React.FC<Props> = ({ party, onClose, onSuccess }) => {
                     onChange={handleChange} 
                     rows={3}
                     placeholder="Street, City, Country"
+                    className={fieldErrors.registeredAddress ? 'input-error' : ''}
                   />
+                  {fieldErrors.registeredAddress && <span className="field-error-text">{fieldErrors.registeredAddress}</span>}
                 </div>
                 <div className="input-group">
                   <label>Default Account Number</label>
@@ -195,9 +237,10 @@ export const PartyModal: React.FC<Props> = ({ party, onClose, onSuccess }) => {
                         name="swiftBic" 
                         value={formData.swiftBic} 
                         onChange={handleChange} 
-                        required={formData.partyTypeEnumId === 'PARTY_BANK'}
                         placeholder="8 or 11 chars"
+                        className={fieldErrors.swiftBic ? 'input-error' : ''}
                       />
+                      {fieldErrors.swiftBic && <span className="field-error-text">{fieldErrors.swiftBic}</span>}
                     </div>
                     <div className="input-group">
                       <label>Clearing Code</label>
@@ -265,6 +308,9 @@ export const PartyModal: React.FC<Props> = ({ party, onClose, onSuccess }) => {
           
           .status-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
           
+          .field-error-text { font-size: 0.7rem; color: #dc2626; font-weight: 500; margin-top: 0.2rem; }
+          .input-error { border-color: #fca5a5 !important; background-color: #fffafb; }
+
           .form-error { margin-top: 1.5rem; padding: 1rem; background: #fef2f2; border: 1px solid #fee2e2; color: #dc2626; border-radius: 8px; font-size: 0.875rem; font-weight: 500; }
           
           .modal-footer { padding: 1.5rem 2rem; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; gap: 1rem; background: white; }

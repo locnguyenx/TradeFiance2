@@ -56,6 +56,7 @@
                     transactionDate: ec.user.nowTimestamp,
                     makerUserId: ec.user.userId,
                     makerTimestamp: ec.user.nowTimestamp,
+                    priorityEnumId: priorityEnumId ?: 'NORMAL',
                     versionNumber: 1
                 ]"/>
             <set field="transactionId" from="txOut.transactionId"/>
@@ -149,6 +150,7 @@
                         transactionDate: ec.user.nowTimestamp,
                         makerUserId: ec.user.userId,
                         makerTimestamp: ec.user.nowTimestamp,
+                        priorityEnumId: priorityEnumId ?: tx?.priorityEnumId ?: 'NORMAL',
                         versionNumber: (tx.versionNumber ?: 1) + 1
                     ]"/>
                 <set field="tx" from="ec.entity.find('trade.TradeTransaction').condition('transactionId', newTxOut.transactionId).one()"/>
@@ -308,6 +310,7 @@
             <parameter name="newExpiryDate" type="Date"/>
             <parameter name="amendmentNarrative" type="String"/>
             <parameter name="isFinancial" type="String"/>
+            <parameter name="priorityEnumId"/>
         </in-parameters>
         <out-parameters>
             <parameter name="amendmentId" type="String"/>
@@ -352,6 +355,7 @@
                     transactionDate: ec.user.nowTimestamp,
                     makerUserId: ec.user.userId,
                     makerTimestamp: ec.user.nowTimestamp,
+                    priorityEnumId: priorityEnumId ?: 'NORMAL',
                     versionNumber: 1,
                     relatedRecordId: amdOut.amendmentId,
                     relatedRecordType: 'AMENDMENT'
@@ -475,6 +479,7 @@
             <parameter name="principalAmount" type="BigDecimal" required="true"/>
             <parameter name="settlementTypeEnumId" type="String" required="true"/>
             <parameter name="isPartialDraw" type="String" default="Y"/>
+            <parameter name="priorityEnumId"/>
         </in-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
@@ -507,6 +512,7 @@
                     makerTimestamp: ec.user.nowTimestamp,
                     checkerUserId: ec.user.userId,
                     checkerTimestamp: ec.user.nowTimestamp,
+                    priorityEnumId: priorityEnumId ?: 'NORMAL',
                     versionNumber: 1,
                     relatedRecordId: presentationId,
                     relatedRecordType: 'PRESENTATION'

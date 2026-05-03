@@ -124,7 +124,7 @@ export const tradeApi = {
     return res;
   },
 
-  async login(username: string, password: string): Promise<{ loggedIn: boolean }> {
+  async login(username: string, password: string): Promise<{ loggedIn: boolean; userId?: string; username?: string }> {
     const res = await this._fetch(`${API_BASE}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -135,6 +135,25 @@ export const tradeApi = {
       this.setCredentials(username, password);
     }
     return result;
+  },
+
+  async logout(): Promise<void> {
+    await this._fetch(`${API_BASE}/logout`, { method: 'POST' });
+    this.clearCredentials();
+  },
+
+  async getCurrentUser(): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/current-user`);
+    return res.json();
+  },
+
+  async changePassword(data: any): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/change-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
   },
 
   async getKpis(): Promise<Kpis> {

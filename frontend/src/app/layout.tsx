@@ -13,6 +13,9 @@ export const metadata: Metadata = {
 };
 
 import { GlobalShell } from "../components/GlobalShell";
+import { AuthProvider } from "../context/AuthContext";
+import { ToastProvider } from "../context/ToastContext";
+import { ToastContainer } from "../components/ToastContainer";
 
 export default function RootLayout({
   children,
@@ -22,9 +25,14 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.variable}>
       <body>
-        <GlobalShell>
-          {children}
-        </GlobalShell>
+        <ToastProvider>
+          <AuthProvider>
+            <GlobalShell>
+              {children}
+            </GlobalShell>
+            <ToastContainer />
+          </AuthProvider>
+        </ToastProvider>
       </body>
     </html>
   );

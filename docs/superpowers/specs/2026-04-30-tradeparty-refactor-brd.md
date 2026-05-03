@@ -53,7 +53,8 @@ The current system stores bank party identifiers as flat fields scattered across
 **So that** compliance and operational requirements are enforced before LC submission.
 
 **Acceptance Criteria:**
-- Advising Bank: requires `hasActiveRMA = Y` (or an Advise Through Bank must also be assigned)
+- Advising Bank: requires `hasActiveRMA = Y` (mandatory, no exceptions)
+  - Advise Through Bank: does NOT require RMA with Issuing Bank (the Advising Bank handles RMA relay via MT 710)
 - Reimbursing Bank: requires `nostroAccountRef` populated
 - Confirming Bank: requires `fiLimitAvailable >= instrument liability amount`
 - All bank roles: require `kycStatus = Active`, `sanctionsStatus = SANCTION_CLEAR`
@@ -284,8 +285,8 @@ Validated during `assign#InstrumentParty` and during `submit#ForApproval`:
 
 | Role | Validation Rule | Error Message |
 |:---|:---|:---|
-| `TP_ADVISING_BANK` | `hasActiveRMA = Y` OR `TP_ADVISE_THROUGH_BANK` also assigned | "Advising Bank requires active RMA. Assign an Advise Through Bank or select a bank with active RMA." |
-| `TP_ADVISE_THROUGH_BANK` | `hasActiveRMA = Y` | "Advise Through Bank must have active RMA with both Issuing and Advising Bank." |
+| `TP_ADVISING_BANK` | `hasActiveRMA = Y` (mandatory, no exceptions) | "Advising Bank (MT700 Receiver) must have active RMA with the Issuing Bank." |
+| `TP_ADVISE_THROUGH_BANK` | No RMA check required | N/A — RMA between Advising Bank and Advise Through Bank is outside Issuing Bank's scope |
 | `TP_REIMBURSING_BANK` | `nostroAccountRef` is not null | "Cannot designate as Reimbursing Bank: No active Nostro account found." |
 | `TP_CONFIRMING_BANK` | `fiLimitAvailable >= instrument max liability` | "Confirming Bank's FI limit (X) is insufficient for instrument liability (Y)." |
 | All bank roles | `kycStatus = Active` | "Party KYC status is expired." |

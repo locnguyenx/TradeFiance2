@@ -56,4 +56,29 @@
             <script>ec.artifactExecution.enableAuthz()</script>
         </actions>
     </service>
+
+    <service verb="update" noun="UserAuthorityProfile" authenticate="false">
+        <in-parameters>
+            <parameter name="userAuthorityId" required="true"/>
+            <parameter name="delegationTierId"/>
+            <parameter name="customLimit" type="BigDecimal"/>
+            <parameter name="currencyUomId"/>
+            <parameter name="isSuspended"/>
+        </in-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find-one entity-name="trade.UserAuthorityProfile" value-field="profile"/>
+            <if condition="profile">
+                <entity-set value-field="profile" include="nonpk"/>
+                <entity-update value-field="profile"/>
+                <!-- Capture Audit -->
+                <service-call name="create#trade.common.TradeAuditLog" in-map="[
+                    changedByUserId: ec.user.userId,
+                    actionName: 'UPDATE_USER_AUTHORITY',
+                    deltaJson: '{&quot;userAuthorityId&quot;: &quot;' + userAuthorityId + '&quot;, &quot;userId&quot;: &quot;' + profile.userId + '&quot;}'
+                ]"/>
+            </if>
+            <script>ec.artifactExecution.enableAuthz()</script>
+        </actions>
+    </service>
 </services>

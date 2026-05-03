@@ -27,7 +27,8 @@ jest.mock('../api/tradeApi', () => ({
         }),
         getParties: jest.fn().mockResolvedValue({
             partyList: [
-                { partyId: 'GLOBAL_CORP', partyName: 'Global Corp' }
+                { partyId: 'GLOBAL_CORP', partyName: 'Global Corp', partyTypeEnumId: 'PARTY_COMMERCIAL' },
+                { partyId: 'ADVISING_BANK', partyName: 'Advising Bank', partyTypeEnumId: 'PARTY_BANK', swiftBic: 'ADVBUK22' }
             ]
         }),
         getCustomerFacilities: jest.fn().mockResolvedValue({
@@ -53,11 +54,12 @@ describe('IssuanceStepper v3.0 (BDD-IMP-FLOW-01, BDD-CMN-VAL-05)', () => {
         });
         
         await act(async () => {
-            fireEvent.change(screen.getByLabelText(/Applicant/i), { target: { value: 'GLOBAL_CORP' } });
+            fireEvent.change(screen.getByLabelText(/Applicant \(Tag 50\)/i), { target: { value: 'GLOBAL_CORP' } });
         });
         fireEvent.change(screen.getByLabelText(/LC Product/i), { target: { value: 'IMP_LC_STANDARD' } });
         fireEvent.change(screen.getByLabelText(/Beneficiary \(Tag 59\)/i), { target: { value: 'GLOBAL_CORP' } });
-        fireEvent.change(screen.getByLabelText(/Customer Facility \(Optional for Draft\)/i), { target: { value: 'FAC-001' } });
+        fireEvent.change(screen.getByLabelText(/Advising Bank \(Receiver\)/i), { target: { value: 'ADVISING_BANK' } });
+        fireEvent.change(screen.getByLabelText(/Customer Facility/i), { target: { value: 'FAC-001' } });
     };
 
     const completeStep1 = async () => {
@@ -91,6 +93,9 @@ describe('IssuanceStepper v3.0 (BDD-IMP-FLOW-01, BDD-CMN-VAL-05)', () => {
             expect(banner).toBeInTheDocument();
             expect(banner?.textContent).toMatch(/LC Product/i);
             expect(banner?.textContent).toMatch(/Applicant/i);
+            expect(banner?.textContent).toMatch(/Beneficiary/i);
+            expect(banner?.textContent).toMatch(/Advising Bank \(Receiver\)/i);
+            expect(banner?.textContent).toMatch(/Customer Facility/i);
         });
     });
 
@@ -211,7 +216,7 @@ describe('IssuanceStepper v3.0 (BDD-IMP-FLOW-01, BDD-CMN-VAL-05)', () => {
             render(<IssuanceStepper />);
         });
         // Step 1 (Parties)
-        expect(screen.getByLabelText(/Advising Through Bank/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/Advise Through Bank/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/Advising Bank/i)).toBeInTheDocument();
         
         await completeStep0();

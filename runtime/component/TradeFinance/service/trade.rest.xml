@@ -6,6 +6,21 @@
             <service name="org.moqui.impl.UserServices.login#UserAccount"/>
         </method>
     </resource>
+    <resource name="logout">
+        <method type="post">
+            <service name="trade.UserAccountServices.logout#User"/>
+        </method>
+    </resource>
+    <resource name="current-user">
+        <method type="get">
+            <service name="trade.UserAccountServices.get#CurrentUser"/>
+        </method>
+    </resource>
+    <resource name="change-password">
+        <method type="post">
+            <service name="trade.UserAccountServices.change#OwnPassword"/>
+        </method>
+    </resource>
     <resource name="kpis">
         <method type="get">
             <service name="trade.importlc.ImportLcServices.get#Kpis"/>
@@ -97,6 +112,9 @@
 
     <resource name="authority-profiles">
         <method type="get"><service name="trade.MasterDataServices.get#UserAuthorityProfiles"/></method>
+        <id name="userAuthorityId">
+            <method type="post"><service name="trade.MasterDataServices.update#UserAuthorityProfile"/></method>
+        </id>
     </resource>
 
     <resource name="exposure-data">

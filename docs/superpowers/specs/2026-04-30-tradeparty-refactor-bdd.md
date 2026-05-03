@@ -144,27 +144,27 @@
 
 ---
 
-### SC-08: Validate advising bank RMA eligibility
+### SC-08: Reject advising bank without RMA
 **US-TP-03 | FR-TP-12**
 
 * **Given** a bank `TradeParty` "NO_RMA_BANK" with `hasActiveRMA = "N"`
-* **And** a `TradeInstrument` "LC_TEST_005" with no `TP_ADVISE_THROUGH_BANK` assigned
+* **And** a `TradeInstrument` "LC_TEST_005"
 * **When** `assign#InstrumentParty` is called with `(LC_TEST_005, TP_ADVISING_BANK, NO_RMA_BANK)`
-* **Then** the service returns a validation error: "Advising Bank requires active RMA. Assign an Advise Through Bank or select a bank with active RMA."
+* **Then** the service returns a validation error: "Advising Bank (MT700 Receiver) must have active RMA with the Issuing Bank."
 * **And** no junction record is created
+* **Note:** Unlike the old rules, the presence of an Advise Through Bank does NOT waive this requirement. The Advising Bank is the direct message receiver and always needs RMA.
 
 ---
 
-### SC-09: Allow advising bank without RMA when advise-through bank exists
+### SC-09: Allow advise through bank without RMA
 **US-TP-03 | FR-TP-12**
 
-* **Given** a bank `TradeParty` "NO_RMA_BANK" with `hasActiveRMA = "N"`
-* **And** a bank `TradeParty` "THROUGH_BANK" with `hasActiveRMA = "Y"`
+* **Given** a bank `TradeParty` "NO_RMA_BANK" with `hasActiveRMA = "N"`, `kycStatus = "Active"`
 * **And** a `TradeInstrument` "LC_TEST_006"
-* **And** `TP_ADVISE_THROUGH_BANK` is assigned to "THROUGH_BANK" on "LC_TEST_006"
-* **When** `assign#InstrumentParty` is called with `(LC_TEST_006, TP_ADVISING_BANK, NO_RMA_BANK)`
+* **When** `assign#InstrumentParty` is called with `(LC_TEST_006, TP_ADVISE_THROUGH_BANK, NO_RMA_BANK)`
 * **Then** the junction record is created successfully
 * **And** no validation error is returned
+* **Note:** The Advise Through Bank (Tag 57a) does not need RMA with the Issuing Bank. The relay RMA between the Advising Bank and the Advise Through Bank is outside the Issuing Bank's scope.
 
 ---
 

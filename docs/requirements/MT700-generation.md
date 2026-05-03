@@ -103,6 +103,7 @@ In global trade, the Issuing Bank doesn't always have a direct relationship (Nos
 | :--- | :--- | :--- | :--- |
 | **53a** | Reimbursing Bank | O | `TradeInstrument.reimbursingBankBic`. Highly critical if the Issuing Bank dictates a third-party bank (like JP Morgan NY) to settle USD claims. Maps to option A (BIC) or D (Name/Address). |
 | **57a** | "Advise Through" Bank | O | `TradeInstrument.adviseThroughBankBic`. Used if the Issuing Bank cannot send the MT700 directly to the Beneficiary's bank (no SWIFT RMA), requiring routing through an intermediary. |
+| **58A** | "Confirm" Bank | O | Used if the Issuing Bank dictates a third-party bank (like JP Morgan NY) to settle USD claims. Maps to option A (BIC) or D (Name/Address). |
 
 ### 3. Specialized Transport Variations
 Depending on the Incoterms (e.g., EXW, DDP) or the mode of transport (e.g., multimodal, inland freight), the standard Port of Loading/Discharge fields are not always accurate.

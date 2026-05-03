@@ -26,7 +26,8 @@ import org.moqui.Moqui
     TradePartySpec.class,
     TradePartyLcIntegrationSpec.class,
     TradeCommonEntitiesSpec.class,
-    TradeSeedDataSpec.class
+    TradeSeedDataSpec.class,
+    UserAccountServicesSpec.class
 ])
 class TradeFinanceMoquiSuite {
     @AfterAll

@@ -37,6 +37,7 @@ All state-changing services must adhere to the following guards:
 3.  **Facility Utilization**: Atomic limit check-and-earmark logic in `LimitServices.xml` to prevent over-drawing.
 4.  **Transaction Audit Hub**: Automatic logging in `TradeTransaction` and `TradeTransactionAudit`. The frontend merges these into a **Unified Narrative Timeline** via the `getInstrumentTransactions` and `getAuditLogs` API end-points.
 5.  **Party Eligibility Gateway**: `TradeCommonServices.assign#InstrumentParty` enforces KYC status, RMA requirements, FI Limits, and party-type matching before any role assignment is persisted. This is the single compliance checkpoint for all party operations.
+6.  **Identity Hub**: Centralized authentication and role-based session management via `trade.UserAccountServices`. Enforces transactional auditing for all security events (password changes, profile updates).
 
 ### SWIFT Generation Data Flow
 SWIFT message builders (MT700, MT707) read party data exclusively from the `TradeInstrumentParty` junction:
@@ -48,7 +49,15 @@ SWIFT message builders (MT700, MT707) read party data exclusively from the `Trad
 
 ---
 
-## 2. Technical Stack
+## 2. Frontend State & Feedback
+The frontend uses a provider-based architecture for core services:
+- **`AuthContext`**: Manages user sessions, profile hydration, and granular RBAC (`hasRole` guard).
+- **`ToastContext`**: Provides a non-intrusive, global notification system for operational feedback.
+- **`GlobalShell`**: Implements contextual navigation and role-based route guards (e.g. `/admin` restriction).
+
+---
+
+## 3. Technical Stack
 - **Backend**: Moqui Framework 3.0 (Groovy/Java).
 - **Frontend**: Next.js 14 (TypeScript / Vanilla CSS / premium tokens).
 - **Communication**: REST API (v1 / trade namespace).
@@ -67,7 +76,8 @@ The frontend suite uses Playwright (frontend/e2e) and Vitest for unit tests.
 
 ### Execution (Frontend Unit Tests)
 ```bash
-cd frontend && npm test src/components/SwiftValidation.test.tsx
+cd frontend && npm test src/context/AuthContext.test.tsx
+cd frontend && npm test src/components/GlobalShell.test.tsx
 ```
 
 ---

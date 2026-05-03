@@ -168,28 +168,35 @@ class TradePartySpec extends Specification {
         ec.message.clearAll()
     }
 
-    def "SC-09: Advising bank without RMA allowed when advise-through exists"() {
+    def "SC-09: Advising bank must have RMA even if advise-through exists; Advise-through exempt"() {
         setup:
         ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
                 .parameters([partyId: 'SPEC_NO_RMA_BANK_2', partyTypeEnumId: 'PARTY_BANK', 
                             partyName: 'Spec No RMA Bank 2', hasActiveRMA: false, kycStatus: 'Active'])
                 .call()
         ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
-                .parameters([partyId: 'SPEC_THROUGH_BANK', partyTypeEnumId: 'PARTY_BANK', 
-                            partyName: 'Spec Through Bank', hasActiveRMA: true, kycStatus: 'Active'])
+                .parameters([partyId: 'SPEC_WITH_RMA_BANK', partyTypeEnumId: 'PARTY_BANK', 
+                            partyName: 'Spec With RMA Bank', hasActiveRMA: true, kycStatus: 'Active'])
                 .call()
 
-        when: "Assigning Through Bank first"
+        when: "Assigning SPEC_NO_RMA_BANK_2 as Advising Bank with an Advise Through Bank"
         ec.service.sync().name("trade.TradeCommonServices.assign#InstrumentParty")
-                .parameters([instrumentId: 'INST_ASSIGN_01', roleEnumId: 'TP_ADVISE_THROUGH_BANK', partyId: 'SPEC_THROUGH_BANK'])
-                .call()
+                .parameters([instrumentId: 'INST_ASSIGN_01', roleEnumId: 'TP_ADVISING_BANK', partyId: 'SPEC_NO_RMA_BANK_2']).call()
+        ec.service.sync().name("trade.TradeCommonServices.assign#InstrumentParty")
+                .parameters([instrumentId: 'INST_ASSIGN_01', roleEnumId: 'TP_ADVISE_THROUGH_BANK', partyId: 'SPEC_WITH_RMA_BANK']).call()
+
+        then: "Must fail because Advising Bank (Receiver) strictly requires RMA"
+        ec.message.hasError()
+        ec.message.getErrorsString().contains("has no active RMA")
         
-        then: "Now Advising Bank without RMA should be allowed"
-        def result = ec.service.sync().name("trade.TradeCommonServices.assign#InstrumentParty")
-                .parameters([instrumentId: 'INST_ASSIGN_01', roleEnumId: 'TP_ADVISING_BANK', partyId: 'SPEC_NO_RMA_BANK_2'])
-                .call()
-        
-        result != null
+        when: "Correcting Advising Bank and using SPEC_NO_RMA_BANK_2 as Advise Through Bank"
+        ec.message.clearAll()
+        ec.service.sync().name("trade.TradeCommonServices.assign#InstrumentParty")
+                .parameters([instrumentId: 'INST_ASSIGN_01', roleEnumId: 'TP_ADVISING_BANK', partyId: 'SPEC_WITH_RMA_BANK']).call()
+        ec.service.sync().name("trade.TradeCommonServices.assign#InstrumentParty")
+                .parameters([instrumentId: 'INST_ASSIGN_01', roleEnumId: 'TP_ADVISE_THROUGH_BANK', partyId: 'SPEC_NO_RMA_BANK_2']).call()
+
+        then: "Must succeed because Advise Through Bank (Tag 57A) does not require RMA"
         !ec.message.hasError()
     }
 

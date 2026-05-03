@@ -20,8 +20,11 @@ import {
     ShieldCheck, 
     History,
     Globe,
-    Search
+    Search,
+    LogOut
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 // ABOUTME: Modernized Global application shell implementing REQ-UI-MOD-01.
 // ABOUTME: Features Global Contextual Search (REQ-UTN-02).
@@ -39,6 +42,8 @@ interface NavSection {
 }
 
 export const GlobalShell: React.FC<{ children: ReactNode }> = ({ children }) => {
+    const { user, logout, isAuthenticated, loading, hasRole } = useAuth();
+    const { showToast } = useToast();
     const pathname = usePathname();
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState('');
@@ -48,6 +53,31 @@ export const GlobalShell: React.FC<{ children: ReactNode }> = ({ children }) => 
     React.useEffect(() => {
         setMounted(true);
     }, []);
+
+    const isLoginPage = pathname === '/login';
+
+    // Redirect to login if not authenticated
+    React.useEffect(() => {
+        if (mounted && !loading && !isAuthenticated && pathname !== '/login') {
+            router.push('/login');
+        }
+    }, [mounted, loading, isAuthenticated, pathname, router]);
+
+    // Role-based route guard for admin routes
+    React.useEffect(() => {
+        if (mounted && isAuthenticated && pathname?.startsWith('/admin') && !hasRole('TRADE_ADMIN')) {
+            router.push('/transactions');
+            showToast('error', 'Unauthorized access');
+        }
+    }, [mounted, isAuthenticated, pathname, hasRole, router, showToast]);
+
+    if (isLoginPage) {
+        return <>{children}</>;
+    }
+
+    if (loading || !mounted) {
+        return <div style={{ background: '#0f172a', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>Loading Platform...</div>;
+    }
 
 
     const navSections: NavSection[] = [
@@ -109,11 +139,21 @@ export const GlobalShell: React.FC<{ children: ReactNode }> = ({ children }) => 
                 </div>
                 
                 <nav className="sidebar-nav">
-                    {navSections.map(section => (
+                    {navSections.filter(section => {
+                        if (section.group === 'ADMINISTRATION') return hasRole('TRADE_ADMIN');
+                        if (section.group === 'MASTER DATA' && section.items.some(i => i.id === 'product')) {
+                            // Example: Only show product config to admins
+                        }
+                        return true;
+                    }).map(section => (
                         <div key={section.group} className="nav-section">
                             <li className="nav-header" style={{ listStyle: 'none' }}>{section.group}</li>
                             <ul className="nav-list" style={{ padding: 0 }}>
-                                {section.items.map(item => (
+                                {section.items.filter(item => {
+                                    if (item.id === 'product') return hasRole('TRADE_ADMIN');
+                                    if (item.id === 'tiers') return hasRole('TRADE_ADMIN');
+                                    return true;
+                                }).map(item => (
                                     <li key={item.id} className={isActive(item.path) ? 'active' : ''}>
                                         <Link href={item.path} style={{ color: 'inherit', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                             <span className="nav-icon">{item.icon}</span>
@@ -126,13 +166,25 @@ export const GlobalShell: React.FC<{ children: ReactNode }> = ({ children }) => 
                     ))}
                 </nav>
 
-                <div className="sidebar-footer" style={{ marginTop: 'auto', padding: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div className="user-avatar" style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--nav-active-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700 }}>LN</div>
-                    <div className="user-info">
-                        <div className="user-name" style={{ fontSize: '0.875rem', fontWeight: 600 }}>Loc Nguyen</div>
-                        <div className="user-role" style={{ fontSize: '0.7rem', opacity: 0.7 }}>Trade Officer</div>
+                <Link href="/profile" style={{ textDecoration: 'none', color: 'inherit', display: 'contents' }}>
+                    <div className="sidebar-footer" style={{ marginTop: 'auto', padding: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '0.75rem', position: 'relative', cursor: 'pointer' }}>
+                        <div className="user-avatar" style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--nav-active-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700 }}>
+                            {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+                        </div>
+                        <div className="user-info" style={{ flex: 1 }}>
+                            <div className="user-name" style={{ fontSize: '0.875rem', fontWeight: 600 }}>{user?.firstName} {user?.lastName}</div>
+                            <div className="user-role" style={{ fontSize: '0.7rem', opacity: 0.7 }}>{user?.roles?.[0]?.replace('TRADE_', '') || 'User'}</div>
+                        </div>
+                        <button 
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); logout(); }}
+                            title="Logout"
+                            style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px', borderRadius: '4px', display: 'flex' }}
+                            className="logout-btn"
+                        >
+                            <LogOut size={16} />
+                        </button>
                     </div>
-                </div>
+                </Link>
             </aside>
 
             <div className="main-wrapper">

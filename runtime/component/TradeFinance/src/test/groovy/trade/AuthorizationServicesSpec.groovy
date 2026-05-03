@@ -104,7 +104,6 @@ class AuthorizationServicesSpec extends Specification {
         when: "Retrieving the list"
         def result = ec.service.sync().name("trade.importlc.ImportLcServices.get#ImportLetterOfCreditList").call()
         def list = result.lcList
-        list.each { println "DEBUG_LIST: ID=${it.instrumentId}, Prio=${it.priorityEnumId}, Seq=${it.prioritySequence}" }
         
         then: "Urgent (PRIO-HIGH) should be before Low (PRIO-LOW)"
         int highIdx = list.findIndexOf { it.instrumentId == "PRIO-HIGH" }

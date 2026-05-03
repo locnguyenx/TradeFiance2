@@ -79,6 +79,7 @@ export const IssuanceStepper: React.FC = () => {
         instrumentId: ''
     });
     const [swiftErrors, setSwiftErrors] = useState<Record<string, string>>({});
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
     const searchParams = useSearchParams();
     const queryId = searchParams.get('id');
@@ -231,7 +232,10 @@ export const IssuanceStepper: React.FC = () => {
         const missingFields = [];
         if (stepIndex === 0) {
             if (!formData.productCatalogId) missingFields.push('LC Product');
-            if (!formData.applicant) missingFields.push('Applicant');
+            if (!formData.applicantPartyId) missingFields.push('Applicant');
+            if (!formData.beneficiaryPartyId) missingFields.push('Beneficiary');
+            if (!formData.advisingBankPartyId) missingFields.push('Advising Bank (Receiver)');
+            if (!formData.customerFacilityId) missingFields.push('Customer Facility');
         } else if (stepIndex === 1) {
             if (!formData.amount || parseFloat(formData.amount) <= 0) missingFields.push('LC Amount');
             if (!formData.currency) missingFields.push('Currency');
@@ -241,7 +245,6 @@ export const IssuanceStepper: React.FC = () => {
             if (formData.tenorTypeId === 'USANCE' && !formData.usanceDays) missingFields.push('Usance Days');
         } else if (stepIndex === 2) {
             if (!formData.chargeAllocationEnumId) missingFields.push('Charge Allocation');
-            if (!formData.customerFacilityId) missingFields.push('Customer Facility');
         }
 
         if (dateError) {
@@ -324,12 +327,26 @@ export const IssuanceStepper: React.FC = () => {
         return e.message || 'An unexpected error occurred';
     };
 
+    const mapBackendErrorToField = (errorMessage: string) => {
+        const msg = errorMessage.toLowerCase();
+        if (msg.includes('advise through')) return 'advisingThroughBankPartyId';
+        if (msg.includes('available with') || msg.includes('negotiating')) return 'negotiatingBankPartyId';
+        if (msg.includes('advising bank')) return 'advisingBankPartyId';
+        if (msg.includes('nostro') || msg.includes('reimbursing bank')) return 'reimbursingBankPartyId';
+        if (msg.includes('fi limit') || msg.includes('confirming bank')) return 'confirmingBankPartyId';
+        if (msg.includes('rma')) return 'advisingBankPartyId';
+        if (msg.includes('applicant')) return 'applicantPartyId';
+        if (msg.includes('beneficiary')) return 'beneficiaryPartyId';
+        if (msg.includes('drawee')) return 'draweeBankPartyId';
+        return null;
+    };
+
     const buildPartiesPayload = () => {
         const result = [];
         if (formData.applicantPartyId) result.push({ roleEnumId: 'TP_APPLICANT', partyId: formData.applicantPartyId });
         if (formData.beneficiaryPartyId) result.push({ roleEnumId: 'TP_BENEFICIARY', partyId: formData.beneficiaryPartyId });
-        if (formData.advisingBankPartyId) result.push({ roleEnumId: 'TP_ADVISING_BANK', partyId: formData.advisingBankPartyId });
         if (formData.advisingThroughBankPartyId) result.push({ roleEnumId: 'TP_ADVISE_THROUGH_BANK', partyId: formData.advisingThroughBankPartyId });
+        if (formData.advisingBankPartyId) result.push({ roleEnumId: 'TP_ADVISING_BANK', partyId: formData.advisingBankPartyId });
         if (formData.draweeBankPartyId) result.push({ roleEnumId: 'TP_DRAWEE_BANK', partyId: formData.draweeBankPartyId });
         if (formData.availableWithEnumId === 'AVAIL_SPECIFIC_BANK' && formData.negotiatingBankPartyId) {
             result.push({ roleEnumId: 'TP_NEGOTIATING_BANK', partyId: formData.negotiatingBankPartyId });
@@ -339,6 +356,7 @@ export const IssuanceStepper: React.FC = () => {
 
     const handleSaveDraft = async (): Promise<boolean> => {
         setErrorMessage('');
+        setFieldErrors({});
         
         // Comprehensive Validation across all steps for final Save Draft
         const missingFields = [];
@@ -400,12 +418,18 @@ export const IssuanceStepper: React.FC = () => {
                 setStatus('DRAFT');
                 return true;
             } else {
-                setErrorMessage(result.errors?.[0] || result.error || 'Failed to save draft');
+                const msg = result.errors?.[0] || result.error || 'Failed to save draft';
+                setErrorMessage(msg);
+                const mappedField = mapBackendErrorToField(msg);
+                if (mappedField) setFieldErrors({ [mappedField]: msg });
                 return false;
             }
         } catch (e: any) {
             console.error('Save Draft Detail:', e);
-            setErrorMessage(`Save Draft Failed: ${extractErrorMessage(e)}`);
+            const msg = extractErrorMessage(e);
+            setErrorMessage(`Save Draft Failed: ${msg}`);
+            const mappedField = mapBackendErrorToField(msg);
+            if (mappedField) setFieldErrors({ [mappedField]: msg });
             return false;
         } finally {
             setLoading(false);
@@ -536,11 +560,12 @@ export const IssuanceStepper: React.FC = () => {
                                     id="tenorTypeId"
                                     value={formData.tenorTypeId}
                                     onChange={e => setFormData({...formData, tenorTypeId: e.target.value})}
-                                    className={swiftErrors.tenorTypeId ? 'is-invalid' : ''}
+                                    className={fieldErrors.tenorTypeId ? 'is-invalid' : ''}
                                 >
                                     <option value="SIGHT">Sight LC</option>
                                     <option value="USANCE">Usance LC</option>
                                 </select>
+                                {fieldErrors.tenorTypeId && <p className="error-text text-xs mt-1">{fieldErrors.tenorTypeId}</p>}
                                 {swiftErrors.tenorTypeId && <p className="error-text text-xs mt-1">{swiftErrors.tenorTypeId}</p>}
                             </div>
                             <div className="field-group">
@@ -582,7 +607,7 @@ export const IssuanceStepper: React.FC = () => {
                                 {swiftErrors.transactionRef && <p className="error-text text-xs mt-1">{swiftErrors.transactionRef}</p>}
                             </div>
                             <div className="field-group">
-                                <label htmlFor="applicant" className="required-label">Applicant</label>
+                                <label htmlFor="applicant" className="required-label">Applicant (Tag 50)</label>
                                 <select 
                                     id="applicant"
                                     value={formData.applicantPartyId}
@@ -592,47 +617,20 @@ export const IssuanceStepper: React.FC = () => {
                                         setFormData({...formData, applicantPartyId: e.target.value, applicant: partyName});
                                         validateSwiftField('applicant', partyName, 'X', 4);
                                     }}
-                                    className={(swiftErrors.applicantName || swiftErrors.applicant) ? 'is-invalid' : ''}
+                                    className={(swiftErrors.applicantName || swiftErrors.applicant || fieldErrors.applicantPartyId) ? 'is-invalid' : ''}
                                 >
                                     <option value="">Select Applicant...</option>
                                     {commercialParties.map(p => (
                                         <option key={p.partyId} value={p.partyId}>{p.partyName}</option>
                                     ))}
                                 </select>
-                                {(swiftErrors.applicantName || swiftErrors.applicant) && <p className="error-text text-xs mt-1">{swiftErrors.applicantName || swiftErrors.applicant}</p>}
+                                {(swiftErrors.applicantName || swiftErrors.applicant || fieldErrors.applicantPartyId) && (
+                                    <p className="error-text text-xs mt-1">{swiftErrors.applicantName || swiftErrors.applicant || fieldErrors.applicantPartyId}</p>
+                                )}
                                 <div className="helper-box">
                                     <p>Available Facility Limit: $1,000,000</p>
                                     <p>KYC Status: <span className="text-success">VERIFIED</span></p>
                                 </div>
-                            </div>
-                            <div className="field-group mb-4 full-width">
-                                <label htmlFor="customerFacilityId" className="required-label">Customer Facility (Optional for Draft)</label>
-                                <select 
-                                    id="customerFacilityId"
-                                    data-testid="facility-select"
-                                    value={formData.customerFacilityId}
-                                    onChange={e => setFormData({...formData, customerFacilityId: e.target.value})}
-                                >
-                                    <option value="">Select Facility...</option>
-                                    {facilities.map(f => (
-                                        <option key={f.facilityId} value={f.facilityId}>
-                                            {f.description || f.facilityId} - ${f.limitAmount?.toLocaleString()}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="field-group">
-                                <label htmlFor="advisingThroughBankPartyId">Advising Through Bank (Tag 58A)</label>
-                                <select 
-                                    id="advisingThroughBankPartyId"
-                                    className={swiftErrors.advisingThroughBankBic ? 'is-invalid' : ''}
-                                    value={formData.advisingThroughBankPartyId}
-                                    onChange={e => setFormData({...formData, advisingThroughBankPartyId: e.target.value})}
-                                >
-                                    <option value="">Select Advise Through Bank...</option>
-                                    {bankParties.map(p => <option key={p.partyId} value={p.partyId}>{p.partyName} {p.swiftBic ? `(${p.swiftBic})` : ''}</option>)}
-                                </select>
-                                {swiftErrors.advisingThroughBankBic && <p className="error-text text-xs mt-1">{swiftErrors.advisingThroughBankBic}</p>}
                             </div>
                             <div className="field-group">
                                 <label htmlFor="beneficiary" className="required-label">Beneficiary (Tag 59)</label>
@@ -643,25 +641,77 @@ export const IssuanceStepper: React.FC = () => {
                                         const party = commercialParties.find(p => p.partyId === e.target.value);
                                         setFormData({...formData, beneficiaryPartyId: e.target.value, beneficiary: party?.partyName || ''});
                                     }}
-                                    className={(swiftErrors.beneficiaryName || swiftErrors.beneficiary) ? 'is-invalid' : ''}
+                                    className={(swiftErrors.beneficiaryName || swiftErrors.beneficiary || fieldErrors.beneficiaryPartyId) ? 'is-invalid' : ''}
                                 >
                                     <option value="">Select Beneficiary...</option>
                                     {commercialParties.map(p => <option key={`${p.partyId}-beneficiary`} value={p.partyId}>{p.partyName}</option>)}
                                 </select>
-                                {(swiftErrors.beneficiaryName || swiftErrors.beneficiary) && <p className="error-text text-xs mt-1">{swiftErrors.beneficiaryName || swiftErrors.beneficiary}</p>}
+                                {(swiftErrors.beneficiaryName || swiftErrors.beneficiary || fieldErrors.beneficiaryPartyId) && (
+                                    <p className="error-text text-xs mt-1">{swiftErrors.beneficiaryName || swiftErrors.beneficiary || fieldErrors.beneficiaryPartyId}</p>
+                                )}
                             </div>
                             <div className="field-group">
-                                <label htmlFor="advisingBankPartyId">Advising Bank (Tag 57A)</label>
+                                <label htmlFor="issuingBankBic">Applicant Bank (Tag 51A)</label>
+                                <select 
+                                    id="issuingBankBic"
+                                    className={(swiftErrors.issuingBankBic || fieldErrors.issuingBankPartyId) ? 'is-invalid' : ''}
+                                    value={formData.issuingBankBic}
+                                    onChange={e => setFormData({...formData, issuingBankBic: e.target.value})}
+                                >
+                                    <option value="">Select Applicant Bank...</option>
+                                    {bankParties.map(p => <option key={p.partyId} value={p.partyId}>{p.partyName} {p.swiftBic ? `(${p.swiftBic})` : ''}</option>)}
+                                </select>
+                                {(swiftErrors.issuingBankBic || fieldErrors.issuingBankPartyId) && (
+                                    <p className="error-text text-xs mt-1">{swiftErrors.issuingBankBic || fieldErrors.issuingBankPartyId}</p>
+                                )}
+                            </div>
+                            <div className="field-group">
+                                <label htmlFor="customerFacilityId" className="required-label">Customer Facility</label>
+                                <select 
+                                    id="customerFacilityId"
+                                    data-testid="facility-select"
+                                    value={formData.customerFacilityId}
+                                    className={fieldErrors.customerFacilityId ? 'is-invalid' : ''}
+                                    onChange={e => setFormData({...formData, customerFacilityId: e.target.value})}
+                                >
+                                    <option value="">Select Facility...</option>
+                                    {facilities.map(f => (
+                                        <option key={f.facilityId} value={f.facilityId}>
+                                            {f.description || f.facilityId} - ${f.limitAmount?.toLocaleString()}
+                                        </option>
+                                    ))}
+                                </select>
+                                {fieldErrors.customerFacilityId && <p className="error-text text-xs mt-1">{fieldErrors.customerFacilityId}</p>}
+                            </div>
+                            <div className="field-group">
+                                <label htmlFor="advisingBankPartyId" className="required-label">Advising Bank (Receiver)</label>
                                 <select 
                                     id="advisingBankPartyId"
-                                    className={swiftErrors.advisingBankBic ? 'is-invalid' : ''}
+                                    className={(swiftErrors.advisingBankBic || fieldErrors.advisingBankPartyId) ? 'is-invalid' : ''}
                                     value={formData.advisingBankPartyId}
                                     onChange={e => setFormData({...formData, advisingBankPartyId: e.target.value})}
                                 >
                                     <option value="">Select Advising Bank...</option>
                                     {bankParties.map(p => <option key={p.partyId} value={p.partyId}>{p.partyName} {p.swiftBic ? `(${p.swiftBic})` : ''}</option>)}
                                 </select>
-                                {swiftErrors.advisingBankBic && <p className="error-text text-xs mt-1">{swiftErrors.advisingBankBic}</p>}
+                                {(swiftErrors.advisingBankBic || fieldErrors.advisingBankPartyId) && (
+                                    <p className="error-text text-xs mt-1">{swiftErrors.advisingBankBic || fieldErrors.advisingBankPartyId}</p>
+                                )}
+                            </div>
+                            <div className="field-group">
+                                <label htmlFor="advisingThroughBankPartyId">Advise Through Bank (Tag 57A)</label>
+                                <select 
+                                    id="advisingThroughBankPartyId"
+                                    className={(swiftErrors.advisingThroughBankBic || fieldErrors.advisingThroughBankPartyId) ? 'is-invalid' : ''}
+                                    value={formData.advisingThroughBankPartyId}
+                                    onChange={e => setFormData({...formData, advisingThroughBankPartyId: e.target.value})}
+                                >
+                                    <option value="">Select Advise Through Bank...</option>
+                                    {bankParties.map(p => <option key={p.partyId} value={p.partyId}>{p.partyName} {p.swiftBic ? `(${p.swiftBic})` : ''}</option>)}
+                                </select>
+                                {(swiftErrors.advisingThroughBankBic || fieldErrors.advisingThroughBankPartyId) && (
+                                    <p className="error-text text-xs mt-1">{swiftErrors.advisingThroughBankBic || fieldErrors.advisingThroughBankPartyId}</p>
+                                )}
                             </div>
                         </section>
                     )}
@@ -773,18 +823,18 @@ export const IssuanceStepper: React.FC = () => {
                                 </div>
                                 <div className="field-group">
                                     <label>Available With (Tag 41A/D)</label>
-                                    <div className="flex gap-4 mb-2 mt-2">
-                                        <label className="flex items-center gap-2 cursor-pointer">
+                                    <div className="radio-group">
+                                        <label>
                                             <input type="radio" checked={formData.availableWithEnumId === 'AVAIL_ANY_BANK'} onChange={() => setFormData({...formData, availableWithEnumId: 'AVAIL_ANY_BANK'})} /> Any Bank
                                         </label>
-                                        <label className="flex items-center gap-2 cursor-pointer">
+                                        <label>
                                             <input type="radio" checked={formData.availableWithEnumId === 'AVAIL_SPECIFIC_BANK'} onChange={() => setFormData({...formData, availableWithEnumId: 'AVAIL_SPECIFIC_BANK'})} /> Specific Bank
                                         </label>
                                     </div>
                                     {formData.availableWithEnumId === 'AVAIL_SPECIFIC_BANK' && (
                                         <select 
                                             id="negotiatingBankPartyId"
-                                            className={swiftErrors.availableWithBic ? 'is-invalid' : ''}
+                                            className={(swiftErrors.availableWithBic || fieldErrors.negotiatingBankPartyId) ? 'is-invalid' : ''}
                                             value={formData.negotiatingBankPartyId}
                                             onChange={e => setFormData({...formData, negotiatingBankPartyId: e.target.value})}
                                         >
@@ -792,20 +842,24 @@ export const IssuanceStepper: React.FC = () => {
                                             {bankParties.map(p => <option key={p.partyId} value={p.partyId}>{p.partyName} {p.swiftBic ? `(${p.swiftBic})` : ''}</option>)}
                                         </select>
                                     )}
-                                    {swiftErrors.availableWithBic && <p className="error-text text-xs mt-1">{swiftErrors.availableWithBic}</p>}
+                                    {(swiftErrors.availableWithBic || fieldErrors.negotiatingBankPartyId) && (
+                                        <p className="error-text text-xs mt-1">{swiftErrors.availableWithBic || fieldErrors.negotiatingBankPartyId}</p>
+                                    )}
                                 </div>
                                 <div className="field-group">
                                     <label htmlFor="draweeBankPartyId">Drawee Bank (Tag 42A)</label>
                                     <select 
                                         id="draweeBankPartyId"
-                                        className={swiftErrors.draweeBankBic ? 'is-invalid' : ''}
+                                        className={(swiftErrors.draweeBankBic || fieldErrors.draweeBankPartyId) ? 'is-invalid' : ''}
                                         value={formData.draweeBankPartyId}
                                         onChange={e => setFormData({...formData, draweeBankPartyId: e.target.value})}
                                     >
                                         <option value="">Select Drawee Bank...</option>
                                         {bankParties.map(p => <option key={p.partyId} value={p.partyId}>{p.partyName} {p.swiftBic ? `(${p.swiftBic})` : ''}</option>)}
                                     </select>
-                                    {swiftErrors.draweeBankBic && <p className="error-text text-xs mt-1">{swiftErrors.draweeBankBic}</p>}
+                                    {(swiftErrors.draweeBankBic || fieldErrors.draweeBankPartyId) && (
+                                        <p className="error-text text-xs mt-1">{swiftErrors.draweeBankBic || fieldErrors.draweeBankPartyId}</p>
+                                    )}
                                 </div>
                             </section>
 
@@ -891,14 +945,7 @@ export const IssuanceStepper: React.FC = () => {
                                     {swiftErrors.documentsRequired && <p className="error-text text-xs mt-1">{swiftErrors.documentsRequired}</p>}
                                 </div>
                                 <div className="field-group">
-                                    <label htmlFor="issuingBankBic">Issuing Bank BIC (Tag 51A)</label>
-                                    <input 
-                                        id="issuingBankBic"
-                                        className={swiftErrors.issuingBankBic ? 'is-invalid' : ''}
-                                        value={formData.issuingBankBic}
-                                        onChange={e => setFormData({...formData, issuingBankBic: e.target.value.toUpperCase()})}
-                                    />
-                                    {swiftErrors.issuingBankBic && <p className="error-text text-xs mt-1">{swiftErrors.issuingBankBic}</p>}
+                                    {/* Placeholder for Tag 51A/52A moved to Step 1 */}
                                 </div>
                             </section>
                         </div>

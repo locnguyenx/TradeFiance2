@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<eecas xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/entity-eca-3.xsd">
+    <!-- ABOUTME: TradeFinance.eecas.xml contains entity ECA rules for the Trade Finance component. -->
+    
+    <eeca id="TradeTransactionPropagatePriority" entity="trade.TradeTransaction" on-create="true" on-update="true">
+        <actions>
+            <script>
+                boolean wasDisabled = ec.artifactExecution.disableAuthz()
+                try {
+                    def inst = ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).one()
+                    if (inst != null) {
+                        def newPrio = priorityEnumId ?: inst.priorityEnumId
+                        inst.priorityEnumId = newPrio
+                        if (!inst.makerUserId) inst.makerUserId = makerUserId
+                        inst.update()
+                    }
+                } finally {
+                    if (!wasDisabled) ec.artifactExecution.enableAuthz()
+                }
+            </script>
+        </actions>
+    </eeca>
+</eecas>

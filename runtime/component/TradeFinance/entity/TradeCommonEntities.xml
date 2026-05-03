@@ -20,6 +20,9 @@
         
         <field name="preAdviceRef" type="text-short"/> <!-- Tag 23: max 16, X charset, slash rules -->
         <field name="senderToReceiverInfo" type="text-long"/> <!-- Tag 72Z: max 6x35, X charset -->
+        
+        <field name="makerUserId" type="id"/>
+        <field name="priorityEnumId" type="id"/>
     </entity>
 
     <entity entity-name="CustomerFacility" package="trade">
@@ -217,5 +220,10 @@
         <relationship type="one" related="trade.TradeInstrument">
             <key-map field-name="instrumentId"/>
         </relationship>
+
+        <seed-data>
+            <!-- No seed data needed for sync, but hook for future -->
+        </seed-data>
     </entity>
+
 </entities>

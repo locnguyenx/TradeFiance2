@@ -187,10 +187,7 @@
         <member-entity entity-alias="inst" entity-name="trade.TradeInstrument" join-from-alias="lc">
             <key-map field-name="instrumentId"/>
         </member-entity>
-        <member-entity entity-alias="tx" entity-name="trade.TradeTransaction" join-from-alias="lc" join-optional="true">
-            <key-map field-name="instrumentId"/>
-        </member-entity>
-        <member-entity entity-alias="prio" entity-name="moqui.basic.Enumeration" join-from-alias="tx" join-optional="true">
+        <member-entity entity-alias="prio" entity-name="moqui.basic.Enumeration" join-from-alias="inst" join-optional="true">
             <key-map field-name="priorityEnumId" related="enumId"/>
         </member-entity>
         
@@ -210,13 +207,22 @@
         <member-entity entity-alias="bparty" entity-name="trade.TradeParty" join-from-alias="benJunc" join-optional="true">
             <key-map field-name="partyId"/>
         </member-entity>
+        
+        <member-entity entity-alias="tx" entity-name="trade.TradeTransaction" join-from-alias="inst" join-optional="true">
+            <key-map field-name="instrumentId"/>
+            <entity-condition><econdition field-name="transactionTypeEnumId" value="IMP_NEW"/></entity-condition>
+        </member-entity>
 
         <alias-all entity-alias="lc"/>
         <alias-all entity-alias="inst">
             <exclude field="instrumentId"/>
             <exclude field="businessStateId"/>
         </alias-all>
-        <alias-all entity-alias="tx"/>
+        <alias-all entity-alias="tx">
+            <exclude field="instrumentId"/>
+            <exclude field="makerUserId"/>
+            <exclude field="priorityEnumId"/>
+        </alias-all>
         <alias entity-alias="prio" name="prioritySequence" field="sequenceNum"/>
         <alias entity-alias="aparty" name="applicantPartyName" field="partyName"/>
         <alias entity-alias="aparty" name="applicantPartyId" field="partyId"/>

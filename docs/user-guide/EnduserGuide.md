@@ -4,7 +4,22 @@ This guide provides exhaustive, step-by-step instructions for Bank Makers and Ch
 
 ---
 
-## 1. Navigation Route Map
+## 1. Getting Started: Authentication
+The platform uses role-based authentication to secure trade operations.
+
+### Logging In
+1.  Enter your **Username** and **Password** on the premium login screen.
+2.  If your account is suspended or credentials expire, a toast notification will provide specific guidance.
+3.  Upon successful login, you will be redirected to the **Operations Dashboard**.
+
+### Session Management
+- Sessions are strictly monitored. 
+- Click the **Logout (LogOut)** icon in the sidebar footer to securely end your session.
+- Always logout when leaving your workstation to prevent unauthorized transactions.
+
+---
+
+## 2. Navigation Route Map
 The platform is organized into functional modules accessible via the **Sidebar**.
 
 ### OPERATIONS (Cross-Product Workflow)
@@ -24,11 +39,16 @@ The platform is organized into functional modules accessible via the **Sidebar**
 ### MASTER DATA & ADMIN
 - **Party & KYC Directory**: Manage corporate client records, BICs, and compliance status.
 - **Credit Facilities**: Real-time monitoring of bank-wide limits and utilization.
+- **User Authority Tiers**: Manage user approval limits and delegation tiers (requires `TRADE_ADMIN`).
 - **Product & Tariff Config**: System-level pricing and logic templates.
+
+### USER ACCOUNT
+- **Profile**: Access your personal authority details and security settings.
+- **Logout**: Securely terminate your current session.
 
 ---
 
-## 2. Vertical Asset Management (REQ-NAV-01.2)
+## 3. Vertical Asset Management (REQ-NAV-01.2)
 Unlike the operational Dashboards which show pending work, the **Vertical Asset Lists** are designed for browsing the current legal state of trade products.
 
 ### Accessing Vertical Lists
@@ -47,7 +67,7 @@ Access the **Global Transaction Log** via `ADMINISTRATION > Audit Logs`. This vi
 
 ---
 
-## 3. Dashboard Actions & Workflows
+## 4. Dashboard Actions & Workflows
 The **Operations Dashboard** is the primary launchpad for instrument-level actions.
 
 ### Data Interaction
@@ -70,7 +90,7 @@ Click the triple-dot menu on any dashboard row to access status-specific actions
 
 ---
 
-## 4. Instrument Detail View (Workspace)
+## 5. Instrument Detail View (Workspace)
 Clicking a reference opens the **Full-Screen Workspace**. This view is optimized for audit and control.
 
 ### Navigation within Details
@@ -86,7 +106,7 @@ The **Workspace Actions** sidebar card provides contextual buttons:
 
 ---
 
-## 5. Authorization (Checker Workflow)
+## 6. Authorization (Checker Workflow)
 Users with the `TRADE_CHECKER` role can authorize transactions via the **My Tasks** section.
 
 ### The Approvals Queue
@@ -108,7 +128,7 @@ When reviewing an LC, the Checker sees all assigned parties grouped by category:
 
 ---
 
-## 6. Resuming Drafts
+## 7. Resuming Drafts
 The platform ensures no data is lost during the issuance process.
 
 1.  Navigate to the **Dashboard**.
@@ -119,7 +139,23 @@ The platform ensures no data is lost during the issuance process.
 
 ---
 
-## 7. Import LC Issuance (Maker Workflow)
+## 8. User Profile & Security
+Manage your operational identity via the **Profile** page (accessible by clicking your name/avatar in the sidebar).
+
+### Authority Monitoring
+The Profile page displays your **Active Authority Tier** and **Current Approval Limit**. 
+- **Tier 1 (Maker)**: Draft and submit instruments.
+- **Tier 2/3 (Checker)**: Authorize transactions up to your limit.
+- **Tier 4 (Executive)**: Authorization for high-value transactions and dual-auth overrides.
+
+### Password Management
+1.  Navigate to the **Security** section of your profile.
+2.  Enter your current password and define a new one (min 8 characters).
+3.  Successful updates are confirmed via a green toast notification and logged for audit purposes.
+
+---
+
+## 9. Import LC Issuance (Maker Workflow)
 
 ### Step 1: Parties & Limits
 | Field | Tag | Requirement | Character Set | Input Guideline / Constraints |
@@ -130,9 +166,9 @@ The platform ensures no data is lost during the issuance process.
 | **Transaction Ref**| 20 | Optional | **X-Charset** | Bank's internal reference. **Format**: `TF-IMP-YY-NNNN` (e.g., `TF-IMP-26-0001`). |
 | **Applicant** | 50 | **Mandatory** | - | Select commercial client from directory. **Must have 'Active' KYC Status.** |
 | **Beneficiary** | 59 | **Mandatory** | - | Select commercial client from directory. **Must have 'Active' KYC Status.** |
-| **Advising Bank** | 57A | **Mandatory** | - | Select onboarded Bank from directory. **Must have Active RMA** (unless Adv. Thru Bank is provided). System auto-retrieves BIC. |
-| **Adv. Thru Bank** | 58A | Optional | - | Select onboarded Bank from directory. **Must have Active RMA**. Exempts Advising Bank from RMA check. |
-| **Confirming Bank**| - | Conditional | - | Required if Confirmation is requested. Select onboarded Bank. **Must have sufficient FI Limit** to cover LC Amount. |
+| **Advising Bank** | Receiver | **Mandatory** | - | Select onboarded Bank from directory. **Must have Active RMA** with Issuing Bank. System auto-retrieves BIC for Block 2. |
+| **Adv. Thru Bank** | 57A | Optional | - | Select intermediary Bank. **No RMA required** with Issuing Bank. Used when Issuing Bank has no RMA with the Advising Bank. |
+| **Confirming Bank**| 58A | Conditional | - | Required if Confirmation is requested. Select onboarded Bank. **Must have sufficient FI Limit** to cover LC Amount. |
 | **Credit Facility**| - | **Mandatory** | - | Select Applicant's facility. Must have sufficient available balance. Blocks flow if exceeded. |
 
 > [!IMPORTANT]
@@ -165,7 +201,7 @@ The platform ensures no data is lost during the issuance process.
 | **Port of Disch.** | 44F | Optional | **X-Charset** | Port/Airport of destination. |
 | **Goods Desc.** | 45A | **Mandatory** | **X-Charset** | Detailed list of merchandise and Incoterms. |
 | **Docs Required** | 46A | **Mandatory** | **X-Charset** | List of required evidence (e.g., Bill of Lading, Invoice). |
-| **Issuing Bank** | 51A | Optional | - | Select from Bank directory (if not self). System auto-retrieves BIC. |
+| **Applicant Bank** | 51A | Optional | - | Select from Bank directory (if not self). System auto-retrieves BIC. |
 
 ---
 

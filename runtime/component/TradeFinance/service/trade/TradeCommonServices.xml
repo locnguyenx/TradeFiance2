@@ -33,6 +33,7 @@
         <in-parameters>
             <parameter name="instrumentId" required="true"/>
             <parameter name="claimAmount" type="BigDecimal" required="true"/>
+            <parameter name="priorityEnumId"/>
         </in-parameters>
         <out-parameters>
             <parameter name="presentationId" required="true"/>
@@ -57,6 +58,7 @@
                     transactionDate: ec.user.nowTimestamp,
                     makerUserId: ec.user.userId,
                     makerTimestamp: ec.user.nowTimestamp,
+                    priorityEnumId: priorityEnumId ?: 'NORMAL',
                     versionNumber: 1,
                     relatedRecordId: presentationId,
                     relatedRecordType: 'PRESENTATION'
@@ -404,7 +406,7 @@
  
             <!-- 3. Infer partyTypeEnumId from roleEnumId if missing -->
             <if condition="!partyTypeEnumId &amp;&amp; roleEnumId">
-                <if condition="['TP_ISSUING_BANK', 'TP_APPLICANT_BANK', 'TP_ADVISING_BANK', 'TP_CONFIRMING_BANK', 'TP_NEGOTIATING_BANK', 'TP_REIMBURSING_BANK', 'TP_PRESENTING_BANK'].contains(roleEnumId)">
+                <if condition="['TP_ISSUING_BANK', 'TP_APPLICANT_BANK', 'TP_ADVISING_BANK', 'TP_ADVISE_THROUGH_BANK', 'TP_CONFIRMING_BANK', 'TP_NEGOTIATING_BANK', 'TP_REIMBURSING_BANK', 'TP_PRESENTING_BANK'].contains(roleEnumId)">
                     <set field="partyTypeEnumId" value="PARTY_BANK"/>
                 </if>
                 <else-if condition="['TP_APPLICANT', 'TP_BENEFICIARY'].contains(roleEnumId)">
@@ -471,24 +473,11 @@
             <if condition="party.partyTypeEnumId == 'PARTY_BANK'">
                 <entity-find-one entity-name="trade.TradePartyBank" value-field="bank"/>
                 
-                <!-- RMA Check (Required for Advising/Confirming/Negotiating) -->
+                <!-- RMA Check (Required for Advising/Confirming/Negotiating — NOT Advise Through Bank per UCP 600) -->
                 <if condition="['TP_ADVISING_BANK', 'TP_CONFIRMING_BANK', 'TP_NEGOTIATING_BANK'].contains(roleEnumId)">
                     <if condition="bank?.hasActiveRMA != 'Y'">
-                        <!-- Exception: Advising Bank doesn't need RMA if Advise Through Bank is present (FR-TP-14) -->
-                        <set field="allowNoRma" from="false"/>
-                        <if condition="roleEnumId == 'TP_ADVISING_BANK'">
-                            <entity-find-one entity-name="trade.TradeInstrumentParty" value-field="adviseThrough">
-                                <field-map field-name="instrumentId"/>
-                                <field-map field-name="roleEnumId" value="TP_ADVISE_THROUGH_BANK"/>
-                            </entity-find-one>
-                            <if condition="adviseThrough != null">
-                                <set field="allowNoRma" from="true"/>
-                            </if>
-                        </if>
-                        
-                        <if condition="!allowNoRma">
-                            <return error="true" message="Bank ${party.partyName} (${bank?.swiftBic}) has no active RMA"/>
-                        </if>
+                        <set field="roleLabel" from="roleEnumId == 'TP_ADVISING_BANK' ? 'Advising Bank' : (roleEnumId == 'TP_CONFIRMING_BANK' ? 'Confirming Bank' : 'Available with Bank')"/>
+                        <return error="true" message="Bank ${party.partyName} ${bank?.swiftBic ? '(' + bank.swiftBic + ')' : ''} has no active RMA for role ${roleLabel}."/>
                     </if>
                 </if>
                 

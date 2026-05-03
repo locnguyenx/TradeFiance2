@@ -10,7 +10,7 @@
 
 ---
 
-### Task 1: Backend Auth Services & REST Mapping
+### Task 1: Backend Auth Services & REST Mapping [IN_PROGRESS]
 
 **BDD Scenarios:** 
 - S.1: Successful Login (Backend)

@@ -149,10 +149,12 @@ export const InstrumentDetails: React.FC<Props> = ({ instrument }) => {
                 <DataField label="Applicant (Obligor)" value={getPartyName('TP_APPLICANT') || instrument.applicantPartyName || instrument.applicantName || instrument.applicantPartyId} highlight />
                 <DataField label="Beneficiary (Payee)" value={getPartyName('TP_BENEFICIARY') || instrument.beneficiaryPartyName || instrument.beneficiaryName || instrument.beneficiaryPartyId} highlight />
                 <div className="row-divider">Banking Network Details</div>
-                <DataField label="Issuing Bank BIC" value={getBankBic('TP_ISSUING_BANK')} />
-                <DataField label="Advising Bank BIC" value={getBankBic('TP_ADVISING_BANK')} />
-                <DataField label="Available with Bank" value={instrument.availableWithEnumId === 'AVAIL_ANY_BANK' ? 'ANY BANK' : getBankBic('TP_NEGOTIATING_BANK')} />
-                <DataField label="Drawee Bank" value={getBankBic('TP_DRAWEE_BANK')} />
+                <DataField label="Issuing Bank (Sender)" value={getBankBic('TP_ISSUING_BANK')} />
+                <DataField label="Advising Bank (Receiver)" value={getBankBic('TP_ADVISING_BANK')} />
+                <DataField label="Advise Through Bank (Tag 57A)" value={getBankBic('TP_ADVISE_THROUGH_BANK')} />
+                <DataField label="Confirming Bank (Tag 58A)" value={getBankBic('TP_CONFIRMING_BANK')} />
+                <DataField label="Available with Bank (Tag 41a)" value={instrument.availableWithEnumId === 'AVAIL_ANY_BANK' ? 'ANY BANK' : getBankBic('TP_NEGOTIATING_BANK')} />
+                <DataField label="Drawee Bank (Tag 42A)" value={getBankBic('TP_DRAWEE_BANK')} />
               </div>
             </section>
 

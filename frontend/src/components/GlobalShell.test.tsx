@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { GlobalShell } from './GlobalShell';
+import { ToastProvider } from '../context/ToastContext';
 
 jest.mock('next/navigation', () => ({
     usePathname: () => '/import-lc',
@@ -8,9 +9,28 @@ jest.mock('next/navigation', () => ({
     }),
 }));
 
+jest.mock('../context/AuthContext', () => ({
+    useAuth: () => ({
+        user: {
+            userId: '10001',
+            firstName: 'Test',
+            lastName: 'User',
+            roles: ['TRADE_MAKER']
+        },
+        loading: false,
+        isAuthenticated: true,
+        logout: jest.fn(),
+        hasRole: (role: string) => role === 'TRADE_MAKER',
+    }),
+}));
+
 describe('GlobalShell Modern Navigation Layout', () => {
-    it('renders high-density minimalist navigation matching REQ-UI-MOD-01', () => {
-        render(<GlobalShell><div>Content</div></GlobalShell>);
+    it('renders high-density minimalist navigation with authenticated user', () => {
+        render(
+            <ToastProvider>
+                <GlobalShell><div>Content</div></GlobalShell>
+            </ToastProvider>
+        );
         
         // Brand
         expect(screen.getByText('TRADEFINANCE')).toBeInTheDocument();
@@ -18,18 +38,14 @@ describe('GlobalShell Modern Navigation Layout', () => {
         // Sections
         expect(screen.getByText('OPERATIONS')).toBeInTheDocument();
         expect(screen.getByText('IMPORT LC')).toBeInTheDocument();
-        expect(screen.getByText('MASTER DATA')).toBeInTheDocument();
-        expect(screen.getByText('ADMINISTRATION')).toBeInTheDocument();
         
         // Items
         expect(screen.getByText('Operations Dashboard')).toBeInTheDocument();
         expect(screen.getByText('Import LC Dashboard')).toBeInTheDocument();
-        expect(screen.getByText('New LC Issuance')).toBeInTheDocument();
-        expect(screen.getByText('Party & KYC Directory')).toBeInTheDocument();
-        expect(screen.getByText('Credit Facilities (Limits)')).toBeInTheDocument();
-        expect(screen.getByText('User Authority Tiers')).toBeInTheDocument();
         
-        // User Profile
-        expect(screen.getByText('Loc Nguyen')).toBeInTheDocument();
+        // User Profile (Dynamic)
+        expect(screen.getByText('Test User')).toBeInTheDocument();
+        expect(screen.getByText('MAKER')).toBeInTheDocument(); // TRADE_MAKER -> MAKER
+        expect(screen.getByTitle('Logout')).toBeInTheDocument();
     });
 });

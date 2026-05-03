@@ -297,7 +297,13 @@ The short answer is: **It depends on the role, but at a minimum, you need a rout
 #### 1. The Messaging Relationship (SWIFT RMA)
 To send a secure, authenticated Trade Finance message (like an MT 700 or MT 799) directly to Bank X, our bank and Bank X must have an active **SWIFT RMA (Relationship Management Application)** in place. An RMA is a digital handshake where both banks authorize each other to exchange specific message types over the SWIFT network.
 * **If you have an RMA:** You can designate Bank X as the Advising Bank (Tag 57a) and send the MT 700 directly to them.
-* **If you do NOT have an RMA:** You cannot send messages directly to Bank X. You must find a mutual third-party bank that *both* you and Bank X have an RMA with. This third-party bank becomes the **"Advise Through Bank"** (Tag 57a), and Bank X is relegated to the final **"Advising Bank"** role.
+* **If you do NOT have an RMA:** 
+When your bank needs to send an LC to **Bank X**, but you **do not** have a SWIFT RMA with them, you must use a mutual third-party bank to bridge the gap. Here is the exact way it is mapped and where the RMAs must exist:
+
+1.  **The Message Receiver (Block 2):** You address the MT 700 directly to the mutual third-party bank. Under UCP 600, this bank acts as the **First Advising Bank**.
+    *   *RMA Requirement:* **Mandatory.** Your bank must have a direct RMA with this third-party bank.
+2.  **Tag 57a (Second Advising Bank):** You input **Bank X's BIC** here. This tells the third-party bank where to forward the LC (via an MT 710).
+    *   *RMA Requirement:* **NO RMA REQUIRED.** Your bank does not need an RMA with Bank X. The third-party bank is the one who must have the RMA with Bank X to pass the message along.
 
 #### 2. The Financial Relationship (Nostro/Vostro Accounts)
 If Bank X is going to handle the actual movement of money, an account relationship is usually required.
@@ -353,7 +359,7 @@ This matrix serves as the exact business logic the system's compliance and routi
 | Bank Role | Primary Function in LC | Messaging (SWIFT RMA) | Financial (Accounts) | Risk (FI Credit Limits) |
 | :--- | :--- | :--- | :--- | :--- |
 | **Advising Bank** | Authenticates and forwards the LC to the Beneficiary. | **Mandatory.** Must have a direct RMA with the Issuing Bank (or receive it via an 'Advise Through' bank). | **None.** No Nostro/Vostro account is required. | **None.** They take no financial risk; they merely act as a secure messenger. |
-| **'Advise Through' Bank** | An intermediary messenger used when the Issuing Bank has no RMA with the Advising Bank. | **Mandatory.** Must have an RMA with *both* the Issuing Bank and the Advising Bank. | **None.** | **None.** |
+| **'Advise Through' Bank** | An intermediary messenger used when the Issuing Bank has no RMA with the Advising Bank. | **Optional.** Not required to have an RMA with the Issuing Bank, but only need to have RMA with the First Advising Bank (receiver of the MT700 message sent from Issuing Bank). | **None.** | **None.** |
 | **Confirming Bank** | Adds its own legal guarantee to pay the Beneficiary, assuming the Issuing Bank's default risk. | **Mandatory.** Must have a direct RMA with the Issuing Bank. | **Optional.** Usually settles via a designated Reimbursing Bank, but may hold a Vostro account. | **Mandatory.** They must have an approved, available credit limit *for the Issuing Bank* before adding confirmation. |
 | **Reimbursing Bank** | Holds the Issuing Bank's funds and pays claims to the Negotiating Bank upon request. | **Mandatory.** Must receive the MT 740 Authorization to Reimburse. | **Mandatory.** The Issuing Bank must hold a funded foreign currency (Nostro) account with them. | **None.** Unless the Issuing Bank requires an overdraft facility to fund the payment. |
 | **Negotiating / Presenting Bank** | Examines the physical documents on behalf of the Beneficiary and forwards them to the Issuing Bank. | **Mandatory.** Needed to send the MT 732/750/742 claim and discrepancy messages. | **Optional.** They will claim funds from the Reimbursing Bank or ask for direct T/T settlement. | **None.** |
