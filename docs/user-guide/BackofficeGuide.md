@@ -141,3 +141,17 @@ This guide provides exhaustive, step-by-step instructions for Administrative and
 
 ## Conclusion
 For operational support, contact the **Trade Finance Operations Helpdesk** at ext 9999 or email `trade-support@bank.com`.
+
+# **Test Data**
+
+## **Test Credentials**
+**Password for all accounts:** `trade123`
+
+| Username | Name | Primary Role | Access Description |
+| :--- | :--- | :--- | :--- |
+| **`trade.admin`** | System Admin | `TRADE_ADMIN` | Full system access, including User Authority Tiers. |
+| **`trade.maker`** | Trade Maker | `TRADE_MAKER` | Entry/Issuance of LCs, Amendments, etc. |
+| **`trade.checker`** | Trade Checker | `TRADE_CHECKER` | Authorization and validation of pending tasks. |
+| **`trade.backoffice`** | Trade Backoffice | `TRADE_BACKOFFICE` | Master data management, Limits, and KYC. |
+
+These are provisioned in [TradeFinanceUsers.xml](file:///Users/me/myprojects/moqui-trade/runtime/component/TradeFinance/data/TradeFinanceUsers.xml).
