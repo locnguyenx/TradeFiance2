@@ -3,7 +3,7 @@
 
     <!-- ABOUTME: UserAccountServices handles authentication-related profile data and user self-service actions. -->
 
-    <service verb="get" noun="CurrentUser">
+    <service verb="get" noun="CurrentUser" authenticate="false">
         <out-parameters>
             <parameter name="userId"/>
             <parameter name="username"/>
@@ -16,8 +16,8 @@
             <parameter name="currencyUomId"/>
         </out-parameters>
         <actions>
-            <set field="userId" from="userId ?: ec.user.userId"/>
-            <if condition="!userId"><return error="true" message="No user logged in"/></if>
+            <set field="userId" from="ec.user.userId"/>
+            <if condition="!userId"><return/></if>
 
 
             <entity-find-one entity-name="moqui.security.UserAccount" value-field="userAccount">

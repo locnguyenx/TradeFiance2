@@ -18,7 +18,8 @@ jest.mock('../api/tradeApi', () => ({
             baseEquivalentAmount: 450000,
             expiryDate: '2026-12-31',
             businessStateId: 'INST_ISSUED'
-        })
+        }),
+        getSwiftMessages: jest.fn().mockResolvedValue({ swiftMessageList: [] })
     }
 }));
 

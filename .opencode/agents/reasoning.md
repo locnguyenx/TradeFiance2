@@ -3,10 +3,9 @@ description: Reasoning and analysis specialist. Use for understanding business c
 mode: subagent
 model: opencode/mimo-v2-flash-free
 temperature: 0.1
-tools:
-  write: false
-  edit: false
-  bash: false
+permission:
+  bash: deny
+  edit: deny
 ---
 # @reasoning Agent
 

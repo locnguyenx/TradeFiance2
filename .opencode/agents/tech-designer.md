@@ -3,10 +3,9 @@ description: Technical architect for Moqui applications. Use for entity design, 
 mode: subagent
 model: opencode/minimax-m2.5-free
 temperature: 0.2
-tools:
-  write: false
-  edit: false
-  bash: false
+permission:
+  bash: deny
+  edit: deny
 ---
 # @tech-designer Agent
 

@@ -85,4 +85,9 @@ describe('AmendmentStepper v3.0 (REQ-UI-IMP-06)', () => {
         expect(checkbox).toBeChecked();
         expect(screen.getByText(/Awaiting Beneficiary Consent/i)).toBeInTheDocument();
     });
+    it('displays selection prompt when lcId is empty or NEW', async () => {
+        render(<AmendmentStepper lcId="" />);
+        expect(await screen.findByText(/Please select an active Letter of Credit/i)).toBeInTheDocument();
+        expect(screen.getByText(/Back to Dashboard/i)).toBeInTheDocument();
+    });
 });

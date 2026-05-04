@@ -3,6 +3,7 @@
 <entities xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/entity-definition-3.0.xsd">
 
+
     <entity entity-name="TradeInstrument" package="trade">
         <field name="instrumentId" type="id" is-pk="true"/>
         <field name="transactionRef" type="text-short"/>
@@ -226,4 +227,8 @@
         </seed-data>
     </entity>
 
+    <entity entity-name="PublicHoliday" package="trade">
+        <field name="holidayDate" type="date" is-pk="true"/>
+        <field name="description" type="text-medium"/>
+    </entity>
 </entities>

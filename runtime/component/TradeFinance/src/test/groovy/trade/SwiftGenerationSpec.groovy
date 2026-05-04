@@ -29,7 +29,8 @@ class SwiftGenerationSpec extends Specification {
         ec.user.loginUser("john.doe", "moqui")
         ec.artifactExecution.disableAuthz()
         try {
-            ec.entity.tempSetSequencedIdPrimary("trade.importlc.ImportLetterOfCredit", 6000000, 1000)
+            ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrument", 7000000, 1000)
+            ec.entity.tempSetSequencedIdPrimary("trade.importlc.ImportLetterOfCredit", 7000000, 1000)
         } finally {
             ec.artifactExecution.enableAuthz()
             ec.destroy()
@@ -41,17 +42,17 @@ class SwiftGenerationSpec extends Specification {
         ec.user.loginUser("john.doe", "moqui")
         ec.artifactExecution.disableAuthz()
         try {
-            ec.entity.find("trade.importlc.ImportLcSettlement").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "6000000").deleteAll()
-            ec.entity.find("trade.importlc.PresentationDiscrepancy").condition("presentationId", EntityCondition.IN, ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "6000000").list().collect { it.presentationId } ?: ["NONE"]).deleteAll()
-            ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "6000000").deleteAll()
-            ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "6000000").deleteAll()
-            ec.entity.find("trade.importlc.ImportLcAmendment").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "6000000").deleteAll()
-            ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "6000000").deleteAll()
-            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "6000000").deleteAll()
-            ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "6000000").deleteAll()
-            ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "6000000").deleteAll()
-            ec.entity.find("trade.TradeTransaction").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "6000000").deleteAll()
-            ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "6000000").deleteAll()
+            ec.entity.find("trade.importlc.ImportLcSettlement").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "7000000").deleteAll()
+            ec.entity.find("trade.importlc.PresentationDiscrepancy").condition("presentationId", EntityCondition.IN, ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "7000000").list().collect { it.presentationId } ?: ["NONE"]).deleteAll()
+            ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "7000000").deleteAll()
+            ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "7000000").deleteAll()
+            ec.entity.find("trade.importlc.ImportLcAmendment").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "7000000").deleteAll()
+            ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "7000000").deleteAll()
+            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "7000000").deleteAll()
+            ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "7000000").deleteAll()
+            ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "7000000").deleteAll()
+            ec.entity.find("trade.TradeTransaction").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "7000000").deleteAll()
+            ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "7000000").deleteAll()
         } finally {
             ec.artifactExecution.enableAuthz()
             ec.destroy()
@@ -91,8 +92,9 @@ class SwiftGenerationSpec extends Specification {
                                    [roleEnumId: 'TP_ADVISING_BANK', partyId: 'ADVISING_BANK_001']]]).call()
         
         // Simulate approval
-        ec.entity.find("trade.TradeTransaction").condition("instrumentId", res.instrumentId).one()
-            .set("transactionStatusId", "TX_APPROVED").update()
+        def tx = ec.entity.find("trade.TradeTransaction").condition("instrumentId", res.instrumentId).one()
+        if (tx == null) throw new IllegalStateException("TradeTransaction not found for instrument ${res.instrumentId}. Service res: ${res}")
+        tx.set("transactionStatusId", "TX_APPROVED").update()
 
         when: "generate#Mt700 is called"
         def genRes = ec.service.sync().name("trade.SwiftGenerationServices.generate#Mt700")

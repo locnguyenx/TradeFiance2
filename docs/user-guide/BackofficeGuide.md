@@ -67,8 +67,9 @@ This guide provides exhaustive, step-by-step instructions for Administrative and
     - Use the **Utilization Breakdown** table to see individual transactions.
 4.  **Audit Drill-Down**:
     - Click any underlined **Transaction Ref** in the breakdown to open the specific instrument.
-    - Review the **Unified Narrative Timeline** for a merged view of financial transactions and system audit logs.
-    - Every business action (Issuance, Amendment) is linked to a unique **Transaction ID**, allowing for granular backtracking.
+    - **Exposure Tracking**: The system tracks exposure in real-time. "Issued" LCs contribute to **Firm Exposure**, while "Pending" or "Draft" LCs contribute to **Contingent/Reserved Exposure**.
+    - **Settlement Impact**: Authorizing a settlement transaction immediately reduces the utilized amount and releases the facility limit for future transactions.
+    - **Unified Narrative Timeline**: Review a merged view of financial transactions and system audit logs. Every business action (Issuance, Amendment, Settlement) is linked to a unique **Transaction ID**.
 
 ### Facility Attributes Reference
 
@@ -133,6 +134,7 @@ This guide provides exhaustive, step-by-step instructions for Administrative and
 ---
 
 ## 4. Security & Risk Controls
+- **Proactive Facility Enforcement**: The Checker workflow includes a hard block if a transaction exceeds the available facility limit. The system validates the "Proposed" exposure against the real-time available headroom before allowing authorization.
 - **Dual Checker Enforcement**: High-value transactions are locked to unique **Transaction IDs** that require multi-stage authorization before the legal instrument is updated.
 - **Role Isolation**: Makers cannot authorize their own transactions.
 - **Narrative Traceability**: The platform maintains a persistent, chronological record of every touchpoint on an instrument via the unified timeline.

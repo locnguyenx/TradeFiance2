@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- ABOUTME: TradeFinanceSeca automates lifecycle side-effects like SWIFT generation and accounting triggers. -->
-<service-eca xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-             xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-eca-3.0.xsd">
+<secas xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-eca-3.xsd">
 
     <!-- Lifecycle Transition Guard -->
     <seca service="trade.importlc.ImportLcServices.update#ImportLetterOfCredit" when="pre-service">
@@ -25,7 +25,7 @@
     <!-- Request 5: system autogenerate the message when TradeTransaction is approved (TX_APPROVED) -->
     <seca service="update#trade.TradeTransaction" when="post-service">
         <condition>
-            <expression>transactionStatusId == 'TX_APPROVED' &amp;&amp; oldValueMap?.transactionStatusId != 'TX_APPROVED' &amp;&amp; transactionTypeEnumId == 'IMP_ISSUANCE'</expression>
+            <expression>transactionStatusId == 'TX_APPROVED' &amp;&amp; oldValueMap?.transactionStatusId != 'TX_APPROVED' &amp;&amp; transactionTypeEnumId == 'IMP_NEW'</expression>
         </condition>
         <actions>
             <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc">
@@ -49,9 +49,17 @@
 
     <!-- SWIFT Advice: MT750 on Discrepancy Authorization -->
     <seca service="trade.importlc.ImportLcServices.authorize#Presentation" when="post-service">
-        <if condition="ec.entity.find('trade.importlc.PresentationDiscrepancy').condition('presentationId', presentationId).count() &gt; 0">
+        <condition>
+            <script><![CDATA[
+                def discrepancies = ec.entity.find("trade.importlc.PresentationDiscrepancy")
+                    .condition("presentationId", presentationId).list()
+                return !discrepancies.isEmpty()
+            ]]></script>
+        </condition>
+        <actions>
+            <log level="info" message="SECA generating MT750 for presentation: ${presentationId}"/>
             <service-call name="trade.SwiftGenerationServices.generate#Mt750" in-map="[presentationId: presentationId]"/>
-        </if>
+        </actions>
     </seca>
 
     <!-- SWIFT Advice: MT752 on Discrepancy Waiver -->
@@ -62,4 +70,4 @@
             <service-call name="trade.SwiftGenerationServices.generate#Mt752" in-map="[presentationId: presentationId]"/>
         </actions>
     </seca>
-</service-eca>
+</secas>

@@ -94,19 +94,28 @@ Click the triple-dot menu on any dashboard row to access status-specific actions
 Clicking a reference opens the **Full-Screen Workspace**. This view is optimized for audit and control.
 
 ### Navigation within Details
-The workspace features a dual-mode layout:
+The workspace features a triple-mode layout:
 - **Current State**: Static view of the instrument's active data (Parties, Financials, Terms).
 - **Audit Narrative**: Chronological **Unified Timeline** merging financial transactions and technical audit logs.
+- **SWIFT Messages**: Real-time view of all MT 7xx messages generated for this instrument.
 
 ### Workspace Actions
 The **Workspace Actions** sidebar card provides contextual buttons:
 1.  **Continue Editing Draft**: Only visible for instruments in `LC_DRAFT`.
 2.  **Export Audit Document**: Generates a high-fidelity print-ready report of the transaction.
 3.  **Action Buttons**: For Issued LCs, buttons for **Amend**, **Present**, and **Settle** are located at the bottom or in the sidebar depending on screen size.
+4.  **View SWIFT Message**: Click the **"SWIFT Messages"** tab in the main view selector to see all generated SWIFT MT 7xx payloads.
+    - Click any message row to expand the **Raw Message Content**.
+    - Use the **Copy** button to capture the SWIFT payload for external systems.
 
 ---
 
-## 6. Authorization (Checker Workflow)
+## 6. Manual Verification & Quality Control
+Before finalizing any transaction, follow these steps to ensure data integrity:
+1.  **Audit the "Proposed State"**: During authorization, always compare the current values with the proposed changes.
+2.  **SWIFT Preview**: For all issued or amended LCs, navigate to the **SWIFT Messages** tab.
+3.  **Verify Character Sets**: Ensure no forbidden characters (like `@`, `!`, `#`) have bypassed validation in narrative fields.
+4.  **Confirm Timeline**: Verify that the **Audit Narrative** correctly reflects the Maker's action and timestamp.
 Users with the `TRADE_CHECKER` role can authorize transactions via the **My Tasks** section.
 
 ### The Approvals Queue
@@ -251,13 +260,17 @@ Designed for mid-lifecycle adjustments.
 ---
 
 ## 10. Settlement & Drawings
-Captures payment release and liability reduction.
+Captures payment release and liability reduction. Once authorized, the system automatically:
+1.  Reduces the **Outstanding Amount** of the LC.
+2.  Increases the **Cumulative Drawn Amount**.
+3.  Releases the corresponding portion of the **Credit Facility** limit.
 
 | Field | Tag | Requirement | Character Set | Input Guideline |
 |-------|-----|-------------|---------------|-----------------|
 | **Drawing Amount** | - | **Mandatory** | **Numeric** | Amount to be paid to beneficiary. |
 | **Value Date** | - | **Mandatory** | **Date** | Effective date of payment and account debit. |
 | **Charge Earmark** | - | Optional | - | Select if charges should be settled now or deferred. |
+| **Settlement Type**| - | **Mandatory** | - | Select Sight Payment, Acceptance, or Deferred. |
 
 ---
 

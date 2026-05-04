@@ -3,7 +3,7 @@ import { AmendmentStepper } from '../../../components/AmendmentStepper';
 
 export default async function AmendmentPage({ searchParams }: any) {
   const params = await searchParams;
-  const id = params.id || 'NEW';
+  const id = params.id || '';
   
   return (
     <div style={{ padding: '2rem' }}>

@@ -31,4 +31,24 @@ class LimitServicesSpec extends Specification {
         cleanup:
         ec.entity.find("trade.CustomerFacility").condition("facilityId", "FAC-1").deleteAll()
     }
+
+    def "Test GET CustomerFacilities returns list for owner"() {
+        setup:
+        ec.entity.makeValue("trade.CustomerFacility")
+            .setAll([facilityId:"FAC-OWN-1", ownerPartyId: "PARTY-1", totalApprovedLimit: 5000.0, utilizedAmount: 1000.0]).create()
+            
+        when:
+        def res = ec.service.sync().name("trade.LimitServices.get#CustomerFacilities").parameters([partyId: "PARTY-1"]).call()
+        println "DEBUG: res.facilityList = ${res.facilityList}"
+        
+        then:
+        res.facilityList != null
+        res.facilityList.size() >= 1
+        def fac = res.facilityList.find { it.facilityId == "FAC-OWN-1" }
+        fac.limitAmount == 5000.0
+        fac.available == 4000.0
+        
+        cleanup:
+        ec.entity.find("trade.CustomerFacility").condition("facilityId", "FAC-OWN-1").deleteAll()
+    }
 }

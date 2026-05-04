@@ -1,4 +1,4 @@
-import { TradeInstrument, TradeTransaction, ImportLetterOfCredit, TradeParty, TradeProductCatalog, FeeConfiguration, UserAuthorityProfile, QueueItem, ExposureData } from './types';
+import { TradeInstrument, TradeTransaction, ImportLetterOfCredit, TradeParty, TradeProductCatalog, FeeConfiguration, UserAuthorityProfile, QueueItem, ExposureData, SwiftMessage } from './types';
 
 const API_BASE = '/rest/s1/trade';
 
@@ -357,7 +357,7 @@ export const tradeApi = {
     return res.json();
   },
 
-  async getFacilityDetail(facilityId: string): Promise<ExposureData> {
+  async getFacilityDetail(facilityId: string): Promise<{ facility: any; transactions: any[] }> {
     const res = await this._fetch(`${API_BASE}/facilities?facilityId=${facilityId}`);
     return res.json();
   },
@@ -379,6 +379,11 @@ export const tradeApi = {
 
   async getAuditLogs(instrumentId: string): Promise<{ auditLogList: any[] }> {
     const res = await this._fetch(`${API_BASE}/instrument/${instrumentId}/audit-logs`);
+    return res.json();
+  },
+
+  async getSwiftMessages(instrumentId: string): Promise<{ swiftMessageList: SwiftMessage[] }> {
+    const res = await this._fetch(`${API_BASE}/instrument/${instrumentId}/swift-messages`);
     return res.json();
   },
 

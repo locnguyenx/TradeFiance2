@@ -3,7 +3,7 @@ import { CancellationRequest } from '../../../components/CancellationRequest';
 
 export default async function CancellationsPage({ searchParams }: any) {
     const params = await searchParams;
-    const id = params.id || 'IMP-2026-001';
+    const id = params.id || '';
     
     return (
         <div style={{ padding: '2rem' }}>

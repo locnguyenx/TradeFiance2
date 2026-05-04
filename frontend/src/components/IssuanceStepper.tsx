@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { tradeApi } from '../api/tradeApi';
+import { TradeParty } from '../api/types';
 import { ClauseSelector } from './ClauseSelector';
 import { isValidXChars, isValidZChars, getLineCount } from '../utils/SwiftUtils';
 
@@ -106,8 +107,6 @@ export const IssuanceStepper: React.FC = () => {
                     instrumentId: lc.instrumentId,
                     transactionRef: lc.transactionRef,
                     productCatalogId: lc.productCatalogId || '',
-                    applicantPartyId: lc.applicantPartyId || '',
-                    beneficiaryPartyId: lc.beneficiaryPartyId || '',
                     applicant: lc.applicantName || lc.applicantPartyName || '',
                     beneficiary: lc.beneficiaryName || lc.beneficiaryPartyName || '',
                     amount: (lc.amount || 0).toString(),
@@ -195,12 +194,10 @@ export const IssuanceStepper: React.FC = () => {
     // Proactively fetch facilities whenever applicant changes (essential for drafts)
     useEffect(() => {
         if (formData.applicantPartyId) {
-            console.log(`[IssuanceStepper] Fetching facilities for applicant: ${formData.applicantPartyId}`);
             tradeApi.getCustomerFacilities(formData.applicantPartyId).then(res => {
-                console.log(`[IssuanceStepper] Facilities received for ${formData.applicantPartyId}:`, res.facilityList);
                 setFacilities(res.facilityList || []);
             }).catch(e => {
-                console.error('[IssuanceStepper] Failed to fetch facilities:', e);
+                // Fail silently in UI, but keep facilities empty
                 setFacilities([]);
             });
         } else {
@@ -677,7 +674,7 @@ export const IssuanceStepper: React.FC = () => {
                                     <option value="">Select Facility...</option>
                                     {facilities.map(f => (
                                         <option key={f.facilityId} value={f.facilityId}>
-                                            {f.description || f.facilityId} - ${f.limitAmount?.toLocaleString()}
+                                            {f.description || f.facilityId} - ${(f.limitAmount || f.limit || 0).toLocaleString()}
                                         </option>
                                     ))}
                                 </select>

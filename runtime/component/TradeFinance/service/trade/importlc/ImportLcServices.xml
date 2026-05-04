@@ -43,7 +43,8 @@
                     amount: lcAmount,
                     currencyUomId: lcCurrencyUomId,
                     expiryDate: expiryDate,
-                    baseEquivalentAmount: lcAmount
+                    baseEquivalentAmount: lcAmount,
+                    customerFacilityId: customerFacilityId
                 ]"/>
             <set field="instrumentId" from="createInstOut.instrumentId"/>
 
@@ -98,6 +99,11 @@
                     effectiveCurrencyUomId: lcCurrencyUomId,
                     isRevolving: isRevolving ?: 'N'
                 ]"/>
+
+            <!-- 6. Initial Fee Estimation -->
+            <service-call name="trade.TradeAccountingServices.calculate#Fees" 
+                          in-map="[baseAmount: lcAmount, feeEventEnumId: 'ISSUANCE_FEE']" out-map="feeOut"/>
+            <log level="info" message="Estimated Issuance Fee for LC ${instrumentId}: ${feeOut.totalFee}"/>
             <set field="instrumentId" from="instrumentId"/>
         </actions>
     </service>
@@ -171,6 +177,7 @@
             <if condition="expiryDate != null"><set field="lc.effectiveExpiryDate" from="expiryDate"/></if>
             <if condition="latestShipmentDate != null"><set field="lc.effectiveShipmentDate" from="latestShipmentDate"/></if>
             <if condition="businessStateId != null &amp;&amp; businessStateId != lc.businessStateId">
+                <log level="info" message="Updating Import LC ${instrumentId}. Transitioning state from ${lc.businessStateId} to ${businessStateId}"/>
                 <set field="lc.businessStateId" from="businessStateId"/>
                 <!-- Sync with TradeTransaction -->
                 <if condition="businessStateId == 'LC_PENDING'">
@@ -178,12 +185,15 @@
                 </if>
                 <if condition="businessStateId == 'LC_CANCELLED' || businessStateId == 'LC_CLOSED' || businessStateId == 'LC_EXPIRED'">
                     <service-call name="update#trade.TradeTransaction" in-map="[transactionId: tx.transactionId, transactionStatusId: 'TX_APPROVED']"/>
+                    
+                    <!-- Reverse limit utilization if closing/cancelling -->
+                    <if condition="instrument.customerFacilityId &amp;&amp; lc.effectiveOutstandingAmount &gt; 0">
+                        <log level="info" message="Reversing limit for LC ${instrumentId} on state ${businessStateId}. Amount: ${lc.effectiveOutstandingAmount}"/>
+                        <service-call name="trade.LimitServices.update#Utilization" 
+                                      in-map="[facilityId: instrument.customerFacilityId, amountDelta: -lc.effectiveOutstandingAmount]"/>
+                        <set field="lc.effectiveOutstandingAmount" value="0" type="BigDecimal"/>
+                    </if>
                 </if>
-                <set field="lc.businessStateId" from="businessStateId"/>
-                <if condition="effectiveOutstandingAmount != null"><set field="lc.effectiveOutstandingAmount" from="effectiveOutstandingAmount"/></if>
-            </if>
-            <if condition="businessStateId == 'LC_CANCELLED'">
-                <service-call name="trade.LimitServices.reverse#Limit" in-map="[instrumentId: instrumentId]"/>
             </if>
             <entity-set value-field="lc" include="nonpk"/>
             <entity-update value-field="lc"/>
@@ -246,6 +256,12 @@
                 <return error="true" message="User ${approverUserId} is not authorized: ${authOut.reason ?: 'Limit exceeded or Maker/Checker conflict'}"/>
             </if>
 
+            <!-- 2.5. Facility Limit Check -->
+            <if condition="instrument.customerFacilityId">
+                <service-call name="trade.LimitServices.calculate#Earmark" 
+                              in-map="[facilityId: instrument.customerFacilityId, amount: instrument.amount]"/>
+            </if>
+
             <!-- 3. Dual Checker Logic for Tier 4 -->
             <set field="isFinalApproval" from="true"/>
             <if condition="authOut.authorityTierEnumId == 'TIER_4'">
@@ -285,6 +301,12 @@
                              transactionStatusId: 'TX_APPROVED',
                              checkerUserId: approverUserId, 
                              checkerTimestamp: ec.user.nowTimestamp]"/>
+                
+                <!-- 5.5 Update Limit Utilization -->
+                <if condition="instrument.customerFacilityId">
+                    <service-call name="trade.LimitServices.update#Utilization" 
+                                  in-map="[facilityId: instrument.customerFacilityId, amountDelta: instrument.amount]"/>
+                </if>
                 
                 <!-- 6. Update Business State to LC_ISSUED -->
                 <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" for-update="true">
@@ -486,6 +508,7 @@
             <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="presentation" for-update="true"/>
             <if condition="!presentation"><return error="true" message="Presentation ${presentationId} not found"/></if>
             
+            <log level="info" message="Updating Import LC ${instrumentId}. New state: ${businessStateId}"/>
             <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" for-update="true"/>
             
             <!-- 1. Resolve and Approve Pending Presentation Transaction -->
@@ -522,13 +545,23 @@
             <service-call name="trade.TradeAccountingServices.create#ImportLcSettlement"
                 in-map="context + [instrumentId: presentation.instrumentId]"/>
             
+            <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" for-update="true">
+                <field-map field-name="instrumentId" from="presentation.instrumentId"/>
+            </entity-find-one>
+            <if condition="lc">
+                <if condition="lc.isRevolving == 'Y'">
+                    <log level="info" message="Reinstating revolving LC ${lc.instrumentId} to ${lc.effectiveAmount}"/>
+                    <set field="lc.effectiveOutstandingAmount" from="lc.effectiveAmount"/>
+                    <entity-update value-field="lc"/>
+                </if>
+                
+                <set field="targetState" from="lc.effectiveOutstandingAmount.compareTo(java.math.BigDecimal.ZERO) == 0 ? 'LC_CLOSED' : 'LC_ISSUED'"/>
+                <service-call name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit"
+                    in-map="[instrumentId: presentation.instrumentId, businessStateId: targetState]"/>
+            </if>
+            
             <set field="presentation.presentationStatusId" value="PRES_SETTLED"/>
             <entity-update value-field="presentation"/>
-
-            <if condition="isPartialDraw == 'N'">
-                <service-call name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit"
-                              in-map="[instrumentId: presentation.instrumentId, businessStateId: 'LC_CLOSED']"/>
-            </if>
         </actions>
     </service>
     <service verb="examine" noun="Documents" authenticate="false">
@@ -569,16 +602,11 @@
                 <econdition field-name="presentationId"/>
             </entity-find>
             
-            <set field="targetState" from="discrepancies ? 'LC_DISCREPANT' : 'LC_ACCEPTED'"/>
+            <set field="targetState" from="!discrepancies.isEmpty() ? 'LC_DISCREPANT' : 'LC_ACCEPTED'"/>
             
             <service-call name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit"
                 in-map="[instrumentId: presentation.instrumentId, businessStateId: targetState]"/>
                 
-            <if condition="discrepancies">
-                <!-- Trigger discrepancy advice -->
-                <service-call name="trade.SwiftGenerationServices.generate#Mt750" in-map="[presentationId:presentationId]"/>
-            </if>
-            
             <set field="presentation.presentationStatusId" value="PRES_AUTHORIZED"/>
             <entity-update value-field="presentation"/>
         </actions>

@@ -37,15 +37,41 @@ export const AmendmentStepper: React.FC<AmendmentStepperProps> = ({ lcId }) => {
     const [status, setStatus] = useState<'IDLE' | 'SUBMITTED'>('IDLE');
 
     useEffect(() => {
-        setLoading(true);
-        tradeApi.getImportLc(lcId).then(data => {
-            setInstrument(data);
+        if (!lcId || lcId === 'NEW') {
             setLoading(false);
-        });
+            setError('Please select an active Letter of Credit from the dashboard to initiate an amendment.');
+            return;
+        }
+
+        setLoading(true);
+        setError('');
+        tradeApi.getImportLc(lcId)
+            .then(data => {
+                setInstrument(data);
+                setLoading(false);
+            })
+            .catch(err => {
+                setError(err.message || 'Failed to load instrument context. Please verify the LC ID.');
+                setLoading(false);
+            });
     }, [lcId]);
 
-    if (loading && !instrument) return <div className="p-8 text-center">Loading LC Context...</div>;
-    if (!instrument) return <div className="p-8 text-center text-danger">LC Not Found</div>;
+    if (loading && !instrument) return <div className="p-8 text-center premium-card">Loading LC Context...</div>;
+    if (!instrument) {
+        return (
+            <div className="p-8 text-center premium-card">
+                <div className="error-banner mb-4">
+                    {error || 'Letter of Credit not found or context missing.'}
+                </div>
+                <button 
+                    className="secondary-btn" 
+                    onClick={() => window.location.href = '/import-lc'}
+                >
+                    Back to Dashboard
+                </button>
+            </div>
+        );
+    }
 
     const originalAmount = instrument.effectiveAmount || instrument.amount || 0;
     const newTotalLiability = originalAmount + (parseFloat(delta.amountAdjustment) || 0);

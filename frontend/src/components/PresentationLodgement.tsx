@@ -32,7 +32,28 @@ export const PresentationLodgement: React.FC<PresentationLodgementProps> = ({ in
 
     const [error, setError] = useState('');
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [instrument, setInstrument] = useState<any>(null);
+
+    useEffect(() => {
+        if (!instrumentId) {
+            setLoading(false);
+            setError('Please select an active Letter of Credit from the dashboard to log a presentation.');
+            return;
+        }
+
+        setLoading(true);
+        setError('');
+        tradeApi.getImportLc(instrumentId)
+            .then(data => {
+                setInstrument(data);
+                setLoading(false);
+            })
+            .catch(err => {
+                setError(err.message || 'Failed to load instrument context. Please verify the LC ID.');
+                setLoading(false);
+            });
+    }, [instrumentId]);
 
     const validateField = (name: string, value: string) => {
         let errorMsg = '';
@@ -86,6 +107,23 @@ export const PresentationLodgement: React.FC<PresentationLodgementProps> = ({ in
     const handleDocChange = (type: string, field: 'originals' | 'copies', value: string) => {
         setDocs(docs.map(d => d.type === type ? { ...d, [field]: value } : d));
     };
+
+    if (loading && !instrument) return <div className="p-8 text-center premium-card">Loading LC Context...</div>;
+    if (!instrument) {
+        return (
+            <div className="p-8 text-center premium-card">
+                <div className="error-banner mb-4">
+                    {error || 'Letter of Credit not found or context missing.'}
+                </div>
+                <button 
+                    className="secondary-btn" 
+                    onClick={() => window.location.href = '/import-lc'}
+                >
+                    Back to Dashboard
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="lodgement-container premium-card">

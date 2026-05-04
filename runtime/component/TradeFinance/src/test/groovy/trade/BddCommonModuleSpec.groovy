@@ -55,6 +55,12 @@ class BddCommonModuleSpec extends Specification {
         ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrument", 1000000, 1000)
         ec.entity.tempSetSequencedIdPrimary("trade.CustomerFacility", 1000000, 1000)
         ec.entity.tempSetSequencedIdPrimary("trade.importlc.ImportLetterOfCredit", 1000000, 1000)
+        
+        // Ensure holiday exists
+        def holidayDate = java.sql.Date.valueOf("2026-04-27")
+        if (ec.entity.find("trade.PublicHoliday").condition("holidayDate", holidayDate).count() == 0) {
+            ec.entity.makeValue("trade.PublicHoliday").setAll([holidayDate: holidayDate, description: "SLA Test Holiday"]).create()
+        }
     }
 
     def setup() {

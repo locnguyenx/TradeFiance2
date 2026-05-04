@@ -137,6 +137,9 @@
             <resource name="transactions">
                 <method type="get"><service name="trade.TradeCommonServices.get#InstrumentTransactions"/></method>
             </resource>
+            <resource name="swift-messages">
+                <method type="get"><service name="trade.SwiftGenerationServices.get#SwiftMessages"/></method>
+            </resource>
         </id>
     </resource>
     <resource name="master-data">

@@ -14,10 +14,12 @@ import {
   Info,
   ChevronRight,
   Printer,
-  Edit
+  Edit,
+  Mail
 } from 'lucide-react';
 import Link from 'next/link';
 import { TradeInstrument, ImportLetterOfCredit } from '../api/types';
+import { SwiftMessageViewer } from './SwiftMessageViewer';
 import './InstrumentDetails.css';
 
 // ABOUTME: High-fidelity "Blue Premium" Instrument Details view.
@@ -36,7 +38,8 @@ export const InstrumentDetails: React.FC<Props> = ({ instrument }) => {
     { id: 'financials', title: 'Financials', icon: <CreditCard size={16} /> },
     { id: 'shipping', title: 'Shipment', icon: <Truck size={16} /> },
     { id: 'terms', title: 'Terms & Conditions', icon: <Scale size={16} /> },
-    { id: 'charges', title: 'Margin/Fees', icon: <ShieldCheck size={16} /> }
+    { id: 'charges', title: 'Margin/Fees', icon: <ShieldCheck size={16} /> },
+    { id: 'swift', title: 'SWIFT Messages', icon: <Mail size={16} /> }
   ];
 
   useEffect(() => {
@@ -233,6 +236,10 @@ export const InstrumentDetails: React.FC<Props> = ({ instrument }) => {
                 <DataField label="Margin Percentage" value={instrument.marginPercentage ? `${instrument.marginPercentage}%` : null} />
                 <DataField label="Collateral Debit Account" value={instrument.marginDebitAccount} highlight />
               </div>
+            </section>
+            <section className="audit-section">
+              <SectionHeader id="swift" title="SWIFT Automation History" icon={<Mail size={20} />} />
+              <SwiftMessageViewer instrumentId={instrument.instrumentId} />
             </section>
 
             <div className="bottom-spacer"></div>

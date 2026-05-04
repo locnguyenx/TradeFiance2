@@ -3,11 +3,10 @@ description: Deep codebase exploration using grepai semantic search and call gra
 mode: subagent
 model: opencode/minimax-m2.5-free
 temperature: 0.2
-tools:
-  bash: true
-  read: true
-  write: false
-  edit: false
+permission:
+  bash: allow
+  read: allow
+  edit: deny
 ---
 
 # @grepai-explore Agent

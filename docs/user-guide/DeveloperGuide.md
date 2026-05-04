@@ -71,7 +71,11 @@ The frontend suite uses Playwright (frontend/e2e) and Vitest for unit tests.
 
 ### Execution (Backend)
 ```bash
+# Run the core functional suite
 ./gradlew :runtime:component:TradeFinance:test --tests trade.TradeFinanceMoquiSuite
+
+# Run the hardened business process suite (Facilities, Fees, Settlements)
+./gradlew :runtime:component:TradeFinance:test --tests trade.TradeFinanceHardeningSpec
 ```
 
 ### Execution (Frontend Unit Tests)

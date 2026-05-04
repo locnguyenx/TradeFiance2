@@ -13,7 +13,7 @@ class TradeSeedDataSpec extends Specification {
     def setup() {
         ec = Moqui.getExecutionContext()
         ec.artifactExecution.disableAuthz()
-        ec.user.loginUser("tf-admin", "moqui")
+        ec.user.loginUser("trade.admin", "moqui")
         // Manually load seed data for verification
         long count1 = ec.entity.makeDataLoader().location("component://TradeFinance/data/TradeFinanceSeedData.xml").load()
         long count2 = ec.entity.makeDataLoader().location("component://TradeFinance/data/TradeClauseSeedData.xml").load()

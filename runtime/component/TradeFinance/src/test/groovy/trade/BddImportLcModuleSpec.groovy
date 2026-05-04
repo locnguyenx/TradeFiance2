@@ -71,10 +71,10 @@ class BddImportLcModuleSpec extends Specification {
         ec.entity.find("trade.importlc.PresentationDiscrepancy").condition("presentationId", EntityCondition.IN, ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "3000000").list().collect{it.presentationId}).deleteAll()
         ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "3000000").deleteAll()
         ec.entity.find("trade.importlc.ImportLcShippingGuarantee").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "3000000").deleteAll()
+        ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "3000000").deleteAll()
         ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "3000000").deleteAll()
         ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "3000000").deleteAll()
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "3000000").deleteAll()
-        ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "3000000").deleteAll()
         ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "3000000").deleteAll()
         ec.entity.find("trade.TradeTransaction").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "3000000").deleteAll()
         ec.entity.find("trade.TradeProductCatalog").condition("productId", EntityCondition.LIKE, "CAT-%").deleteAll()
@@ -212,9 +212,16 @@ class BddImportLcModuleSpec extends Specification {
         ec.service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit")
             .parameters([instrumentId: instrumentId, businessStateId: "LC_ACCEPTED"]).call()
             
+        def presRes = ec.service.sync().name("trade.TradeCommonServices.create#Presentation")
+            .parameters([instrumentId: instrumentId, claimAmount: 1000.0]).call()
+        if (ec.message.hasError()) throw new Exception("Error creating presentation: " + ec.message.errorsString)
+        def presentationId = presRes.presentationId
+        
         when: "Settlement concludes"
         ec.service.sync().name("trade.TradeAccountingServices.create#ImportLcSettlement")
-            .parameters([instrumentId: instrumentId, principalAmount: 1000.0, debitAccountId: "ACC-01"]).call()
+            .parameters([instrumentId: instrumentId, presentationId: presentationId, principalAmount: 1000.0, 
+                         settlementTypeEnumId: 'SETTLE_PAYMENT', debitAccountId: "ACC-01"]).call()
+        if (ec.message.hasError()) throw new Exception("Error creating settlement: " + ec.message.errorsString)
             
         then: "Global business state is Settled"
         def lc = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).one()
@@ -530,7 +537,7 @@ class BddImportLcModuleSpec extends Specification {
         
         then: "Facility utilized amount is reversed"
         def fac = ec.entity.find("trade.CustomerFacility").condition("facilityId", fid).one()
-        fac.utilizedAmount == 500000.0
+        fac.utilizedAmount.compareTo(java.math.BigDecimal.ZERO) == 0
     }
 
     def "BDD-IMP-CAN-03: Cancellation: End of Day Auto-Expiry Flush"() {
@@ -619,7 +626,7 @@ class BddImportLcModuleSpec extends Specification {
         
         then: 'effectiveOutstandingAmount is $60,000'
         def lc = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).one()
-        lc.effectiveOutstandingAmount == 60000.0
+        lc.effectiveOutstandingAmount.compareTo(60000.0) == 0
         lc.businessStateId == "LC_ISSUED"
     }
 

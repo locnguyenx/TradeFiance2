@@ -6,6 +6,7 @@ import { tradeApi } from '../../../api/tradeApi';
 import { TradeInstrument, ImportLetterOfCredit } from '../../../api/types';
 import { InstrumentDetails } from '../../../components/InstrumentDetails';
 import { InstrumentTimeline } from '../../../components/InstrumentTimeline';
+import { SwiftMessageViewer } from '../../../components/SwiftMessageViewer';
 
 // ABOUTME: Dedicated Instrument Details page implementing full-screen audit view.
 // ABOUTME: Uses InstrumentDetails component with "Back to List" navigation.
@@ -18,7 +19,7 @@ const DetailsView = () => {
     const [instrument, setInstrument] = useState<(TradeInstrument & ImportLetterOfCredit) | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<'DETAILS' | 'TIMELINE'>('DETAILS');
+    const [activeTab, setActiveTab] = useState<'DETAILS' | 'TIMELINE' | 'SWIFT'>('DETAILS');
 
     const fetchDetails = () => {
         if (!id) return;
@@ -92,15 +93,20 @@ const DetailsView = () => {
                 <div className="view-selector">
                     <button className={`tab-btn ${activeTab === 'DETAILS' ? 'active' : ''}`} onClick={() => setActiveTab('DETAILS')}>Current State</button>
                     <button className={`tab-btn ${activeTab === 'TIMELINE' ? 'active' : ''}`} onClick={() => setActiveTab('TIMELINE')}>Audit Narrative</button>
+                    <button className={`tab-btn ${activeTab === 'SWIFT' ? 'active' : ''}`} onClick={() => setActiveTab('SWIFT')}>SWIFT Messages</button>
                 </div>
             </header>
             
             <main className="details-content">
                 {activeTab === 'DETAILS' ? (
                     <InstrumentDetails instrument={instrument} />
-                ) : (
+                ) : activeTab === 'TIMELINE' ? (
                     <div className="timeline-container">
                         <InstrumentTimeline instrumentId={id!} onActionComplete={fetchDetails} />
+                    </div>
+                ) : (
+                    <div className="swift-container">
+                        <SwiftMessageViewer instrumentId={id!} />
                     </div>
                 )}
             </main>
@@ -119,9 +125,10 @@ const DetailsView = () => {
                 .view-selector { display: flex; background: #f1f5f9; padding: 4px; border-radius: 8px; }
                 .tab-btn { border: none; background: transparent; color: #64748b; font-size: 0.8125rem; font-weight: 600; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
                 .tab-btn.active { background: white; color: #1e293b; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+                .tab-btn:hover:not(.active) { color: #2563eb; }
 
                 .details-content { flex: 1; min-height: 0; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-                .timeline-container { height: 100%; overflow-y: auto; background: #f8fafc; padding: 2rem; }
+                .timeline-container, .swift-container { height: 100%; overflow-y: auto; background: #f8fafc; padding: 2rem; }
             `}</style>
         </div>
     );

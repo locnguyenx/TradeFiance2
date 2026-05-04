@@ -27,7 +27,6 @@ export default function ProfilePage() {
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage(null);
 
     if (newPassword !== confirmPassword) {
       showToast('error', 'New passwords do not match');

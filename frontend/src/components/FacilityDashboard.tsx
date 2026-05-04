@@ -116,9 +116,10 @@ export const FacilityDashboard: React.FC = () => {
                         onChange={(e) => setSelectedFacilityId(e.target.value)}
                         className="facility-selector"
                     >
+                        <option value="">Select Facility...</option>
                         {data.facilityBreakdown.map(f => (
                             <option key={f.facilityId} value={f.facilityId}>
-                                {f.facilityName} ({f.facilityId})
+                                {f.facilityName || f.facilityId} - ${(f.limit || 0).toLocaleString()}
                             </option>
                         ))}
                     </select>
@@ -133,15 +134,15 @@ export const FacilityDashboard: React.FC = () => {
                     <div className="exposure-widget">
                         <div className="widget-header">
                             <span className="widget-title">Facility Exposure Breakdown</span>
-                            <span className="total-limit">Limit: <span className="value">${selectedFacility.limit.toLocaleString()}</span></span>
+                            <span className="total-limit">Limit: <span className="value">${(selectedFacility.limit || 0).toLocaleString()}</span></span>
                         </div>
                         
                         <div className="segmented-bar-container">
                             <div className="segmented-bar">
-                                <div className="segment firm" style={{ width: `${selectedFacility.limit > 0 ? (selectedFacility.firm / selectedFacility.limit) * 100 : 0}%` }}>
+                                <div className="segment firm" style={{ width: `${(selectedFacility.limit || 0) > 0 ? (selectedFacility.firm / selectedFacility.limit) * 100 : 0}%` }}>
                                     <span className="segment-label">Firm</span>
                                 </div>
-                                <div className="segment contingent" style={{ width: `${selectedFacility.limit > 0 ? (selectedFacility.contingent / selectedFacility.limit) * 100 : 0}%` }}>
+                                <div className="segment contingent" style={{ width: `${(selectedFacility.limit || 0) > 0 ? (selectedFacility.contingent / selectedFacility.limit) * 100 : 0}%` }}>
                                     <span className="segment-label">Contingent</span>
                                 </div>
                                 <div className="segment reserved" style={{ width: `${selectedFacility.limit > 0 ? (selectedFacility.reserved / selectedFacility.limit) * 100 : 0}%` }}>
@@ -154,10 +155,10 @@ export const FacilityDashboard: React.FC = () => {
                         </div>
 
                         <div className="widget-legend">
-                            <div className="legend-item"><span className="dot firm"></span> Firm: <span className="value">${selectedFacility.firm.toLocaleString()}</span></div>
-                            <div className="legend-item"><span className="dot contingent"></span> Contingent: <span className="value">${selectedFacility.contingent.toLocaleString()}</span></div>
-                            <div className="legend-item"><span className="dot reserved"></span> Reserved: <span className="value">${selectedFacility.reserved.toLocaleString()}</span></div>
-                            <div className="legend-item"><span className="dot available"></span> Available: <span className="value">${selectedFacility.available.toLocaleString()}</span></div>
+                            <div className="exposure-item firm"><span className="dot firm"></span> Firm: <span className="value">${(selectedFacility.firm || 0).toLocaleString()}</span></div>
+                            <div className="exposure-item contingent"><span className="dot contingent"></span> Contingent: <span className="value">${(selectedFacility.contingent || 0).toLocaleString()}</span></div>
+                            <div className="exposure-item reserved"><span className="dot reserved"></span> Reserved: <span className="value">${(selectedFacility.reserved || 0).toLocaleString()}</span></div>
+                            <div className="exposure-item available"><span className="dot available"></span> Available: <span className="value">${(selectedFacility.available || 0).toLocaleString()}</span></div>
                         </div>
                     </div>
 

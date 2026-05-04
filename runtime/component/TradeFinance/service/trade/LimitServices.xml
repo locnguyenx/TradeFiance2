@@ -100,51 +100,51 @@
                     </if>
                 </iterate>
                 
-                <set field="totalFirm" from="totalFirm + fFirm"/>
-                <set field="totalContingent" from="totalContingent + fContingent"/>
-                <set field="totalReserved" from="totalReserved + fReserved"/>
-
-                <entity-find-one entity-name="trade.TradeParty" value-field="party">
-                    <field-map field-name="partyId" from="facility.ownerPartyId"/>
-                </entity-find-one>
+                <set field="fExposure" from="fFirm + fContingent + fReserved"/>
+                <set field="fUtilPercent" from="facility.totalApprovedLimit ? (fExposure / facility.totalApprovedLimit * 100) : 0"/>
                 
                 <script>
                     facilityBreakdown.add([
                         facilityId: facility.facilityId,
-                        facilityName: party?.partyName ?: facility.facilityId,
+                        facilityName: facility.description ?: facility.facilityId,
+                        ownerPartyId: facility.ownerPartyId,
+                        totalLimit: facility.totalApprovedLimit,
                         limit: facility.totalApprovedLimit,
+                        exposure: fExposure,
+                        available: (facility.totalApprovedLimit ?: 0) - fExposure,
                         firm: fFirm,
                         contingent: fContingent,
                         reserved: fReserved,
-                        available: (facility.totalApprovedLimit ?: 0) - (fFirm + fContingent + fReserved)
+                        utilPercent: fUtilPercent
                     ])
                 </script>
+                
+                <set field="totalFirm" from="totalFirm + fFirm"/>
+                <set field="totalContingent" from="totalContingent + fContingent"/>
+                <set field="totalReserved" from="totalReserved + fReserved"/>
             </iterate>
             
-            <set field="totalExposure" from="totalFirm + totalContingent + totalReserved" type="BigDecimal"/>
-            <set field="utilizationPercent" from="totalLimit > 0 ? (totalExposure / totalLimit) * 100 : 0"/>
+            <set field="totalExposure" from="totalFirm + totalContingent + totalReserved"/>
+            <set field="utilizationPercent" from="totalLimit ? (totalExposure / totalLimit * 100) : 0"/>
         </actions>
     </service>
-
     <service verb="get" noun="FacilityDetail" authenticate="false">
         <in-parameters>
             <parameter name="facilityId" required="true"/>
         </in-parameters>
         <out-parameters>
             <parameter name="facility" type="Map"/>
-            <parameter name="transactions" type="List"><parameter name="tran" type="Map"/></parameter>
+            <parameter name="transactions" type="List"><parameter name="transaction" type="Map"/></parameter>
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.CustomerFacility" value-field="facilityField">
                 <field-map field-name="facilityId"/>
             </entity-find-one>
-            
-            <if condition="!facilityField"><return error="true" message="Facility ${facilityId} not found"/></if>
+            <if condition="!facilityField"><return error="true" message="Facility not found"/></if>
             
             <entity-find entity-name="trade.TradeInstrument" list="instrumentList">
                 <econdition field-name="customerFacilityId" from="facilityId"/>
-                <order-by field-name="-issueDate"/>
             </entity-find>
             
             <set field="fFirm" from="0.0" type="BigDecimal"/>
@@ -153,13 +153,12 @@
             <set field="transactions" from="[]"/>
             
             <iterate list="instrumentList" entry="inst">
-                <!-- Get latest transaction status -->
                 <entity-find entity-name="trade.TradeTransaction" list="txList">
                     <econdition field-name="instrumentId" from="inst.instrumentId"/>
                     <order-by field-name="-transactionId"/>
                 </entity-find>
-                <set field="tx" from="txList ? txList[0] : null"/>
-                <set field="txStatus" from="tx?.transactionStatusId"/>
+                <set field="latestTx" from="txList ? txList[0] : null"/>
+                <set field="txStatus" from="latestTx ? latestTx.transactionStatusId : null"/>
                 
                 <if condition="txStatus == 'TX_APPROVED'">
                     <set field="fFirm" from="fFirm + (inst.baseEquivalentAmount ?: 0)"/>
@@ -176,70 +175,55 @@
                         instrumentId: inst.instrumentId,
                         transactionRef: inst.transactionRef,
                         businessStateId: inst.businessStateId,
-                        transactionStatusId: txStatus,
                         effectiveOutstandingAmount: inst.baseEquivalentAmount,
-                        transactionDate: tx?.transactionDate ?: inst.issueDate
+                        transactionDate: latestTx?.transactionDate
                     ])
                 </script>
             </iterate>
             
-            <entity-find-one entity-name="trade.TradeParty" value-field="party">
-                <field-map field-name="partyId" from="facilityField.ownerPartyId"/>
-            </entity-find-one>
+            <set field="fExposure" from="fFirm + fContingent + fReserved"/>
+            <set field="fAvailable" from="(facilityField.totalApprovedLimit ?: 0) - fExposure"/>
             
             <set field="facility" from="[
                 facilityId: facilityField.facilityId,
-                facilityName: party?.partyName ?: facilityField.facilityId,
+                facilityName: facilityField.description ?: facilityField.facilityId,
                 limit: facilityField.totalApprovedLimit,
+                limitAmount: facilityField.totalApprovedLimit,
                 firm: fFirm,
                 contingent: fContingent,
                 reserved: fReserved,
-                available: (facilityField.totalApprovedLimit ?: 0) - (fFirm + fContingent + fReserved)
+                available: fAvailable
             ]"/>
         </actions>
     </service>
-    <service verb="reverse" noun="Limit" authenticate="false">
-        <in-parameters><parameter name="instrumentId" required="true"/></in-parameters>
-        <actions>
-            <script>ec.artifactExecution.disableAuthz()</script>
-            <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc"/>
-            <if condition="!lc"><return/></if>
-            <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument"/>
-            
-            <if condition="instrument.customerFacilityId">
-                <!-- Decrement utilization by remaining outstanding amount -->
-                <script>
-                    def amount = lc.effectiveOutstandingAmount ?: 0.0
-                    ec.service.sync().name("trade.LimitServices.update#Utilization")
-                        .parameters([facilityId: instrument.customerFacilityId, amountDelta: -amount]).call()
-                </script>
-            </if>
-        </actions>
-    </service>
+
     <service verb="get" noun="CustomerFacilities" authenticate="false">
-        <in-parameters><parameter name="partyId" required="true"/></in-parameters>
+        <in-parameters>
+            <parameter name="partyId" required="true"/>
+        </in-parameters>
         <out-parameters>
             <parameter name="facilityList" type="List"><parameter name="facility" type="Map"/></parameter>
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
-            <log message="Fetching facilities for partyId: ${partyId}"/>
-            <entity-find entity-name="trade.CustomerFacility" list="rawList">
+            <entity-find entity-name="trade.CustomerFacility" list="facilities">
                 <econdition field-name="ownerPartyId" from="partyId"/>
             </entity-find>
-            <log message="Found ${rawList.size()} facilities for partyId: ${partyId}"/>
-            <script>
-                facilityList = rawList.collect { f ->
-                    [
+            <set field="facilityList" from="[]"/>
+            <iterate list="facilities" entry="f">
+                <script>
+                    facilityList.add([
                         facilityId: f.facilityId,
-                        description: f.description,
+                        description: f.description ?: f.facilityId,
                         limitAmount: f.totalApprovedLimit,
-                        utilizedAmount: f.utilizedAmount,
-                        currency: f.currencyUomId
-                    ]
-                }
-            </script>
-            <script>ec.artifactExecution.enableAuthz()</script>
+                        limit: f.totalApprovedLimit,
+                        available: f.totalApprovedLimit - (f.utilizedAmount ?: 0),
+                        firm: f.utilizedAmount ?: 0,
+                        contingent: 0,
+                        reserved: 0
+                    ])
+                </script>
+            </iterate>
         </actions>
     </service>
 </services>

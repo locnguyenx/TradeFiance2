@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { tradeApi } from '../api/tradeApi';
 
 // ABOUTME: LC Cancellation Request component implementing REQ-IMP-PRC-06.
 // ABOUTME: Enforces mutual consent for irrevocable instruments and previews limit release.
@@ -12,9 +13,49 @@ interface CancellationRequestProps {
 export const CancellationRequest: React.FC<CancellationRequestProps> = ({ instrumentId }) => {
     const [consentReceived, setConsentReceived] = useState(false);
     const [reason, setReason] = useState('');
+    const [instrument, setInstrument] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (!instrumentId) {
+            setLoading(false);
+            setError('Please select an active Letter of Credit from the dashboard to request cancellation.');
+            return;
+        }
+
+        setLoading(true);
+        setError('');
+        tradeApi.getImportLc(instrumentId)
+            .then(data => {
+                setInstrument(data);
+                setLoading(false);
+            })
+            .catch(err => {
+                setError(err.message || 'Failed to load instrument context. Please verify the LC ID.');
+                setLoading(false);
+            });
+    }, [instrumentId]);
     
     // Mock LC Amount for limit release preview
     const originalAmount = 500000;
+
+    if (loading && !instrument) return <div className="p-8 text-center premium-card">Loading LC Context...</div>;
+    if (!instrument) {
+        return (
+            <div className="p-8 text-center premium-card">
+                <div className="alert-box warning mb-4" style={{ textAlign: 'center' }}>
+                    {error || 'Letter of Credit not found or context missing.'}
+                </div>
+                <button 
+                    className="secondary-btn" 
+                    onClick={() => window.location.href = '/import-lc'}
+                >
+                    Back to Dashboard
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="cancellation-container premium-card">

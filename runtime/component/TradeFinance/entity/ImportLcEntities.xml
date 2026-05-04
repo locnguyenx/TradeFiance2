@@ -51,6 +51,11 @@
         <field name="bankToBankInstructions" type="text-very-long"/> <!-- Tag 78: max 12x65, X charset -->
         <field name="presentationPeriodDays" type="number-integer"/> <!-- Tag 48 -->
         <field name="chargeAllocationText" type="text-long"/> <!-- Tag 71D: max 6x35, X charset -->
+        
+        <field name="marginType" type="id"/>
+        <field name="marginPercentage" type="number-decimal"/>
+        <field name="marginAmount" type="number-decimal"/>
+        <field name="marginDebitAccount" type="text-medium"/>
 
         <relationship type="one" related="trade.TradeInstrument">
             <key-map field-name="instrumentId"/>

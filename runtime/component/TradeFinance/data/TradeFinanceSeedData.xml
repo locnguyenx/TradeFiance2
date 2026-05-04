@@ -228,6 +228,9 @@
     <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_SETTLED" toStatusId="LC_CLOSED" transitionName="Close After Settlement"/>
     <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_SETTLED" toStatusId="LC_ISSUED" transitionName="Reinstate After Partial Settlement"/>
     <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_ISSUED" toStatusId="LC_AMENDMENT_PENDING" transitionName="Request Amendment"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_ISSUED" toStatusId="LC_CANCELLED" transitionName="Cancel LC"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_ISSUED" toStatusId="LC_CLOSED" transitionName="Close LC"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_DRAFT" toStatusId="LC_CANCELLED" transitionName="Cancel Draft"/>
     <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_AMENDMENT_PENDING" toStatusId="LC_ISSUED" transitionName="Complete Amendment"/>
     
     <!-- Cancellation & Expiry Transitions -->
@@ -243,4 +246,6 @@
     <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="AMEND_PENDING_APPROVAL" toStatusId="AMEND_APPROVED" transitionName="Approve Amendment"/>
     <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="AMEND_PENDING_APPROVAL" toStatusId="AMEND_REJECTED" transitionName="Reject Amendment"/>
     <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="AMEND_APPROVED" toStatusId="AMEND_COMMITTED" transitionName="Commit to LC"/>
+    
+    <trade.PublicHoliday holidayDate="2026-04-27" description="SLA Test Holiday"/>
 </entity-facade-xml>

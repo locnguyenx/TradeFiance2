@@ -288,7 +288,7 @@
                     .setReceiverBic(getPartyBic("TP_PRESENTING_BANK") ?: "BENEBANK").setSenderRef(inst.transactionRef)
                 builder.addField("32B", (pres.claimCurrency ?: "USD") + String.format("%.2f", pres.claimAmount ?: 0).replace(".", ","))
                 
-                def discList = ec.entity.find("trade.importlc.PresentationDiscrepancy").condition("presentationId", presentationId).list()
+                def discList = ec.entity.find("trade.importlc.PresentationDiscrepancy").condition("presentationId", pres.presentationId).list()
                 def discText = discList ? discList.collect { "${it.discrepancyCode}: ${it.discrepancyDescription}" }.join("\n") : "NO DISCREPANCIES RECORDED"
                 builder.addField("77J", builder.formatValue(discText, 70, 50))
                 
@@ -543,6 +543,19 @@
         <out-parameters><parameter name="rows" type="List" required="true"/></out-parameters>
         <actions>
             <set field="rows" from="text.split('(?&lt;=\\G.{65})') as List"/>
+        </actions>
+    </service>
+    <service verb="get" noun="SwiftMessages" authenticate="false">
+        <in-parameters><parameter name="instrumentId" required="true"/></in-parameters>
+        <out-parameters>
+            <parameter name="swiftMessageList" type="List"><parameter name="message" type="Map"/></parameter>
+        </out-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find entity-name="trade.importlc.SwiftMessage" list="swiftMessageList">
+                <econdition field-name="instrumentId"/>
+                <order-by field-name="-generatedDate"/>
+            </entity-find>
         </actions>
     </service>
 </services>

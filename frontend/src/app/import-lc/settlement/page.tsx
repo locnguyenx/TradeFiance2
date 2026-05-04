@@ -7,7 +7,7 @@ import { Suspense } from 'react';
 
 function SettlementContent() {
   const searchParams = useSearchParams();
-  const instrumentId = searchParams.get('instrumentId') || '';
+  const instrumentId = searchParams.get('id') || searchParams.get('instrumentId') || '';
 
   return (
     <div className="p-8">

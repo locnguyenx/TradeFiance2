@@ -26,11 +26,19 @@ export const SettlementForm: React.FC<SettlementFormProps> = ({ instrumentId, pr
     }, [instrumentId]);
 
     const loadLc = async () => {
+        if (!instrumentId) {
+            setLoading(false);
+            setError('Please select an active Letter of Credit from the dashboard to initiate settlement.');
+            return;
+        }
+
+        setLoading(true);
+        setError(null);
         try {
             const data = await tradeApi.getImportLc(instrumentId);
             setLc(data);
-        } catch (err) {
-            setError('Failed to load LC details');
+        } catch (err: any) {
+            setError(err.message || 'Failed to load LC details. Please verify the LC ID.');
         } finally {
             setLoading(false);
         }
@@ -62,8 +70,23 @@ export const SettlementForm: React.FC<SettlementFormProps> = ({ instrumentId, pr
         }
     };
 
-    if (loading) return <div className="loading">Loading LC details...</div>;
-    if (!lc) return <div className="error">{error || 'LC not found'}</div>;
+    if (loading) return <div className="p-8 text-center premium-card">Loading LC details...</div>;
+    if (!lc) {
+        return (
+            <div className="p-8 text-center premium-card">
+                <div className="error-message mb-4">
+                    {error || 'Letter of Credit not found or context missing.'}
+                </div>
+                <button 
+                    className="secondary-btn" 
+                    style={{ background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0', padding: '0.75rem 1.5rem', borderRadius: '6px', fontWeight: '600', cursor: 'pointer' }}
+                    onClick={() => window.location.href = '/import-lc'}
+                >
+                    Back to Dashboard
+                </button>
+            </div>
+        );
+    }
 
     const remainingBalance = (lc.effectiveOutstandingAmount || 0) - settlementAmount;
 

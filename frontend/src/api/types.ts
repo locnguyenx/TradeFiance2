@@ -6,19 +6,21 @@ export interface TradeTransaction {
   instrumentId: string;
   transactionTypeEnumId: string;
   transactionStatusId: string;
-  priorityEnumId: string;
+  priorityEnumId?: string;
+  rejectionReason?: string;
+  
+  // v3.0 snapshot/delta fields
+  proposedAmount?: number;
+  proposedCurrencyUomId?: string;
+  proposedExpiryDate?: string;
   transactionDate: string;
   makerUserId: string;
   makerTimestamp: string;
   checkerUserId?: string;
   checkerTimestamp?: string;
-  rejectionReason?: string;
   versionNumber: number;
   relatedRecordId?: string;
   relatedRecordType?: string;
-  // Proposed value hints for simple diffs
-  proposedAmount?: number;
-  proposedExpiryDate?: string;
 }
 
 export interface TradeInstrument {
@@ -72,9 +74,22 @@ export interface ImportLetterOfCredit {
   lcTypeEnumId?: string;
   productCatalogId?: string;
   
+  receiptPlace?: string;
+  finalDeliveryPlace?: string;
+  shipmentPeriodText?: string;
+  maxCreditAmountFlag?: string;
+  additionalAmountsText?: string;
+  mixedPaymentDetails?: string;
+  deferredPaymentDetails?: string;
+  usanceBaseDate?: string;
+  bankToBankInstructions?: string;
+  presentationPeriodDays?: number;
+  chargeAllocationText?: string;
+  
   // NEW Party Junction Fields
   parties?: TradeInstrumentParty[];
   availableWithEnumId?: string;
+  availableByEnumId?: string;
 
   issuingBankBic?: string;
   advisingBankBic?: string;
@@ -84,9 +99,12 @@ export interface ImportLetterOfCredit {
   marginType?: string;
   marginPercentage?: string;
   marginAmount?: string;
+  marginDebitAccount?: string;
   // UI Friendly fields
   applicantName?: string;
   applicantPartyName?: string;
+  beneficiaryName?: string;
+  beneficiaryPartyName?: string;
   currency?: string;
   slaDaysRemaining?: number;
   // v3.0 effective values
@@ -224,4 +242,13 @@ export interface ExposureData {
   utilizationPercent: number;
   facilityBreakdown: any[];
   facilityList?: any[];
+}
+
+export interface SwiftMessage {
+  swiftMessageId: string;
+  instrumentId: string;
+  messageType: string;
+  messageContent: string;
+  generatedDate: string;
+  messageStatusId: string;
 }

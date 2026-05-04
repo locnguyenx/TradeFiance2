@@ -106,12 +106,26 @@
         </out-parameters>
         <actions>
             <!-- STUB: Simple date addition + 3 days for holiday simulation if needed by BDD line 438 -->
-            <script>
+            <script><![CDATA[
                 java.util.Calendar cal = java.util.Calendar.getInstance();
                 cal.setTime(startDate);
-                cal.add(java.util.Calendar.DATE, daysToAdd + 3); // +3 for holiday simulation in BDD-IMP-DOC-01
+                int added = 0;
+                while (added < daysToAdd) {
+                    cal.add(java.util.Calendar.DATE, 1);
+                    int dayOfWeek = cal.get(java.util.Calendar.DAY_OF_WEEK);
+                    if (dayOfWeek != java.util.Calendar.SATURDAY && dayOfWeek != java.util.Calendar.SUNDAY) {
+                        // Check for holiday
+                        java.sql.Date current = new java.sql.Date(cal.getTimeInMillis());
+                        def holiday = ec.entity.find("trade.PublicHoliday").condition("holidayDate", current).one();
+                        if (!holiday) {
+                            added++;
+                        } else {
+                            ec.logger.info("Skipping holiday: ${current}");
+                        }
+                    }
+                }
                 resultDate = new java.sql.Date(cal.getTimeInMillis());
-            </script>
+            ]]></script>
         </actions>
     </service>
 
@@ -154,6 +168,7 @@
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
             <set field="targetStatus" from="cancellationReason?.contains('Auto-Expiry') ? 'LC_CLOSED' : 'LC_CANCELLED'"/>
+            <log level="info" message="Cancelling LC ${instrumentId}. Reason: ${cancellationReason}, Target state: ${targetStatus}"/>
             <service-call name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit"
                           in-map="[instrumentId: instrumentId, businessStateId: targetStatus]"/>
         </actions>
@@ -333,14 +348,6 @@
             <set field="result" from="tx.getMap()"/>
             
             <!-- Dynamic Snapshot Calculation -->
-            <if condition="tx.transactionTypeEnumId == 'IMP_NEW'">
-                <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc">
-                    <field-map field-name="instrumentId" from="tx.instrumentId"/>
-                </entity-find-one>
-                <set field="result.proposedAmount" from="lc?.amount"/>
-                <set field="result.proposedExpiryDate" from="lc?.expiryDate"/>
-                <set field="result.proposedCurrencyUomId" from="inst?.currencyUomId"/>
-            </if>
             <if condition="tx.transactionTypeEnumId == 'IMP_AMENDMENT'">
                 <entity-find-one entity-name="trade.importlc.ImportLcAmendment" value-field="amd">
                     <field-map field-name="amendmentId" from="tx.relatedRecordId"/>

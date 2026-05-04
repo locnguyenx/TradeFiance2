@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { tradeApi } from '../api/tradeApi';
 
 // ABOUTME: Shipping Guarantee form implementing REQ-IMP-PRC-05.
 // ABOUTME: Handles the 110% over-collateralization earmark requirement for early cargo release.
@@ -18,7 +19,48 @@ export const ShippingGuaranteeForm: React.FC<ShippingGuaranteeFormProps> = ({ in
         guaranteeType: 'Full Indemnity',
     });
 
+    const [instrument, setInstrument] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (!instrumentId) {
+            setLoading(false);
+            setError('Please select an active Letter of Credit from the dashboard to request a shipping guarantee.');
+            return;
+        }
+
+        setLoading(true);
+        setError('');
+        tradeApi.getImportLc(instrumentId)
+            .then(data => {
+                setInstrument(data);
+                setLoading(false);
+            })
+            .catch(err => {
+                setError(err.message || 'Failed to load instrument context. Please verify the LC ID.');
+                setLoading(false);
+            });
+    }, [instrumentId]);
+
     const earmarkAmount = (parseFloat(formData.invoiceAmount) || 0) * 1.1;
+
+    if (loading && !instrument) return <div className="p-8 text-center premium-card">Loading LC Context...</div>;
+    if (!instrument) {
+        return (
+            <div className="p-8 text-center premium-card">
+                <div className="error-banner mb-4" style={{ background: '#fef2f2', color: '#991b1b', padding: '1rem', borderRadius: '6px' }}>
+                    {error || 'Letter of Credit not found or context missing.'}
+                </div>
+                <button 
+                    className="secondary-btn" 
+                    onClick={() => window.location.href = '/import-lc'}
+                >
+                    Back to Dashboard
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="sg-container premium-card">

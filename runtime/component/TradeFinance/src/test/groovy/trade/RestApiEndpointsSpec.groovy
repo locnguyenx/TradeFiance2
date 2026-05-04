@@ -34,6 +34,7 @@ class RestApiEndpointsSpec extends Specification {
         ec.user.internalLoginUser("trade.maker")
         ScreenTestRender str = screenTest.render("s1/trade/import-lc",
             [transactionRef: ref, lcAmount: 5000.0, lcCurrencyUomId: "USD",
+             customerFacilityId: 'FAC-ACME-001',
              instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
                                  [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]], "post")
         if (str.errorMessages) {
@@ -122,6 +123,19 @@ class RestApiEndpointsSpec extends Specification {
         !str.errorMessages
         def json = new groovy.json.JsonSlurper().parseText(str.output)
         json.auditLogList != null
+    }
+
+    def "Test GET /trade/current-user returns empty when not logged in"() {
+        given:
+        ec.user.logoutUser()
+
+        when:
+        ScreenTestRender str = screenTest.render("s1/trade/current-user", [:], "get")
+
+        then:
+        !str.errorMessages
+        def json = new groovy.json.JsonSlurper().parseText(str.output)
+        json.userId == null
     }
 
     // ===== POST Endpoints =====
@@ -228,11 +242,16 @@ class RestApiEndpointsSpec extends Specification {
     def "Test POST /trade/import-lc settlements"() {
         given:
         String instrumentId = createTestLc("REST-SETTLE")
+        String presentationId = createTestPresentation(instrumentId)
+        
+        // Move to LC_ACCEPTED to allow settlement
+        ec.service.sync().name("update#trade.TradeInstrument").parameters([instrumentId: instrumentId, businessStateId: 'LC_ACCEPTED']).call()
 
         when:
         ec.user.internalLoginUser("trade.maker")
         ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/settlements",
-            [instrumentId: instrumentId, principalAmount: 2500.0, debitAccountId: "TRADE-USD-001"], "post")
+            [instrumentId: instrumentId, presentationId: presentationId, principalAmount: 1000.0, 
+             settlementTypeEnumId: 'SETTLE_SIGHT', debitAccountId: "TRADE-USD-001"], "post")
 
         then:
         !str.errorMessages
@@ -257,6 +276,11 @@ class RestApiEndpointsSpec extends Specification {
     def "Test POST /trade/import-lc cancel"() {
         given:
         String instrumentId = createTestLc("REST-CANCEL")
+        // Move to LC_ISSUED to simulate a more realistic cancellation
+        ec.user.internalLoginUser("trade.checker")
+        screenTest.render("s1/trade/authorize", [instrumentId: instrumentId], "post")
+        ec.service.sync().name("trade.importlc.ImportLcServices.approve#ImportLetterOfCredit")
+            .parameters([instrumentId: instrumentId, approverUserId: "trade.checker"]).call()
 
         when:
         ec.user.internalLoginUser("trade.maker")
@@ -264,6 +288,7 @@ class RestApiEndpointsSpec extends Specification {
             [instrumentId: instrumentId, cancellationReason: "REST test"], "post")
 
         then:
+        if (str.errorMessages) println "DEBUG CANCEL ERRORS: ${str.errorMessages}"
         !str.errorMessages
         str.output != null
     }

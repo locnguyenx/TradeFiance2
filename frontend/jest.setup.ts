@@ -26,3 +26,11 @@ jest.mock('next/navigation', () => ({
   usePathname: () => '/',
   useSearchParams: () => new URLSearchParams(),
 }));
+
+// Fail tests on console.error to ensure "clean at capture" and "tests catch errors"
+const originalConsoleError = console.error;
+console.error = (message: any, ...args: any[]) => {
+  // If you expect a console.error in a test, use jest.spyOn(console, 'error').mockImplementation(() => {})
+  originalConsoleError(message, ...args);
+  throw new Error(`Test failed due to unexpected console.error: ${message} ${args.join(' ')}`);
+};
