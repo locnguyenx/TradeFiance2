@@ -242,6 +242,28 @@ Example: An Amendment can be in Transaction State "Pending Approval" while the u
 | ISS-SWV-16 | BIC fields: exactly 8 or 11 alphanumeric characters | Tags 41A, 42A, 53a, 57a |
 | ISS-SWV-17 | `transactionRef`: max 16 chars, X charset, slash rules | Tag 20 |
 
+##### Source Traceability
+
+| Rule ID | Source BRD | Source Requirement ID | Notes |
+| :--- | :--- | :--- | :--- |
+| ISS-SWV-01 | swift-gaps-consolidation-brd.md | FR-ENT-21 | Mandatory MT700 field added in gaps consolidation |
+| ISS-SWV-02 | swift-gaps-consolidation-brd.md | FR-ENT-26, FR-SGC-04 | Mandatory Tag 49, default WITHOUT |
+| ISS-SWV-03 | swift-validation-brd.md | FR-SWV-07 | Mutual exclusion: 39A/39B |
+| ISS-SWV-04 | swift-validation-brd.md | FR-SWV-07 | Mutual exclusion: 44C/44D |
+| ISS-SWV-05 | swift-validation-brd.md | FR-SWV-08 | Conditional: tenor ≠ SIGHT requires usance fields |
+| ISS-SWV-06 | swift-validation-brd.md | FR-SWV-08 | Conditional: tenor = MIXED requires mixedPaymentDetails |
+| ISS-SWV-07 | swift-validation-brd.md | FR-SWV-08 | Conditional: tenor = DEF_PAYMENT/NEGOTIATION requires deferredPaymentDetails |
+| ISS-SWV-08 | tradeparty-refactor-brd.md | FR-TP-09 | Explicit user choice: AVAIL_ANY_BANK or AVAIL_SPECIFIC_BANK |
+| ISS-SWV-09 | swift-validation-brd.md | FR-SWV-01, FR-SWV-06 | X charset + 4×35 line format for party blocks |
+| ISS-SWV-10 | tradeparty-refactor-brd.md | FR-TP-12 | Bank eligibility: Advising Bank requires active RMA |
+| ISS-SWV-11 | tradeparty-refactor-brd.md | FR-TP-12 | Bank eligibility: Reimbursing Bank requires Nostro reference |
+| ISS-SWV-12 | swift-validation-brd.md | FR-SWV-03 | Amount format: comma decimal, max 15 digits |
+| ISS-SWV-13 | swift-validation-brd.md | FR-SWV-04 | Date format: YYMMDD |
+| ISS-SWV-14 | swift-validation-brd.md | FR-SWV-02 | Reference slash rules: no leading/trailing `/`, no `//` |
+| ISS-SWV-15 | swift-validation-brd.md | FR-SWV-06 | Line format: 100×65 narrative auto-wrap at 65 chars |
+| ISS-SWV-16 | swift-validation-brd.md | FR-SWV-05 | BIC format: 8 or 11 alphanumeric characters |
+| ISS-SWV-17 | swift-validation-brd.md | FR-SWV-02, FR-SWV-01 | Reference rules + X charset |
+
 #### F. Display / Computed Data
 
 | Field Name | Calculation Formula |
@@ -336,6 +358,17 @@ Upon Checker authorization:
 | AMD-SWV-04 | If `amendmentNarrative` changed, or shipping ports amended: re-screen against Sanctions | — |
 | AMD-SWV-05 | Tolerance (39A) and Max Credit (39B) mutual exclusion still applies if modified | Tags 39A, 39B |
 | AMD-SWV-06 | Authority tier calculated on **New Maximum Liability** (not delta) | — |
+
+##### Source Traceability
+
+| Rule ID | Source BRD | Source Requirement ID | Notes |
+| :--- | :--- | :--- | :--- |
+| AMD-SWV-01 | swift-validation-brd.md | FR-SWV-01 | Z charset definition for Tag 79 (MT707 narrative) |
+| AMD-SWV-02 | swift-generation-brd.md | FR-SWG-07 | MT707 delta logic: 32B increase, 33B decrease, 34B new total |
+| AMD-SWV-03 | swift-gaps-consolidation-brd.md | FR-ENT-28 | Amendment number auto-increment, always included in MT707 |
+| AMD-SWV-04 | import-lc-brd.md | REQ-IMP-SPEC-02 Section I | Sanctions re-screening if narrative or shipping ports change |
+| AMD-SWV-05 | swift-validation-brd.md | FR-SWV-07 | Mutual exclusion 39A/39B inherited from issuance |
+| AMD-SWV-06 | common-module-brd.md | REQ-COM-AUTH-03 Section A | Financial amendments tiered on new total liability, not delta |
 
 #### F. Display / Computed Data
 
@@ -439,6 +472,18 @@ Upon Checker authorization:
 | PRE-SWV-06 | Discrepancy codes and descriptions: X charset, max 35/50 chars per entry | Tag 77J |
 | PRE-SWV-07 | Claim amount must not exceed remaining LC balance + tolerance % | — |
 
+##### Source Traceability
+
+| Rule ID | Source BRD | Source Requirement ID | Notes |
+| :--- | :--- | :--- | :--- |
+| PRE-SWV-01 | swift-gaps-consolidation-brd.md | FR-ENT-30 | presentationRef: mandatory, max 16 chars, X charset, slash rules |
+| PRE-SWV-02 | swift-validation-brd.md | FR-SWV-03 | Amount format: comma decimal, max 15 digits, positive |
+| PRE-SWV-03 | import-lc-brd.md | REQ-IMP-SPEC-03 Section D | Claim currency must match parent LC currency |
+| PRE-SWV-04 | swift-validation-brd.md | FR-SWV-08 | Conditional: isDiscrepant = Y requires at least one discrepancy record |
+| PRE-SWV-05 | swift-validation-brd.md | FR-SWV-08 | Conditional: applicantDecision = REFUSED requires documentDisposalEnumId |
+| PRE-SWV-06 | swift-validation-brd.md | FR-SWV-01, FR-SWV-06 | Discrepancy code: max 35 chars (77J), description: max 50 chars, X charset |
+| PRE-SWV-07 | import-lc-brd.md | REQ-IMP-04 | Tolerance limit check from baseline business rules |
+
 #### F. Display / Computed Data
 
 | Field Name | Calculation Formula |
@@ -530,6 +575,19 @@ Upon Checker authorization:
 | STL-SWV-06 | For MT103: `chargesDetailEnumId` required (OUR, BEN, SHA) | Tag 71A |
 | STL-SWV-07 | For MT202: Presenting Bank BIC required | Tag 58a |
 | STL-SWV-08 | Nostro account auto-derived from `TradeConfig.NOSTRO_ACCOUNT_{CCY}` | Tag 53a (MT202) |
+
+##### Source Traceability
+
+| Rule ID | Source BRD | Source Requirement ID | Notes |
+| :--- | :--- | :--- | :--- |
+| STL-SWV-01 | swift-validation-brd.md | FR-SWV-03 | Amount format: comma decimal, max 15 digits, positive (Tag 32A) |
+| STL-SWV-02 | swift-validation-brd.md | FR-SWV-04 | Date format: YYMMDD for valueDate |
+| STL-SWV-03 | import-lc-brd.md | REQ-IMP-SPEC-04 Section D | Remittance currency must match LC/Claim currency |
+| STL-SWV-04 | tradeparty-refactor-brd.md | FR-TP-12 | Bank eligibility: Reimbursing/Sender's Correspondent requires Nostro reference |
+| STL-SWV-05 | tradeparty-refactor-brd.md | FR-TP-04 Tag Coverage | MT103 Tag 59a: beneficiary accountNumber is mandatory |
+| STL-SWV-06 | swift-generation-brd.md | FR-SWG-14 | MT103 Tag 71A: mandatory charges detail (OUR/BEN/SHA) |
+| STL-SWV-07 | swift-generation-brd.md | FR-SWG-13 | MT202 Tag 58a: beneficiary institution (Presenting Bank) mandatory |
+| STL-SWV-08 | swift-validation-brd.md | FR-CFG-02 | NOSTRO_ACCOUNT_{CCY} config key per currency for settlement routing |
 
 #### F. Display / Computed Data
 
@@ -675,6 +733,14 @@ Upon Checker authorization:
 | CAN-SWV-01 | Early cancellation generates MT 799 free-format message | Tag 79 |
 | CAN-SWV-02 | MT 799 narrative uses **Z charset** (Tag 79), max 35×50 | Tag 79 |
 | CAN-SWV-03 | MT 799 includes `transactionRef` (Tag 20) and Advising Bank ref or NONREF (Tag 21) | Tags 20, 21 |
+
+##### Source Traceability
+
+| Rule ID | Source BRD | Source Requirement ID | Notes |
+| :--- | :--- | :--- | :--- |
+| CAN-SWV-01 | swift-generation-brd.md | FR-SWG-12 | MT799 free-format message for early cancellation consent request |
+| CAN-SWV-02 | swift-validation-brd.md | FR-SWV-01 | Tag 79 uses Z charset (extends X with `@ # = ! " % & * ; < > _`), max 35×50 |
+| CAN-SWV-03 | swift-generation-brd.md | FR-SWG-12 | MT799 structure: mandatory Tag 20 (credit no.), Tag 21 (ref or NONREF), Tag 79 (narrative) |
 
 #### F. Display / Computed Data
 
