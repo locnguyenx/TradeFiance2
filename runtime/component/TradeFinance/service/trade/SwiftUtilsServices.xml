@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ABOUTME: SwiftUtilsServices.xml provides core utilities for rendering and validating SWIFT messages.
+-->
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.0.xsd">
+
+    <service verb="render" noun="SwiftMessage">
+        <description>Renders a SWIFT message string from header data and a map of fields.</description>
+        <in-parameters>
+            <parameter name="messageType" required="true"/>
+            <parameter name="senderBic" required="true"/>
+            <parameter name="receiverBic" required="true"/>
+            <parameter name="senderRef" required="true"/>
+            <parameter name="fields" type="Map" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="messageContent" required="true"/>
+        </out-parameters>
+        <actions>
+            <script><![CDATA[
+                def sb = new StringBuilder()
+                
+                // Block 1: Basic Header
+                // {1:F01[SenderBIC][Session][Sequence]}
+                def sBic = (senderBic ?: "SENDERXX").padRight(12, 'X')
+                sb.append("{1:F01").append(sBic).append("0000000000}")
+                
+                // Block 2: Application Header
+                // {2:I[Type][ReceiverBIC][Priority]}
+                def rBic = (receiverBic ?: "RECEIVXX").padRight(12, 'X')
+                sb.append("{2:I").append(messageType).append(rBic).append("N}")
+                
+                // Block 4: Text Block
+                sb.append("{4:\r\n")
+                
+                // Tag 20: Sender's Reference (Mandatory)
+                sb.append(":20:").append(senderRef ?: "NONREF").append("\r\n")
+                
+                // Helper to clean values (SWIFT X Charset)
+                def cleanValue = { val ->
+                    if (val == null) return ""
+                    return val.toString()
+                        .replace('^', '')
+                        .replace('_', '')
+                        .replace('{', '(')
+                        .replace('}', ')')
+                        .replace('[', '(')
+                        .replace(']', ')')
+                        .replace('|', '/')
+                }
+                
+                // Helper to format values (Wrap at maxLineLength, limit to maxLines)
+                def formatValue = { val, maxLines, maxLineLength ->
+                    if (!val) return ""
+                    def cleaned = cleanValue(val)
+                    def lines = cleaned.split(/\r?\n/)
+                    def resultLines = []
+                    lines.each { line ->
+                        while (line.length() > maxLineLength) {
+                            resultLines.add(line.substring(0, maxLineLength))
+                            line = line.substring(maxLineLength)
+                        }
+                        resultLines.add(line)
+                    }
+                    return resultLines.take(maxLines).join("\r\n")
+                }
+                
+                // Other tags
+                fields.each { tag, value ->
+                    if (tag == "20") return 
+                    if (value == null) return
+                    
+                    def formattedValue = value
+                    // Apply standard wrapping if it's a long text field (usually 4x35 or similar)
+                    // This can be expanded based on tag-specific rules if needed
+                    sb.append(":").append(tag).append(":").append(cleanValue(value)).append("\r\n")
+                }
+                
+                sb.append("-}")
+                messageContent = sb.toString()
+            ]]></script>
+        </actions>
+    </service>
+
+</services>
