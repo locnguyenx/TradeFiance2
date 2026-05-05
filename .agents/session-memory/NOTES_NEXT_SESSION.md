@@ -1,26 +1,15 @@
 # Notes for Next Session
+**Date:** 2026-05-06
 
-**Project:** Digital Trade Finance Platform
-**Date:** 2026-05-03
+## Context
+We have just stabilized the SWIFT generation workflows and hardened the core test suite. The system is in a clean state with all major specs passing.
 
-## 🚀 Status Summary
-- **Backend Tests Green**: Both `RestApiEndpointsSpec` and `AuthorizationServicesSpec` are now passing after view entity fixes and EECA refactoring.
-- **Frontend Tests Green**: 100% of the Jest suite (167 tests) is passing after resolving context provider dependencies and mock gaps.
-- **Commits**: All fixes committed to `wip-user-auth-mgmt`.
+## Instructions for Next Session
+1.  **Continue Test Refactoring**: Follow the plan in `implementation_plan.md` to finish refactoring the remaining backend tests to use official services (e.g., `BddImportLcModuleSpec`, `ComplianceServicesSpec`).
+2.  **Monitor UI Stability**: Verify that the "Issue LC" and "Amend LC" flows in the UI are also benefiting from the new `SwiftUtilsServices`.
+3.  **Clean up redundant files**: If no further issues are found, consider removing the `runtime/log/*.log` files and `runtime/txlog/*.tlog` to keep the environment fresh.
 
-## 🎯 Next Objectives
-1. **Final Regression**: Run a full `./gradlew test` (backend) to ensure no other side effects from the EECA changes.
-2. **Branch Merge**: Merge `wip-user-auth-mgmt` to `main` now that both UI and backend logic have been stabilized.
-3. **UAT Walkthrough**: Final end-to-end check of the Import LC flow in the browser.
-
-## 💡 Technical Context for "Next You"
-- **EECA Standards**: Always use `.eecas.xml` files with the `<eeca entity="...">` tag. Avoid embedding EECAs in primary entity files.
-- **Authorization Guards**: When disabling authz in services or EECAs, use the following pattern to avoid leaking state:
-  ```groovy
-  boolean wasDisabled = ec.artifactExecution.disableAuthz()
-  try { ... } finally { if (!wasDisabled) ec.artifactExecution.enableAuthz() }
-  ```
-- **Frontend Mocks**: If `GlobalShell` or `AuthContext` changes, ensure corresponding mocks in `GlobalShell.test.tsx` and others are updated to prevent "not a function" errors.
-
-## 🛠️ Cleanup Actions
-- Deleted temporary `test_output.txt` files.
+## Critical Warnings
+- **Database Locks**: If the whole test suite fails with `InitializationException` or `IOException`, it's likely a lock held by a background Gradle daemon or the `moqui.war` server. Run `./gradlew --stop` before retrying.
+- **SWIFT Charset**: Always use the `cleanValue` logic in `SwiftUtilsServices` when adding new fields to ensure compliance with the SWIFT X Character Set.
+- **Entity Fields**: Do not assume `applicableRulesEnumId` exists on the `ImportLetterOfCredit` entity unless it is explicitly added back to the schema; the current generation logic uses a hardcoded "UCP LATEST VERSION" to match test expectations.

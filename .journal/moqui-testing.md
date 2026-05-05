@@ -209,3 +209,9 @@ test {
     }
 }
 ```
+## 12. Environment & Lock Troubleshooting
+### Initialization Errors
+If the entire test suite fails with `java.util.ServiceConfigurationError` or `bitronix.tm.utils.InitializationException: java.io.IOException: The process cannot access the file because it is being used by another process`:
+*   **Background Conflict**: A background server (e.g., `java -jar moqui.war`) or a lingering Gradle daemon is likely holding a lock on the H2 database (`runtime/db/h2/moqui.mv.db`) or the Bitronix transaction log (`runtime/txlog/btm1.tlog`).
+*   **Resolution**: Run `./gradlew --stop` to kill all Gradle daemons. If the issue persists, stop any running Moqui server instances.
+*   **Manual Cleanup**: If locks persist, manually remove `runtime/txlog/*.tlog` or `runtime/db/h2/moqui.lock.db` before retrying.
