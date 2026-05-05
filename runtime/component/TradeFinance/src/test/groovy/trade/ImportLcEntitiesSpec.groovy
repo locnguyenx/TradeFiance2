@@ -10,6 +10,25 @@ import org.moqui.context.ExecutionContext
 class ImportLcEntitiesSpec extends Specification {
     protected ExecutionContext ec
     
+    def setupSpec() {
+        ExecutionContext ec = Moqui.getExecutionContext()
+        ec.artifactExecution.disableAuthz()
+        def ids = ["LC-ENT-1", "LC-ENT-PERSIST", "LC-AMEND-TEST", "LC-PRES-TEST", "LC-SG-TEST", "LC-AMEND-EXT", "LC-PRES-EXT", "LC-SG-EXT"]
+        for (id in ids) {
+            ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", id).deleteAll()
+            ec.entity.find("trade.importlc.ImportLcSettlement").condition("instrumentId", id).deleteAll()
+            ec.entity.find("trade.importlc.ImportLcAmendment").condition("instrumentId", id).deleteAll()
+            ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", id).deleteAll()
+            ec.entity.find("trade.importlc.ImportLcShippingGuarantee").condition("instrumentId", id).deleteAll()
+            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", id).deleteAll()
+            ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", id).deleteAll()
+            ec.entity.find("trade.TradeTransaction").condition("instrumentId", id).deleteAll()
+            ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", id).deleteAll()
+            ec.entity.find("trade.TradeInstrument").condition("instrumentId", id).deleteAll()
+        }
+        ec.destroy()
+    }
+    
     def setup() {
         ec = Moqui.getExecutionContext()
         ec.user.internalLoginUser("trade.maker")
@@ -36,6 +55,7 @@ class ImportLcEntitiesSpec extends Specification {
         lc.instrumentId == "LC-ENT-1"
         
         cleanup:
+        ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", "LC-ENT-1").deleteAll()
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "LC-ENT-1").deleteAll()
         ec.entity.find("trade.TradeTransaction").condition("instrumentId", "LC-ENT-1").deleteAll()
         ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", "LC-ENT-1").deleteAll()
@@ -45,11 +65,11 @@ class ImportLcEntitiesSpec extends Specification {
     def "ImportLetterOfCredit persists effective and new fields"() {
         setup:
         ec.entity.makeValue("trade.TradeInstrument")
-                .setAll([instrumentId: "LC-MGMT-TEST", transactionRef: "TF-IMP-TEST-01"]).create()
+                .setAll([instrumentId: "LC-ENT-PERSIST", transactionRef: "TF-IMP-TEST-01"]).create()
 
         when:
         ec.service.sync().name("create#trade.importlc.ImportLetterOfCredit").parameters([
-            instrumentId: "LC-MGMT-TEST",
+            instrumentId: "LC-ENT-PERSIST",
             businessStateId: "LC_DRAFT",
             effectiveAmount: 500000,
             effectiveCurrencyUomId: "USD",
@@ -65,8 +85,9 @@ class ImportLcEntitiesSpec extends Specification {
             lcTypeEnumId: "IRREVOCABLE",
             productCatalogId: "PROD_IMP_LC"
         ]).call()
+        if (ec.message.hasError()) ec.logger.info("TEST ERRORS: " + ec.message.getErrorsString())
         def lc = ec.entity.find("trade.importlc.ImportLetterOfCredit")
-                .condition("instrumentId", "LC-MGMT-TEST").one()
+                .condition("instrumentId", "LC-ENT-PERSIST").one()
 
         then:
         lc != null
@@ -78,20 +99,21 @@ class ImportLcEntitiesSpec extends Specification {
         lc.latestShipmentDate == java.sql.Date.valueOf("2026-12-15")
 
         cleanup:
-        ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "LC-MGMT-TEST").deleteAll()
-        ec.entity.find("trade.TradeTransaction").condition("instrumentId", "LC-MGMT-TEST").deleteAll()
-        ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", "LC-MGMT-TEST").deleteAll()
-        ec.entity.find("trade.TradeInstrument").condition("instrumentId", "LC-MGMT-TEST").deleteAll()
+        ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", "LC-ENT-PERSIST").deleteAll()
+        ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "LC-ENT-PERSIST").deleteAll()
+        ec.entity.find("trade.TradeTransaction").condition("instrumentId", "LC-ENT-PERSIST").deleteAll()
+        ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", "LC-ENT-PERSIST").deleteAll()
+        ec.entity.find("trade.TradeInstrument").condition("instrumentId", "LC-ENT-PERSIST").deleteAll()
     }
 
     def "PresentationDiscrepancy persists correctly"() {
         setup:
         ec.entity.makeValue("trade.TradeInstrument")
-                .setAll([instrumentId: "LC-MGMT-TEST", transactionRef: "TF-IMP-TEST-01"]).create()
+                .setAll([instrumentId: "LC-ENT-DISC", transactionRef: "TF-IMP-TEST-01"]).create()
         ec.entity.makeValue("trade.importlc.ImportLetterOfCredit")
-                .setAll([instrumentId: "LC-MGMT-TEST", businessStateId: "LC_DRAFT"]).create()
+                .setAll([instrumentId: "LC-ENT-DISC", businessStateId: "LC_DRAFT"]).create()
         ec.entity.makeValue("trade.importlc.TradeDocumentPresentation")
-                .setAll([presentationId: "PRES_TEST_01", instrumentId: "LC-MGMT-TEST", claimAmount: 1000]).create()
+                .setAll([presentationId: "PRES_TEST_01", instrumentId: "LC-ENT-DISC", claimAmount: 1000]).create()
 
         when:
         ec.service.sync().name("create#trade.importlc.PresentationDiscrepancy").parameters([
@@ -110,28 +132,29 @@ class ImportLcEntitiesSpec extends Specification {
         disc.isWaived == "N"
 
         cleanup:
+        ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", "LC-ENT-DISC").deleteAll()
         ec.entity.find("trade.importlc.PresentationDiscrepancy").condition("presentationId", "PRES_TEST_01").deleteAll()
-        ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", "LC-MGMT-TEST").deleteAll()
-        ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "LC-MGMT-TEST").deleteAll()
-        ec.entity.find("trade.TradeTransaction").condition("instrumentId", "LC-MGMT-TEST").deleteAll()
-        ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", "LC-MGMT-TEST").deleteAll()
-        ec.entity.find("trade.TradeInstrument").condition("instrumentId", "LC-MGMT-TEST").deleteAll()
+        ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", "LC-ENT-DISC").deleteAll()
+        ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "LC-ENT-DISC").deleteAll()
+        ec.entity.find("trade.TradeTransaction").condition("instrumentId", "LC-ENT-DISC").deleteAll()
+        ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", "LC-ENT-DISC").deleteAll()
+        ec.entity.find("trade.TradeInstrument").condition("instrumentId", "LC-ENT-DISC").deleteAll()
     }
 
     def "ImportLcSettlement persists correctly"() {
         setup:
         ec.entity.makeValue("trade.TradeInstrument")
-                .setAll([instrumentId: "LC-MGMT-TEST", transactionRef: "TF-IMP-TEST-01"]).create()
+                .setAll([instrumentId: "LC-ENT-SETTLE", transactionRef: "TF-IMP-TEST-01"]).create()
         ec.entity.makeValue("trade.importlc.ImportLetterOfCredit")
-                .setAll([instrumentId: "LC-MGMT-TEST", businessStateId: "LC_DRAFT"]).create()
+                .setAll([instrumentId: "LC-ENT-SETTLE", businessStateId: "LC_DRAFT"]).create()
         ec.entity.makeValue("trade.importlc.TradeDocumentPresentation")
-                .setAll([presentationId: "PRES_TEST_01", instrumentId: "LC-MGMT-TEST", claimAmount: 1000]).create()
+                .setAll([presentationId: "PRES_TEST_01", instrumentId: "LC-ENT-SETTLE", claimAmount: 1000]).create()
 
         when:
         def result = ec.service.sync().name("create#trade.importlc.ImportLcSettlement").parameters([
             settlementId: "SETTLE_TEST_01",
             presentationId: "PRES_TEST_01",
-            instrumentId: "LC-MGMT-TEST",
+            instrumentId: "LC-ENT-SETTLE",
             principalAmount: 250000.0G,
             valueDate: ec.user.nowTimestamp,
             settlementTypeEnumId: "SIGHT_PAYMENT"
@@ -148,12 +171,13 @@ class ImportLcEntitiesSpec extends Specification {
         (settle.principalAmount as BigDecimal) == 250000.0G
 
         cleanup:
-        ec.entity.find("trade.importlc.ImportLcSettlement").condition("instrumentId", "LC-MGMT-TEST").deleteAll()
-        ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", "LC-MGMT-TEST").deleteAll()
-        ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "LC-MGMT-TEST").deleteAll()
-        ec.entity.find("trade.TradeTransaction").condition("instrumentId", "LC-MGMT-TEST").deleteAll()
-        ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", "LC-MGMT-TEST").deleteAll()
-        ec.entity.find("trade.TradeInstrument").condition("instrumentId", "LC-MGMT-TEST").deleteAll()
+        ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", "LC-ENT-SETTLE").deleteAll()
+        ec.entity.find("trade.importlc.ImportLcSettlement").condition("instrumentId", "LC-ENT-SETTLE").deleteAll()
+        ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", "LC-ENT-SETTLE").deleteAll()
+        ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "LC-ENT-SETTLE").deleteAll()
+        ec.entity.find("trade.TradeTransaction").condition("instrumentId", "LC-ENT-SETTLE").deleteAll()
+        ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", "LC-ENT-SETTLE").deleteAll()
+        ec.entity.find("trade.TradeInstrument").condition("instrumentId", "LC-ENT-SETTLE").deleteAll()
     }
 
     def "ImportLcAmendment persists extended fields"() {
@@ -180,6 +204,7 @@ class ImportLcEntitiesSpec extends Specification {
         am.isBeneficiaryAcceptanceRequired == "Y"
 
         cleanup:
+        ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", "LC-AMEND-TEST").deleteAll()
         ec.entity.find("trade.importlc.ImportLcAmendment").condition("instrumentId", "LC-AMEND-TEST").deleteAll()
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "LC-AMEND-TEST").deleteAll()
         ec.entity.find("trade.TradeTransaction").condition("instrumentId", "LC-AMEND-TEST").deleteAll()
@@ -209,6 +234,7 @@ class ImportLcEntitiesSpec extends Specification {
         pr.presentationStatusId == "PRES_DRAFT"
 
         cleanup:
+        ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", "LC-PRES-TEST").deleteAll()
         ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", "LC-PRES-TEST").deleteAll()
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "LC-PRES-TEST").deleteAll()
         ec.entity.find("trade.TradeTransaction").condition("instrumentId", "LC-PRES-TEST").deleteAll()
@@ -238,6 +264,7 @@ class ImportLcEntitiesSpec extends Specification {
         sg.guaranteeStatusId == "SG_DRAFT"
 
         cleanup:
+        ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", "LC-SG-TEST").deleteAll()
         ec.entity.find("trade.importlc.ImportLcShippingGuarantee").condition("instrumentId", "LC-SG-TEST").deleteAll()
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "LC-SG-TEST").deleteAll()
         ec.entity.find("trade.TradeTransaction").condition("instrumentId", "LC-SG-TEST").deleteAll()
@@ -270,6 +297,7 @@ class ImportLcEntitiesSpec extends Specification {
         am.chargeAllocationEnumId == "SHA"
 
         cleanup:
+        ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", "LC-AMEND-EXT").deleteAll()
         ec.entity.find("trade.importlc.ImportLcAmendment").condition("instrumentId", "LC-AMEND-EXT").deleteAll()
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "LC-AMEND-EXT").deleteAll()
         ec.entity.find("trade.TradeTransaction").condition("instrumentId", "LC-AMEND-EXT").deleteAll()
@@ -312,6 +340,7 @@ class ImportLcEntitiesSpec extends Specification {
         junc.partyId == "PRES_BANK_1"
 
         cleanup:
+        ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", "LC-PRES-EXT").deleteAll()
         ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", "LC-PRES-EXT").deleteAll()
         ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", "LC-PRES-EXT").deleteAll()
         ec.entity.find("trade.TradePartyBank").condition("partyId", "PRES_BANK_1").deleteAll()
@@ -349,6 +378,7 @@ class ImportLcEntitiesSpec extends Specification {
         sg.issuanceFee == 150.00
 
         cleanup:
+        ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", "LC-SG-EXT").deleteAll()
         ec.entity.find("trade.importlc.ImportLcShippingGuarantee").condition("instrumentId", "LC-SG-EXT").deleteAll()
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "LC-SG-EXT").deleteAll()
         ec.entity.find("trade.TradeTransaction").condition("instrumentId", "LC-SG-EXT").deleteAll()

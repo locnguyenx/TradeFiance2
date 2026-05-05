@@ -283,7 +283,7 @@
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz();</script>
-            <entity-find entity-name="trade.TradeTransaction" list="transactionList">
+            <entity-find entity-name="trade.TradeTransactionView" list="transactionList">
                 <econdition field-name="transactionStatusId" from="transactionStatusId" ignore-if-empty="true"/>
                 <econdition field-name="priorityEnumId" from="priorityEnumId" ignore-if-empty="true"/>
                 <order-by field-name="-transactionDate"/>

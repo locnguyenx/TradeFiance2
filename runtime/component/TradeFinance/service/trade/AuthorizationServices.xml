@@ -104,7 +104,9 @@
             
             <if condition="isAuthorized">
                 <if condition="transactionId">
-                    <entity-find-one entity-name="trade.TradeTransaction" value-field="tx"/>
+                    <entity-find-one entity-name="trade.TradeTransaction" value-field="tx" auto-field-map="true"/>
+                    <if condition="!tx"><return error="true" message="Transaction ${transactionId} not found"/></if>
+                    
                     <entity-find-one entity-name="trade.TradeInstrument" value-field="inst">
                         <field-map field-name="instrumentId" from="tx.instrumentId"/>
                     </entity-find-one>
@@ -117,8 +119,8 @@
                         <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc">
                             <field-map field-name="instrumentId" from="tx.instrumentId"/>
                         </entity-find-one>
-                        <set field="targetAmount" from="lc?.lcAmount ?: targetAmount"/>
-                        <set field="targetExpiry" from="lc?.expiryDate ?: targetExpiry"/>
+                        <set field="targetAmount" from="lc?.effectiveAmount ?: targetAmount"/>
+                        <set field="targetExpiry" from="lc?.effectiveExpiryDate ?: targetExpiry"/>
                     </if>
                     <if condition="tx.transactionTypeEnumId == 'IMP_AMENDMENT'">
                         <entity-find-one entity-name="trade.importlc.ImportLcAmendment" value-field="amd">
@@ -126,6 +128,11 @@
                         </entity-find-one>
                         <set field="targetAmount" from="(inst.amount ?: 0) + (amd?.amountAdjustment ?: 0)"/>
                         <set field="targetExpiry" from="amd?.newExpiryDate ?: targetExpiry"/>
+                        
+                        <service-call name="update#trade.importlc.ImportLcAmendment" in-map="[
+                            amendmentId: tx.relatedRecordId,
+                            amendmentBusinessStateId: 'AMEND_APPROVED'
+                        ]"/>
                     </if>
                     
                     <!-- Commit to Master Data -->

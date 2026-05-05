@@ -231,4 +231,16 @@
         <field name="holidayDate" type="date" is-pk="true"/>
         <field name="description" type="text-medium"/>
     </entity>
+    <view-entity entity-name="TradeTransactionView" package="trade">
+        <member-entity entity-alias="tx" entity-name="trade.TradeTransaction"/>
+        <member-entity entity-alias="inst" entity-name="trade.TradeInstrument" join-from-alias="tx">
+            <key-map field-name="instrumentId"/>
+        </member-entity>
+        <alias-all entity-alias="tx"/>
+        <alias-all entity-alias="inst">
+            <exclude field="instrumentId"/>
+            <exclude field="makerUserId"/>
+            <exclude field="priorityEnumId"/>
+        </alias-all>
+    </view-entity>
 </entities>

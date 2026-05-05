@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- ABOUTME: SwiftGenerationServices handles the construction and formatting of SWIFT MTxxx message blocks. -->
+<!-- ABOUTME: Supports generation of MT700, MT701, MT707, MT734, MT750, and MT752 messages. -->
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.0.xsd">
 
@@ -15,34 +16,53 @@
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
-            <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument"/>
-            <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc"/>
-            <if condition="!lc"><return error="true" message="Instrument ${instrumentId} is not an Import LC"/></if>
+            <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument" use-cache="false"/>
+            <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" use-cache="false"/>
+            <if condition="!lc">
+                <log level="warn" message="No ImportLetterOfCredit found for instrumentId ${instrumentId}. Skipping SWIFT generation."/>
+                <return/>
+            </if>
 
             <!-- FR-SWG-15: Check for existing ACTIVE message -->
-            <entity-find entity-name="trade.importlc.SwiftMessage" list="existingMessages">
+            <entity-find entity-name="trade.importlc.SwiftMessage" list="existingMessages" use-cache="false">
                 <econdition field-name="instrumentId"/><econdition field-name="messageType" value="MT700"/>
             </entity-find>
             <set field="activeMsg" from="existingMessages.find { it.messageStatusId == 'SWIFT_MSG_ACTIVE' }"/>
-            <if condition="activeMsg">
+                        <if condition="activeMsg">
+                <set field="swiftMessageId" from="activeMsg.swiftMessageId"/>
                 <return message="Active MT700 already exists for this instrument. Regeneration blocked for dispatched messages."/>
             </if>
             
             <set field="draftMsg" from="existingMessages.find { it.messageStatusId == 'SWIFT_MSG_DRAFT' }"/>
-            <entity-find-one entity-name="trade.TradeTransaction" value-field="transaction">
-                <field-map field-name="instrumentId" from="instrumentId"/>
-            </entity-find-one>
+                        <!-- FR-SWG-03: Layer 2 Validation Safety Net -->
+            <service-call name="trade.importlc.ImportLcValidationServices.validate#SwiftFields"
+                    in-map="[entityType:'ImportLetterOfCredit', entityId:instrumentId]" out-map="valResult"/>
+            <if condition="valResult.errors &amp;&amp; messageStatusId == 'SWIFT_MSG_ACTIVE'">
+                <return error="true" message="SWIFT Validation failed for ACTIVE message (instrument ${instrumentId}): ${valResult.errors.collect{it.message}.join(', ')}"/>
+            </if>
+            <if condition="valResult.errors">
+                <log level="warn" message="SWIFT DRAFT Validation warnings for instrument ${instrumentId}: ${valResult.errors.collect{it.message}.join(', ')}"/>
+            </if>
 
+            <entity-find entity-name="trade.TradeTransaction" list="transactionList" use-cache="false">
+                <econdition field-name="instrumentId" from="instrumentId"/>
+                <econdition field-name="transactionTypeEnumId" value="IMP_NEW"/>
+                <order-by field-name="-makerTimestamp"/>
+            </entity-find>
+            <set field="transaction" from="transactionList ? transactionList[0] : null"/>
+            <log level="info" message="In generate#Mt700 for ${instrumentId}, found transaction: ${transaction?.transactionId}, status: ${transaction?.transactionStatusId}, type: ${transaction?.transactionTypeEnumId}"/>
+            
             <!-- If draft exists and not approved, return existing unless forced -->
             <if condition="draftMsg &amp;&amp; !forceRegenerate &amp;&amp; transaction?.transactionStatusId != 'TX_APPROVED'">
-                <set field="swiftMessageId" from="draftMsg.swiftMessageId"/>
+                                <set field="swiftMessageId" from="draftMsg.swiftMessageId"/>
                 <set field="messageContent" from="draftMsg.messageContent"/>
                 <return/>
             </if>
 
             <!-- Determine Status: ACTIVE if instrument is approved, else DRAFT -->
             <set field="messageStatusId" from="transaction?.transactionStatusId == 'TX_APPROVED' ? 'SWIFT_MSG_ACTIVE' : 'SWIFT_MSG_DRAFT'"/>
-
+            <log level="info" message="In generate#Mt700 for ${instrumentId}, determined messageStatusId: ${messageStatusId}"/>
+            
             <entity-find-one entity-name="trade.common.TradeConfig" value-field="bicConfig">
                 <field-map field-name="configId" value="ISSUING_BANK_BIC"/>
             </entity-find-one>
@@ -52,8 +72,7 @@
             <entity-find entity-name="trade.TradeInstrumentParty" list="instrumentParties">
                 <econdition field-name="instrumentId"/>
             </entity-find>
-            <script package="trade"><![CDATA[
-                import trade.SwiftMessageBuilder
+            <script><![CDATA[
                 
                 def getParty(role) {
                     def junc = instrumentParties.find { it.roleEnumId == role }
@@ -70,7 +89,9 @@
                 def confirmBank = getParty("TP_CONFIRMING_BANK")
                 def draweeBank = getParty("TP_DRAWEE_BANK")
 
-                def builder = new SwiftMessageBuilder(ec)
+                // Use reflection to avoid compilation errors in some environments (US-SWG-10)
+                def builderClass = ec.factory.getClassLoader().loadClass("trade.SwiftMessageBuilder")
+                def builder = builderClass.newInstance(ec)
                     .setMessageType("700")
                     .setSenderBic(issuerBic)
                     .setReceiverBic(advisingBank.bic ?: "RECEIVXX")
@@ -90,11 +111,13 @@
                 def benText = (beneficiary.name ?: "BENEFICIARY") + (beneficiary.address ? "\r\n" + beneficiary.address : "")
                 builder.addField("59", builder.formatValue(benText, 4, 35))
                 
-                def amountFormatted = String.format("%.2f", instrument.amount).replace(".", ",")
+                def amountFormatted = String.format("%.2f", (instrument.amount ?: 0.0)).replace(".", ",")
                 builder.addField("32B", (instrument.currencyUomId ?: "USD") + amountFormatted)
                 
-                if (lc.tolerancePositive || lc.toleranceNegative) {
-                    builder.addField("39A", "${(int)(lc.tolerancePositive * 100)}/${(int)(lc.toleranceNegative * 100)}")
+                if (lc.tolerancePositive != null || lc.toleranceNegative != null) {
+                    int pos = (int)((lc.tolerancePositive ?: 0.0) * 100)
+                    int neg = (int)((lc.toleranceNegative ?: 0.0) * 100)
+                    builder.addField("39A", "${pos}/${neg}")
                 } else if (lc.maxCreditAmountFlag == "Y") {
                     builder.addField("39B", "MAXIMUM")
                 }
@@ -135,18 +158,18 @@
                 messageContent = builder.build()
                 
                 // FR-SWG-20: Continuation message logic
-                if (lc.goodsDescription?.length() > 6500 || lc.documentsRequired?.length() > 6500) {
-                   ec.service.sync().name("trade.SwiftGenerationServices.generate#Mt701").parameter("instrumentId", instrumentId).call()
+                if (lc.goodsDescription?.length() > 6500 || lc.documentsRequired?.length() > 6500 || lc.additionalConditions?.length() > 6500) {
+                   ec.service.sync().name("trade.SwiftGenerationServices.generate#Mt701")
+                       .parameters([instrumentId: instrumentId, messageStatusId: messageStatusId]).call()
                 }
             ]]></script>
 
             <!-- Persistence Logic (US-SWG-10) -->
             <if condition="draftMsg">
-                <entity-update value-field="draftMsg">
-                    <field-map field-name="messageContent" from="messageContent"/>
-                    <field-map field-name="messageStatusId" from="messageStatusId"/>
-                    <field-map field-name="generatedDate" from="ec.user.nowTimestamp"/>
-                </entity-update>
+                <set field="draftMsg.messageContent" from="messageContent"/>
+                <set field="draftMsg.messageStatusId" from="messageStatusId"/>
+                <set field="draftMsg.generatedDate" from="ec.user.nowTimestamp"/>
+                <entity-update value-field="draftMsg"/>
                 <set field="swiftMessageId" from="draftMsg.swiftMessageId"/>
             <else>
                 <service-call name="create#trade.importlc.SwiftMessage" out-map="createRes"
@@ -161,6 +184,7 @@
         <description>Generates MT701 (Issue of a Documentary Credit Continuation). Used for large fields (45B, 46B, 47B).</description>
         <in-parameters>
             <parameter name="instrumentId" required="true"/>
+            <parameter name="messageStatusId" default="SWIFT_MSG_DRAFT"/>
         </in-parameters>
         <out-parameters>
             <parameter name="swiftMessageId" type="id"/>
@@ -168,26 +192,39 @@
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
-            <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument"/>
-            <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc"/>
+            <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument" use-cache="false"/>
+            <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" use-cache="false"/>
             <entity-find entity-name="trade.TradeInstrumentParty" list="instrumentParties">
                 <econdition field-name="instrumentId"/>
             </entity-find>
-            <script package="trade"><![CDATA[
-                import trade.SwiftMessageBuilder
+            <entity-find-one entity-name="trade.common.TradeConfig" value-field="bicConfig">
+                <field-map field-name="configId" value="ISSUING_BANK_BIC"/>
+            </entity-find-one>
+            <set field="issuerBic" from="bicConfig?.configValue ?: 'ISSUERXX'"/>
+
+            <script><![CDATA[
+                
                 def advisingBankJunc = instrumentParties.find { it.roleEnumId == 'TP_ADVISING_BANK' }
                 def advisingBankBic = advisingBankJunc ? ec.entity.find("trade.TradePartyBank").condition("partyId", advisingBankJunc.partyId).one()?.swiftBic : "RECEIVXX"
 
-                def builder = new SwiftMessageBuilder(ec).setMessageType("701")
-                    .setSenderBic("ISSUERXX").setReceiverBic(advisingBankBic ?: "RECEIVXX")
+                def builderClass = ec.factory.getClassLoader().loadClass("trade.SwiftMessageBuilder")
+                def builder = builderClass.newInstance(ec).setMessageType("701")
+                    .setSenderBic(issuerBic).setReceiverBic(advisingBankBic ?: "RECEIVXX")
                     .setSenderRef(instrument.transactionRef)
                 
-                builder.addField("27", "1/1")
-                builder.addField("45B", builder.formatValue(lc.goodsDescription, 100, 65))
+                builder.addField("27", "2/2") // Simplified sequence for now
+                
+                if (lc.goodsDescription?.length() > 6500)
+                    builder.addField("45B", builder.formatValue(lc.goodsDescription.substring(6500), 100, 65))
+                if (lc.documentsRequired?.length() > 6500)
+                    builder.addField("46B", builder.formatValue(lc.documentsRequired.substring(6500), 100, 65))
+                if (lc.additionalConditions?.length() > 6500)
+                    builder.addField("47B", builder.formatValue(lc.additionalConditions.substring(6500), 100, 65))
+                
                 messageContent = builder.build()
             ]]></script>
             <service-call name="create#trade.importlc.SwiftMessage" out-map="res"
-                in-map="[instrumentId:instrumentId, messageType:'MT701', messageContent:messageContent, messageStatusId:'SWIFT_MSG_ACTIVE']"/>
+                in-map="[instrumentId:instrumentId, messageType:'MT701', messageContent:messageContent, messageStatusId:messageStatusId]"/>
             <set field="swiftMessageId" from="res.swiftMessageId"/>
         </actions>
     </service>
@@ -204,13 +241,17 @@
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
-            <entity-find-one entity-name="trade.importlc.ImportLcAmendment" value-field="amendment"/>
-            <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument">
-                <field-map field-name="instrumentId" from="amendment.instrumentId"/>
+            <entity-find-one entity-name="trade.importlc.ImportLcAmendment" value-field="amendment" use-cache="false"/>
+            <if condition="!amendment">
+                <log level="warn" message="No ImportLcAmendment found for amendmentId ${amendmentId}. Skipping SWIFT generation."/>
+                <return/>
+            </if>
+            <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument" use-cache="false">
+                <field-map field-name="instrumentId" from="amendment?.instrumentId"/>
             </entity-find-one>
             
             <!-- Check for existing messages -->
-            <entity-find entity-name="trade.importlc.SwiftMessage" list="existingMessages">
+            <entity-find entity-name="trade.importlc.SwiftMessage" list="existingMessages" use-cache="false">
                 <econdition field-name="instrumentId" from="amendment.instrumentId"/>
                 <econdition field-name="messageType" value="MT707"/>
             </entity-find>
@@ -219,24 +260,55 @@
                  For now, we check if an ACTIVE MT707 exists. -->
             <set field="activeMsg" from="existingMessages.find { it.messageStatusId == 'SWIFT_MSG_ACTIVE' }"/>
             <if condition="activeMsg &amp;&amp; !forceRegenerate">
+                <set field="swiftMessageId" from="activeMsg.swiftMessageId"/>
                 <return message="Active MT707 already exists. Regeneration blocked for dispatched messages."/>
             </if>
 
             <set field="messageStatusId" from="amendment.amendmentBusinessStateId == 'AMEND_APPROVED' ? 'SWIFT_MSG_ACTIVE' : 'SWIFT_MSG_DRAFT'"/>
             
+            <!-- FR-SWG-03: Layer 2 Validation Safety Net -->
+            <service-call name="trade.importlc.ImportLcValidationServices.validate#SwiftFields"
+                    in-map="[entityType:'ImportLcAmendment', entityId:amendmentId]" out-map="valResult"/>
+            <if condition="valResult.errors">
+                <if condition="messageStatusId == 'SWIFT_MSG_ACTIVE'">
+                    <return error="true" message="SWIFT Validation failed for amendment ${amendmentId}: ${valResult.errors.collect{it.message}.join(', ')}"/>
+                <else>
+                    <log level="warn" message="SWIFT DRAFT Validation warnings for amendment ${amendmentId}: ${valResult.errors.collect{it.message}.join(', ')}"/>
+                </else>
+                </if>
+            </if>
+
+            <entity-find-one entity-name="trade.common.TradeConfig" value-field="bicConfig">
+                <field-map field-name="configId" value="ISSUING_BANK_BIC"/>
+            </entity-find-one>
+            <set field="issuerBic" from="bicConfig?.configValue ?: 'ISSUERXX'"/>
+
             <entity-find entity-name="trade.TradeInstrumentParty" list="instrumentParties">
                 <econdition field-name="instrumentId" from="amendment.instrumentId"/>
             </entity-find>
-            <script package="trade"><![CDATA[
-                import trade.SwiftMessageBuilder
+            <script><![CDATA[
+                
                 def advisingBankJunc = instrumentParties.find { it.roleEnumId == 'TP_ADVISING_BANK' }
                 def advisingBankBic = advisingBankJunc ? ec.entity.find("trade.TradePartyBank").condition("partyId", advisingBankJunc.partyId).one()?.swiftBic : "ADVISINGXX"
 
-                def builder = new SwiftMessageBuilder(ec).setMessageType("707").setSenderBic("ISSUERXX")
+                def builderClass = ec.factory.getClassLoader().loadClass("trade.SwiftMessageBuilder")
+                def builder = builderClass.newInstance(ec).setMessageType("707").setSenderBic(issuerBic)
                     .setReceiverBic(advisingBankBic ?: "ADVISINGXX").setSenderRef(instrument.transactionRef)
+                
                 builder.addField("26E", amendment.amendmentNumber ?: "1")
-                builder.addField("31C", amendment.amendmentDate?.format("yyMMdd") ?: "260425")
-                if (amendment.amountAdjustment != null) builder.addField("32B", "USD" + String.format("%.2f", amendment.amountAdjustment).replace(".", ","))
+                builder.addField("31C", amendment.amendmentDate?.format("yyMMdd") ?: ec.user.nowTimestamp.format("yyMMdd"))
+                
+                if (amendment.amountAdjustment != null) {
+                    builder.addField("32B", (instrument.currencyUomId ?: "USD") + String.format("%.2f", amendment.amountAdjustment ?: 0.0).replace(".", ","))
+                    // FR-SGC-05: Tag 34B New Total Amount
+                    def newTotal = (instrument.amount ?: 0.0) + (amendment.amountAdjustment ?: 0.0)
+                    builder.addField("34B", (instrument.currencyUomId ?: "USD") + String.format("%.2f", newTotal).replace(".", ","))
+                }
+                
+                if (amendment.newExpiryDate) {
+                    builder.addField("31E", amendment.newExpiryDate.format("yyMMdd"))
+                }
+                
                 builder.addField("79Z", builder.formatValue(amendment.amendmentNarrative, 35, 50))
                 messageContent = builder.build()
             ]]></script>
@@ -248,11 +320,10 @@
             </entity-find-one>
 
             <if condition="draftMsg">
-                <entity-update value-field="draftMsg">
-                    <field-map field-name="messageContent" from="messageContent"/>
-                    <field-map field-name="messageStatusId" from="messageStatusId"/>
-                    <field-map field-name="generatedDate" from="ec.user.nowTimestamp"/>
-                </entity-update>
+                <set field="draftMsg.messageContent" from="messageContent"/>
+                <set field="draftMsg.messageStatusId" from="messageStatusId"/>
+                <set field="draftMsg.generatedDate" from="ec.user.nowTimestamp"/>
+                <entity-update value-field="draftMsg"/>
                 <set field="swiftMessageId" from="draftMsg.swiftMessageId"/>
             <else>
                 <service-call name="create#trade.importlc.SwiftMessage" out-map="res"
@@ -264,7 +335,7 @@
     </service>
 
     <service verb="generate" noun="Mt750" authenticate="false">
-        <description>Advice of Discrepancy</description>
+        <description>Advice of Discrepancy. Implements FR-SWG-10 lifecycle.</description>
         <in-parameters><parameter name="presentationId" required="true"/></in-parameters>
         <out-parameters>
             <parameter name="swiftMessageId" type="id"/>
@@ -274,8 +345,22 @@
             <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="pres"/>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="inst"><field-map field-name="instrumentId" from="pres.instrumentId"/></entity-find-one>
-            <script package="trade"><![CDATA[
-                import trade.SwiftMessageBuilder
+            
+            <!-- FR-SWG-03: Layer 2 Validation Safety Net -->
+            <service-call name="trade.importlc.ImportLcValidationServices.validate#SwiftFields"
+                    in-map="[entityType:'TradeDocumentPresentation', entityId:presentationId]" out-map="valResult"/>
+            <if condition="valResult.errors">
+                <return error="true" message="SWIFT Validation failed for presentation ${presentationId}: ${valResult.errors.collect{it.message}.join(', ')}"/>
+            </if>
+
+            <entity-find-one entity-name="trade.common.TradeConfig" value-field="bicConfig">
+                <field-map field-name="configId" value="ISSUING_BANK_BIC"/>
+            </entity-find-one>
+            <set field="issuerBic" from="bicConfig?.configValue ?: 'ISSUERXX'"/>
+
+            <set field="messageStatusId" from="pres.presentationStatusId == 'PRES_AUTHORIZED' ? 'SWIFT_MSG_ACTIVE' : 'SWIFT_MSG_DRAFT'"/>
+
+            <script><![CDATA[
                 
                 def getPartyBic(role) {
                     def junc = ec.entity.find("trade.TradeInstrumentParty").condition(["instrumentId":inst.instrumentId, "roleEnumId":role]).one()
@@ -284,9 +369,10 @@
                     return tpb?.swiftBic
                 }
 
-                def builder = new SwiftMessageBuilder(ec).setMessageType("750").setSenderBic("ISSUERXX")
+                def builderClass = ec.factory.getClassLoader().loadClass("trade.SwiftMessageBuilder")
+                def builder = builderClass.newInstance(ec).setMessageType("750").setSenderBic(issuerBic)
                     .setReceiverBic(getPartyBic("TP_PRESENTING_BANK") ?: "BENEBANK").setSenderRef(inst.transactionRef)
-                builder.addField("32B", (pres.claimCurrency ?: "USD") + String.format("%.2f", pres.claimAmount ?: 0).replace(".", ","))
+                builder.addField("32B", (pres.claimCurrency ?: "USD") + String.format("%.2f", pres.claimAmount ?: 0.0).replace(".", ","))
                 
                 def discList = ec.entity.find("trade.importlc.PresentationDiscrepancy").condition("presentationId", pres.presentationId).list()
                 def discText = discList ? discList.collect { "${it.discrepancyCode}: ${it.discrepancyDescription}" }.join("\n") : "NO DISCREPANCIES RECORDED"
@@ -298,13 +384,13 @@
                 messageContent = builder.build()
             ]]></script>
             <service-call name="create#trade.importlc.SwiftMessage" out-map="createRes"
-                in-map="[instrumentId:pres.instrumentId, messageType:'MT750', messageContent:messageContent, messageStatusId:'SWIFT_MSG_ACTIVE']"/>
+                in-map="[instrumentId:pres.instrumentId, messageType:'MT750', messageContent:messageContent, messageStatusId:messageStatusId]"/>
             <set field="swiftMessageId" from="createRes.swiftMessageId"/>
         </actions>
     </service>
 
     <service verb="generate" noun="Mt734" authenticate="false">
-        <description>Advice of Refusal</description>
+        <description>Advice of Refusal. Implements FR-SWG-09 disposal mapping and FR-SWG-10 lifecycle.</description>
         <in-parameters><parameter name="presentationId" required="true"/></in-parameters>
         <out-parameters>
             <parameter name="swiftMessageId" type="id"/>
@@ -315,12 +401,25 @@
             <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="pres"/>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="inst"><field-map field-name="instrumentId" from="pres.instrumentId"/></entity-find-one>
             
+            <!-- FR-SWG-03: Layer 2 Validation Safety Net -->
+            <service-call name="trade.importlc.ImportLcValidationServices.validate#SwiftFields"
+                    in-map="[entityType:'TradeDocumentPresentation', entityId:presentationId]" out-map="valResult"/>
+            <if condition="valResult.errors">
+                <return error="true" message="SWIFT Validation failed for presentation ${presentationId}: ${valResult.errors.collect{it.message}.join(', ')}"/>
+            </if>
+
+            <entity-find-one entity-name="trade.common.TradeConfig" value-field="bicConfig">
+                <field-map field-name="configId" value="ISSUING_BANK_BIC"/>
+            </entity-find-one>
+            <set field="issuerBic" from="bicConfig?.configValue ?: 'ISSUERXX'"/>
+
+            <set field="messageStatusId" from="pres.presentationStatusId == 'PRES_AUTHORIZED' ? 'SWIFT_MSG_ACTIVE' : 'SWIFT_MSG_DRAFT'"/>
+
             <entity-find entity-name="trade.TradeInstrumentParty" list="instrumentParties">
                 <econdition field-name="instrumentId" from="pres.instrumentId"/>
             </entity-find>
             
-            <script package="trade"><![CDATA[
-                import trade.SwiftMessageBuilder
+            <script><![CDATA[
                 
                 def getPartyBic(role) {
                     def junc = instrumentParties.find { it.roleEnumId == role }
@@ -331,23 +430,29 @@
                 
                 def presentingBankBic = getPartyBic("TP_PRESENTING_BANK") ?: getPartyBic("TP_ADVISING_BANK") ?: "PRESENTX"
                 
-                def builder = new SwiftMessageBuilder(ec).setMessageType("734").setSenderBic("ISSUERXX")
+                def builderClass = ec.factory.getClassLoader().loadClass("trade.SwiftMessageBuilder")
+                def builder = builderClass.newInstance(ec).setMessageType("734").setSenderBic(issuerBic)
                     .setReceiverBic(presentingBankBic).setSenderRef(inst.transactionRef)
                 def valDate = (pres.presentationDate ?: ec.user.nowTimestamp).format("yyMMdd")
-                builder.addField("32A", valDate + (pres.claimCurrency ?: "USD") + String.format("%.2f", pres.claimAmount ?: 0).replace(".", ","))
+                builder.addField("32A", valDate + (pres.claimCurrency ?: "USD") + String.format("%.2f", pres.claimAmount ?: 0.0).replace(".", ","))
                 builder.addField("77J", builder.formatValue("DOCUMENTS REFUSED DUE TO DISCREPANCIES", 70, 50))
-                builder.addField("77B", "DOCUMENTS HELD AT YOUR DISPOSAL")
+                
+                // FR-SWG-09: Document Disposal Instructions
+                def disposal = "DOCUMENTS HELD AT YOUR DISPOSAL"
+                if (pres.documentDisposalEnumId == 'RETURNING_DOCUMENTS') disposal = "RETURNING DOCUMENTS TO YOU"
+                builder.addField("77B", disposal)
+
                 if (pres.senderToReceiverPresentationInfo) builder.addField("72Z", builder.formatValue(pres.senderToReceiverPresentationInfo, 6, 35))
                 messageContent = builder.build()
             ]]></script>
             <service-call name="create#trade.importlc.SwiftMessage" out-map="createRes"
-                in-map="[instrumentId:pres.instrumentId, messageType:'MT734', messageContent:messageContent, messageStatusId:'SWIFT_MSG_ACTIVE']"/>
+                in-map="[instrumentId:pres.instrumentId, messageType:'MT734', messageContent:messageContent, messageStatusId:messageStatusId]"/>
             <set field="swiftMessageId" from="createRes.swiftMessageId"/>
         </actions>
     </service>
 
     <service verb="generate" noun="Mt752" authenticate="false">
-        <description>Authorisation to Pay, Accept or Negotiate</description>
+        <description>Authorisation to Pay, Accept or Negotiate. Implements FR-SWG-10 lifecycle.</description>
         <in-parameters><parameter name="presentationId" required="true"/></in-parameters>
         <out-parameters>
             <parameter name="swiftMessageId" type="id"/>
@@ -358,12 +463,18 @@
             <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="pres"/>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="inst"><field-map field-name="instrumentId" from="pres.instrumentId"/></entity-find-one>
             
+            <entity-find-one entity-name="trade.common.TradeConfig" value-field="bicConfig">
+                <field-map field-name="configId" value="ISSUING_BANK_BIC"/>
+            </entity-find-one>
+            <set field="issuerBic" from="bicConfig?.configValue ?: 'ISSUERXX'"/>
+
+            <set field="messageStatusId" from="pres.presentationStatusId == 'PRES_AUTHORIZED' ? 'SWIFT_MSG_ACTIVE' : 'SWIFT_MSG_DRAFT'"/>
+
             <entity-find entity-name="trade.TradeInstrumentParty" list="instrumentParties">
                 <econdition field-name="instrumentId" from="pres.instrumentId"/>
             </entity-find>
 
-            <script package="trade"><![CDATA[
-                import trade.SwiftMessageBuilder
+            <script><![CDATA[
                 
                 def getPartyBic(role) {
                     def junc = instrumentParties.find { it.roleEnumId == role }
@@ -374,22 +485,23 @@
                 
                 def presentingBankBic = getPartyBic("TP_PRESENTING_BANK") ?: getPartyBic("TP_ADVISING_BANK") ?: "PRESENTX"
 
-                def builder = new SwiftMessageBuilder(ec).setMessageType("752").setSenderBic("ISSUERXX")
+                def builderClass = ec.factory.getClassLoader().loadClass("trade.SwiftMessageBuilder")
+                def builder = builderClass.newInstance(ec).setMessageType("752").setSenderBic(issuerBic)
                     .setReceiverBic(presentingBankBic).setSenderRef(inst.transactionRef)
                 builder.addField("23", "FURTHER TO YOUR MT750")
-                builder.addField("32B", (pres.claimCurrency ?: "USD") + String.format("%.2f", pres.claimAmount ?: 0).replace(".", ","))
+                builder.addField("32B", (pres.claimCurrency ?: "USD") + String.format("%.2f", pres.claimAmount ?: 0.0).replace(".", ","))
                 builder.addField("71B", "DETAILS OF CHARGES: ALL CHARGES PAID")
                 if (pres.senderToReceiverPresentationInfo) builder.addField("72Z", builder.formatValue(pres.senderToReceiverPresentationInfo, 6, 35))
                 messageContent = builder.build()
             ]]></script>
             <service-call name="create#trade.importlc.SwiftMessage" out-map="createRes"
-                in-map="[instrumentId:pres.instrumentId, messageType:'MT752', messageContent:messageContent, messageStatusId:'SWIFT_MSG_ACTIVE']"/>
+                in-map="[instrumentId:pres.instrumentId, messageType:'MT752', messageContent:messageContent, messageStatusId:messageStatusId]"/>
             <set field="swiftMessageId" from="createRes.swiftMessageId"/>
         </actions>
     </service>
 
     <service verb="generate" noun="Mt732" authenticate="false">
-        <description>Advice of Discharge</description>
+        <description>Advice of Discharge. Implements FR-SWG-11 Maturity Date and FR-SWG-10 lifecycle.</description>
         <in-parameters><parameter name="presentationId" required="true"/></in-parameters>
         <out-parameters>
             <parameter name="swiftMessageId" type="id"/>
@@ -399,26 +511,44 @@
             <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="pres"/>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="inst"><field-map field-name="instrumentId" from="pres.instrumentId"/></entity-find-one>
-            <script package="trade"><![CDATA[
-                import trade.SwiftMessageBuilder
-                def builder = new SwiftMessageBuilder(ec).setMessageType("732").setSenderBic("ISSUERXX")
+            
+            <entity-find-one entity-name="trade.common.TradeConfig" value-field="bicConfig">
+                <field-map field-name="configId" value="ISSUING_BANK_BIC"/>
+            </entity-find-one>
+            <set field="issuerBic" from="bicConfig?.configValue ?: 'ISSUERXX'"/>
+
+            <set field="messageStatusId" from="pres.presentationStatusId == 'PRES_AUTHORIZED' ? 'SWIFT_MSG_ACTIVE' : 'SWIFT_MSG_DRAFT'"/>
+
+            <script><![CDATA[
+                
+                def builder = new trade.SwiftMessageBuilder(ec).setMessageType("732").setSenderBic(issuerBic)
                     .setReceiverBic(pres.presentingBankBic ?: "BENEBANK").setSenderRef(inst.transactionRef)
+                
                 builder.addField("30", ec.user.nowTimestamp.format("yyMMdd"))
-                builder.addField("32B", (pres.claimCurrency ?: "USD") + String.format("%.2f", pres.claimAmount ?: 0).replace(".", ","))
+                
+                // FR-SWG-11: Maturity Date (Tag 32A) for Usance LCs
+                def settlement = ec.entity.find("trade.importlc.ImportLcSettlement").condition("presentationId", pres.presentationId).one()
+                if (settlement?.maturityDate) {
+                    builder.addField("32A", settlement.maturityDate.format("yyMMdd") + (pres.claimCurrency ?: "USD") + String.format("%.2f", pres.claimAmount ?: 0.0).replace(".", ","))
+                } else {
+                    builder.addField("32B", (pres.claimCurrency ?: "USD") + String.format("%.2f", pres.claimAmount ?: 0.0).replace(".", ","))
+                }
+
                 if (pres.senderToReceiverPresentationInfo) builder.addField("72Z", builder.formatValue(pres.senderToReceiverPresentationInfo, 6, 35))
                 messageContent = builder.build()
             ]]></script>
             <service-call name="create#trade.importlc.SwiftMessage" out-map="createRes"
-                in-map="[instrumentId:pres.instrumentId, messageType:'MT732', messageContent:messageContent, messageStatusId:'SWIFT_MSG_ACTIVE']"/>
+                in-map="[instrumentId:pres.instrumentId, messageType:'MT732', messageContent:messageContent, messageStatusId:messageStatusId]"/>
             <set field="swiftMessageId" from="createRes.swiftMessageId"/>
         </actions>
     </service>
 
     <service verb="generate" noun="Mt799" authenticate="false">
-        <description>Free Format Message</description>
+        <description>Free Format Message. Implements FR-SWG-10 lifecycle.</description>
         <in-parameters>
             <parameter name="instrumentId" required="true"/>
             <parameter name="narrative" required="true"/>
+            <parameter name="messageStatusId" default="SWIFT_MSG_DRAFT"/>
         </in-parameters>
         <out-parameters>
             <parameter name="swiftMessageId" type="id"/>
@@ -427,67 +557,91 @@
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="inst"/>
-            <script package="trade"><![CDATA[
-                import trade.SwiftMessageBuilder
-                def builder = new SwiftMessageBuilder(ec).setMessageType("799").setSenderBic("ISSUERXX")
+            
+            <entity-find-one entity-name="trade.common.TradeConfig" value-field="bicConfig">
+                <field-map field-name="configId" value="ISSUING_BANK_BIC"/>
+            </entity-find-one>
+            <set field="issuerBic" from="bicConfig?.configValue ?: 'ISSUERXX'"/>
+
+            <script><![CDATA[
+                
+                def builder = new trade.SwiftMessageBuilder(ec).setMessageType("799").setSenderBic(issuerBic)
                     .setReceiverBic("TARGETXX").setSenderRef(inst.transactionRef)
                 builder.addField("79", builder.formatValue(narrative, 35, 50))
                 messageContent = builder.build()
             ]]></script>
             <service-call name="create#trade.importlc.SwiftMessage" out-map="createRes"
-                in-map="[instrumentId:instrumentId, messageType:'MT799', messageContent:messageContent, messageStatusId:'SWIFT_MSG_ACTIVE']"/>
+                in-map="[instrumentId:instrumentId, messageType:'MT799', messageContent:messageContent, messageStatusId:messageStatusId]"/>
             <set field="swiftMessageId" from="createRes.swiftMessageId"/>
         </actions>
     </service>
 
     <service verb="generate" noun="Mt103" authenticate="false">
-        <description>Single Customer Credit Transfer (Settlement)</description>
-        <in-parameters><parameter name="instrumentId" required="true"/></in-parameters>
+        <description>Single Customer Credit Transfer (Settlement). Implements FR-SWG-10 lifecycle.</description>
+        <in-parameters><parameter name="settlementId" required="true"/></in-parameters>
         <out-parameters>
             <parameter name="swiftMessageId" type="id"/>
             <parameter name="messageContent"/>
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
-            <entity-find-one entity-name="trade.TradeInstrument" value-field="inst"/>
-            <script package="trade"><![CDATA[
-                import trade.SwiftMessageBuilder
-                def builder = new SwiftMessageBuilder(ec).setMessageType("103").setSenderBic("ISSUERXX")
+            <entity-find-one entity-name="trade.importlc.ImportLcSettlement" value-field="settle"/>
+            <entity-find-one entity-name="trade.TradeInstrument" value-field="inst"><field-map field-name="instrumentId" from="settle.instrumentId"/></entity-find-one>
+            
+            <entity-find-one entity-name="trade.common.TradeConfig" value-field="bicConfig">
+                <field-map field-name="configId" value="ISSUING_BANK_BIC"/>
+            </entity-find-one>
+            <set field="issuerBic" from="bicConfig?.configValue ?: 'ISSUERXX'"/>
+
+            <set field="messageStatusId" from="settle.settlementStatusId == 'SETTLE_APPROVED' ? 'SWIFT_MSG_ACTIVE' : 'SWIFT_MSG_DRAFT'"/>
+
+            <script><![CDATA[
+                
+                def builder = new trade.SwiftMessageBuilder(ec).setMessageType("103").setSenderBic(issuerBic)
                     .setReceiverBic("BENEBANK").setSenderRef(inst.transactionRef)
                 builder.addField("23B", "CRED")
-                builder.addField("32A", ec.user.nowTimestamp.format("yyMMdd") + (inst.currencyUomId ?: "USD") + String.format("%.2f", inst.amount).replace(".", ","))
+                builder.addField("32A", ec.user.nowTimestamp.format("yyMMdd") + (settle.remittanceCurrency ?: "USD") + String.format("%.2f", settle.principalAmount).replace(".", ","))
                 builder.addField("50K", builder.formatValue("APPLICANT NAME", 4, 35))
                 builder.addField("59", builder.formatValue(inst.beneficiaryName, 4, 35))
-                builder.addField("71A", "OUR")
+                builder.addField("71A", settle.chargesDetailEnumId ?: "OUR")
                 messageContent = builder.build()
             ]]></script>
             <service-call name="create#trade.importlc.SwiftMessage" out-map="createRes"
-                in-map="[instrumentId:instrumentId, messageType:'MT103', messageContent:messageContent, messageStatusId:'SWIFT_MSG_ACTIVE']"/>
+                in-map="[instrumentId:settle.instrumentId, messageType:'MT103', messageContent:messageContent, messageStatusId:messageStatusId]"/>
             <set field="swiftMessageId" from="createRes.swiftMessageId"/>
         </actions>
     </service>
 
     <service verb="generate" noun="Mt202" authenticate="false">
-        <description>Financial Institution Transfer</description>
-        <in-parameters><parameter name="instrumentId" required="true"/></in-parameters>
+        <description>Financial Institution Transfer. Implements FR-SWG-10 lifecycle.</description>
+        <in-parameters><parameter name="settlementId" required="true"/></in-parameters>
         <out-parameters>
             <parameter name="swiftMessageId" type="id"/>
             <parameter name="messageContent"/>
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
-            <entity-find-one entity-name="trade.TradeInstrument" value-field="inst"/>
-            <script package="trade"><![CDATA[
-                import trade.SwiftMessageBuilder
-                def builder = new SwiftMessageBuilder(ec).setMessageType("202").setSenderBic("ISSUERXX")
+            <entity-find-one entity-name="trade.importlc.ImportLcSettlement" value-field="settle"/>
+            <entity-find-one entity-name="trade.TradeInstrument" value-field="inst"><field-map field-name="instrumentId" from="settle.instrumentId"/></entity-find-one>
+            
+            <entity-find-one entity-name="trade.common.TradeConfig" value-field="bicConfig">
+                <field-map field-name="configId" value="ISSUING_BANK_BIC"/>
+            </entity-find-one>
+            <set field="issuerBic" from="bicConfig?.configValue ?: 'ISSUERXX'"/>
+
+            <set field="messageStatusId" from="settle.settlementStatusId == 'SETTLE_APPROVED' ? 'SWIFT_MSG_ACTIVE' : 'SWIFT_MSG_DRAFT'"/>
+
+            <script><![CDATA[
+                
+                def builder = new trade.SwiftMessageBuilder(ec).setMessageType("202").setSenderBic(issuerBic)
                     .setReceiverBic("CORRESPBANK").setSenderRef(inst.transactionRef)
                 builder.addField("21", inst.transactionRef)
-                builder.addField("32A", ec.user.nowTimestamp.format("yyMMdd") + (inst.currencyUomId ?: "USD") + String.format("%.2f", inst.amount).replace(".", ","))
+                builder.addField("32A", ec.user.nowTimestamp.format("yyMMdd") + (settle.remittanceCurrency ?: "USD") + String.format("%.2f", settle.principalAmount).replace(".", ","))
                 builder.addField("58A", "BENEBANK")
                 messageContent = builder.build()
             ]]></script>
             <service-call name="create#trade.importlc.SwiftMessage" out-map="createRes"
-                in-map="[instrumentId:instrumentId, messageType:'MT202', messageContent:messageContent, messageStatusId:'SWIFT_MSG_ACTIVE']"/>
+                in-map="[instrumentId:settle.instrumentId, messageType:'MT202', messageContent:messageContent, messageStatusId:messageStatusId]"/>
             <set field="swiftMessageId" from="createRes.swiftMessageId"/>
         </actions>
     </service>
@@ -499,21 +653,21 @@
         <out-parameters><parameter name="swText" required="true"/></out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
-            <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument"/>
-            <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc"/>
+            <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument" use-cache="false"/>
+            <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" use-cache="false"/>
             
-            <script package="trade"><![CDATA[
+            <script><![CDATA[
                 import java.text.DecimalFormat
                 import java.text.DecimalFormatSymbols
                 
                 def df = new DecimalFormat("#.00", new DecimalFormatSymbols(Locale.US))
                 
                 if (tag == "32B") {
-                    swText = (instrument?.currencyUomId ?: "USD") + df.format(instrument?.amount ?: 0).replace(".", ",")
+                    swText = (instrument?.currencyUomId ?: "USD") + df.format(instrument?.amount ?: 0.0).replace(".", ",")
                 } else if (tag == "39A") {
                     // Match BDD expectation 10/10
-                    int pos = (int)((lc?.tolerancePositive ?: 0) * 100)
-                    int neg = (int)((lc?.toleranceNegative ?: 0) * 100)
+                    int pos = (int)((lc?.tolerancePositive ?: 0.0) * 100)
+                    int neg = (int)((lc?.toleranceNegative ?: 0.0) * 100)
                     if (pos > 0 && neg == 0) neg = pos // BDD-IMP-SWT-03 alignment
                     swText = "${pos}/${neg}"
                 } else if (tag == "59") {
@@ -532,7 +686,7 @@
         <in-parameters><parameter name="rawText" required="true"/></in-parameters>
         <out-parameters><parameter name="cleanText" required="true"/></out-parameters>
         <actions>
-            <script package="trade"><![CDATA[
+            <script><![CDATA[
                 cleanText = rawText.replaceAll(/[^A-Za-z0-9\/ \-\?\:\(\)\.\,\'\+]/, " ")
             ]]></script>
         </actions>
@@ -551,7 +705,6 @@
             <parameter name="swiftMessageList" type="List"><parameter name="message" type="Map"/></parameter>
         </out-parameters>
         <actions>
-            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find entity-name="trade.importlc.SwiftMessage" list="swiftMessageList">
                 <econdition field-name="instrumentId"/>
                 <order-by field-name="-generatedDate"/>

@@ -78,6 +78,7 @@ class ImportLcServicesSpec extends Specification {
             lcCurrencyUomId: "USD",
             expiryDate: new Date(System.currentTimeMillis() + (90L * 24 * 60 * 60 * 1000)), 
             latestShipmentDate: new Date(System.currentTimeMillis() + (60L * 24 * 60 * 60 * 1000)),
+            lcTypeEnumId: 'LCT_IRREVOCABLE', availableByEnumId: 'AVB_BY_NEGOTIATION', confirmationEnumId: 'CONF_WITHOUT',
             businessStateId: "LC_DRAFT"
         ]).call()
         def instrumentId = result.instrumentId
@@ -97,6 +98,7 @@ class ImportLcServicesSpec extends Specification {
 
         cleanup:
         if (instrumentId) {
+            ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).deleteAll()
@@ -118,6 +120,7 @@ class ImportLcServicesSpec extends Specification {
             lcCurrencyUomId: "USD",
             expiryDate: new Date(System.currentTimeMillis() + (90L * 24 * 60 * 60 * 1000)),
             latestShipmentDate: new Date(System.currentTimeMillis() + (60L * 24 * 60 * 60 * 1000)),
+            lcTypeEnumId: 'LCT_IRREVOCABLE', availableByEnumId: 'AVB_BY_NEGOTIATION', confirmationEnumId: 'CONF_WITHOUT',
             businessStateId: "LC_DRAFT"
         ]).call()
         def instrumentId = createResult.instrumentId
@@ -141,6 +144,7 @@ class ImportLcServicesSpec extends Specification {
 
         cleanup:
         if (instrumentId) {
+            ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).deleteAll()
@@ -160,6 +164,7 @@ class ImportLcServicesSpec extends Specification {
             ],
             lcAmount: 500000.0,
             lcCurrencyUomId: "USD",
+            lcTypeEnumId: 'LCT_IRREVOCABLE', availableByEnumId: 'AVB_BY_NEGOTIATION', confirmationEnumId: 'CONF_WITHOUT',
             businessStateId: "LC_DRAFT"
         ]).call()
         def instrumentId = createResult.instrumentId
@@ -184,6 +189,7 @@ class ImportLcServicesSpec extends Specification {
 
         cleanup:
         if (instrumentId) {
+            ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).deleteAll()
@@ -204,6 +210,7 @@ class ImportLcServicesSpec extends Specification {
             ],
             lcAmount: 500000.0,
             lcCurrencyUomId: "USD",
+            lcTypeEnumId: 'LCT_IRREVOCABLE', availableByEnumId: 'AVB_BY_NEGOTIATION', confirmationEnumId: 'CONF_WITHOUT',
             businessStateId: "LC_DRAFT"
         ]).call()
         if (ec.message.hasError()) println "ERROR in create (Amendment Test): " + ec.message.getErrorsString()
@@ -230,6 +237,7 @@ class ImportLcServicesSpec extends Specification {
 
         cleanup:
         if (instrumentId) {
+            ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.importlc.ImportLcAmendment").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).deleteAll()
@@ -250,6 +258,7 @@ class ImportLcServicesSpec extends Specification {
             ],
             lcAmount: 100000.0,
             lcCurrencyUomId: "USD",
+            lcTypeEnumId: 'LCT_IRREVOCABLE', availableByEnumId: 'AVB_BY_NEGOTIATION', confirmationEnumId: 'CONF_WITHOUT',
             businessStateId: "LC_DRAFT"
         ]).call()
         if (ec.message.hasError()) println "ERROR in create: " + ec.message.getErrorsString()
@@ -292,6 +301,7 @@ class ImportLcServicesSpec extends Specification {
 
         cleanup:
         if (instrumentId) {
+            ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.importlc.ImportLcSettlement").condition("presentationId", presId).deleteAll()
             ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("presentationId", presId).deleteAll()
             ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instrumentId).deleteAll()

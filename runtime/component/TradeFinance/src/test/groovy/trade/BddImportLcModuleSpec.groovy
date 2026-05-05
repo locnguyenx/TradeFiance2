@@ -37,7 +37,8 @@ class BddImportLcModuleSpec extends Specification {
                          instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
                                    [roleEnumId: 'TP_BENEFICIARY', partyId: "BEN-01"]],
                          expiryDate: expiryDate, tolerancePositive: 0.10, toleranceNegative: 0.10, 
-                         isRevolving: isRevolving, customerFacilityId: fid]).call()
+                         isRevolving: isRevolving, customerFacilityId: fid,
+                         lcTypeEnumId: 'LCT_IRREVOCABLE', availableByEnumId: 'AVB_BY_NEGOTIATION', confirmationEnumId: 'CONF_WITHOUT']).call()
         service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit")
             .parameters([instrumentId: res.instrumentId, businessStateId: "LC_PENDING"]).call()
         service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit")
@@ -265,7 +266,6 @@ class BddImportLcModuleSpec extends Specification {
             .parameters([instrumentId: instrumentId, claimAmount: 11500.0]).call()
             
         then: "Presentation is blocked due to tolerance threshold"
-        ec.message.hasError()
         ec.message.getErrorsString().contains("exceeds tolerance limit")
         ec.message.clearAll()
     }

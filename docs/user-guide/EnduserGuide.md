@@ -97,23 +97,38 @@ Clicking a reference opens the **Full-Screen Workspace**. This view is optimized
 The workspace features a triple-mode layout:
 - **Current State**: Static view of the instrument's active data (Parties, Financials, Terms).
 - **Audit Narrative**: Chronological **Unified Timeline** merging financial transactions and technical audit logs.
-- **SWIFT Messages**: Real-time view of all MT 7xx messages generated for this instrument.
+- **SWIFT Messages**: Real-time view of all MT 7xx messages generated for this instrument. Messages are generated as **DRAFT** during the Maker phase and promoted to **ACTIVE** only after formal **Checker Approval**.
+
+### 5.1 SWIFT Message Preview (Maker Workflow)
+To ensure accuracy before submission, Makers can preview the generated SWIFT payload:
+1.  Navigate to the **SWIFT Messages** tab in the Instrument Detail View.
+2.  Select the message record (e.g., MT 700 for Issuance).
+3.  Click **View Payload** to see the draft message content.
+4.  **Draft Status**: If the instrument is in `LC_DRAFT`, the message is considered a preview. Validation warnings (e.g., missing non-critical tags) are logged as warnings but do not block the view, allowing for iterative editing.
+5.  **Final Validation**: Once the checker approves the transaction, the message status changes to **ACTIVE**, and strict SWIFT Layer 2 validation is enforced.
 
 ### Workspace Actions
 The **Workspace Actions** sidebar card provides contextual buttons:
 1.  **Continue Editing Draft**: Only visible for instruments in `LC_DRAFT`.
 2.  **Export Audit Document**: Generates a high-fidelity print-ready report of the transaction.
 3.  **Action Buttons**: For Issued LCs, buttons for **Amend**, **Present**, and **Settle** are located at the bottom or in the sidebar depending on screen size.
-4.  **View SWIFT Message**: Click the **"SWIFT Messages"** tab in the main view selector to see all generated SWIFT MT 7xx payloads.
-    - Click any message row to expand the **Raw Message Content**.
-    - Use the **Copy** button to capture the SWIFT payload for external systems.
+### 5.5 Previewing SWIFT Messages (Maker Preview)
+The platform allows Makers to preview the exact SWIFT payload before the transaction is finalized.
+- **Message Lifecycle**:
+    - **DRAFT**: Messages for pending transactions (New LC, Amendment, etc.) are labeled as DRAFT. These represent the *proposed* message and can be updated by editing the transaction.
+    - **ACTIVE**: Once a Checker authorizes the transaction, the message status changes to ACTIVE, and it is officially released for transmission.
+- **How to Preview**:
+    1.  Navigate to the **SWIFT Messages** tab within the workspace.
+    2.  Click any row with status **DRAFT** to expand the raw message content.
+    3.  Verify that all tags (e.g., 45A, 46A) are correctly formatted and fit within SWIFT line limits.
+    4.  If errors are found, click **Edit Draft** to correct the source data.
 
 ---
 
 ## 6. Manual Verification & Quality Control
 Before finalizing any transaction, follow these steps to ensure data integrity:
 1.  **Audit the "Proposed State"**: During authorization, always compare the current values with the proposed changes.
-2.  **SWIFT Preview**: For all issued or amended LCs, navigate to the **SWIFT Messages** tab.
+2.  **SWIFT Preview (MANDATORY)**: For all issued or amended LCs, navigate to the **SWIFT Messages** tab. **Ensure the status is DRAFT** and the content perfectly matches the intended terms.
 3.  **Verify Character Sets**: Ensure no forbidden characters (like `@`, `!`, `#`) have bypassed validation in narrative fields.
 4.  **Confirm Timeline**: Verify that the **Audit Narrative** correctly reflects the Maker's action and timestamp.
 Users with the `TRADE_CHECKER` role can authorize transactions via the **My Tasks** section.

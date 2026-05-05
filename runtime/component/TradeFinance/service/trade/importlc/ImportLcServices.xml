@@ -763,6 +763,7 @@
         <in-parameters><parameter name="instrumentId" required="true"/></in-parameters>
         <out-parameters>
             <auto-parameters entity-name="trade.importlc.ImportLetterOfCreditView" include="all"/>
+            <parameter name="parties" type="List"><parameter name="party" type="Map"/></parameter>
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
@@ -771,6 +772,12 @@
             </entity-find-one>
             <if condition="lc == null"><return error="true" message="Letter of Credit not found for instrument ${instrumentId}"/></if>
             <script>context.putAll(lc)</script>
+            
+            <entity-find entity-name="trade.TradeInstrumentParty" list="parties">
+                <econdition field-name="instrumentId"/>
+            </entity-find>
+            <set field="parties" from="parties"/>
+            
             <script>ec.artifactExecution.enableAuthz()</script>
         </actions>
     </service>

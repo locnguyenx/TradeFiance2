@@ -212,6 +212,14 @@
         <member-entity entity-alias="bparty" entity-name="trade.TradeParty" join-from-alias="benJunc" join-optional="true">
             <key-map field-name="partyId"/>
         </member-entity>
+
+        <member-entity entity-alias="advJunc" entity-name="trade.TradeInstrumentParty" join-from-alias="inst" join-optional="true">
+            <key-map field-name="instrumentId"/>
+            <entity-condition><econdition field-name="roleEnumId" value="TP_ADVISING_BANK"/></entity-condition>
+        </member-entity>
+        <member-entity entity-alias="advparty" entity-name="trade.TradeParty" join-from-alias="advJunc" join-optional="true">
+            <key-map field-name="partyId"/>
+        </member-entity>
         
         <member-entity entity-alias="tx" entity-name="trade.TradeTransaction" join-from-alias="inst" join-optional="true">
             <key-map field-name="instrumentId"/>
@@ -233,6 +241,8 @@
         <alias entity-alias="aparty" name="applicantPartyId" field="partyId"/>
         <alias entity-alias="bparty" name="beneficiaryPartyName" field="partyName"/>
         <alias entity-alias="bparty" name="beneficiaryPartyId" field="partyId"/>
+        <alias entity-alias="advparty" name="advisingBankPartyName" field="partyName"/>
+        <alias entity-alias="advparty" name="advisingBankPartyId" field="partyId"/>
     </view-entity>
 
     <entity entity-name="DummyTestEntity" package="trade.importlc">

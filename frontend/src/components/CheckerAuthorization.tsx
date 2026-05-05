@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { tradeApi } from '../api/tradeApi';
 import { TradeInstrument, ImportLetterOfCredit, TradeTransaction } from '../api/types';
 import { InstrumentDetails } from './InstrumentDetails';
+import { useToast } from '../context/ToastContext';
 
 // ABOUTME: High-fidelity Checker Authorization Workspace (REQ-UI-IMP-05).
 // ABOUTME: Features "Exposure Widget" progress bars and "Compliance Deck" for risk analysis.
@@ -19,6 +20,7 @@ export const CheckerAuthorization: React.FC<Props> = ({ transactionId }) => {
     const [showRejectionModal, setShowRejectionModal] = useState(false);
     const [rejectionReason, setRejectionReason] = useState('');
     const [loading, setLoading] = useState(true);
+    const { showToast } = useToast();
 
     useEffect(() => {
         setLoading(true);
@@ -45,8 +47,11 @@ export const CheckerAuthorization: React.FC<Props> = ({ transactionId }) => {
             const updatedInst = await tradeApi.getImportLc(updatedTxn.instrumentId);
             setInstrument(updatedInst as any);
             
+            
             if (result.isAuthorized) {
-                alert('Authorization Recorded. Transaction has been executed and status updated.');
+                showToast('success', 'Authorization successful. The instrument is now Issued.');
+            } else {
+                showToast('error', 'Authorization failed. Risk matrix constraints not met.');
             }
         } catch (e) {
             console.error(e);
@@ -59,6 +64,7 @@ export const CheckerAuthorization: React.FC<Props> = ({ transactionId }) => {
         const result = await tradeApi.rejectToMaker(transactionId, rejectionReason);
         if (result.success || !result.error) {
             setShowRejectionModal(false);
+            showToast('success', 'Transaction rejected and returned to maker.');
             // Re-fetch state
             const updatedTxn = await tradeApi.getTransaction(transactionId);
             setTransaction(updatedTxn);

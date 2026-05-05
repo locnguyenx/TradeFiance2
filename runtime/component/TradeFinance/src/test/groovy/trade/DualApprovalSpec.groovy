@@ -67,8 +67,13 @@ class DualApprovalSpec extends Specification {
             amount: 2000000, currencyUomId: 'USD', versionNumber: 1
         ]).create()
         ec.entity.makeValue("trade.importlc.ImportLetterOfCredit").setAll([
-            instrumentId: instId, effectiveAmount: 2000000, businessStateId: 'LC_DRAFT'
+            instrumentId: instId, effectiveAmount: 2000000, businessStateId: 'LC_DRAFT',
+            lcTypeEnumId: 'LCT_IRREVOCABLE', availableByEnumId: 'AVB_BY_NEGOTIATION', confirmationEnumId: 'CONF_WITHOUT'
         ]).create()
+        
+        // Add parties
+        ec.entity.makeValue("trade.TradeInstrumentParty").setAll([instrumentId: instId, partyId: 'ACME_CORP_001', roleEnumId: 'TP_APPLICANT']).create()
+        ec.entity.makeValue("trade.TradeInstrumentParty").setAll([instrumentId: instId, partyId: 'GLOBAL_EXP_002', roleEnumId: 'TP_BENEFICIARY']).create()
         
         // Record TradeTransaction
         ec.entity.makeValue("trade.TradeTransaction").setAll([
@@ -132,6 +137,7 @@ class DualApprovalSpec extends Specification {
         approvals2.any { it.approverUserId == "trade.checker2" }
         
         cleanup:
+        ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", instId).deleteAll()
         ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", instId).deleteAll()
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instId).deleteAll()
         ec.entity.find("trade.TradeTransaction").condition("instrumentId", instId).deleteAll()

@@ -105,7 +105,8 @@ export const TransactionDashboard: React.FC = () => {
                     <thead>
                         <tr>
                             <th>Priority</th>
-                            <th>Reference</th>
+                            <th>Instrument Ref</th>
+                            <th>Inst / Txn ID</th>
                             <th>Type</th>
                             <th>Maker / Date</th>
                             <th>Status</th>
@@ -125,9 +126,12 @@ export const TransactionDashboard: React.FC = () => {
                                     </span>
                                 </td>
                                 <td>
+                                    <span className="instrument-ref-text">{txn.transactionRef || 'N/A'}</span>
+                                </td>
+                                <td>
                                     <div className="ref-cell">
-                                        <span className="instrument-id">{txn.instrumentId}</span>
-                                        <span className="txn-id">{txn.transactionId}</span>
+                                        <span className="instrument-id" title="Instrument ID">{txn.instrumentId}</span>
+                                        <span className="txn-id" title="Transaction ID">{txn.transactionId}</span>
                                     </div>
                                 </td>
                                 <td className="type-cell">
@@ -183,8 +187,9 @@ export const TransactionDashboard: React.FC = () => {
                 
                 .priority-badge { font-size: 0.65rem; font-weight: 800; color: white; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; }
                 
+                .instrument-ref-text { font-weight: 700; color: #0f172a; }
                 .ref-cell { display: flex; flex-direction: column; }
-                .instrument-id { font-weight: 700; color: #2563eb; }
+                .instrument-id { font-size: 0.75rem; color: #64748b; }
                 .txn-id { font-size: 0.7rem; color: #94a3b8; font-family: monospace; }
                 
                 .type-cell { font-weight: 600; color: #1e293b; text-transform: capitalize; }

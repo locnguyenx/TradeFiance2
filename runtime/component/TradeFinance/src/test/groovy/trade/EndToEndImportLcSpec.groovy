@@ -52,6 +52,7 @@ class EndToEndImportLcSpec extends Specification {
                 [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002'],
                 [roleEnumId: 'TP_ADVISING_BANK', partyId: 'ADVISING_BANK_001']
             ],
+            lcTypeEnumId: 'LCT_IRREVOCABLE', availableByEnumId: 'AVB_BY_NEGOTIATION', confirmationEnumId: 'CONF_WITHOUT',
             businessStateId: "LC_DRAFT"
         ]).call()
         def instrumentId = createResult.instrumentId

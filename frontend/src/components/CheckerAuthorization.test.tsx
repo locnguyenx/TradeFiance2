@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { CheckerAuthorization } from './CheckerAuthorization';
 import { tradeApi } from '../api/tradeApi';
+import { ToastProvider } from '../context/ToastContext';
 
 jest.mock('../api/tradeApi', () => ({
     tradeApi: {
@@ -25,7 +26,11 @@ jest.mock('../api/tradeApi', () => ({
 
 describe('CheckerAuthorization v3.0 (REQ-UI-IMP-05)', () => {
     it('calls rejectToMaker with rejection reason when Reject is clicked', async () => {
-        render(<CheckerAuthorization transactionId="TXN-001" />);
+        render(
+            <ToastProvider>
+                <CheckerAuthorization transactionId="TXN-001" />
+            </ToastProvider>
+        );
         
         const rejectBtn = await screen.findByRole('button', { name: /Reject/i });
         fireEvent.click(rejectBtn);
@@ -41,7 +46,11 @@ describe('CheckerAuthorization v3.0 (REQ-UI-IMP-05)', () => {
     });
 
     it('displays Effective vs Snapshot values side-by-side for tiers', async () => {
-        render(<CheckerAuthorization transactionId="TXN-001" />);
+        render(
+            <ToastProvider>
+                <CheckerAuthorization transactionId="TXN-001" />
+            </ToastProvider>
+        );
         await screen.findAllByText(/IMLC\/2026\/001/i);
         
         // Check for Snapshot (Old) in delta-notice
@@ -53,7 +62,11 @@ describe('CheckerAuthorization v3.0 (REQ-UI-IMP-05)', () => {
     });
 
     it('renders second-checker requirement indicator for Tier 4', async () => {
-        render(<CheckerAuthorization transactionId="TXN-001" />);
+        render(
+            <ToastProvider>
+                <CheckerAuthorization transactionId="TXN-001" />
+            </ToastProvider>
+        );
         
         expect(await screen.findByText(/Dual Checker Progress/i)).toBeInTheDocument();
         expect(screen.getByText(/Status: PARTIAL APPROVED/i)).toBeInTheDocument();
@@ -67,7 +80,11 @@ describe('CheckerAuthorization v3.0 (REQ-UI-IMP-05)', () => {
             proposedAmount: 750000,
         });
         
-        render(<CheckerAuthorization transactionId="TXN-002" />);
+        render(
+            <ToastProvider>
+                <CheckerAuthorization transactionId="TXN-002" />
+            </ToastProvider>
+        );
         
         expect(await screen.findByText(/Tier 4 Transaction Detected/i)).toBeInTheDocument();
     });

@@ -112,6 +112,7 @@ class TradeFinanceHardeningSpec extends Specification {
             ],
             lcAmount: 500000.0, // 500k
             lcCurrencyUomId: "USD",
+            lcTypeEnumId: 'LCT_IRREVOCABLE', availableByEnumId: 'AVB_BY_NEGOTIATION', confirmationEnumId: 'CONF_WITHOUT',
             customerFacilityId: "FAC_TEST_001"
         ]).call()
         def instrumentId = createResult.instrumentId
@@ -138,6 +139,7 @@ class TradeFinanceHardeningSpec extends Specification {
             ],
             lcAmount: 600000.0, // Total 1.1M, limit is 1M
             lcCurrencyUomId: "USD",
+            lcTypeEnumId: 'LCT_IRREVOCABLE', availableByEnumId: 'AVB_BY_NEGOTIATION', confirmationEnumId: 'CONF_WITHOUT',
             customerFacilityId: "FAC_TEST_001"
         ]).call()
         def instrumentId2 = createResult2.instrumentId
@@ -152,6 +154,7 @@ class TradeFinanceHardeningSpec extends Specification {
         ec.message.hasError()
 
         cleanup:
+        ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", instrumentId).deleteAll()
         ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", instrumentId).deleteAll()
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instrumentId).deleteAll()
         ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).deleteAll()

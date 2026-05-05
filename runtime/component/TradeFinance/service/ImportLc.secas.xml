@@ -20,19 +20,55 @@
     <seca service="trade.TradeCommonServices.create#Presentation" when="pre-service">
         <service-call name="trade.importlc.ImportLcValidationServices.validate#Presentation" in-map="context"/>
     </seca>
+    
+    <!-- Proactive SWIFT DRAFT Generation (US-SWG-10) -->
+    <!-- Auto-generate DRAFT on creation -->
+    <seca service="create#trade.importlc.ImportLetterOfCredit" when="post-service">
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <service-call name="trade.SwiftGenerationServices.generate#Mt700" in-map="[instrumentId: instrumentId]"/>
+        </actions>
+    </seca>
+    <!-- Keep DRAFT updated on changes -->
+    <seca service="update#trade.importlc.ImportLetterOfCredit" when="post-service">
+        <condition><expression>businessStateId in ['LC_DRAFT', 'LC_PENDING']</expression></condition>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <service-call name="trade.SwiftGenerationServices.generate#Mt700" in-map="[instrumentId: instrumentId, forceRegenerate: true]"/>
+        </actions>
+    </seca>
+
+    <!-- Auto-generate Amendment DRAFT -->
+    <seca service="create#trade.importlc.ImportLcAmendment" when="post-service">
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <service-call name="trade.SwiftGenerationServices.generate#Mt707" in-map="[amendmentId: amendmentId]"/>
+        </actions>
+    </seca>
+    <seca service="update#trade.importlc.ImportLcAmendment" when="post-service">
+        <condition><expression>amendmentBusinessStateId in ['AMEND_DRAFT', 'AMEND_PENDING_APPROVAL']</expression></condition>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <service-call name="trade.SwiftGenerationServices.generate#Mt707" in-map="[amendmentId: amendmentId, forceRegenerate: true]"/>
+        </actions>
+    </seca>
 
     <!-- Request 5: system autogenerate the message when TradeInstrument is approved (TX_APPROVED) -->
     <!-- Request 5: system autogenerate the message when TradeTransaction is approved (TX_APPROVED) -->
     <seca service="update#trade.TradeTransaction" when="post-service">
         <condition>
-            <expression>transactionStatusId == 'TX_APPROVED' &amp;&amp; oldValueMap?.transactionStatusId != 'TX_APPROVED' &amp;&amp; transactionTypeEnumId == 'IMP_NEW'</expression>
+            <expression>transactionStatusId == 'TX_APPROVED' &amp;&amp; oldValueMap?.transactionStatusId != 'TX_APPROVED'</expression>
         </condition>
         <actions>
-            <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc">
-                <field-map field-name="instrumentId"/>
-            </entity-find-one>
-            <if condition="lc">
-                <service-call name="trade.SwiftGenerationServices.generate#Mt700" in-map="[instrumentId: instrumentId]"/>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <set field="localTx" from="ec.entity.find('trade.TradeTransaction').condition('transactionId', transactionId).one()"/>
+            <if condition="localTx?.transactionTypeEnumId == 'IMP_NEW'">
+                <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc">
+                    <field-map field-name="instrumentId" from="localTx.instrumentId"/>
+                </entity-find-one>
+                <if condition="lc">
+                    <service-call name="trade.SwiftGenerationServices.generate#Mt700" in-map="[instrumentId: lc.instrumentId]"/>
+                </if>
             </if>
         </actions>
     </seca>
@@ -43,6 +79,7 @@
             <expression>amendmentBusinessStateId == 'AMEND_APPROVED' &amp;&amp; oldValueMap?.amendmentBusinessStateId != 'AMEND_APPROVED'</expression>
         </condition>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <service-call name="trade.SwiftGenerationServices.generate#Mt707" in-map="[amendmentId: amendmentId]"/>
         </actions>
     </seca>
@@ -68,6 +105,24 @@
         <actions>
             <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="pres"/>
             <service-call name="trade.SwiftGenerationServices.generate#Mt752" in-map="[presentationId: presentationId]"/>
+        </actions>
+    </seca>
+
+    <!-- Just-in-Time SWIFT Generation on Detail View (Fallback) -->
+    <seca service="trade.importlc.ImportLcServices.get#ImportLetterOfCredit" when="pre-service">
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find entity-name="trade.importlc.SwiftMessage" list="existing">
+                <econdition field-name="instrumentId"/>
+                <econdition field-name="messageType" value="MT700"/>
+            </entity-find>
+            <if condition="existing.isEmpty()">
+                <script>
+                    // Use async to ensure that generation never blocks or rolls back the main detail view
+                    ec.service.async().name("trade.SwiftGenerationServices.generate#Mt700")
+                        .parameter("instrumentId", instrumentId).call()
+                </script>
+            </if>
         </actions>
     </seca>
 </secas>
