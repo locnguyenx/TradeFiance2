@@ -41,10 +41,10 @@ class ImportLcEntitiesSpec extends Specification {
     
     def "Test LC Relationship maps to TradeInstrument"() {
         setup:
-        ec.entity.makeValue("trade.TradeInstrument")
-            .setAll([instrumentId:"LC-ENT-1", transactionRef:"TF-LC-01"]).create()
-        ec.entity.makeValue("trade.importlc.ImportLetterOfCredit")
-            .setAll([instrumentId:"LC-ENT-1", businessStateId:"LC_DRAFT"]).create()
+        ec.service.sync().name("create#trade.TradeInstrument")
+            .parameters([instrumentId:"LC-ENT-1", transactionRef:"TF-LC-01"]).call()
+        ec.service.sync().name("create#trade.importlc.ImportLetterOfCredit")
+            .parameters([instrumentId:"LC-ENT-1", businessStateId:"LC_DRAFT"]).call()
             
         when:
         def lc = ec.entity.find("trade.importlc.ImportLetterOfCredit")
@@ -64,8 +64,8 @@ class ImportLcEntitiesSpec extends Specification {
 
     def "ImportLetterOfCredit persists effective and new fields"() {
         setup:
-        ec.entity.makeValue("trade.TradeInstrument")
-                .setAll([instrumentId: "LC-ENT-PERSIST", transactionRef: "TF-IMP-TEST-01"]).create()
+        ec.service.sync().name("create#trade.TradeInstrument")
+                .parameters([instrumentId: "LC-ENT-PERSIST", transactionRef: "TF-IMP-TEST-01"]).call()
 
         when:
         ec.service.sync().name("create#trade.importlc.ImportLetterOfCredit").parameters([
@@ -108,12 +108,12 @@ class ImportLcEntitiesSpec extends Specification {
 
     def "PresentationDiscrepancy persists correctly"() {
         setup:
-        ec.entity.makeValue("trade.TradeInstrument")
-                .setAll([instrumentId: "LC-ENT-DISC", transactionRef: "TF-IMP-TEST-01"]).create()
-        ec.entity.makeValue("trade.importlc.ImportLetterOfCredit")
-                .setAll([instrumentId: "LC-ENT-DISC", businessStateId: "LC_DRAFT"]).create()
-        ec.entity.makeValue("trade.importlc.TradeDocumentPresentation")
-                .setAll([presentationId: "PRES_TEST_01", instrumentId: "LC-ENT-DISC", claimAmount: 1000]).create()
+        ec.service.sync().name("create#trade.TradeInstrument")
+                .parameters([instrumentId: "LC-ENT-DISC", transactionRef: "TF-IMP-TEST-01"]).call()
+        ec.service.sync().name("create#trade.importlc.ImportLetterOfCredit")
+                .parameters([instrumentId: "LC-ENT-DISC", businessStateId: "LC_DRAFT"]).call()
+        ec.service.sync().name("create#trade.importlc.TradeDocumentPresentation")
+                .parameters([presentationId: "PRES_TEST_01", instrumentId: "LC-ENT-DISC", claimAmount: 1000]).call()
 
         when:
         ec.service.sync().name("create#trade.importlc.PresentationDiscrepancy").parameters([
@@ -143,12 +143,12 @@ class ImportLcEntitiesSpec extends Specification {
 
     def "ImportLcSettlement persists correctly"() {
         setup:
-        ec.entity.makeValue("trade.TradeInstrument")
-                .setAll([instrumentId: "LC-ENT-SETTLE", transactionRef: "TF-IMP-TEST-01"]).create()
-        ec.entity.makeValue("trade.importlc.ImportLetterOfCredit")
-                .setAll([instrumentId: "LC-ENT-SETTLE", businessStateId: "LC_DRAFT"]).create()
-        ec.entity.makeValue("trade.importlc.TradeDocumentPresentation")
-                .setAll([presentationId: "PRES_TEST_01", instrumentId: "LC-ENT-SETTLE", claimAmount: 1000]).create()
+        ec.service.sync().name("create#trade.TradeInstrument")
+                .parameters([instrumentId: "LC-ENT-SETTLE", transactionRef: "TF-IMP-TEST-01"]).call()
+        ec.service.sync().name("create#trade.importlc.ImportLetterOfCredit")
+                .parameters([instrumentId: "LC-ENT-SETTLE", businessStateId: "LC_DRAFT"]).call()
+        ec.service.sync().name("create#trade.importlc.TradeDocumentPresentation")
+                .parameters([presentationId: "PRES_TEST_01", instrumentId: "LC-ENT-SETTLE", claimAmount: 1000]).call()
 
         when:
         def result = ec.service.sync().name("create#trade.importlc.ImportLcSettlement").parameters([
@@ -182,10 +182,10 @@ class ImportLcEntitiesSpec extends Specification {
 
     def "ImportLcAmendment persists extended fields"() {
         setup:
-        ec.entity.makeValue("trade.TradeInstrument")
-                .setAll([instrumentId: "LC-AMEND-TEST", transactionRef: "TF-LC-AM-01"]).create()
-        ec.entity.makeValue("trade.importlc.ImportLetterOfCredit")
-                .setAll([instrumentId: "LC-AMEND-TEST", businessStateId: "LC_ISSUED"]).create()
+        ec.service.sync().name("create#trade.TradeInstrument")
+                .parameters([instrumentId: "LC-AMEND-TEST", transactionRef: "TF-LC-AM-01"]).call()
+        ec.service.sync().name("create#trade.importlc.ImportLetterOfCredit")
+                .parameters([instrumentId: "LC-AMEND-TEST", businessStateId: "LC_ISSUED"]).call()
 
         when:
         ec.service.sync().name("create#trade.importlc.ImportLcAmendment").parameters([
@@ -214,10 +214,10 @@ class ImportLcEntitiesSpec extends Specification {
 
     def "TradeDocumentPresentation persists status field"() {
         setup:
-        ec.entity.makeValue("trade.TradeInstrument")
-                .setAll([instrumentId: "LC-PRES-TEST", transactionRef: "TF-LC-PR-01"]).create()
-        ec.entity.makeValue("trade.importlc.ImportLetterOfCredit")
-                .setAll([instrumentId: "LC-PRES-TEST", businessStateId: "LC_ISSUED"]).create()
+        ec.service.sync().name("create#trade.TradeInstrument")
+                .parameters([instrumentId: "LC-PRES-TEST", transactionRef: "TF-LC-PR-01"]).call()
+        ec.service.sync().name("create#trade.importlc.ImportLetterOfCredit")
+                .parameters([instrumentId: "LC-PRES-TEST", businessStateId: "LC_ISSUED"]).call()
 
         when:
         ec.service.sync().name("create#trade.importlc.TradeDocumentPresentation").parameters([
@@ -244,10 +244,10 @@ class ImportLcEntitiesSpec extends Specification {
 
     def "ImportLcShippingGuarantee persists status field"() {
         setup:
-        ec.entity.makeValue("trade.TradeInstrument")
-                .setAll([instrumentId: "LC-SG-TEST", transactionRef: "TF-LC-SG-01"]).create()
-        ec.entity.makeValue("trade.importlc.ImportLetterOfCredit")
-                .setAll([instrumentId: "LC-SG-TEST", businessStateId: "LC_ISSUED"]).create()
+        ec.service.sync().name("create#trade.TradeInstrument")
+                .parameters([instrumentId: "LC-SG-TEST", transactionRef: "TF-LC-SG-01"]).call()
+        ec.service.sync().name("create#trade.importlc.ImportLetterOfCredit")
+                .parameters([instrumentId: "LC-SG-TEST", businessStateId: "LC_ISSUED"]).call()
 
         when:
         ec.service.sync().name("create#trade.importlc.ImportLcShippingGuarantee").parameters([
@@ -274,10 +274,10 @@ class ImportLcEntitiesSpec extends Specification {
 
     def "ImportLcAmendment persists amendmentNumber, newTolerance, chargeAllocationEnumId"() {
         setup:
-        ec.entity.makeValue("trade.TradeInstrument")
-                .setAll([instrumentId: "LC-AMEND-EXT", transactionRef: "TF-LC-AM-EXT"]).create()
-        ec.entity.makeValue("trade.importlc.ImportLetterOfCredit")
-                .setAll([instrumentId: "LC-AMEND-EXT", businessStateId: "LC_ISSUED"]).create()
+        ec.service.sync().name("create#trade.TradeInstrument")
+                .parameters([instrumentId: "LC-AMEND-EXT", transactionRef: "TF-LC-AM-EXT"]).call()
+        ec.service.sync().name("create#trade.importlc.ImportLetterOfCredit")
+                .parameters([instrumentId: "LC-AMEND-EXT", businessStateId: "LC_ISSUED"]).call()
 
         when:
         ec.service.sync().name("create#trade.importlc.ImportLcAmendment").parameters([
@@ -307,15 +307,17 @@ class ImportLcEntitiesSpec extends Specification {
 
     def "TradeDocumentPresentation persists claimCurrency, regulatoryDeadline and uses junction for presenting bank"() {
         setup:
-        ec.entity.makeValue("trade.TradeInstrument")
-                .setAll([instrumentId: "LC-PRES-EXT", transactionRef: "TF-LC-PR-EXT", instrumentTypeEnumId: "INST_LC"]).create()
-        ec.entity.makeValue("trade.importlc.ImportLetterOfCredit")
-                .setAll([instrumentId: "LC-PRES-EXT", businessStateId: "LC_ISSUED"]).create()
+        ec.service.sync().name("create#trade.TradeInstrument")
+                .parameters([instrumentId: "LC-PRES-EXT", transactionRef: "TF-LC-PR-EXT", instrumentTypeEnumId: "IMPORT_LC"]).call()
+        ec.service.sync().name("create#trade.importlc.ImportLetterOfCredit")
+                .parameters([instrumentId: "LC-PRES-EXT", businessStateId: "LC_ISSUED"]).call()
         
         // Setup presenting bank junction
-        ec.entity.makeValue("trade.TradeParty").setAll([partyId: "PRES_BANK_1", partyName: "Presenting Bank", partyTypeEnumId: 'PARTY_BANK']).createOrUpdate()
-        ec.entity.makeValue("trade.TradeInstrumentParty").setAll([instrumentId: "LC-PRES-EXT", roleEnumId: "TP_PRESENTING_BANK", partyId: "PRES_BANK_1"]).create()
-        ec.entity.makeValue("trade.TradePartyBank").setAll([partyId: "PRES_BANK_1", swiftBic: "PRESBANK", hasActiveRMA: "Y"]).createOrUpdate()
+        ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+                .parameters([partyId: "PRES_BANK_1", partyName: "Presenting Bank", partyTypeEnumId: 'PARTY_BANK', 
+                             swiftBic: "PRESBANK", hasActiveRMA: true, kycStatus: 'Active']).call()
+        ec.service.sync().name("trade.TradeCommonServices.assign#InstrumentParty")
+                .parameters([instrumentId: "LC-PRES-EXT", roleEnumId: "TP_PRESENTING_BANK", partyId: "PRES_BANK_1"]).call()
 
         when:
         ec.service.sync().name("create#trade.importlc.TradeDocumentPresentation").parameters([
@@ -353,10 +355,10 @@ class ImportLcEntitiesSpec extends Specification {
 
     def "ImportLcShippingGuarantee persists sgStatusId, waiverLockFlag, redemptionDate, issuanceFee"() {
         setup:
-        ec.entity.makeValue("trade.TradeInstrument")
-                .setAll([instrumentId: "LC-SG-EXT", transactionRef: "TF-LC-SG-EXT"]).create()
-        ec.entity.makeValue("trade.importlc.ImportLetterOfCredit")
-                .setAll([instrumentId: "LC-SG-EXT", businessStateId: "LC_ISSUED"]).create()
+        ec.service.sync().name("create#trade.TradeInstrument")
+                .parameters([instrumentId: "LC-SG-EXT", transactionRef: "TF-LC-SG-EXT"]).call()
+        ec.service.sync().name("create#trade.importlc.ImportLetterOfCredit")
+                .parameters([instrumentId: "LC-SG-EXT", businessStateId: "LC_ISSUED"]).call()
 
         when:
         ec.service.sync().name("create#trade.importlc.ImportLcShippingGuarantee").parameters([

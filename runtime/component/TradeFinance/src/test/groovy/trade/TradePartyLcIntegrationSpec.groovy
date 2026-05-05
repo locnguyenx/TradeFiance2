@@ -17,15 +17,22 @@ class TradePartyLcIntegrationSpec extends Specification {
         cleanData()
         ec.message.clearAll()
         
-        // Setup parties for tests using entity calls
-        ec.entity.makeValue("trade.TradeParty").setAll([partyId: 'INT_APP_001', partyTypeEnumId: 'PARTY_COMMERCIAL', partyName: 'Integration Applicant', kycStatus: 'Active']).createOrUpdate()
-        ec.entity.makeValue("trade.TradeParty").setAll([partyId: 'INT_BEN_001', partyTypeEnumId: 'PARTY_COMMERCIAL', partyName: 'Integration Beneficiary', kycStatus: 'Active']).createOrUpdate()
+        // Setup parties for tests using services
+        ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+                .parameters([partyId: 'INT_APP_001', partyTypeEnumId: 'PARTY_COMMERCIAL', 
+                             partyName: 'Integration Applicant', kycStatus: 'Active']).call()
+        ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+                .parameters([partyId: 'INT_BEN_001', partyTypeEnumId: 'PARTY_COMMERCIAL', 
+                             partyName: 'Integration Beneficiary', kycStatus: 'Active']).call()
         
-        ec.entity.makeValue("trade.TradeParty").setAll([partyId: 'INT_BANK_ADV', partyTypeEnumId: 'PARTY_BANK', partyName: 'Adv Bank', kycStatus: 'Active']).createOrUpdate()
-        ec.entity.makeValue("trade.TradePartyBank").setAll([partyId: 'INT_BANK_ADV', hasActiveRMA: 'Y']).createOrUpdate()
+        ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+                .parameters([partyId: 'INT_BANK_ADV', partyTypeEnumId: 'PARTY_BANK', 
+                             partyName: 'Adv Bank', kycStatus: 'Active', hasActiveRMA: true]).call()
         
-        ec.entity.makeValue("trade.TradeParty").setAll([partyId: 'INT_BANK_CONF', partyTypeEnumId: 'PARTY_BANK', partyName: 'Conf Bank', kycStatus: 'Active']).createOrUpdate()
-        ec.entity.makeValue("trade.TradePartyBank").setAll([partyId: 'INT_BANK_CONF', hasActiveRMA: 'Y', fiLimitAvailable: 1000000]).createOrUpdate()
+        ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+                .parameters([partyId: 'INT_BANK_CONF', partyTypeEnumId: 'PARTY_BANK', 
+                             partyName: 'Conf Bank', kycStatus: 'Active', hasActiveRMA: true, 
+                             fiLimitAvailable: 1000000]).call()
         
         ec.message.clearAll()
         println "SetupSpec finished, message has error: ${ec.message.hasError()}"
@@ -41,13 +48,20 @@ class TradePartyLcIntegrationSpec extends Specification {
     }
 
     private void cleanData() {
-        ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", EntityCondition.LIKE, "INT_LC_%").deleteAll()
-        ec.entity.find("trade.TradeInstrumentParty").condition("partyId", EntityCondition.LIKE, "INT_%").deleteAll()
-        ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.LIKE, "INT_LC_%").deleteAll()
-        ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.LIKE, "INT_LC_%").deleteAll()
-        ec.entity.find("trade.TradePartyBank").condition("partyId", EntityCondition.LIKE, "INT_%").deleteAll()
-        ec.entity.find("trade.TradeParty").condition("partyId", EntityCondition.LIKE, "INT_%").deleteAll()
-        ec.entity.find("mantle.party.Party").condition("partyId", EntityCondition.LIKE, "INT_%").deleteAll()
+        boolean began = ec.transaction.begin(60)
+        try {
+            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", EntityCondition.LIKE, "INT_LC_%").deleteAll()
+            ec.entity.find("trade.TradeInstrumentParty").condition("partyId", EntityCondition.LIKE, "INT_%").deleteAll()
+            ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.LIKE, "INT_LC_%").deleteAll()
+            ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.LIKE, "INT_LC_%").deleteAll()
+            ec.entity.find("trade.TradePartyBank").condition("partyId", EntityCondition.LIKE, "INT_%").deleteAll()
+            ec.entity.find("trade.TradeParty").condition("partyId", EntityCondition.LIKE, "INT_%").deleteAll()
+            ec.entity.find("mantle.party.Party").condition("partyId", EntityCondition.LIKE, "INT_%").deleteAll()
+            ec.transaction.commit(began)
+        } catch (Exception e) {
+            ec.transaction.rollback(began, "Error in cleanData", e)
+            // don't throw, just log
+        }
     }
 
     static String lc001Id
@@ -158,11 +172,10 @@ class TradePartyLcIntegrationSpec extends Specification {
     def "SC-16: Submit LC with expired KYC on advising bank -> validation error"() {
         setup:
         def expiredDate = new java.sql.Date(System.currentTimeMillis() - 86400000)
-        ec.entity.makeValue("trade.TradeParty").setAll([
-            partyId: 'EXPIRED_BANK', partyTypeEnumId: 'PARTY_BANK', 
-            partyName: 'Expired KYC Bank', kycStatus: 'Active', kycExpiryDate: expiredDate
-        ]).createOrUpdate()
-        ec.entity.makeValue("trade.TradePartyBank").setAll([partyId: 'EXPIRED_BANK', hasActiveRMA: 'Y']).createOrUpdate()
+        ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+                .parameters([partyId: 'EXPIRED_BANK', partyTypeEnumId: 'PARTY_BANK', 
+                             partyName: 'Expired KYC Bank', kycStatus: 'Active', 
+                             kycExpiryDate: expiredDate, hasActiveRMA: true]).call()
 
         when:
         ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")

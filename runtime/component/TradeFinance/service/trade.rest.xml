@@ -35,10 +35,10 @@
         <id name="instrumentId" require-authentication="false">
             <method type="get"><service name="trade.importlc.ImportLcServices.get#ImportLetterOfCredit"/></method>
             <method type="post"><service name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit"/></method>
-            <resource name="amendments">
+            <resource name="amendment">
                 <method type="post"><service name="trade.importlc.ImportLcServices.create#Amendment"/></method>
             </resource>
-            <resource name="presentations">
+            <resource name="presentation">
                 <method type="post"><service name="trade.TradeCommonServices.create#Presentation"/></method>
                 <id name="presentationId">
                     <resource name="waiver">
@@ -46,7 +46,7 @@
                     </resource>
                 </id>
             </resource>
-            <resource name="settlements">
+            <resource name="settlement">
                 <method type="post"><service name="trade.TradeAccountingServices.create#ImportLcSettlement"/></method>
             </resource>
             <resource name="shipping-guarantees">

@@ -5,7 +5,7 @@
 
     <entity entity-name="ImportLetterOfCredit" package="trade.importlc">
         <field name="instrumentId" type="id" is-pk="true"/>
-        <field name="businessStateId" type="id"/>
+        <field name="businessStateId" type="id" default="'LC_DRAFT'"/>
         <field name="tolerancePositive" type="number-decimal"/>
         <field name="toleranceNegative" type="number-decimal"/>
         <field name="tenorTypeId" type="id"/>

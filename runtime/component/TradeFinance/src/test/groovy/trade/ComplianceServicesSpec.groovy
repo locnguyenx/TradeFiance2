@@ -35,17 +35,21 @@ class ComplianceServicesSpec extends Specification {
     def "BDD-CMN-AUTH-04: Compliance Hold blocks LC lifecycle"() {
         given:
         String lcId = "COMP-HOLD-LC-01"
-        ec.entity.makeValue("trade.TradeInstrument").setAll([
-            instrumentId: lcId, instrumentTypeEnumId: 'IMPORT_LC', 
-            businessStateId: 'LC_ISSUED',
-            amount: 10000, currencyUomId: 'USD'
-        ]).create()
-        ec.entity.makeValue("trade.importlc.ImportLetterOfCredit").setAll([
-            instrumentId: lcId, businessStateId: 'LC_ISSUED'
-        ]).create()
-        ec.entity.makeValue("trade.TradeTransaction").setAll([
-            transactionId: "TX-COMP-HOLD-01", instrumentId: lcId, transactionStatusId: 'TX_DRAFT', versionNumber: 1
-        ]).create()
+        // Create instrument via service
+        ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
+                .parameters([instrumentId: lcId, lcAmount: 10000, lcCurrencyUomId: 'USD',
+                             instrumentParties: [
+                                 [roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                 [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']
+                             ]])
+                .call()
+        // Move to ISSUED state for testing hold on active LC
+        ec.service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit")
+                .parameters([instrumentId: lcId, businessStateId: 'LC_ISSUED']).call()
+
+        ec.service.sync().name("create#trade.TradeTransaction")
+                .parameters([transactionId: "TX-COMP-HOLD-01", instrumentId: lcId, 
+                             transactionStatusId: 'TX_DRAFT', versionNumber: 1]).call()
 
         when: "Apply Compliance Hold"
         ec.service.sync().name("trade.importlc.ImportLcServices.hold#ImportLetterOfCredit")
@@ -82,6 +86,7 @@ class ComplianceServicesSpec extends Specification {
         !ec.message.hasError()
 
         cleanup:
+        ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", lcId).deleteAll()
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", lcId).deleteAll()
         ec.entity.find("trade.TradeTransaction").condition("instrumentId", lcId).deleteAll()
         ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", lcId).deleteAll()

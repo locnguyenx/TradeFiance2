@@ -51,7 +51,7 @@ class RestApiEndpointsSpec extends Specification {
         ec.service.sync().name("trade.importlc.ImportLcServices.approve#ImportLetterOfCredit")
             .parameters([instrumentId: instrumentId, approverUserId: "trade.checker"]).call()
         ec.user.internalLoginUser("trade.maker")
-        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/presentations",
+        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/presentation",
             [instrumentId: instrumentId, claimAmount: 1000.0, claimCurrency: "USD"], "post")
         if (str.errorMessages) {
             throw new Exception("Failed to create presentation: ${str.errorMessages}")
@@ -201,7 +201,7 @@ class RestApiEndpointsSpec extends Specification {
 
         when:
         ec.user.internalLoginUser("trade.maker")
-        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/amendments", params, "post")
+        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/amendment", params, "post")
 
         then:
         !str.errorMessages
@@ -219,7 +219,7 @@ class RestApiEndpointsSpec extends Specification {
 
         when:
         ec.user.internalLoginUser("trade.maker")
-        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/presentations",
+        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/presentation",
             [instrumentId: instrumentId, claimAmount: 5000.0, claimCurrency: "USD"], "post")
 
         then:
@@ -236,7 +236,7 @@ class RestApiEndpointsSpec extends Specification {
 
         when:
         ec.user.internalLoginUser("trade.maker")
-        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/presentations",
+        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/presentation",
             [instrumentId: instrumentId, claimAmount: 1000.0, claimCurrency: "USD"], "post")
 
         then:
@@ -253,7 +253,7 @@ class RestApiEndpointsSpec extends Specification {
 
         when:
         ec.user.internalLoginUser("trade.maker")
-        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/settlements",
+        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/settlement",
             [instrumentId: instrumentId, presentationId: presentationId, principalAmount: 1000.0, 
              settlementTypeEnumId: 'SETTLE_SIGHT', debitAccountId: "TRADE-USD-001"], "post")
 

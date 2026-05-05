@@ -21,8 +21,10 @@ class SwiftValidationSpec extends Specification {
             
             // Restore seed bank for BIC tests
             if (ec.entity.find("trade.TradePartyBank").condition("partyId", "ADVISING_BANK_001").count() == 0) {
-                ec.entity.makeValue("trade.TradeParty").setAll([partyId: "ADVISING_BANK_001", partyTypeEnumId: "PARTY_BANK", partyName: "Overseas Banking Corp", kycStatus: "Active"]).createOrUpdate()
-                ec.entity.makeValue("trade.TradePartyBank").setAll([partyId: "ADVISING_BANK_001", swiftBic: "OBCSGSGX", hasActiveRMA: "Y"]).createOrUpdate()
+                ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+                        .parameters([partyId: "ADVISING_BANK_001", partyTypeEnumId: "PARTY_BANK", 
+                                     partyName: "Overseas Banking Corp", kycStatus: "Active",
+                                     swiftBic: "OBCSGSGX", hasActiveRMA: true]).call()
             }
         } finally {
             ec.artifactExecution.enableAuthz()
@@ -352,9 +354,10 @@ class SwiftValidationSpec extends Specification {
                                    [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         
         def longText = "LINE 1\nLINE 2\nLINE 3\nLINE 4\nLINE 5\nLINE 6\nLINE 7"
-        def presId = "PRES-" + System.currentTimeMillis()
-        ec.entity.makeValue("trade.importlc.TradeDocumentPresentation")
-            .setAll([presentationId: presId, instrumentId: lcRes.instrumentId, chargesDeducted: longText, claimAmount: 1000]).create()
+        def presRes = ec.service.sync().name("trade.TradeCommonServices.create#Presentation")
+            .parameters([instrumentId: lcRes.instrumentId, claimAmount: 1000]).call()
+        def presId = presRes.presentationId
+        ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("presentationId", presId).one().set("chargesDeducted", longText).update()
 
         when: "validate#SwiftFields is called for TradeDocumentPresentation"
         def result = ec.service.sync().name("trade.importlc.ImportLcValidationServices.validate#SwiftFields")
@@ -378,9 +381,10 @@ class SwiftValidationSpec extends Specification {
                                    [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         
         def longText = "LINE 1\nLINE 2\nLINE 3\nLINE 4\nLINE 5\nLINE 6\nLINE 7"
-        def presId = "PRES2-" + System.currentTimeMillis()
-        ec.entity.makeValue("trade.importlc.TradeDocumentPresentation")
-            .setAll([presentationId: presId, instrumentId: lcRes.instrumentId, senderToReceiverPresentationInfo: longText, claimAmount: 1000]).create()
+        def presRes = ec.service.sync().name("trade.TradeCommonServices.create#Presentation")
+            .parameters([instrumentId: lcRes.instrumentId, claimAmount: 1000]).call()
+        def presId = presRes.presentationId
+        ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("presentationId", presId).one().set("senderToReceiverPresentationInfo", longText).update()
 
         when: "validate#SwiftFields is called for TradeDocumentPresentation"
         def result = ec.service.sync().name("trade.importlc.ImportLcValidationServices.validate#SwiftFields")

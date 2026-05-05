@@ -44,10 +44,18 @@ class SwiftPartyGenerationSpec extends Specification {
 
     def "SWTP-01: MT700 generates correctly with Junction Parties"() {
         given: "Parties and an LC instrument with junction records"
-        ec.entity.makeValue("trade.TradeParty").setAll([partyId: 'SWTP_APP_001', partyTypeEnumId: 'PARTY_COMMERCIAL', partyName: 'SWIFT Applicant', registeredAddress: '123 App Lane\nNew York', kycStatus: 'Active']).createOrUpdate()
-        ec.entity.makeValue("trade.TradeParty").setAll([partyId: 'SWTP_BEN_001', partyTypeEnumId: 'PARTY_COMMERCIAL', partyName: 'SWIFT Beneficiary', registeredAddress: '456 Ben Blvd\nLondon', kycStatus: 'Active']).createOrUpdate()
-        ec.entity.makeValue("trade.TradeParty").setAll([partyId: 'SWTP_ADV_001', partyTypeEnumId: 'PARTY_BANK', partyName: 'Advising Bank', kycStatus: 'Active']).createOrUpdate()
-        ec.entity.makeValue("trade.TradePartyBank").setAll([partyId: 'SWTP_ADV_001', swiftBic: 'ADVISXXX', hasActiveRMA: 'Y']).createOrUpdate()
+        ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+                .parameters([partyId: 'SWTP_APP_001', partyTypeEnumId: 'PARTY_COMMERCIAL', 
+                             partyName: 'SWIFT Applicant', registeredAddress: '123 App Lane\nNew York', 
+                             kycStatus: 'Active']).call()
+        ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+                .parameters([partyId: 'SWTP_BEN_001', partyTypeEnumId: 'PARTY_COMMERCIAL', 
+                             partyName: 'SWIFT Beneficiary', registeredAddress: '456 Ben Blvd\nLondon', 
+                             kycStatus: 'Active']).call()
+        ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+                .parameters([partyId: 'SWTP_ADV_001', partyTypeEnumId: 'PARTY_BANK', 
+                             partyName: 'Advising Bank', kycStatus: 'Active', 
+                             swiftBic: 'ADVISXXX', hasActiveRMA: true]).call()
 
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([
@@ -80,10 +88,16 @@ class SwiftPartyGenerationSpec extends Specification {
 
     def "SWTP-02: MT700 Available With Bank (Tag 41A) from junction"() {
         given: "An LC with Negotiating Bank in junction"
-        ec.entity.makeValue("trade.TradeParty").setAll([partyId: 'SWTP_APP_002', partyTypeEnumId: 'PARTY_COMMERCIAL', partyName: 'App', kycStatus: 'Active']).createOrUpdate()
-        ec.entity.makeValue("trade.TradeParty").setAll([partyId: 'SWTP_BEN_002', partyTypeEnumId: 'PARTY_COMMERCIAL', partyName: 'Ben', kycStatus: 'Active']).createOrUpdate()
-        ec.entity.makeValue("trade.TradeParty").setAll([partyId: 'SWTP_NEG_001', partyTypeEnumId: 'PARTY_BANK', partyName: 'Neg Bank', kycStatus: 'Active']).createOrUpdate()
-        ec.entity.makeValue("trade.TradePartyBank").setAll([partyId: 'SWTP_NEG_001', swiftBic: 'NEGOTXXX', hasActiveRMA: 'Y']).createOrUpdate()
+        ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+                .parameters([partyId: 'SWTP_APP_002', partyTypeEnumId: 'PARTY_COMMERCIAL', 
+                             partyName: 'App', kycStatus: 'Active']).call()
+        ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+                .parameters([partyId: 'SWTP_BEN_002', partyTypeEnumId: 'PARTY_COMMERCIAL', 
+                             partyName: 'Ben', kycStatus: 'Active']).call()
+        ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+                .parameters([partyId: 'SWTP_NEG_001', partyTypeEnumId: 'PARTY_BANK', 
+                             partyName: 'Neg Bank', kycStatus: 'Active', 
+                             swiftBic: 'NEGOTXXX', hasActiveRMA: true]).call()
 
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([
@@ -110,8 +124,12 @@ class SwiftPartyGenerationSpec extends Specification {
 
     def "SWTP-03: MT700 Available With ANY BANK (Tag 41D) logic"() {
         given: "An LC with Available With = ANY_BANK"
-        ec.entity.makeValue("trade.TradeParty").setAll([partyId: 'SWTP_APP_003', partyTypeEnumId: 'PARTY_COMMERCIAL', partyName: 'App', kycStatus: 'Active']).createOrUpdate()
-        ec.entity.makeValue("trade.TradeParty").setAll([partyId: 'SWTP_BEN_003', partyTypeEnumId: 'PARTY_COMMERCIAL', partyName: 'Ben', kycStatus: 'Active']).createOrUpdate()
+        ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+                .parameters([partyId: 'SWTP_APP_003', partyTypeEnumId: 'PARTY_COMMERCIAL', 
+                             partyName: 'App', kycStatus: 'Active']).call()
+        ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+                .parameters([partyId: 'SWTP_BEN_003', partyTypeEnumId: 'PARTY_COMMERCIAL', 
+                             partyName: 'Ben', kycStatus: 'Active']).call()
 
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([

@@ -5,6 +5,7 @@
 
     <service verb="create" noun="ImportLetterOfCredit" authenticate="false">
         <in-parameters>
+            <parameter name="instrumentId"/>
             <!-- TradeInstrument fields -->
             <auto-parameters entity-name="trade.TradeInstrument" include="nonpk"/>
             <parameter name="transactionRef"/>
@@ -327,7 +328,7 @@
         <in-parameters>
             <parameter name="instrumentId" type="String" required="true"/>
             <parameter name="amendmentTypeEnumId" type="String" required="true"/>
-            <parameter name="amendmentDate" type="Date" required="true"/>
+            <parameter name="amendmentDate" type="Date" required="true" default="ec.user.nowTimestamp"/>
             <parameter name="amountAdjustment" type="BigDecimal"/>
             <parameter name="newExpiryDate" type="Date"/>
             <parameter name="amendmentNarrative" type="String"/>

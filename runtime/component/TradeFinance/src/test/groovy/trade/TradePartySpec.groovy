@@ -21,6 +21,7 @@ class TradePartySpec extends Specification {
         boolean began = ec.transaction.begin(60)
         try {
             ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", EntityCondition.LIKE, "INST_%").deleteAll()
+            ec.entity.find("trade.TradeInstrumentParty").condition("partyId", EntityCondition.LIKE, "SPEC_%").deleteAll()
             ec.entity.find("trade.TradePartyBank").condition("partyId", EntityCondition.LIKE, "SPEC_%").deleteAll()
             ec.entity.find("trade.TradeParty").condition("partyId", EntityCondition.LIKE, "SPEC_%").deleteAll()
             ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.LIKE, "INST_%").deleteAll()
@@ -85,9 +86,20 @@ class TradePartySpec extends Specification {
     }
 
     def "SC-04: Assign Applicant role (Commercial)"() {
-        setup:
-        ec.entity.makeValue("trade.TradeInstrument").setAll([instrumentId: 'INST_ASSIGN_01', instrumentTypeEnumId: 'INST_IMPORT_LC', amount: 5000.0]).create()
-        ec.entity.makeValue("trade.importlc.ImportLetterOfCredit").setAll([instrumentId: 'INST_ASSIGN_01', lcAmount: 5000.0]).create()
+        // Create mandatory parties first
+        ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+                .parameters([partyId: 'SPEC_COMM_02', partyTypeEnumId: 'PARTY_COMMERCIAL', 
+                             partyName: 'Spec Comm 02', kycStatus: 'Active'])
+                .call()
+        
+        // Create instrument via service
+        ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
+                .parameters([instrumentId: 'INST_ASSIGN_01', lcAmount: 5000.0, lcCurrencyUomId: 'USD',
+                             instrumentParties: [
+                                 [roleEnumId: 'TP_APPLICANT', partyId: 'SPEC_COMM_01'],
+                                 [roleEnumId: 'TP_BENEFICIARY', partyId: 'SPEC_COMM_02']
+                             ]])
+                .call()
         
         when: "Assigning commercial party as Applicant"
         ec.service.sync().name("trade.TradeCommonServices.assign#InstrumentParty")
@@ -151,9 +163,14 @@ class TradePartySpec extends Specification {
                 .parameters([partyId: 'SPEC_LOW_LIMIT_BANK', partyTypeEnumId: 'PARTY_BANK', 
                              partyName: 'Spec Low Limit Bank', hasActiveRMA: true, fiLimitAvailable: 1000.0, kycStatus: 'Active'])
                 .call()
-        // Create a dedicated instrument for this test with high amount
-        ec.entity.makeValue("trade.TradeInstrument").setAll([instrumentId: 'INST_LIMIT_01', instrumentTypeEnumId: 'INST_IMPORT_LC', amount: 5000.0]).create()
-        ec.entity.makeValue("trade.importlc.ImportLetterOfCredit").setAll([instrumentId: 'INST_LIMIT_01', lcAmount: 5000.0]).create()
+        // Create instrument via service
+        ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
+                .parameters([instrumentId: 'INST_LIMIT_01', lcAmount: 5000.0, lcCurrencyUomId: 'USD',
+                             instrumentParties: [
+                                 [roleEnumId: 'TP_APPLICANT', partyId: 'SPEC_COMM_01'],
+                                 [roleEnumId: 'TP_BENEFICIARY', partyId: 'SPEC_COMM_02']
+                             ]])
+                .call()
         
         when: "Assigning bank with insufficient limit"
         ec.service.sync().name("trade.TradeCommonServices.assign#InstrumentParty")

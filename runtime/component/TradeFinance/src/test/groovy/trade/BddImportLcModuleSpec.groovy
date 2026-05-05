@@ -30,7 +30,9 @@ class BddImportLcModuleSpec extends Specification {
         def fid = findOrCreateFacility()
         def expiryDate = new java.sql.Date(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000)
         // Ensure BEN-01 exists and is Active
-        ec.entity.makeValue("trade.TradeParty").setAll([partyId: "BEN-01", partyName: "Beneficiary 01", partyTypeEnumId: 'PARTY_COMMERCIAL', kycStatus: 'Active']).createOrUpdate()
+        ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+            .parameters([partyId: "BEN-01", partyName: "Beneficiary 01", 
+                         partyTypeEnumId: 'PARTY_COMMERCIAL', kycStatus: 'Active']).call()
         
         def res = service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([transactionRef: ref, lcAmount: amount, lcCurrencyUomId: "USD", 
