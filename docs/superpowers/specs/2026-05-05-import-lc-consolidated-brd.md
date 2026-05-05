@@ -2,10 +2,11 @@
 **ABOUTME:**
 Consolidated requirements for the Import Letter of Credit (LC) Module.
 This document merges baseline requirements with SWIFT specs, transaction tracking, and TradeParty refactoring.
+SWIFT validation and generation rules are integrated into the business processes where data is captured and messages are triggered.
 
 **Project Name:** Digital Trade Finance Platform
 **Module:** Import Letter of Credit (LC)
-**Document Version:** 1.0 (Consolidated)
+**Document Version:** 1.1 (Restructured — SWIFT rules integrated into business processes)
 **Date:** May 05, 2026
 
 **Superseded BRDs:**
@@ -108,10 +109,6 @@ Example: An Amendment can be in Transaction State "Pending Approval" while the u
 **I want** the system to enforce strict LC state transitions,
 **So that** the LC lifecycle follows UCP 600 compliance and bank policies.
 
-**Acceptance Criteria:**
-- System blocks transitions not defined in the State Transition Matrix.
-- State changes are logged in the audit timeline.
-
 ### US-LC-02: Dual-Status Visibility
 **As a** Trade Operator,
 **I want** to see both Transaction State and LC Business State on the instrument header,
@@ -153,94 +150,122 @@ Example: An Amendment can be in Transaction State "Pending Approval" while the u
 *   **Entry:** Valid customer mandate received. Applicant has active Customer Profile and KYC = Clear.
 *   **Exit:** Bank irrevocably bound to LC terms. Liability booked. MT 700 dispatched.
 
-#### D. Inputs Capture (Data Dictionary)
+#### D. Inputs Capture (Data Dictionary with SWIFT Tag Mapping)
 
-##### General
-| Field Name | Req/Opt | Data Type | Validation Rules |
-| :--- | :--- | :--- | :--- |
-| `applicantPartyId` | Req | id | Via `TradeInstrumentParty` junction (role: TP_APPLICANT). KYC must be Active. |
-| `beneficiaryPartyId` | Req | id | Via `TradeInstrumentParty` junction (role: TP_BENEFICIARY). |
-| `advisingBankPartyId` | Opt | id | Via `TradeInstrumentParty` junction (role: TP_ADVISING_BANK). Must have BIC. |
+##### General (Party assignments via TradeInstrumentParty junction — see Feature 6)
+| Field Name | Req/Opt | Data Type | SWIFT Tag | Validation Rules |
+| :--- | :--- | :--- | :--- | :--- |
+| `applicantPartyId` | Req | id | Tag 50 | Via `TradeInstrumentParty` junction (role: TP_APPLICANT). KYC must be Active. Party name: max 4×35, X charset. |
+| `beneficiaryPartyId` | Req | id | Tag 59 | Via `TradeInstrumentParty` junction (role: TP_BENEFICIARY). Party name: max 4×35, X charset. Account number optional (prepended with `/`). |
+| `advisingBankPartyId` | Opt | id | Header Block 2 | Via `TradeInstrumentParty` junction (role: TP_ADVISING_BANK). Must have valid BIC (8/11 chars). Must have `hasActiveRMA = Y`. |
 
 ##### Dates
-| Field Name | Req/Opt | Data Type | Validation Rules |
-| :--- | :--- | :--- | :--- |
-| `issueDate` | Req | Date | Cannot be in the past. Defaults to current system business date. |
-| `expiryDate` | Req | Date | Must be ≥ Issue Date. |
-| `latestShipmentDate` | Opt | Date | Must be ≤ Expiry Date. Mutually exclusive with `shipmentPeriodText`. |
-| `expiryPlace` | Req | text-medium | Max 29 chars, X charset. SWIFT Tag 31D. |
+| Field Name | Req/Opt | Data Type | SWIFT Tag | Validation Rules |
+| :--- | :--- | :--- | :--- | :--- |
+| `issueDate` | Req | Date | Tag 31C | Cannot be in the past. Defaults to current system business date. Formatted YYMMDD for SWIFT. |
+| `expiryDate` | Req | Date | Tag 31D | Must be ≥ Issue Date. Formatted YYMMDD for SWIFT. |
+| `latestShipmentDate` | Opt | Date | Tag 44C | Must be ≤ Expiry Date. Formatted YYMMDD. **Mutually exclusive with `shipmentPeriodText`**. |
+| `expiryPlace` | Req | text-medium | Tag 31D | Max 29 chars, X charset. Concatenated with expiryDate in SWIFT output. |
 
 ##### Financial
-| Field Name | Req/Opt | Data Type | Validation Rules |
-| :--- | :--- | :--- | :--- |
-| `currencyUomId` | Req | id | 3-letter ISO Currency Code. |
-| `amount` | Req | number-decimal | Must be > 0. Comma decimal separator for SWIFT. |
-| `tolerancePositive` | Opt | number-integer | Max 100. Mutually exclusive with `maxCreditAmountFlag`. SWIFT Tag 39A. |
-| `toleranceNegative` | Opt | number-integer | Max 100. Mutually exclusive with `maxCreditAmountFlag`. SWIFT Tag 39A. |
-| `maxCreditAmountFlag` | Opt | text-indicator | Y/N. Mutually exclusive with tolerance. SWIFT Tag 39B. |
-| `additionalAmountsText` | Opt | text-long | Max 4×35, X charset. SWIFT Tag 39C. |
+| Field Name | Req/Opt | Data Type | SWIFT Tag | Validation Rules |
+| :--- | :--- | :--- | :--- | :--- |
+| `currencyUomId` | Req | id | Tag 32B | 3-letter ISO Currency Code. |
+| `amount` | Req | number-decimal | Tag 32B | Must be > 0. Max 15 digits. Comma decimal separator for SWIFT. |
+| `tolerancePositive` | Opt | number-integer | Tag 39A | Max 100. **Mutually exclusive with `maxCreditAmountFlag`**. |
+| `toleranceNegative` | Opt | number-integer | Tag 39A | Max 100. **Mutually exclusive with `maxCreditAmountFlag`**. |
+| `maxCreditAmountFlag` | Opt | text-indicator | Tag 39B | Y/N. **Mutually exclusive with tolerance fields (39A)**. |
+| `additionalAmountsText` | Opt | text-long | Tag 39C | Max 4×35, X charset. |
 
 ##### Terms
-| Field Name | Req/Opt | Data Type | Validation Rules |
-| :--- | :--- | :--- | :--- |
-| `lcTypeEnumId` | Req | id | IRREVOCABLE, IRREVOCABLE_TRANSFERABLE. SWIFT Tag 40A. |
-| `tenorTypeEnumId` | Req | id | SIGHT, USANCE, ACCEPTANCE, NEGOTIATION, DEF_PAYMENT, MIXED. |
-| `usanceDays` | Cond | number-integer | Required if tenor ≠ SIGHT. |
-| `usanceBaseDate` | Cond | text-medium | Required if tenor ≠ SIGHT. Max 35 chars, X charset. SWIFT Tag 42C. |
-| `availableWithEnumId` | Req | id | AVAIL_ANY_BANK or AVAIL_SPECIFIC_BANK. |
-| `availableWithBic` | Cond | text-short | Required if AVAIL_SPECIFIC_BANK. Valid 8/11 char BIC. SWIFT Tag 41A. |
-| `availableByEnumId` | Req | id | BY_PAYMENT, BY_ACCEPTANCE, BY_NEGOTIATION, BY_DEF_PAYMENT. SWIFT Tag 41a. |
-| `mixedPaymentDetails` | Cond | text-long | Max 4×35. Required if tenor = MIXED. SWIFT Tag 42M. |
-| `deferredPaymentDetails` | Cond | text-long | Max 4×35. Required if tenor = DEF_PAYMENT/NEGOTIATION. SWIFT Tag 42P. |
-| `draweeBic` | Opt | text-short | Valid 8/11 char BIC. SWIFT Tag 42A. |
+| Field Name | Req/Opt | Data Type | SWIFT Tag | Validation Rules |
+| :--- | :--- | :--- | :--- | :--- |
+| `lcTypeEnumId` | Req | id | Tag 40A | IRREVOCABLE, IRREVOCABLE_TRANSFERABLE. Mandatory for MT700. |
+| `tenorTypeEnumId` | Req | id | Tag 41a | SIGHT, USANCE, ACCEPTANCE, NEGOTIATION, DEF_PAYMENT, MIXED. |
+| `usanceDays` | Cond | number-integer | Tag 42C | **Required if tenor ≠ SIGHT**. |
+| `usanceBaseDate` | Cond | text-medium | Tag 42C | **Required if tenor ≠ SIGHT**. Max 35 chars, X charset. |
+| `availableWithEnumId` | Req | id | Tag 41a | AVAIL_ANY_BANK or AVAIL_SPECIFIC_BANK. Explicit user choice. |
+| `availableWithBic` | Cond | text-short | Tag 41A | Required if AVAIL_SPECIFIC_BANK. Valid 8/11 char BIC. |
+| `availableByEnumId` | Req | id | Tag 41a | BY_PAYMENT, BY_ACCEPTANCE, BY_NEGOTIATION, BY_DEF_PAYMENT. Combined with availableWithBic for Tag 41a assembly. |
+| `mixedPaymentDetails` | Cond | text-long | Tag 42M | Max 4×35, X charset. **Required if tenor = MIXED**. |
+| `deferredPaymentDetails` | Cond | text-long | Tag 42P | Max 4×35, X charset. **Required if tenor = DEF_PAYMENT/NEGOTIATION**. |
+| `draweeBic` | Opt | text-short | Tag 42A | Valid 8/11 char BIC. |
 
 ##### Shipping
-| Field Name | Req/Opt | Data Type | Validation Rules |
-| :--- | :--- | :--- | :--- |
-| `partialShipmentEnumId` | Req | id | ALLOWED, NOT_ALLOWED, CONDITIONAL. SWIFT Tag 43P. |
-| `transhipmentEnumId` | Req | id | ALLOWED, NOT_ALLOWED, CONDITIONAL. SWIFT Tag 43T. |
-| `portOfLoading` | Opt | text-medium | Max 65 chars, X charset. SWIFT Tag 44E. |
-| `portOfDischarge` | Opt | text-medium | Max 65 chars, X charset. SWIFT Tag 44F. |
-| `receiptPlace` | Opt | text-medium | Max 65 chars, X charset. SWIFT Tag 44A. |
-| `finalDeliveryPlace` | Opt | text-medium | Max 65 chars, X charset. SWIFT Tag 44B. |
-| `shipmentPeriodText` | Opt | text-medium | Max 65 chars, X charset. Mutually exclusive with `latestShipmentDate`. SWIFT Tag 44D. |
+| Field Name | Req/Opt | Data Type | SWIFT Tag | Validation Rules |
+| :--- | :--- | :--- | :--- | :--- |
+| `partialShipmentEnumId` | Req | id | Tag 43P | ALLOWED, NOT_ALLOWED, CONDITIONAL. |
+| `transhipmentEnumId` | Req | id | Tag 43T | ALLOWED, NOT_ALLOWED, CONDITIONAL. |
+| `portOfLoading` | Opt | text-medium | Tag 44E | Max 65 chars, X charset. |
+| `portOfDischarge` | Opt | text-medium | Tag 44F | Max 65 chars, X charset. |
+| `receiptPlace` | Opt | text-medium | Tag 44A | Max 65 chars, X charset. |
+| `finalDeliveryPlace` | Opt | text-medium | Tag 44B | Max 65 chars, X charset. |
+| `shipmentPeriodText` | Opt | text-medium | Tag 44D | Max 65 chars, X charset. **Mutually exclusive with `latestShipmentDate`**. |
 
 ##### Narratives
-| Field Name | Req/Opt | Data Type | Validation Rules |
-| :--- | :--- | :--- | :--- |
-| `goodsDescription` | Req | text-very-long | Max 100×65, X charset. Auto-wrap at 65 chars/line. SWIFT Tag 45A. |
-| `documentsRequired` | Req | text-very-long | Max 100×65, X charset. Auto-wrap at 65 chars/line. SWIFT Tag 46A. |
-| `additionalConditions` | Opt | text-very-long | Max 100×65, X charset. Auto-wrap at 65 chars/line. SWIFT Tag 47A. |
-| `chargeAllocation` | Req | Enum | ALL_APPLICANT, ALL_BENEFICIARY, SHARED. |
-| `chargeAllocationText` | Opt | text-long | Max 6×35, X charset. Detailed charges text. SWIFT Tag 71D. |
-| `bankToBankInstructions` | Opt | text-very-long | Max 12×65, X charset. SWIFT Tag 78. |
-| `presentationPeriodDays` | Opt | number-integer | Positive integer. Days after shipment for doc presentation. SWIFT Tag 48. |
-| `confirmationEnumId` | Req | id | CONFIRM, MAY_ADD, WITHOUT. SWIFT Tag 49. |
+| Field Name | Req/Opt | Data Type | SWIFT Tag | Validation Rules |
+| :--- | :--- | :--- | :--- | :--- |
+| `goodsDescription` | Req | text-very-long | Tag 45A | Max 100×65, X charset. Auto-wrap at 65 chars/line for SWIFT. Mandatory for MT700. |
+| `documentsRequired` | Req | text-very-long | Tag 46A | Max 100×65, X charset. Auto-wrap at 65 chars/line. Mandatory for MT700. |
+| `additionalConditions` | Opt | text-very-long | Tag 47A | Max 100×65, X charset. Auto-wrap at 65 chars/line. |
+| `chargeAllocation` | Req | Enum | Tag 71D | ALL_APPLICANT, ALL_BENEFICIARY, SHARED. |
+| `chargeAllocationText` | Opt | text-long | Tag 71D | Max 6×35, X charset. Detailed charges text. |
+| `bankToBankInstructions` | Opt | text-very-long | Tag 78 | Max 12×65, X charset. |
+| `presentationPeriodDays` | Opt | number-integer | Tag 48 | Positive integer. Days after shipment for doc presentation. |
+| `confirmationEnumId` | Req | id | Tag 49 | CONFIRM, MAY_ADD, WITHOUT. Mandatory for MT700. Default WITHOUT. |
 
 ##### Administrative
-| Field Name | Req/Opt | Data Type | Validation Rules |
-| :--- | :--- | :--- | :--- |
-| `preAdviceRef` | Opt | text-short | Max 16 chars, X charset, slash rules. SWIFT Tag 23. |
-| `senderToReceiverInfo` | Opt | text-long | Max 6×35, X charset. SWIFT Tag 72Z. |
+| Field Name | Req/Opt | Data Type | SWIFT Tag | Validation Rules |
+| :--- | :--- | :--- | :--- | :--- |
+| `preAdviceRef` | Opt | text-short | Tag 23 | Max 16 chars, X charset. No leading/trailing `/`, no `//`. |
+| `senderToReceiverInfo` | Opt | text-long | Tag 72Z | Max 6×35, X charset. |
 
-#### E. Display / Computed Data
+#### E. SWIFT Validation Rules Specific to Issuance
+
+| Rule ID | Rule | SWIFT Tags Affected |
+| :--- | :--- | :--- |
+| ISS-SWV-01 | `lcTypeEnumId` must be a valid Form of DC code (IRREVOCABLE, IRREVOCABLE_TRANSFERABLE) | Tag 40A (Mandatory) |
+| ISS-SWV-02 | `confirmationEnumId` must be specified (default WITHOUT) | Tag 49 (Mandatory) |
+| ISS-SWV-03 | Tolerance (39A) and Max Credit (39B) mutually exclusive | Tags 39A, 39B |
+| ISS-SWV-04 | Shipment Date (44C) and Shipment Period Text (44D) mutually exclusive | Tags 44C, 44D |
+| ISS-SWV-05 | If tenor ≠ SIGHT: `usanceDays` and `usanceBaseDate` required | Tag 42C |
+| ISS-SWV-06 | If tenor = MIXED: `mixedPaymentDetails` required | Tag 42M |
+| ISS-SWV-07 | If tenor = DEF_PAYMENT/NEGOTIATION: `deferredPaymentDetails` required | Tag 42P |
+| ISS-SWV-08 | `availableWithEnumId` must be explicitly chosen (ANY BANK or SPECIFIC BANK) | Tag 41a |
+| ISS-SWV-09 | Party names (Applicant, Beneficiary) validated: X charset, max 4×35 lines | Tags 50, 59 |
+| ISS-SWV-10 | Advising Bank must have `hasActiveRMA = Y` | Header Block 2 (Receiver) |
+| ISS-SWV-11 | Reimbursing Bank (if assigned) must have `nostroAccountRef` populated | Tag 53a |
+| ISS-SWV-12 | Amount formatted with comma decimal separator, max 15 digits, positive | Tag 32B |
+| ISS-SWV-13 | All dates formatted as YYMMDD | Tags 31C, 31D, 44C |
+| ISS-SWV-14 | All reference fields: no leading/trailing `/`, no `//` | Tags 20, 23 |
+| ISS-SWV-15 | Narrative fields auto-wrapped at 65 chars/line for SWIFT output | Tags 45A, 46A, 47A, 78 |
+| ISS-SWV-16 | BIC fields: exactly 8 or 11 alphanumeric characters | Tags 41A, 42A, 53a, 57a |
+| ISS-SWV-17 | `transactionRef`: max 16 chars, X charset, slash rules | Tag 20 |
+
+#### F. Display / Computed Data
 
 | Field Name | Calculation Formula |
 | :--- | :--- |
-| **Base Equivalent Amount** | `amount × Current System Exchange Rate` (LC Currency → Local Currency). Recalculated before submit. |
+| **Base Equivalent Amount** | `amount × Current System Exchange Rate` (LC Currency → Local Currency). Recalculated before submit. Uses Daily Board Rate (per REQ-COM-FX-02). |
 | **Maximum Liability Amount** | `amount + (amount × tolerancePositive / 100)`. True risk exposure. |
 | **Available Facility Limit** | Fetched live from Core Banking: `Total Limit - Currently Utilized`. |
 | **Limit Check Status** | `true` if `Available Facility Limit ≥ Maximum Liability Amount`. Blocks submission if false. |
 
-#### F. Post-Submit Processing
+#### G. Post-Submit Processing & SWIFT Generation
 Upon Checker authorization:
 1. **Facility Earmark:** Synchronous call to Core Banking to deduct Maximum Liability Amount.
 2. **Cash Margin Hold:** If insufficient credit line, hold on deposit account for margin percentage.
 3. **Fee Deduction:** Issuance commission per bank tariff matrix (e.g., 0.125% per quarter).
 4. **Entity Creation:** `TradeInstrument` and `ImportLetterOfCredit` records committed.
-5. **SWIFT Generation:** MT 700 generated and dispatched. `SwiftMessage` record saved with `SWIFT_MSG_ACTIVE`.
+5. **SWIFT MT 700 Generation:**
+   - Call `validate#SwiftFields` (Layer 2 safety net) on all source entities.
+   - Assemble MT 700 using `SwiftMessageBuilder` with entity data.
+   - **MT 701 Auto-Continuation:** If Tags 45A, 46A, or 47A exceed 100×65 chars, auto-generate MT 701 with overflow in Tags 45B, 46B, 47B. Sequence Tag 27 updated to `2/N`.
+   - Save as `SwiftMessage` with `messageStatusId = SWIFT_MSG_ACTIVE` (post-approval, immutable).
+   - Log dispatch in `TradeTransactionAudit`.
+6. **Customer Advice:** Generate PDF advice with LC terms, fees, Transaction Reference Number.
 
-#### G. User Stories
+#### H. User Stories
 
 ### US-ISS-01: LC Issuance with Full Validation
 **As a** Trade Operations Maker,
@@ -252,10 +277,17 @@ Upon Checker authorization:
 **I want** to automatically earmark the customer's facility limit upon Checker approval,
 **So that** the bank's credit exposure is tracked in real-time.
 
-#### H. Grounding Info
+### US-ISS-03: MT700 Generation on Authorization
+**As a** Trade Operations system,
+**I want** to generate a standards-compliant MT700 from entity data upon Checker authorization,
+**So that** the Advising Bank receives a correctly formatted documentary credit notification.
+
+#### I. Grounding Info
 *   **Data Dictionary:** From **REQ-IMP-SPEC-01** (baseline), enhanced by **FR-ENT-01 to FR-ENT-11** (validation), **FR-ENT-21 to FR-ENT-27** (gaps).
-*   **Party Junction:** From **FR-TP-03**, **FR-TP-07** (tradeparty-refactor) — replaces flat `applicantPartyId`, `beneficiaryPartyId`, `advisingBankBic`.
-*   **Post-Submit:** From **REQ-IMP-SPEC-01 Section G** (baseline), with `SwiftMessage` persistence from **FR-SWG-04**.
+*   **Party Junction:** From **FR-TP-03**, **FR-TP-07** (tradeparty-refactor).
+*   **SWIFT Validation:** From **FR-SWV-01 to FR-SWV-09** (swift-validation-brd.md), **FR-SGC-07, FR-SGC-08** (gaps).
+*   **MT700/MT701 Generation:** From **FR-SWG-05, FR-SWG-06** (swift-generation-brd.md), **FR-SGC-04** (gaps), **REQ-IMP-SWIFT-02/03** (baseline).
+*   **Message Lifecycle:** From **FR-SWG-15** — post-approval → ACTIVE, immutable.
 
 ---
 
@@ -278,39 +310,54 @@ Upon Checker authorization:
 *   **Entry:** Parent LC in Issued state, not expired. No pending un-examined presentations.
 *   **Exit:** MT 707 dispatched. New terms binding only upon Beneficiary acceptance logging.
 
-#### D. Amendment Inputs (Delta Fields Only)
+#### D. Amendment Inputs (Delta Fields with SWIFT Tag Mapping)
 
-| Field Name | Req/Opt | Data Type | Validation Rules |
-| :--- | :--- | :--- | :--- |
-| `amendmentDate` | Req | Date | Cannot be in the past. SWIFT Tag 30. |
-| `amountIncrease` | Opt | number-decimal | Mutually exclusive with `amountDecrease`. |
-| `amountDecrease` | Opt | number-decimal | Cannot exceed current Available Balance. |
-| `newTotalAmount` | Req (computed) | number-decimal | `original + increase - decrease`. SWIFT Tag 34B. |
-| `newTolerancePositive` | Opt | number-integer | Overwrites previous tolerance. |
-| `newToleranceNegative` | Opt | number-integer | Overwrites previous tolerance. |
-| `newExpiryDate` | Opt | Date | Must be ≥ current Business Date. SWIFT Tag 31E. |
-| `newLatestShipmentDate` | Opt | Date | Must be ≤ New Expiry or Original Expiry. |
-| `amendmentNarrative` | Cond | text-very-long | Max 35×50, **Z charset**. Required if no standard fields changed. SWIFT Tag 79. |
-| `amendmentCharges` | Req | Enum | APPLICANT, BENEFICIARY. |
-| `beneficiaryDecision` | Opt | Enum | PENDING, ACCEPTED, REJECTED. Defaults to PENDING. |
+| Field Name | Req/Opt | Data Type | SWIFT Tag | Validation Rules |
+| :--- | :--- | :--- | :--- | :--- |
+| `amendmentDate` | Req | Date | Tag 30 | Cannot be in the past. Formatted YYMMDD for SWIFT. |
+| `amountIncrease` | Opt | number-decimal | Tag 32B | Mutually exclusive with `amountDecrease`. Comma decimal, max 15 digits. |
+| `amountDecrease` | Opt | number-decimal | Tag 33B | Cannot exceed current Available Balance. Comma decimal. |
+| `newTotalAmount` | Req (computed) | number-decimal | Tag 34B | `original + increase - decrease`. Comma decimal, max 15 digits. |
+| `newTolerancePositive` | Opt | number-integer | Tag 39A | Overwrites previous tolerance. Mutually exclusive with `maxCreditAmountFlag`. |
+| `newToleranceNegative` | Opt | number-integer | Tag 39A | Overwrites previous tolerance. Mutually exclusive with `maxCreditAmountFlag`. |
+| `newExpiryDate` | Opt | Date | Tag 31E | Must be ≥ current Business Date. Formatted YYMMDD. |
+| `newLatestShipmentDate` | Opt | Date | Tag 44C | Must be ≤ New Expiry or Original Expiry. Mutually exclusive with `shipmentPeriodText`. |
+| `amendmentNarrative` | Cond | text-very-long | Tag 79 | Max 35×50. **Z charset** (extends X with `@ # = ! " % & * ; < > _`). Required if no standard fields changed. |
+| `amendmentCharges` | Req | Enum | — | APPLICANT, BENEFICIARY. Determines fee payer. |
+| `beneficiaryDecision` | Opt | Enum | — | PENDING, ACCEPTED, REJECTED. Defaults to PENDING. |
 
-#### E. Display / Computed Data
+#### E. SWIFT Validation Rules Specific to Amendments
+
+| Rule ID | Rule | SWIFT Tags Affected |
+| :--- | :--- | :--- |
+| AMD-SWV-01 | `amendmentNarrative` uses Z charset (not X) | Tag 79 |
+| AMD-SWV-02 | Amount increase → Tag 32B; decrease → Tag 33B; always include Tag 34B if amount changed | Tags 32B, 33B, 34B |
+| AMD-SWV-03 | `amendmentNumber` auto-incremented (1, 2, 3...) per parent LC. Always included. | Tag 26E (Mandatory) |
+| AMD-SWV-04 | If `amendmentNarrative` changed, or shipping ports amended: re-screen against Sanctions | — |
+| AMD-SWV-05 | Tolerance (39A) and Max Credit (39B) mutual exclusion still applies if modified | Tags 39A, 39B |
+| AMD-SWV-06 | Authority tier calculated on **New Maximum Liability** (not delta) | — |
+
+#### F. Display / Computed Data
 
 | Field Name | Calculation Formula |
 | :--- | :--- |
-| **Amendment Number** | Auto-incremented (1, 2, 3...) per parent LC. SWIFT Tag 26E. |
+| **Amendment Number** | Auto-incremented (1, 2, 3...) per parent LC. |
 | **New Total LC Amount** | `Original Amount + Increase - Decrease`. |
 | **New Maximum Liability** | `New Total Amount + (New Total Amount × New Tolerance Positive / 100)`. |
 | **Limit Delta Required** | `New Maximum Liability - Original Maximum Liability`. Positive = earmark more; negative = release. |
 | **Required Authority Tier** | Calculated by Maker/Checker Matrix using **New Maximum Liability** (not delta). |
 
-#### F. Post-Submit Processing
+#### G. Post-Submit Processing & SWIFT Generation
 1. **Facility Delta Update:** Earmark additional funds or release excess.
 2. **Fee Application:** Amendment flat fees + additional issuance commission if amount increased/expiry extended.
 3. **Amendment Record Commit:** Delta saved to database, linked to parent LC.
-4. **SWIFT Generation:** MT 707 generated with **delta-only tags** (only changed fields).
+4. **SWIFT MT 707 Generation:**
+   - Call `validate#SwiftFields` (Layer 2) on amendment and parent LC entities.
+   - Assemble MT 707 using `SwiftMessageBuilder` with **delta-only tags** — only changed fields populate corresponding tags.
+   - Tag 26E (amendment number) always included. Tag 34B (new total) only if amount changed.
+   - Save as `SwiftMessage` with `messageStatusId = SWIFT_MSG_ACTIVE` (immutable).
 
-#### G. User Stories
+#### H. User Stories
 
 ### US-AMD-01: Financial vs Non-Financial Amendment Classification
 **As a** Trade Operations system,
@@ -322,11 +369,18 @@ Upon Checker authorization:
 **I want** to log the Beneficiary's acceptance or rejection of an amendment,
 **So that** the amendment terms become legally binding only with consent.
 
-#### H. Grounding Info
+### US-AMD-03: MT707 Delta-Only Generation
+**As a** Trade Operations system,
+**I want** to generate MT707 containing only changed tags when an amendment is authorized,
+**So that** the Advising Bank accurately processes only the modified terms.
+
+#### I. Grounding Info
 *   **Process:** From **REQ-IMP-SPEC-02** (baseline).
 *   **Delta-Only Tags:** From **FR-SWG-07** (generation spec).
 *   **Amendment Number:** From **FR-ENT-28** (gaps spec).
+*   **Z Charset:** From **FR-SWV-01** (validation spec) — Tag 79 uses Z charset.
 *   **Authority on New Total:** From **REQ-COM-AUTH-03** (common module).
+*   **Sanctions Re-screening:** From **REQ-IMP-SPEC-02 Section I** (baseline).
 
 ---
 
@@ -350,21 +404,21 @@ Upon Checker authorization:
 *   **Entry:** Parent LC in Issued state with available unutilized balance.
 *   **Exit:** Bank formally accepts or refuses presentation.
 
-#### D. Presentation Inputs
+#### D. Presentation Inputs (with SWIFT Tag Mapping)
 
-| Field Name | Req/Opt | Data Type | Validation Rules |
-| :--- | :--- | :--- | :--- |
-| `presentingBankPartyId` | Req | id | Via `TradeInstrumentParty` junction (role: TP_PRESENTING_BANK). |
-| `presentationDate` | Req | Date | Cannot be in the future. SWIFT Tag 30/32A. |
-| `presentingBankRef` | Opt | text-short | Max 16 chars, X charset, slash rules. SWIFT Tag 21. |
-| `presentationRef` | Req | text-short | Max 16 chars, X charset, no leading/trailing `/` or `//`. |
-| `claimAmount` | Req | number-decimal | Must be > 0. Comma decimal for SWIFT. |
-| `claimCurrency` | Req | id | Must match parent LC currency. ISO 4217. |
-| `discrepancyFound` | Req | Boolean | Determines routing (Clean vs Discrepant). |
-| `discrepancyDetails` | Cond | Array | Required if discrepancyFound = true. ISBP codes + free text. |
-| `documentDisposalEnumId` | Cond | id | HOLDING_DOCUMENTS, RETURNING_DOCUMENTS. Required when refusing. SWIFT Tag 77B. |
-| `applicantDecision` | Opt | Enum | PENDING, WAIVED, REFUSED. Used only if discrepant. |
-| `chargesDeducted` | Opt | text-long | Max 6×35, X charset. Discrepancy fee text. SWIFT Tag 73. |
+| Field Name | Req/Opt | Data Type | SWIFT Tag | Validation Rules |
+| :--- | :--- | :--- | :--- | :--- |
+| `presentingBankPartyId` | Req | id | — | Via `TradeInstrumentParty` junction (role: TP_PRESENTING_BANK). Added when presentation created. |
+| `presentationDate` | Req | Date | Tag 30/32A | Cannot be in the future. Formatted YYMMDD for SWIFT. |
+| `presentingBankRef` | Opt | text-short | Tag 21 | Max 16 chars, X charset. Slash rules: no leading/trailing `/`, no `//`. |
+| `presentationRef` | Req | text-short | Tag 20 | Max 16 chars, X charset. No leading/trailing `/`, no `//`. |
+| `claimAmount` | Req | number-decimal | Tag 32B | Must be > 0. Comma decimal, max 15 digits. |
+| `claimCurrency` | Req | id | Tag 32B | Must match parent LC currency. ISO 4217. |
+| `discrepancyFound` | Req | Boolean | — | Determines routing (Clean vs Discrepant). |
+| `discrepancyDetails` | Cond | Array | Tag 77J | Required if discrepancyFound = true. Each entry: `discrepancyCode` (max 35 chars, X charset) + `discrepancyDescription` (max 50 chars, X charset). |
+| `documentDisposalEnumId` | Cond | id | Tag 77B | HOLDING_DOCUMENTS, RETURNING_DOCUMENTS. **Required when refusing discrepant documents**. |
+| `applicantDecision` | Opt | Enum | — | PENDING, WAIVED, REFUSED. Used only if discrepant. |
+| `chargesDeducted` | Opt | text-long | Tag 73 | Max 6×35, X charset. Discrepancy fee text. |
 
 ##### Document Type Grid (per document received)
 | Field Name | Req/Opt | Data Type |
@@ -373,7 +427,19 @@ Upon Checker authorization:
 | `originalCount` | Req | number-integer | Number of original copies. |
 | `copyCount` | Req | number-integer | Number of photocopies. |
 
-#### E. Display / Computed Data
+#### E. SWIFT Validation Rules Specific to Presentation
+
+| Rule ID | Rule | SWIFT Tags Affected |
+| :--- | :--- | :--- |
+| PRE-SWV-01 | `presentationRef`: max 16 chars, X charset, slash rules | Tag 20 |
+| PRE-SWV-02 | `claimAmount`: comma decimal, max 15 digits, positive | Tag 32B |
+| PRE-SWV-03 | `claimCurrency` must match parent LC currency | Tag 32B |
+| PRE-SWV-04 | If `discrepancyFound = true`: at least one `PresentationDiscrepancy` record required | Tag 77J |
+| PRE-SWV-05 | If `applicantDecision = REFUSED`: `documentDisposalEnumId` required | Tag 77B |
+| PRE-SWV-06 | Discrepancy codes and descriptions: X charset, max 35/50 chars per entry | Tag 77J |
+| PRE-SWV-07 | Claim amount must not exceed remaining LC balance + tolerance % | — |
+
+#### F. Display / Computed Data
 
 | Field Name | Calculation Formula |
 | :--- | :--- |
@@ -382,13 +448,17 @@ Upon Checker authorization:
 | **Remaining LC Balance** | `Parent LC Amount - Total Previously Accepted Claims`. |
 | **Overdrawn Status** | `true` if `claimAmount > (Remaining Balance + Tolerance %)`. |
 
-#### F. Post-Submit Processing
+#### G. Post-Submit Processing & SWIFT Generation
 1. **Limit Update:** Contingent liability → firm liability (or acceptance liability for Usance).
 2. **SLA Tracking:** 5-day countdown timer stops.
 3. **Discrepancy Fee:** Auto-calculated and deducted per LC terms.
-4. **SWIFT Generation:** MT 750 (discrepancy advice), MT 734 (refusal), or MT 752 (waiver accepted) as applicable.
+4. **SWIFT Generation** (based on outcome):
+   - **Discrepant → MT 750:** Assemble from `TradeInstrument.transactionRef`, `presentingBankRef`, `claimCurrency` + `claimAmount`, concatenated `PresentationDiscrepancy` records (Tag 77J), optional `senderToReceiverInfo` (Tag 72Z). Save as `SWIFT_MSG_ACTIVE`.
+   - **Refused → MT 734:** Assemble from `transactionRef`, `presentingBankRef`, `presentationDate` + `claimCurrency` + `claimAmount` (Tag 32A), concatenated discrepancies (Tag 77J), `documentDisposalEnumId` mapped to `HOLDING DOCUMENTS` or `RETURNING DOCUMENTS` (Tag 77B), optional discrepancy fee text (Tag 73). Save as `SWIFT_MSG_ACTIVE`.
+   - **Waived → MT 752:** Assemble from `transactionRef`, `presentingBankRef`, system business date (Tag 30), `claimCurrency` + `claimAmount` (Tag 32B), optional `"DISCREPANCIES WAIVED BY APPLICANT"` (Tag 72Z). Save as `SWIFT_MSG_ACTIVE`.
+   - **Usance Accepted → MT 732:** Assemble from `transactionRef`, `presentingBankRef`, system business date (Tag 30), **maturity date** + `claimCurrency` + `claimAmount` (Tag 32A — date is future maturity). Save as `SWIFT_MSG_ACTIVE`.
 
-#### G. User Stories
+#### H. User Stories
 
 ### US-PRE-01: Document Lodgement & Examination
 **As a** Trade Operations Maker,
@@ -400,11 +470,12 @@ Upon Checker authorization:
 **I want** to enforce the 5-banking-day examination window,
 **So that** the bank avoids UCP 600 violations.
 
-#### H. Grounding Info
+#### I. Grounding Info
 *   **Process:** From **REQ-IMP-SPEC-03** (baseline).
 *   **Entity Fields:** From **FR-ENT-19** (validation), **FR-ENT-30 to FR-ENT-33** (gaps).
 *   **Party Junction:** From **FR-TP-08** — `presentingBankBic` replaced by `TP_PRESENTING_BANK` junction.
-*   **SWIFT Generation:** From **FR-SWG-08** (MT750), **FR-SWG-09** (MT734), **FR-SWG-10** (MT752).
+*   **SWIFT Generation:** From **FR-SWG-08** (MT750), **FR-SWG-09** (MT734), **FR-SWG-10** (MT752), **FR-SWG-11** (MT732).
+*   **Conditional Validation:** From **FR-SWV-08** (validation spec) — discrepancy-dependent fields.
 
 ---
 
@@ -426,20 +497,41 @@ Upon Checker authorization:
 *   **Entry:** Presentation in Accepted/Clean state. For Usance: current date = Maturity Date.
 *   **Exit:** Funds transferred. Presentation claim closed. LC → Closed if fully drawn.
 
-#### D. Settlement Inputs
+#### D. Settlement Inputs (with SWIFT Tag Mapping)
 
-| Field Name | Req/Opt | Data Type | Validation Rules |
-| :--- | :--- | :--- | :--- |
-| `valueDate` | Req | Date | Cannot be in the past. SWIFT Tag 32A. |
-| `principalAmount` | Req | number-decimal | Must equal Accepted Claim Amount. Comma decimal for SWIFT. |
-| `remittanceCurrency` | Req | id | Must match LC/Claim currency. ISO 4217. |
-| `applicantDebitAccount` | Req | String | Valid, active CASA account belonging to Applicant. |
-| `appliedMarginAmount` | Opt | number-decimal | Cash collateral to utilize (if taken during issuance). |
-| `fxExchangeRate` | Cond | number-decimal | Required if Debit Account currency ≠ Remittance Currency. |
-| `forwardContractRef` | Opt | text-short | Reference to pre-booked Treasury FX contract. |
-| `chargesDetailEnumId` | Req | Enum | OUR, BEN, SHA. Defaults to LC terms. SWIFT Tag 71A. |
+| Field Name | Req/Opt | Data Type | SWIFT Tag | Validation Rules |
+| :--- | :--- | :--- | :--- | :--- |
+| `valueDate` | Req | Date | Tag 32A | Cannot be in the past. Formatted YYMMDD for SWIFT. |
+| `principalAmount` | Req | number-decimal | Tag 32A | Must equal Accepted Claim Amount. Comma decimal, max 15 digits, positive. |
+| `remittanceCurrency` | Req | id | Tag 32A | Must match LC/Claim currency. ISO 4217. |
+| `applicantDebitAccount` | Req | String | — | Valid, active CASA account belonging to Applicant. |
+| `appliedMarginAmount` | Opt | number-decimal | — | Cash collateral to utilize (if taken during issuance). |
+| `fxExchangeRate` | Cond | number-decimal | — | Required if Debit Account currency ≠ Remittance Currency. Uses Live Treasury Rate (per REQ-COM-FX-02). |
+| `forwardContractRef` | Opt | text-short | — | Max 16 chars, X charset, slash rules. Reference to pre-booked Treasury FX contract. |
+| `chargesDetailEnumId` | Req | Enum | Tag 71A | OUR, BEN, SHA. Defaults to LC terms. Mandatory for MT103. |
 
-#### E. Display / Computed Data
+##### Settlement Party Roles (added during settlement process)
+| Role | SWIFT Tag | Notes |
+| :--- | :--- | :--- |
+| `TP_PRESENTING_BANK` | Tag 58a (MT202) | Beneficiary institution for bank-to-bank transfer. |
+| `TP_INTERMEDIARY_BANK` | Tag 56a | Intermediate routing bank (if needed). |
+| `TP_SENDERS_CORRESPONDENT` | Tag 53a (MT202) | Issuing bank's correspondent. Requires `nostroAccountRef`. |
+| `TP_RECEIVERS_CORRESPONDENT` | Tag 54a (MT202) | Presenting bank's correspondent. |
+
+#### E. SWIFT Validation Rules Specific to Settlement
+
+| Rule ID | Rule | SWIFT Tags Affected |
+| :--- | :--- | :--- |
+| STL-SWV-01 | `principalAmount`: comma decimal, max 15 digits, positive | Tag 32A |
+| STL-SWV-02 | `remittanceCurrency` must match LC/Claim currency | Tag 32A |
+| STL-SWV-03 | `valueDate` formatted as YYMMDD | Tag 32A |
+| STL-SWV-04 | For MT202: `TP_SENDERS_CORRESPONDENT` must have `nostroAccountRef` populated | Tag 53a |
+| STL-SWV-05 | For MT103: Beneficiary (`TP_BENEFICIARY`) `accountNumber` is **mandatory** | Tag 59a |
+| STL-SWV-06 | For MT103: `chargesDetailEnumId` required (OUR, BEN, SHA) | Tag 71A |
+| STL-SWV-07 | For MT202: Presenting Bank BIC required | Tag 58a |
+| STL-SWV-08 | Nostro account auto-derived from `TradeConfig.NOSTRO_ACCOUNT_{CCY}` | Tag 53a (MT202) |
+
+#### F. Display / Computed Data
 
 | Field Name | Calculation Formula |
 | :--- | :--- |
@@ -447,14 +539,16 @@ Upon Checker authorization:
 | **Nostro Account** | Auto-derived based on Remittance Currency (from `TradeConfig.NOSTRO_ACCOUNT_{CCY}`). |
 | **Account Balance Check** | `true` if Applicant Debit Account has sufficient funds. Blocks submission if false. |
 
-#### F. Post-Submit Processing
+#### G. Post-Submit Processing & SWIFT Generation
 1. **Liability Reversal:** Reverses firm/acceptance liability for claim amount.
 2. **Margin Release:** Releases margin block, transfers to settlement suspense.
 3. **Core Debit:** Debits Total Debit Amount from Applicant's operating account.
 4. **Parent LC Update:** Deducts settled amount. If remaining balance = 0 (within tolerance), LC → Closed.
-5. **SWIFT Generation:** MT 202 (bank-to-bank) or MT 103 (customer direct).
+5. **SWIFT Generation** (based on routing):
+   - **Bank-to-Bank → MT 202:** Assemble from `transactionRef`, `presentingBankRef`, `valueDate` + `remittanceCurrency` + `principalAmount` (Tag 32A), Issuing bank's Nostro (Tag 53a from config), Presenting Bank BIC (Tag 58a). Save as `SWIFT_MSG_ACTIVE`.
+   - **Customer Direct → MT 103:** Assemble from `transactionRef`, `valueDate` + `remittanceCurrency` + `principalAmount` (Tag 32A), Applicant details (Tag 50a), Beneficiary details with **mandatory account number** (Tag 59a), charges (Tag 71A). Save as `SWIFT_MSG_ACTIVE`.
 
-#### G. User Stories
+#### H. User Stories
 
 ### US-STL-01: Sight LC Settlement
 **As a** Trade Operations system,
@@ -471,11 +565,12 @@ Upon Checker authorization:
 **I want** to use Live Treasury FX rates at settlement time,
 **So that** the bank bears zero market risk on cash movement (per REQ-COM-FX-02).
 
-#### H. Grounding Info
+#### I. Grounding Info
 *   **Process:** From **REQ-IMP-SPEC-04** (baseline).
 *   **SWIFT Generation:** From **FR-SWG-13** (MT202), **FR-SWG-14** (MT103).
 *   **Live FX Rate:** From **REQ-COM-FX-02** (common module) and common-consolidated-brd.md Feature 2.
 *   **Settlement Roles:** From **FR-TP-04** — settlement-specific party roles added during this process.
+*   **MT103 Account Number Rule:** From **FR-TP-04 Tag Coverage Verification** — beneficiary account mandatory for MT103.
 
 ---
 
@@ -485,6 +580,8 @@ Upon Checker authorization:
 *   **Transaction State:** Draft (SG Issuance) → Pending Approval → Executed
 *   **SG Sub-State:** Issued → Redeemed/Closed
 *   **LC Business State Impact:** Parent LC remains Issued. Hard lock on utilized limit. Waiver lock flag set.
+
+**Note:** No SWIFT messages are generated for Shipping Guarantees — they are local indemnities given to local shipping agents.
 
 #### B. Business Process Workflow
 1. **Application:** Applicant submits SG request with invoice copy and non-negotiable transport document.
@@ -571,7 +668,15 @@ Upon Checker authorization:
 | `consentSwiftRef` | Cond | text-short | Reference of incoming SWIFT MT 799/730 confirming agreement. |
 | `cancellationFee` | Opt | number-decimal | Flat fee for early processing. |
 
-#### E. Display / Computed Data
+#### E. SWIFT Validation Rules Specific to Cancellation
+
+| Rule ID | Rule | SWIFT Tags Affected |
+| :--- | :--- | :--- |
+| CAN-SWV-01 | Early cancellation generates MT 799 free-format message | Tag 79 |
+| CAN-SWV-02 | MT 799 narrative uses **Z charset** (Tag 79), max 35×50 | Tag 79 |
+| CAN-SWV-03 | MT 799 includes `transactionRef` (Tag 20) and Advising Bank ref or NONREF (Tag 21) | Tags 20, 21 |
+
+#### F. Display / Computed Data
 
 | Field Name | Calculation Formula |
 | :--- | :--- |
@@ -579,12 +684,12 @@ Upon Checker authorization:
 | **Total Limit to Release** | `cancelledAmount + (cancelledAmount × tolerancePositive / 100)`. |
 | **Margin to Release** | Proportional cash collateral tied to cancelled balance. |
 
-#### F. Post-Submit Processing
-1. **Limit Reversal:** Restore limits to customer's Available Earmark via Core Banking.
-2. **Margin Release:** Remove hold on deposit account if cash-backed.
-3. **State Lock:** LC → Closed. Block new presentations, amendments, or fees.
+#### G. Post-Submit Processing & SWIFT Generation
+1. **Early Cancellation → MT 799:** System-generated cancellation request narrative (Z charset, 35×50). Includes `transactionRef` and Advising Bank ref. Save as `SWIFT_MSG_ACTIVE`.
+2. **Upon Consent Received → Checker Authorization:** Limits released, LC → Closed.
+3. **Auto-Closure/Auto-Expiry:** No SWIFT generated. Limits restored via Core Banking. State Lock applied — block new presentations, amendments, or fees.
 
-#### G. User Stories
+#### H. User Stories
 
 ### US-CAN-01: Auto-Expiry with Mail Days Grace
 **As a** Trade Operations system,
@@ -596,17 +701,17 @@ Upon Checker authorization:
 **I want** to request early cancellation and track Beneficiary consent via SWIFT,
 **So that** the LC is cancelled only with all parties' agreement.
 
-#### H. Grounding Info
+#### I. Grounding Info
 *   **Process:** From **REQ-IMP-SPEC-06** (baseline).
 *   **Mail Days:** From product configuration `Auto-Expiry days` in REQ-COM-PRD-01 (common module).
+*   **MT799 Generation:** From **FR-SWG-12** (swift-generation-brd.md).
 
 ---
 
-## 3. Feature 3: SWIFT Validation Infrastructure
+## 3. Feature 3: SWIFT Validation Infrastructure (Common)
 
-### 3.1 Final Requirements in Detail
+### 3.1 Shared Character Sets
 
-#### A. SWIFT Character Sets
 **X Character Set** (majority of SWIFT fields):
 - Allowed: `A-Z a-z 0-9 / - ? : ( ) . , ' +` and spaces
 - Blocked: `@ & _ # ! % ^ * { } [ ] | \ " ; < > ~` and all other special characters
@@ -614,28 +719,37 @@ Upon Checker authorization:
 **Z Character Set** (Tags 79 in MT707, MT799):
 - Extends X charset with: `@ # = ! " % & * ; < > _`
 
-#### B. Validation Rules Summary
+### 3.2 Common Validation Rules (Apply Across All Processes)
 
 | Rule ID | Rule | Applies To |
 | :--- | :--- | :--- |
-| FR-SWV-01 | X Character Set validation | All X charset fields |
-| FR-SWV-02 | Reference slash rules (no leading/trailing `/`, no `//`) | Tags 20, 21, 23 |
-| FR-SWV-03 | Amount format: comma decimal, max 15 digits, positive | Tags 32B, 33B, 34B |
-| FR-SWV-04 | Date format: YYMMDD | All date tags |
-| FR-SWV-05 | BIC format: exactly 8 or 11 alphanumeric characters | All BIC fields |
-| FR-SWV-06 | Line format: NxM (4×35, 6×35, 12×65, 35×50, 70×50, 100×65) | Multi-line narrative fields |
-| FR-SWV-07 | Mutual exclusion: 39A/39B, 44C/44D, 53A/53D, 57A/57D | Tolerance/Max Credit, Shipment Date/Period, Bank BIC/Name |
-| FR-SWV-08 | Conditional requirements: tenor-dependent, discrepancy-dependent | Usance fields, Mixed Payment, Deferred Payment, Discrepancy details |
+| SWV-01 | X Character Set validation | All X charset fields (narratives, names, addresses, references, descriptions) |
+| SWV-02 | Z Character Set validation | Tag 79 only (amendment narrative, cancellation request) |
+| SWV-03 | Reference slash rules: no leading/trailing `/`, no `//` | Tags 20, 21, 23 (all reference fields) |
+| SWV-04 | Amount format: comma decimal, max 15 digits, positive | Tags 32A, 32B, 33B, 34B (all financial amount fields) |
+| SWV-05 | Date format: YYMMDD | All date fields in SWIFT tags |
+| SWV-06 | BIC format: exactly 8 or 11 alphanumeric characters | All BIC fields (Tags 41A, 42A, 53a, 57a, party BICs) |
+| SWV-07 | Line format: NxM (4×35, 6×35, 12×65, 35×50, 70×50, 100×65) | Multi-line narrative fields — validated at data capture, auto-wrapped at generation |
+| SWV-08 | Mutual exclusion: 39A/39B, 44C/44D, 53A/53D, 57A/57D | Tolerance vs Max Credit, Shipment Date vs Period, Bank BIC vs Name |
+| SWV-09 | Conditional requirements enforcement | Tenor-dependent fields, discrepancy-dependent fields (see process-specific tables) |
 
-#### C. Validation Service API
+### 3.3 Validation Service API
+
 **Service:** `validate#SwiftFields`
 - Accepts entity type and entity ID
 - Validates ALL SWIFT-bound fields on that entity
-- Returns field-level error messages with specific violation details
+- Returns field-level error messages with specific violation details (e.g., "Description of Goods contains invalid character '@' at position 142")
 - Can be called on save (incremental) and on submit (comprehensive)
-- Supports all SWIFT-bound entities: `ImportLetterOfCredit`, `TradeInstrument`, `TradeParty`, `ImportLcAmendment`, `TradeDocumentPresentation`, `PresentationDiscrepancy`, `ImportLcSettlement`
+- Supports all SWIFT-bound entities: `ImportLetterOfCredit`, `TradeInstrument`, `TradeParty`, `TradePartyBank`, `ImportLcAmendment`, `TradeDocumentPresentation`, `PresentationDiscrepancy`, `ImportLcSettlement`
 
-#### D. User Stories
+### 3.4 Layer 2 Generation-Time Validation (Safety Net)
+Before assembling any SWIFT message:
+1. Call `validate#SwiftFields` on all source entities
+2. If errors: abort generation, return errors, log warning
+3. If data passes but contains unexpected characters: auto-convert (e.g., `&` → `AND`) and log warning
+4. All Layer 2 conversions logged with field name, original value, and converted value
+
+### 3.5 User Stories
 
 ### US-SWV-01: Inline SWIFT Character Validation
 **As a** Trade Operations Maker,
@@ -647,18 +761,17 @@ Upon Checker authorization:
 **I want** a complete SWIFT compliance check before submitting for approval,
 **So that** I receive all issues in one pass and can fix them efficiently.
 
-#### E. Grounding Info
+#### 3.6 Grounding Info
 *   **Character Sets:** From **FR-SWV-01** (swift-validation-brd.md).
-*   **Validation Rules:** From **FR-SWV-01 through FR-SWV-09** (swift-validation-brd.md).
+*   **Validation Rules:** From **FR-SWV-01 through FR-SWV-08** (swift-validation-brd.md).
 *   **Validation Service:** From **FR-SWV-09** (swift-validation-brd.md).
+*   **Layer 2 Validation:** From **FR-SWG-03** (swift-generation-brd.md).
 
 ---
 
-## 4. Feature 4: SWIFT Message Generation
+## 4. Feature 4: SWIFT Message Generation (Common Infrastructure)
 
-### 4.1 Final Requirements in Detail
-
-#### A. SWIFT Message Builder
+### 4.1 SWIFT Message Builder
 Reusable Groovy utility class (`SwiftMessageBuilder`) that:
 - Constructs SWIFT Basic Header Block 1 (sender BIC from `TradeConfig.ISSUING_BANK_BIC`)
 - Constructs Application Header Block 2 (message type, receiver BIC)
@@ -667,7 +780,7 @@ Reusable Groovy utility class (`SwiftMessageBuilder`) that:
 - Handles tag formatting: date→YYMMDD, amount→comma-decimal, multi-line→NxM wrapping
 - `build()` method returns assembled SWIFT message text
 
-#### B. Tag Formatting Services
+### 4.2 Tag Formatting Services
 | Service | Output Format |
 | :--- | :--- |
 | `format#SwiftDate(date)` | YYMMDD |
@@ -677,16 +790,9 @@ Reusable Groovy utility class (`SwiftMessageBuilder`) that:
 | `format#SwiftNarrative(text, charsPerLine)` | Auto-wrapped lines at specified width |
 | `format#SwiftReference(ref)` | Validated reference (slash rules, max 16 chars) |
 
-#### C. Layer 2 Generation-Time Validation
-Before assembling any message:
-1. Call `validate#SwiftFields` on all source entities
-2. If errors: abort generation, return errors, log warning
-3. If data passes but contains unexpected characters: auto-convert (e.g., `&` → `AND`) and log warning
-4. All Layer 2 conversions logged with field name, original value, and converted value
-
-#### D. Message Persistence & Lifecycle
+### 4.3 Message Persistence & Lifecycle
 Every generated message persisted as `SwiftMessage` record:
-- `instrumentId`, `messageType`, `messageContent`, `generatedDate`, `messageStatusId`
+- Fields: `instrumentId`, `messageType`, `messageContent`, `generatedDate`, `messageStatusId`
 
 **DRAFT/ACTIVE Lifecycle:**
 
@@ -700,273 +806,190 @@ Every generated message persisted as `SwiftMessage` record:
 | ACTIVE | (any) | Any modification | **Blocked** |
 
 **Rules:**
-- Pre-approval: users may manually generate DRAFT messages for preview. Re-generation replaces existing DRAFT.
-- Post-approval: system auto-generates ACTIVE message. Once ACTIVE exists, regeneration is **blocked** (immutable).
-- If auto-generation fails, manual generation allowed only if no ACTIVE message exists.
+- Pre-approval (`transactionStatusId ≠ TRANS_APPROVED`): users may manually generate DRAFT messages for preview. Re-generation replaces existing DRAFT.
+- Post-approval (`transactionStatusId = TRANS_APPROVED`): system auto-generates ACTIVE message. Once ACTIVE exists, regeneration is **blocked** (immutable).
+- If auto-generation fails, manual generation allowed only if no ACTIVE message exists for this `instrumentId` + `messageType` combination.
 
-#### E. MT Message Generation Matrix
+### 4.4 MT Message Generation Summary Matrix
 
-| MT Type | Trigger | Calling Service |
-| :--- | :--- | :--- |
-| MT700 | LC Issuance authorized | `execute#IssuancePostAuth` |
-| MT701 | Auto (from MT700 if overflow) | `generate#Mt700` (internal) |
-| MT707 | Amendment authorized | `authorize#Amendment` (post-auth) |
-| MT750 | Presentation marked Discrepant | `authorize#Presentation` |
-| MT734 | Presentation formally Refused | `update#PresentationRefusal` |
-| MT752 | Discrepancy Waived → Accepted | `update#PresentationWaiver` |
-| MT732 | Usance presentation Accepted | `authorize#Presentation` (usance path) |
-| MT799 | Early cancellation initiated | `update#Cancellation` (early mutual) |
-| MT202 | Settlement authorized (bank-to-bank) | `settle#Presentation` |
-| MT103 | Settlement authorized (customer direct) | `settle#Presentation` |
-
-#### F. MT700 Tag Mapping (Complete)
-
-| Block | Tags | M/O | Data Source |
+| MT Type | Lifecycle Trigger | Process Feature | Primary Entity Data Source |
 | :--- | :--- | :--- | :--- |
-| **A: Header** | 27 (Sequence), 40A (Form of DC), 20 (Credit No.), 31C (Issue Date), 31D (Expiry Date+Place) | All M | `TradeInstrument`, `ImportLetterOfCredit` |
-| **B: Parties** | 50 (Applicant), 59/59A (Beneficiary), 51A (Applicant Bank) | 50/59 M, 51A O | `TradeInstrumentParty` junction (TP_APPLICANT, TP_BENEFICIARY, TP_APPLICANT_BANK) |
-| **C: Financials** | 32B (Amount), 39A (Tolerance), 39B (Max Credit), 39C (Additional Amounts), 41a (Available With), 42C (Drafts at), 42A (Drawee), 42M (Mixed), 42P (Deferred) | 32B/41a M, rest O | `TradeInstrument`, `ImportLetterOfCredit` |
-| **D: Shipping** | 43P (Partial), 43T (Transhipment), 44A (Receipt Place), 44B (Final Dest), 44C (Latest Shipment), 44D (Shipment Period), 44E (Port of Loading), 44F (Port of Discharge) | All O | `ImportLetterOfCredit` |
-| **E: Narratives** | 45A (Goods), 46A (Documents), 47A (Conditions), 71D (Charges), 48 (Presentation Period), 49 (Confirmation) | 45A/46A/49 M, rest O | `ImportLetterOfCredit` |
-| **F: Routing** | 53a (Reimbursing Bank), 57a (Advise Through Bank) | All O | `TradeInstrumentParty` junction (TP_REIMBURSING, TP_ADVISE_THRU) |
-| **G: Admin** | 23 (Pre-Advice Ref), 72Z (Sender Info), 78 (Bank Instructions) | All O | `TradeInstrument`, `ImportLetterOfCredit` |
+| MT700 | LC Issuance authorized | Feature 2.1 (Issuance) | `ImportLetterOfCredit`, `TradeInstrument`, `TradeInstrumentParty` |
+| MT701 | Auto (from MT700 if overflow) | Feature 2.1 (Issuance) | Same as MT700 — overflow from Tags 45A/46A/47A |
+| MT707 | Amendment authorized | Feature 2.2 (Amendments) | `ImportLcAmendment`, parent `ImportLetterOfCredit` |
+| MT750 | Presentation marked Discrepant | Feature 2.3 (Presentation) | `TradeDocumentPresentation`, `PresentationDiscrepancy` |
+| MT734 | Presentation formally Refused | Feature 2.3 (Presentation) | `TradeDocumentPresentation`, `PresentationDiscrepancy` |
+| MT752 | Discrepancy Waived → Accepted | Feature 2.3 (Presentation) | `TradeDocumentPresentation` |
+| MT732 | Usance presentation Accepted | Feature 2.3 (Presentation) | `TradeDocumentPresentation`, parent LC maturity |
+| MT799 | Early cancellation initiated | Feature 2.6 (Cancellations) | `TradeInstrument`, Advising Bank ref |
+| MT202 | Settlement (bank-to-bank) | Feature 2.4 (Settlement) | `ImportLcSettlement`, `TradeInstrumentParty` |
+| MT103 | Settlement (customer direct) | Feature 2.4 (Settlement) | `ImportLcSettlement`, `TradeParty` |
 
-**MT701 Auto-Continuation:** Generated automatically when Tags 45A, 46A, or 47A exceed 100×65 chars. Contains overflow in Tags 45B, 46B, 47B. Sequence Tag 27 updated to `2/N`.
+### 4.5 User Stories
 
-#### G. User Stories
-
-### US-SWG-01: Correct MT700 Generation on LC Issuance
-**As a** Trade Operations system,
-**I want** to generate a standards-compliant MT700 from entity data upon Checker authorization,
-**So that** the Advising Bank receives a correctly formatted documentary credit notification.
-
-### US-SWG-02: Message Immutability After Dispatch
+### US-SWG-01: Message Immutability After Dispatch
 **As a** Trade Operations system,
 **I want** ACTIVE SWIFT messages to be immutable after transaction approval,
 **So that** the bank has an audit-proof record of dispatched communications.
 
-#### H. Grounding Info
+### US-SWG-02: Draft Message Preview
+**As a** Trade Operations Maker,
+**I want** to preview and generate SWIFT messages as DRAFT before transaction approval,
+**So that** I can verify message content during data entry.
+
+#### 4.6 Grounding Info
 *   **Message Builder:** From **FR-SWG-01**, **FR-SWG-02** (swift-generation-brd.md).
 *   **Layer 2 Validation:** From **FR-SWG-03** (swift-generation-brd.md).
 *   **Message Lifecycle:** From **FR-SWG-15** (swift-generation-brd.md).
-*   **MT700 Tag Mapping:** From **FR-SWG-05** (generation), **FR-SGC-04** (gaps), **REQ-IMP-SWIFT-02/03** (baseline).
-*   **MT701 Continuation:** From **FR-SWG-06** (generation spec).
-*   **Party Data Source:** From **FR-TP-03** — all party data read from `TradeInstrumentParty` junction, not flat fields.
+*   **Message Persistence:** From **FR-SWG-04** (swift-generation-brd.md).
 
 ---
 
-## 5. Feature 5: Product Configuration & Validation
+## 5. Feature 5: Party Management for Import LC
 
-### 5.1 Final Requirements in Detail
+### 5.1 Party-Role Junction Pattern
+Import LC uses the `TradeInstrumentParty` junction entity for all party assignments. Flat BIC/name fields have been removed from `ImportLetterOfCredit`, `TradeInstrument`, and `TradeDocumentPresentation`.
 
-#### A. Import LC Product-Specific Validation Rules
+### 5.2 Import LC Party Roles
+
+| Role ID | Description | Party Type | Primary SWIFT Tag | Account Number Rule |
+| :--- | :--- | :--- | :--- | :--- |
+| `TP_APPLICANT` | Applicant (Ordering Customer) | Commercial | Tag 50 | Optional |
+| `TP_BENEFICIARY` | Beneficiary | Commercial | Tag 59 | Optional (MT700), **Mandatory** (MT103 Tag 59a) |
+| `TP_ADVISING_BANK` | Advising Bank | Bank | Header Block 2 (Receiver) | N/A |
+| `TP_APPLICANT_BANK` | Applicant Bank | Bank | Tag 51a | Forbidden in MT707 (flat text only) |
+| `TP_REIMBURSING_BANK` | Reimbursing Bank | Bank | Tag 53a | Optional |
+| `TP_ADVISE_THRU_BANK` | Advise Through Bank | Bank | Tag 57a | Optional |
+| `TP_CONFIRMING_BANK` | Confirming Bank | Bank | Tag 58a | Optional |
+| `TP_NEGOTIATING_BANK` | Negotiating / Available With Bank | Bank | Tag 41a | **Strictly Forbidden** |
+| `TP_DRAWEE_BANK` | Drawee Bank | Bank | Tag 42a | **Strictly Forbidden** |
+| `TP_PRESENTING_BANK` | Presenting Bank | Bank | MT750/734/752, MT202 Tag 58a | Optional |
+| `TP_INTERMEDIARY_BANK` | Intermediary Bank (Settlement) | Bank | Tag 56a (MT202/MT103) | Optional |
+| `TP_SENDERS_CORRESPONDENT` | Sender's Correspondent | Bank | Tag 53a (MT202) | Highly Recommended |
+| `TP_RECEIVERS_CORRESPONDENT` | Receiver's Correspondent | Bank | Tag 54a (MT202) | Optional |
+
+### 5.3 SWIFT Party Validation Rules
+
+| Rule ID | Rule | Applies To |
+| :--- | :--- | :--- |
+| PTY-SWV-01 | Party name (`partyName`): X charset, max 4×35 lines | All party tags (50, 59, 51a, 53a, 57a, etc.) |
+| PTY-SWV-02 | Party address (`registeredAddress`): X charset, max 4×35 lines | All party tags |
+| PTY-SWV-03 | BIC format: exactly 8 or 11 alphanumeric characters | All bank party BICs |
+| PTY-SWV-04 | Account number format: prefixed with `/` when included in party block | Tags 50, 59, 59a |
+| PTY-SWV-05 | Account number **forbidden** on Tag 41a (Available With) — even if bank has `accountNumber` | Tag 41a / `TP_NEGOTIATING_BANK` |
+| PTY-SWV-06 | Account number **forbidden** on Tag 42a (Drawee) | Tag 42a / `TP_DRAWEE_BANK` |
+| PTY-SWV-07 | Account number **mandatory** on Tag 59a (MT103 Beneficiary) | Tag 59a / `TP_BENEFICIARY` |
+| PTY-SWV-08 | If BIC unavailable, use Option D (Name + Address 4×35) for bank tags | Tags 53D, 57D, 58D |
+
+### 5.4 Bank Eligibility Rules
+
+| Role | Validation Rule | Error Message |
+| :--- | :--- | :--- |
+| `TP_ADVISING_BANK` | `hasActiveRMA = Y` (mandatory, no exceptions) | "Advising Bank must have active RMA with the Issuing Bank." |
+| `TP_ADVISE_THRU_BANK` | No RMA check required | N/A — RMA between Advising and Advise Through is outside Issuing Bank scope |
+| `TP_REIMBURSING_BANK` | `nostroAccountRef` is not null | "Cannot designate as Reimbursing Bank: No active Nostro account found." |
+| `TP_CONFIRMING_BANK` | `fiLimitAvailable ≥ instrument max liability` | "Confirming Bank's FI limit is insufficient for instrument liability." |
+| All bank roles | `kycStatus = Active`, `sanctionsStatus = SANCTION_CLEAR` | Per compliance rules |
+
+### 5.5 "Available With" — Explicit User Choice
+- Maker explicitly selects "ANY BANK" or a specific negotiating bank
+- If specific bank: `availableWithEnumId = AVAIL_SPECIFIC_BANK` + `TP_NEGOTIATING_BANK` junction record
+- If ANY BANK: `availableWithEnumId = AVAIL_ANY_BANK` + remove any existing `TP_NEGOTIATING_BANK` junction record
+- The Maker can switch between these choices at any time before submission
+- **Account numbers forbidden on Tag 41a** — SWIFT builder must suppress even if negotiating bank has `accountNumber`
+
+### 5.6 User Stories
+(Refer to US-TP-01 through US-TP-06 in common-consolidated-brd.md Feature 1)
+
+#### 5.7 Grounding Info
+*   **Junction Pattern:** From **FR-TP-03** (tradeparty-refactor-brd.md).
+*   **Role Enumeration:** From **FR-TP-04** (tradeparty-refactor-brd.md).
+*   **Field Removals:** From **FR-TP-06**, **FR-TP-07**, **FR-TP-08** (tradeparty-refactor-brd.md).
+*   **Available With Choice:** From **FR-TP-09** (tradeparty-refactor-brd.md).
+*   **Account Number Rules:** From **FR-TP-04 Tag Coverage Verification** — tag-specific account number requirements.
+*   **SWIFT Party Validation:** From **FR-SWV-05** (BIC), **FR-SWV-06** (4×35 lines), **FR-TP-04** (account number per tag).
+
+---
+
+## 6. Feature 6: Product Configuration & Validation
+
+### 6.1 Import LC Product-Specific Validation Rules
 
 | Rule ID | Rule | Enforcement Point |
 | :--- | :--- | :--- |
-| IMP-VAL-01 | Tolerance Limit Check: total drawn amount ≤ LC amount + positive tolerance % | Document Presentation lodgement |
-| IMP-VAL-02 | Expiry Date Rule: prevent new presentation if presentation date > LC Expiry Date | Document Presentation lodgement |
-| IMP-VAL-03 | Date Sequence: Expiry Date ≥ Issue Date | Issuance data entry |
-| IMP-VAL-04 | Latest Shipment Date ≤ Expiry Date | Issuance data entry |
-| IMP-VAL-05 | Claim Currency must match LC currency | Document Presentation lodgement |
-| IMP-VAL-06 | Available With Enum explicitly chosen (ANY BANK or SPECIFIC BANK) | Issuance data entry |
-| IMP-VAL-07 | Tolerance (39A) and Max Credit (39B) mutually exclusive | Issuance data entry |
-| IMP-VAL-08 | Shipment Date (44C) and Shipment Period Text (44D) mutually exclusive | Issuance data entry |
+| IMP-VAL-01 | Tolerance Limit Check: total drawn amount ≤ LC amount + positive tolerance % | Document Presentation lodgement (Feature 2.3) |
+| IMP-VAL-02 | Expiry Date Rule: prevent new presentation if presentation date > LC Expiry Date | Document Presentation lodgement (Feature 2.3) |
+| IMP-VAL-03 | Date Sequence: Expiry Date ≥ Issue Date | Issuance data entry (Feature 2.1) |
+| IMP-VAL-04 | Latest Shipment Date ≤ Expiry Date | Issuance data entry (Feature 2.1) |
+| IMP-VAL-05 | Claim Currency must match LC currency | Document Presentation lodgement (Feature 2.3) |
+| IMP-VAL-06 | Available With Enum explicitly chosen (ANY BANK or SPECIFIC BANK) | Issuance data entry (Feature 2.1) |
 
-#### B. Revolving LC Rules
+### 6.2 Revolving LC Rules
 - If LC designated as "Revolving" (per `TradeProduct.Allow Revolving`), system automatically reinstates original LC amount upon settlement of a drawing.
 - No manual amendment required.
 - Continues until maximum cumulative limit reached.
 
-#### C. Regulatory Reporting
+### 6.3 Regulatory Reporting
 - For transactions within Vietnam: system auto-flags and categorizes import goods codes for foreign exchange (FX) outflow reporting to State Bank.
 
-#### D. Grounding Info
+#### 6.4 Grounding Info
 *   **Validation Rules:** From **REQ-IMP-04** (baseline).
 *   **Revolving LC:** From **REQ-IMP-04** (baseline), `Allow Revolving` flag from **REQ-COM-PRD-01** (common module).
 *   **Regulatory Reporting:** From **REQ-IMP-04** (baseline).
 
 ---
 
-## 6. Feature 6: Party Management for Import LC
-
-### 6.1 Final Requirements in Detail
-
-#### A. Party-Role Junction Pattern (per tradeparty-refactor-brd.md)
-Import LC uses the `TradeInstrumentParty` junction entity for all party assignments. Flat BIC/name fields have been removed from `ImportLetterOfCredit`, `TradeInstrument`, and `TradeDocumentPresentation`.
-
-#### B. Import LC Party Roles
-
-| Role ID | Description | Party Type | SWIFT Tag |
-| :--- | :--- | :--- | :--- |
-| `TP_APPLICANT` | Applicant (Ordering Customer) | Commercial | Tag 50 |
-| `TP_BENEFICIARY` | Beneficiary | Commercial | Tag 59 |
-| `TP_ADVISING_BANK` | Advising Bank | Bank | Header Block 2 (Receiver) |
-| `TP_APPLICANT_BANK` | Applicant Bank | Bank | Tag 51a |
-| `TP_REIMBURSING_BANK` | Reimbursing Bank | Bank | Tag 53a |
-| `TP_ADVISE_THRU_BANK` | Advise Through Bank | Bank | Tag 57a |
-| `TP_CONFIRMING_BANK` | Confirming Bank | Bank | Tag 58a |
-| `TP_NEGOTIATING_BANK` | Negotiating / Available With Bank | Bank | Tag 41a |
-| `TP_DRAWEE_BANK` | Drawee Bank | Bank | Tag 42a |
-| `TP_PRESENTING_BANK` | Presenting Bank | Bank | MT750/734/752 |
-| `TP_INTERMEDIARY_BANK` | Intermediary Bank (Settlement) | Bank | Tag 56a (MT202) |
-| `TP_SENDERS_CORRESPONDENT` | Sender's Correspondent | Bank | Tag 53a (MT202) |
-| `TP_RECEIVERS_CORRESPONDENT` | Receiver's Correspondent | Bank | Tag 54a (MT202) |
-
-#### C. Bank Eligibility Rules for Import LC
-
-| Role | Validation Rule | Error Message |
-| :--- | :--- | :--- |
-| `TP_ADVISING_BANK` | `hasActiveRMA = Y` (mandatory, no exceptions) | "Advising Bank must have active RMA with the Issuing Bank." |
-| `TP_REIMBURSING_BANK` | `nostroAccountRef` is not null | "Cannot designate as Reimbursing Bank: No active Nostro account found." |
-| `TP_CONFIRMING_BANK` | `fiLimitAvailable ≥ instrument max liability` | "Confirming Bank's FI limit is insufficient for instrument liability." |
-| All bank roles | `kycStatus = Active`, `sanctionsStatus = SANCTION_CLEAR` | Per compliance rules |
-
-#### D. "Available With" — Explicit User Choice
-- Maker explicitly selects "ANY BANK" or a specific negotiating bank
-- If specific bank: `availableWithEnumId = AVAIL_SPECIFIC_BANK` + `TP_NEGOTIATING_BANK` junction record
-- If ANY BANK: `availableWithEnumId = AVAIL_ANY_BANK` + remove `TP_NEGOTIATING_BANK` junction record
-- **Account numbers forbidden on Tag 41a** — SWIFT builder must suppress even if negotiating bank has `accountNumber`
-
-#### E. User Stories
-(Refer to US-TP-01 through US-TP-06 in common-consolidated-brd.md Feature 1)
-
-#### F. Grounding Info
-*   **Junction Pattern:** From **FR-TP-03** (tradeparty-refactor-brd.md).
-*   **Role Enumeration:** From **FR-TP-04** (tradeparty-refactor-brd.md).
-*   **Field Removals:** From **FR-TP-07**, **FR-TP-08** (tradeparty-refactor-brd.md).
-*   **Available With Choice:** From **FR-TP-09** (tradeparty-refactor-brd.md).
-
----
-
-## 7. Feature 7: SWIFT Field — Entity Schema Summary
-
-### 7.1 ImportLetterOfCredit — Complete Field Set
-
-| Field | Type | SWIFT Tag | Notes |
-| :--- | :--- | :--- | :--- |
-| `lcTypeEnumId` | id | 40A | IRREVOCABLE, IRREVOCABLE_TRANSFERABLE |
-| `availableWithEnumId` | id | 41a | AVAIL_ANY_BANK or AVAIL_SPECIFIC_BANK |
-| `availableWithBic` | text-short | 41A | Valid 8/11 char BIC (if specific bank) |
-| `availableByEnumId` | id | 41a | BY_PAYMENT, BY_ACCEPTANCE, BY_NEGOTIATION, BY_DEF_PAYMENT |
-| `partialShipmentEnumId` | id | 43P | ALLOWED, NOT_ALLOWED, CONDITIONAL |
-| `transhipmentEnumId` | id | 43T | ALLOWED, NOT_ALLOWED, CONDITIONAL |
-| `confirmationEnumId` | id | 49 | CONFIRM, MAY_ADD, WITHOUT |
-| `tenorTypeEnumId` | id | 42C | SIGHT, USANCE, ACCEPTANCE, NEGOTIATION, DEF_PAYMENT, MIXED |
-| `usanceDays` | number-integer | 42C | Required if tenor ≠ SIGHT |
-| `usanceBaseDate` | text-medium | 42C | Required if tenor ≠ SIGHT |
-| `draweeBic` | text-short | 42A | Valid 8/11 char BIC |
-| `mixedPaymentDetails` | text-long | 42M | Max 4×35. Required if tenor = MIXED |
-| `deferredPaymentDetails` | text-long | 42P | Max 4×35. Required if tenor = DEF_PAYMENT/NEGOTIATION |
-| `goodsDescription` | text-very-long | 45A | Max 100×65, X charset |
-| `documentsRequired` | text-very-long | 46A | Max 100×65, X charset |
-| `additionalConditions` | text-very-long | 47A | Max 100×65, X charset |
-| `chargeAllocationText` | text-long | 71D | Max 6×35, X charset |
-| `bankToBankInstructions` | text-very-long | 78 | Max 12×65, X charset |
-| `presentationPeriodDays` | number-integer | 48 | Positive integer |
-| `portOfLoading` | text-medium | 44E | Max 65 chars, X charset |
-| `portOfDischarge` | text-medium | 44F | Max 65 chars, X charset |
-| `receiptPlace` | text-medium | 44A | Max 65 chars, X charset |
-| `finalDeliveryPlace` | text-medium | 44B | Max 65 chars, X charset |
-| `shipmentPeriodText` | text-medium | 44D | Max 65 chars, X charset. Mutually exclusive with latestShipmentDate |
-| `tolerancePositive` | number-integer | 39A | Mutually exclusive with maxCreditAmountFlag |
-| `toleranceNegative` | number-integer | 39A | Mutually exclusive with maxCreditAmountFlag |
-| `maxCreditAmountFlag` | text-indicator | 39B | Y/N. Mutually exclusive with tolerance |
-| `additionalAmountsText` | text-long | 39C | Max 4×35, X charset |
-| `expiryPlace` | text-medium | 31D | Max 29 chars, X charset |
-| `chargeAllocation` | Enum | 71D | ALL_APPLICANT, ALL_BENEFICIARY, SHARED |
-
-### 7.2 TradeInstrument — Complete Field Set
-
-| Field | Type | SWIFT Tag | Notes |
-| :--- | :--- | :--- | :--- |
-| `transactionRef` | text-short | 20 | Max 16 chars, X charset, slash rules |
-| `currencyUomId` | id | 32B | ISO 4217 |
-| `amount` | number-decimal | 32B | Comma decimal for SWIFT |
-| `issueDate` | date | 31C | Formatted YYMMDD |
-| `expiryDate` | date | 31D | Formatted YYMMDD |
-| `preAdviceRef` | text-short | 23 | Max 16 chars, X charset, slash rules |
-| `senderToReceiverInfo` | text-long | 72Z | Max 6×35, X charset |
-
-### 7.3 TradeDocumentPresentation — Complete Field Set
-
-| Field | Type | SWIFT Tag | Notes |
-| :--- | :--- | :--- | :--- |
-| `presentationRef` | text-short | 20 | Max 16 chars, X charset, no leading/trailing `/` or `//` |
-| `presentationDate` | date | 30/32A | Formatted YYMMDD |
-| `presentingBankRef` | text-short | 21 | Max 16 chars, X charset, slash rules |
-| `claimAmount` | number-decimal | 32B | Comma decimal for SWIFT |
-| `claimCurrency` | id | 32B | Must match LC currency |
-| `documentDisposalEnumId` | id | 77B | HOLDING_DOCUMENTS, RETURNING_DOCUMENTS |
-| `chargesDeducted` | text-long | 73 | Max 6×35, X charset |
-
-### 7.4 ImportLcAmendment — Complete Field Set
-
-| Field | Type | SWIFT Tag | Notes |
-| :--- | :--- | :--- | :--- |
-| `amendmentNumber` | number-integer | 26E | Auto-incrementing |
-| `amendmentDate` | date | 30 | Formatted YYMMDD |
-| `amountIncrease` | number-decimal | 32B/33B | Positive or negative |
-| `amountDecrease` | number-decimal | 32B/33B | Positive only |
-| `newTotalAmount` | number-decimal | 34B | Comma decimal, 15 digits max |
-| `newExpiryDate` | date | 31E | Formatted YYMMDD |
-| `amendmentNarrative` | text-very-long | 79 | Max 35×50, **Z charset** |
-
-### 7.5 Grounding Info
-*   **All fields:** Consolidated from **REQ-IMP-SPEC-01 to 06** (baseline), **FR-ENT-01 to FR-ENT-19** (validation), **FR-ENT-21 to FR-ENT-33** (gaps), **FR-TP-06 to FR-TP-08** (party refactor).
-
----
-
-## 8. Traceability Matrix
+## 7. Traceability Matrix
 
 ### User Stories → Features
 
 | User Story | Feature(s) |
 | :--- | :--- |
 | US-LC-01, US-LC-02, US-LC-03 | Feature 1: LC Lifecycle States |
-| US-ISS-01, US-ISS-02 | Feature 2.1: LC Issuance |
-| US-AMD-01, US-AMD-02 | Feature 2.2: Amendments |
+| US-ISS-01, US-ISS-02, US-ISS-03 | Feature 2.1: LC Issuance |
+| US-AMD-01, US-AMD-02, US-AMD-03 | Feature 2.2: Amendments |
 | US-PRE-01, US-PRE-02 | Feature 2.3: Document Presentation |
 | US-STL-01, US-STL-02, US-STL-03 | Feature 2.4: Settlement |
 | US-SG-01, US-SG-02 | Feature 2.5: Shipping Guarantees |
 | US-CAN-01, US-CAN-02 | Feature 2.6: Cancellations |
-| US-SWV-01, US-SWV-02 | Feature 3: SWIFT Validation |
-| US-SWG-01, US-SWG-02 | Feature 4: SWIFT Generation |
+| US-SWV-01, US-SWV-02 | Feature 3: SWIFT Validation (Common) |
+| US-SWG-01, US-SWG-02 | Feature 4: SWIFT Generation (Common) |
+| US-TP-01 to US-TP-06 | Feature 5: Party Management (see common-consolidated-brd.md) |
 
-### SWIFT Message → Lifecycle Trigger
+### SWIFT Message → Process Feature & Lifecycle Trigger
 
-| MT Message | Lifecycle Trigger | Feature Reference |
-| :--- | :--- | :--- |
-| MT700 | LC Issuance authorized | Feature 2.1 + Feature 4 |
-| MT701 | Auto (from MT700 overflow) | Feature 4 |
-| MT707 | Amendment authorized | Feature 2.2 + Feature 4 |
-| MT750 | Presentation marked Discrepant | Feature 2.3 + Feature 4 |
-| MT734 | Presentation formally Refused | Feature 2.3 + Feature 4 |
-| MT752 | Discrepancy Waived → Accepted | Feature 2.3 + Feature 4 |
-| MT732 | Usance presentation Accepted | Feature 2.4 + Feature 4 |
-| MT799 | Early cancellation initiated | Feature 2.6 + Feature 4 |
-| MT202 | Settlement authorized (bank-to-bank) | Feature 2.4 + Feature 4 |
-| MT103 | Settlement authorized (customer direct) | Feature 2.4 + Feature 4 |
+| MT Message | Lifecycle Trigger | Process Feature | Key Validation Rules |
+| :--- | :--- | :--- | :--- |
+| MT700 | LC Issuance authorized | Feature 2.1 | ISS-SWV-01 to ISS-SWV-17 |
+| MT701 | Auto (from MT700 overflow) | Feature 2.1 | Same as MT700 + auto-continuation logic |
+| MT707 | Amendment authorized | Feature 2.2 | AMD-SWV-01 to AMD-SWV-06, Z charset |
+| MT750 | Presentation marked Discrepant | Feature 2.3 | PRE-SWV-01 to PRE-SWV-07 |
+| MT734 | Presentation formally Refused | Feature 2.3 | PRE-SWV-01 to PRE-SWV-07, Tag 77B required |
+| MT752 | Discrepancy Waived → Accepted | Feature 2.3 | PRE-SWV-01 to PRE-SWV-07 |
+| MT732 | Usance presentation Accepted | Feature 2.3 | Maturity date in Tag 32A (future date) |
+| MT799 | Early cancellation initiated | Feature 2.6 | CAN-SWV-01 to CAN-SWV-03, Z charset |
+| MT202 | Settlement (bank-to-bank) | Feature 2.4 | STL-SWV-01 to STL-SWV-08 |
+| MT103 | Settlement (customer direct) | Feature 2.4 | STL-SWV-01 to STL-SWV-08, beneficiary account mandatory |
 
 ### BRD Sections → Source Documents
 
 | Section | Primary Source | Modified By |
 | :--- | :--- | :--- |
 | Feature 1: LC Lifecycle States | import-lc-brd.md (REQ-IMP-02, DTL-00) | trade-transaction-tracking-brd.md |
-| Feature 2.1: Issuance | import-lc-brd.md (REQ-IMP-SPEC-01) | swift-validation-brd.md, swift-gaps-brd.md, tradeparty-refactor-brd.md |
-| Feature 2.2: Amendments | import-lc-brd.md (REQ-IMP-SPEC-02) | swift-generation-brd.md, swift-gaps-brd.md |
-| Feature 2.3: Presentation | import-lc-brd.md (REQ-IMP-SPEC-03) | swift-validation-brd.md, swift-gaps-brd.md, tradeparty-refactor-brd.md |
-| Feature 2.4: Settlement | import-lc-brd.md (REQ-IMP-SPEC-04) | swift-generation-brd.md |
+| Feature 2.1: Issuance + SWIFT | import-lc-brd.md (REQ-IMP-SPEC-01) | swift-validation-brd.md, swift-gaps-brd.md, tradeparty-refactor-brd.md, swift-generation-brd.md |
+| Feature 2.2: Amendments + SWIFT | import-lc-brd.md (REQ-IMP-SPEC-02) | swift-generation-brd.md, swift-gaps-brd.md |
+| Feature 2.3: Presentation + SWIFT | import-lc-brd.md (REQ-IMP-SPEC-03) | swift-validation-brd.md, swift-gaps-brd.md, tradeparty-refactor-brd.md, swift-generation-brd.md |
+| Feature 2.4: Settlement + SWIFT | import-lc-brd.md (REQ-IMP-SPEC-04) | swift-generation-brd.md |
 | Feature 2.5: Shipping Guarantees | import-lc-brd.md (REQ-IMP-SPEC-05) | — |
-| Feature 2.6: Cancellations | import-lc-brd.md (REQ-IMP-SPEC-06) | — |
-| Feature 3: SWIFT Validation | swift-validation-brd.md | swift-gaps-brd.md |
-| Feature 4: SWIFT Generation | swift-generation-brd.md | swift-gaps-brd.md |
-| Feature 5: Product Config | import-lc-brd.md (REQ-IMP-04) | common-module-brd.md (REQ-COM-PRD-01) |
-| Feature 6: Party Management | tradeparty-refactor-brd.md | — |
-| Feature 7: Entity Schema | All BRDs combined | — |
+| Feature 2.6: Cancellations + SWIFT | import-lc-brd.md (REQ-IMP-SPEC-06) | swift-generation-brd.md |
+| Feature 3: SWIFT Validation (Common) | swift-validation-brd.md | swift-gaps-brd.md |
+| Feature 4: SWIFT Generation (Common) | swift-generation-brd.md | swift-gaps-brd.md |
+| Feature 5: Party Management | tradeparty-refactor-brd.md | swift-validation-brd.md (party field validation) |
+| Feature 6: Product Config | import-lc-brd.md (REQ-IMP-04) | common-module-brd.md (REQ-COM-PRD-01) |
 
 ---
 
-## 9. Dropped / Superseded Requirements
+## 8. Dropped / Superseded Requirements
 
 | Original Requirement | Status | Replacement |
 | :--- | :--- | :--- |
