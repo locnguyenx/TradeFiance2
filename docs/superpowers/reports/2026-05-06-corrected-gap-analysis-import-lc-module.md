@@ -19,9 +19,9 @@
 | BDD Scenarios with no test coverage | 6 |
 
 ### Corrected Coverage Calculation
-- **True Coverage:** 65.9% (27/41 BDD scenarios have passing tests)
-- **False Coverage:** 19.5% (8/41 appear covered but tests validate wrong behavior or have quality issues)
-- **Gap Coverage:** 14.6% (6/41 genuinely lack test coverage)
+- **True Coverage:** 48.8% (20/41 BDD scenarios have high-fidelity tests)
+- **False Coverage:** 34.1% (14/41 appear covered but use hardcoded values, wrong timing, or shallow assertions)
+- **Gap Coverage:** 17.1% (7/41 genuinely lack test coverage)
 
 ---
 
@@ -141,13 +141,25 @@
 | BddImportLcModuleSpec | BDD-IMP-VAL-04 | Tests FX tagging but requirement moved to common module |
 | SwiftValidationSpec | Various | Tests X-character handling but Z-character validation not covered |
 
-### 6.2 Tests with Contradictory Behavior
-| Test File | Test Method | Expected (BRD) | Actual (Test) |
-|----------|-------------|-----------------|----------------|
-| BddImportLcModuleSpec | BDD-IMP-ISS-01 | effectiveAmount init on auth | effectiveAmount init on create |
-| ShippingGuaranteeSpec | Test 110% Earmarking | Multiplier 110,125,150 | Only 110 |
-
 ---
+
+## 7. Specific Gaps in Test Suites
+
+### 7.1 BddImportLcModuleSpec.groovy
+- **BDD-IMP-ISS-01 (Timing Gap):** Test validates 'effective' value initialization on `create` (Draft). Requirements (BRD 2.1.G) specify that "Effective" undertaking values must only be snapshot on `approve` (Authorize). Current service implementation initializes them too early.
+- **BDD-IMP-ISS-04 (Persistence Gap):** Test verifies calculation logic (`calculate#Earmark`) but fails to verify that `CustomerFacility.utilizedAmount` is actually updated in the database after authorization.
+- **BDD-IMP-DOC-01 (Hardcoding Gap):** Test uses hardcoded `5 days` instead of fetching `documentExamSlaDays` from the `TradeProductCatalog` associated with the LC.
+- **BDD-IMP-SET-01 (Hardcoding Gap):** Test uses hardcoded `14 days` usance instead of verifying the `usanceDays` field from the `ImportLetterOfCredit` entity.
+- **BDD-IMP-SG-01 (Range Gap):** Only validates 110% multiplier. Missing verification for 125% and 150% scenarios required for high-risk sea freight.
+- **Dual-Status Visibility:** No test verifies the `ImportLetterOfCreditView` correctly joins and displays both `TransactionStatus` and `BusinessState` simultaneously.
+
+### 7.2 SwiftValidationSpec.groovy
+- **BDD-IMP-SWT-01 (Z-Charset Depth):** `ZCS-01` only tests a subset of Z characters. Missing validation for the full set: `@ # = ! " % & * ; < > _`.
+- **Nostro Validation:** Missing `STL-SWV-04` test (ensuring MT202 requires `nostroAccountRef`).
+
+### 7.3 SwiftGenerationSpec.groovy
+- **MT700/MT707 Immutability:** `LCY-05` assertion is shallow. Needs to explicitly verify that `ACTIVE` records are read-only and that re-generation attempts are rejected/blocked by the service layer.
+- **MT707 Delta Logic:** Missing verification that non-changed fields are EXCLUDED from the MT707 payload.
 
 ## 7. Orphan Tests
 
@@ -219,21 +231,17 @@
 
 ## 10. Recommendations (Prioritized by Severity)
 
-### CRITICAL (Must Fix Before Code Freeze)
-| ID | Recommendation | Action | Owner |
-|----|---------------|--------|-------|
-| REC-01 | Add dual-status display tests | Create Playwright test for LC header with both states | Frontend |
-| REC-02 | Fix BDD-IMP-ISS-01 test timing | Update test to verify on authorize, not create | Backend |
-| REC-03 | Add MT700/MT707 immutability test | Add to SwiftGenerationSpec | Backend |
-| REC-04 | Add Z-character validation test | Add to SwiftValidationSpec | Backend |
+### Critical (REC-01 to REC-04)
+- **REC-01:** Implement Dual-Status query test in `BddImportLcModuleSpec` to verify `ImportLetterOfCreditView` parity.
+- **REC-02:** Refactor `ImportLcServices.create#ImportLetterOfCredit` to defer "Effective" value initialization until `approve#ImportLetterOfCredit`. Update `BDD-IMP-ISS-01` to match.
+- **REC-03:** Harden `LCY-05` in `SwiftGenerationSpec` to verify `ACTIVE` status immutability.
+- **REC-04:** Expand `SwiftValidationSpec` to cover full Z-character set compliance.
 
-### HIGH (Should Fix in Current Sprint)
-| ID | Recommendation | Action | Owner |
-|----|---------------|--------|-------|
-| REC-05 | Expand SG multiplier test range | Test 110%, 125%, 150% | Backend |
-| REC-06 | Add product-config SLA test | Fetch from TradeProductCatalog | Backend |
-| REC-07 | Add Live FX rate test | Use actual treasury API | Backend |
-| REC-08 | Add Nostro reference validation | Test STL-SWV-04 | Backend |
+### High (REC-05 to REC-08)
+- **REC-05:** Parameterize `BDD-IMP-SG-01` to test 110%, 125%, and 150% SG multipliers.
+- **REC-06:** Refactor `BDD-IMP-DOC-01` and `BDD-IMP-SET-01` to fetch dynamic values from `TradeProductCatalog` and `ImportLetterOfCredit` instead of using hardcoded constants.
+- **REC-07:** Implement `BDD-IMP-VAL-04` to verify Live FX rate application during settlement.
+- **REC-08:** Add test for `STL-SWV-04` (Nostro reference requirement for MT202).
 
 ### MEDIUM (Next Sprint)
 | ID | Recommendation | Action | Owner |

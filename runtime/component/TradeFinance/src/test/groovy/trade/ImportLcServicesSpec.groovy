@@ -13,6 +13,9 @@ import java.sql.Date
 
 class ImportLcServicesSpec extends Specification {
     @Shared ExecutionContext ec
+    @Shared String APPLICANT_ID = "ACME_CORP_001"
+    @Shared String BENEFICIARY_ID = "GLOBAL_EXP_002"
+    @Shared String ISSUING_BANK_ID = "ISSUING_BANK_001"
 
     def setupSpec() {
         ec = Moqui.getExecutionContext()
@@ -70,9 +73,9 @@ class ImportLcServicesSpec extends Specification {
         def result = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
             transactionRef: "TF-IMP-SERV-01",
             instrumentParties: [
-                [roleEnumId: 'TP_APPLICANT', partyId: "ACME_CORP_001"],
-                [roleEnumId: 'TP_BENEFICIARY', partyId: "GLOBAL_EXP_002"],
-                [roleEnumId: 'TP_ISSUING_BANK', partyId: "ISSUING_BANK_001"]
+                [roleEnumId: 'TP_APPLICANT', partyId: APPLICANT_ID],
+                [roleEnumId: 'TP_BENEFICIARY', partyId: BENEFICIARY_ID],
+                [roleEnumId: 'TP_ISSUING_BANK', partyId: ISSUING_BANK_ID]
             ],
             lcAmount: 500000.0,
             lcCurrencyUomId: "USD",
@@ -112,9 +115,9 @@ class ImportLcServicesSpec extends Specification {
         def createResult = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
             transactionRef: "TF-IMP-UPD-01",
             instrumentParties: [
-                [roleEnumId: 'TP_APPLICANT', partyId: "ACME_CORP_001"],
-                [roleEnumId: 'TP_BENEFICIARY', partyId: "GLOBAL_EXP_002"],
-                [roleEnumId: 'TP_ISSUING_BANK', partyId: "ISSUING_BANK_001"]
+                [roleEnumId: 'TP_APPLICANT', partyId: APPLICANT_ID],
+                [roleEnumId: 'TP_BENEFICIARY', partyId: BENEFICIARY_ID],
+                [roleEnumId: 'TP_ISSUING_BANK', partyId: ISSUING_BANK_ID]
             ],
             lcAmount: 500000.0,
             lcCurrencyUomId: "USD",
@@ -158,9 +161,9 @@ class ImportLcServicesSpec extends Specification {
         def createResult = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
             transactionRef: "TF-IMP-APP-01",
             instrumentParties: [
-                [roleEnumId: 'TP_APPLICANT', partyId: "ACME_CORP_001"],
-                [roleEnumId: 'TP_BENEFICIARY', partyId: "GLOBAL_EXP_002"],
-                [roleEnumId: 'TP_ISSUING_BANK', partyId: "ISSUING_BANK_001"]
+                [roleEnumId: 'TP_APPLICANT', partyId: APPLICANT_ID],
+                [roleEnumId: 'TP_BENEFICIARY', partyId: BENEFICIARY_ID],
+                [roleEnumId: 'TP_ISSUING_BANK', partyId: ISSUING_BANK_ID]
             ],
             lcAmount: 500000.0,
             lcCurrencyUomId: "USD",
@@ -204,9 +207,9 @@ class ImportLcServicesSpec extends Specification {
         def createResult = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
             transactionRef: "TF-IMP-AMD-01",
             instrumentParties: [
-                [roleEnumId: 'TP_APPLICANT', partyId: "ACME_CORP_001"],
-                [roleEnumId: 'TP_BENEFICIARY', partyId: "GLOBAL_EXP_002"],
-                [roleEnumId: 'TP_ISSUING_BANK', partyId: "ISSUING_BANK_001"]
+                [roleEnumId: 'TP_APPLICANT', partyId: APPLICANT_ID],
+                [roleEnumId: 'TP_BENEFICIARY', partyId: BENEFICIARY_ID],
+                [roleEnumId: 'TP_ISSUING_BANK', partyId: ISSUING_BANK_ID]
             ],
             lcAmount: 500000.0,
             lcCurrencyUomId: "USD",
@@ -252,9 +255,9 @@ class ImportLcServicesSpec extends Specification {
         def createResult = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
             transactionRef: "TF-IMP-SET-01",
             instrumentParties: [
-                [roleEnumId: 'TP_APPLICANT', partyId: "ACME_CORP_001"],
-                [roleEnumId: 'TP_BENEFICIARY', partyId: "GLOBAL_EXP_002"],
-                [roleEnumId: 'TP_ISSUING_BANK', partyId: "ISSUING_BANK_001"]
+                [roleEnumId: 'TP_APPLICANT', partyId: APPLICANT_ID],
+                [roleEnumId: 'TP_BENEFICIARY', partyId: BENEFICIARY_ID],
+                [roleEnumId: 'TP_ISSUING_BANK', partyId: ISSUING_BANK_ID]
             ],
             lcAmount: 100000.0,
             lcCurrencyUomId: "USD",

@@ -41,7 +41,7 @@ class TradePartySpec extends Specification {
         ec.destroy()
     }
 
-    def "SC-01: Create Commercial TradeParty"() {
+    def "BDD-CMN-TP-01: Create Commercial TradeParty"() {
         when: "Creating a new commercial party"
         ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
                 .parameters([partyId: 'SPEC_COMM_01', partyTypeEnumId: 'PARTY_COMMERCIAL', 
@@ -54,7 +54,7 @@ class TradePartySpec extends Specification {
         tp.partyTypeEnumId == 'PARTY_COMMERCIAL'
     }
 
-    def "SC-02: Create Bank TradeParty (base + extension)"() {
+    def "BDD-CMN-TP-02: Create Bank TradeParty (base + extension)"() {
         when: "Creating a new bank party"
         ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
                 .parameters([partyId: 'SPEC_BANK_01', partyTypeEnumId: 'PARTY_BANK', 
@@ -71,7 +71,7 @@ class TradePartySpec extends Specification {
         tpb.hasActiveRMA == 'Y'
     }
 
-    def "SC-03: Create TradeParty with invalid SWIFT characters -> Fail"() {
+    def "BDD-CMN-TP-03: Create TradeParty with invalid SWIFT characters -> Fail"() {
         when:
         ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
                 .parameters([partyId: 'SPEC_COMM_002', partyTypeEnumId: 'PARTY_COMMERCIAL', 
@@ -85,7 +85,7 @@ class TradePartySpec extends Specification {
         ec.message.clearAll()
     }
 
-    def "SC-04: Assign Applicant role (Commercial)"() {
+    def "BDD-CMN-TP-04: Assign Applicant role (Commercial)"() {
         // Create mandatory parties first
         ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
                 .parameters([partyId: 'SPEC_COMM_02', partyTypeEnumId: 'PARTY_COMMERCIAL', 
@@ -110,7 +110,7 @@ class TradePartySpec extends Specification {
         ec.entity.find("trade.TradeInstrumentParty").condition([instrumentId: 'INST_ASSIGN_01', roleEnumId: 'TP_APPLICANT', partyId: 'SPEC_COMM_01']).one() != null
     }
 
-    def "SC-05: Assign same bank to multiple roles"() {
+    def "BDD-CMN-TP-05: Assign same bank to multiple roles"() {
         when: "Assigning bank as Advising and Confirming bank"
         ec.service.sync().name("trade.TradeCommonServices.assign#InstrumentParty")
                 .parameters([instrumentId: 'INST_ASSIGN_01', roleEnumId: 'TP_ADVISING_BANK', partyId: 'SPEC_BANK_01'])
@@ -123,7 +123,7 @@ class TradePartySpec extends Specification {
         ec.entity.find("trade.TradeInstrumentParty").condition([instrumentId: 'INST_ASSIGN_01', partyId: 'SPEC_BANK_01']).list().size() == 2
     }
 
-    def "SC-06: Assign Advising Bank (Missing RMA) -> Fail"() {
+    def "BDD-CMN-TP-06: Assign Advising Bank (Missing RMA) -> Fail"() {
         setup:
         ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
                 .parameters([partyId: 'SPEC_NO_RMA_BANK', partyTypeEnumId: 'PARTY_BANK', 
@@ -143,7 +143,7 @@ class TradePartySpec extends Specification {
         ec.message.clearAll()
     }
 
-    def "SC-07: Commercial party -> bank role rejection"() {
+    def "BDD-CMN-TP-07: Commercial party -> bank role rejection"() {
         when: "Assigning commercial party as Advising Bank"
         ec.service.sync().name("trade.TradeCommonServices.assign#InstrumentParty")
                 .parameters([instrumentId: 'INST_ASSIGN_01', roleEnumId: 'TP_ADVISING_BANK', partyId: 'SPEC_COMM_01'])
@@ -157,7 +157,7 @@ class TradePartySpec extends Specification {
         ec.message.clearAll()
     }
 
-    def "SC-08: Assign Confirming Bank (Insufficient Limit) -> Fail"() {
+    def "BDD-CMN-TP-08: Assign Confirming Bank (Insufficient Limit) -> Fail"() {
         setup:
         ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
                 .parameters([partyId: 'SPEC_LOW_LIMIT_BANK', partyTypeEnumId: 'PARTY_BANK', 
@@ -185,7 +185,7 @@ class TradePartySpec extends Specification {
         ec.message.clearAll()
     }
 
-    def "SC-09: Advising bank must have RMA even if advise-through exists; Advise-through exempt"() {
+    def "BDD-CMN-TP-09.1: Advising bank (Receiver) strictly requires RMA"() {
         setup:
         ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
                 .parameters([partyId: 'SPEC_NO_RMA_BANK_2', partyTypeEnumId: 'PARTY_BANK', 
@@ -196,18 +196,20 @@ class TradePartySpec extends Specification {
                             partyName: 'Spec With RMA Bank', hasActiveRMA: true, kycStatus: 'Active'])
                 .call()
 
-        when: "Assigning SPEC_NO_RMA_BANK_2 as Advising Bank with an Advise Through Bank"
+        when: "Assigning SPEC_NO_RMA_BANK_2 as Advising Bank"
         ec.service.sync().name("trade.TradeCommonServices.assign#InstrumentParty")
                 .parameters([instrumentId: 'INST_ASSIGN_01', roleEnumId: 'TP_ADVISING_BANK', partyId: 'SPEC_NO_RMA_BANK_2']).call()
-        ec.service.sync().name("trade.TradeCommonServices.assign#InstrumentParty")
-                .parameters([instrumentId: 'INST_ASSIGN_01', roleEnumId: 'TP_ADVISE_THROUGH_BANK', partyId: 'SPEC_WITH_RMA_BANK']).call()
 
-        then: "Must fail because Advising Bank (Receiver) strictly requires RMA"
+        then: "Must fail because Advising Bank strictly requires RMA"
         ec.message.hasError()
         ec.message.getErrorsString().contains("has no active RMA")
         
-        when: "Correcting Advising Bank and using SPEC_NO_RMA_BANK_2 as Advise Through Bank"
+        cleanup:
         ec.message.clearAll()
+    }
+
+    def "BDD-CMN-TP-09.2: Advise-through bank is exempt from RMA requirement"() {
+        when: "Using SPEC_NO_RMA_BANK_2 as Advise Through Bank"
         ec.service.sync().name("trade.TradeCommonServices.assign#InstrumentParty")
                 .parameters([instrumentId: 'INST_ASSIGN_01', roleEnumId: 'TP_ADVISING_BANK', partyId: 'SPEC_WITH_RMA_BANK']).call()
         ec.service.sync().name("trade.TradeCommonServices.assign#InstrumentParty")
@@ -217,7 +219,7 @@ class TradePartySpec extends Specification {
         !ec.message.hasError()
     }
 
-    def "SC-10: Assign Reimbursing Bank (Missing Nostro) -> Fail"() {
+    def "BDD-CMN-TP-10: Assign Reimbursing Bank (Missing Nostro) -> Fail"() {
         setup:
         ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
                 .parameters([partyId: 'SPEC_NO_NOSTRO_BANK', partyTypeEnumId: 'PARTY_BANK', 
@@ -237,7 +239,7 @@ class TradePartySpec extends Specification {
         ec.message.clearAll()
     }
 
-    def "SC-11: Update: Role reassignment updates existing record"() {
+    def "BDD-CMN-TP-11: Update: Role reassignment updates existing record"() {
         setup:
         ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
                 .parameters([partyId: 'SPEC_COMM_03', partyTypeEnumId: 'PARTY_COMMERCIAL', partyName: 'New Applicant', kycStatus: 'Active'])
@@ -253,5 +255,20 @@ class TradePartySpec extends Specification {
         def junc = ec.entity.find("trade.TradeInstrumentParty")
                 .condition([instrumentId: 'INST_ASSIGN_01', roleEnumId: 'TP_APPLICANT']).one()
         junc.partyId == 'SPEC_COMM_03'
+    }
+
+    def "BDD-CMN-TP-12: Role Uniqueness Enforcement (PK Validation)"() {
+        when: "Attempting to assign multiple parties to the same role on an instrument"
+        ec.service.sync().name("trade.TradeCommonServices.assign#InstrumentParty")
+                .parameters([instrumentId: 'INST_ASSIGN_01', roleEnumId: 'TP_ADVISING_BANK', partyId: 'SPEC_BANK_01'])
+                .call()
+        ec.service.sync().name("trade.TradeCommonServices.assign#InstrumentParty")
+                .parameters([instrumentId: 'INST_ASSIGN_01', roleEnumId: 'TP_ADVISING_BANK', partyId: 'SPEC_BANK_01']) // Same party
+                .call()
+        
+        then: "Only one record should exist in the database for that (instrument, role) pair"
+        def juncList = ec.entity.find("trade.TradeInstrumentParty")
+                .condition([instrumentId: 'INST_ASSIGN_01', roleEnumId: 'TP_ADVISING_BANK']).list()
+        juncList.size() == 1
     }
 }

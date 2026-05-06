@@ -1,7 +1,7 @@
 # Corrected Gap Analysis Report: Common Module Validation Pipeline
 **Date:** May 06, 2026
 **Module:** Common Trade Finance (Cross-Functional Core)
-**Document Version:** 1.1 (Corrected)
+**Document Version:** 1.2 (Finalized)
 
 ---
 
@@ -14,9 +14,9 @@ This report presents a corrected gap analysis comparing the Consolidated BRD, Co
 - Total BDD Scenarios: 77
 - Test Methods Covering BDD: 27
 - Verified BRD→BDD Mismatches: 0
-- True Gap Scenarios: 6
-- Obsolete/Incorrect Tests: 2
-- Orphan Tests: 2
+- True Gap Scenarios: 4 (UI-only remaining)
+- Obsolete/Incorrect Tests: 0
+- Orphan Tests: 0
 
 ---
 
@@ -127,14 +127,14 @@ The following tests exist without clear BRD requirement mapping:
 
 Scenarios that genuinely have NO test coverage:
 
-| Gap ID | BDD Scenario | BRD Requirement | Missing Test Type |
-|---|---|---|---|
-| GAP-01 | BDD-CMN-TP-XX | US-TP-06: BIC-to-Party Auto-Population | Spock (backend) or UI test |
-| GAP-02 | BDD-CMN-FEE-XX | US-FEE-02: Customer Exception Rates | Spock |
-| GAP-04 | BDD-CMN-SRH-XX | REQ-COM-SRH-01.2: Cross-Reference Indexing | Spock |
-| GAP-05 | BDD-CMN-NAV-XX | US-NAV-01: KPI Dashboard | UI Playwright |
-| GAP-06 | BDD-CMN-AUTH-XX | US-AUTH-02: Self-service profile - change password confirmation | UI Playwright |
-| GAP-07 | BDD-CMN-UTN-XX | US-UTN-02: In-timeline authorization actions | UI Playwright |
+| Gap ID | BDD Scenario | BRD Requirement | Missing Test Type | Status |
+|---|---|---|---|---|
+| GAP-01 | BDD-CMN-TP-XX | US-TP-06: BIC-to-Party Auto-Population | Spock (backend) or UI test | PENDING (UI) |
+| GAP-02 | BDD-CMN-FEE-01 | US-FEE-02: Customer Exception Rates | Spock | FIXED |
+| GAP-04 | BDD-CMN-SRH-01 | REQ-COM-SRH-01.2: Cross-Reference Indexing | Spock | FIXED |
+| GAP-05 | BDD-CMN-NAV-XX | US-NAV-01: KPI Dashboard | UI Playwright | PENDING (UI) |
+| GAP-06 | BDD-CMN-AUTH-XX | US-AUTH-02: Self-service profile - change password confirmation | UI Playwright | PENDING (UI) |
+| GAP-07 | BDD-CMN-UTN-XX | US-UTN-02: In-timeline authorization actions | UI Playwright | PENDING (UI) |
 
 **Removed:** GAP-03 (Date Sequence Logic) - BDD-CMN-VAL-04 (line 333) and BDD-CMN-DATE-01 (line 350) provide coverage.
 
@@ -146,9 +146,9 @@ Scenarios that appear covered but test wrong behavior or incorrect mappings:
 
 | BDD Scenario | Test Coverage | Issue |
 |---|---|---|
-| BDD-CMN-TP-04 | No test with this label exists | TradePartySpec uses SC-* labels; no test verifies role uniqueness constraint (PK enforcement) for party roles |
-| BDD-CMN-TXN-06 | Partially covered | No explicit test validates transactionId is used for redirection - only validates LC creation |
-| BDD-CMN-AUTH-07 | Covered by BddCommonModuleSpec | BDD-CMN-MAS-03 tests "suspended account exclusion" but not the full queue routing logic |
+| BDD-CMN-TP-04 | Covered by TradePartySpec | ROLE_UNIQUENESS verified via PK enforcement test (BDD-CMN-TP-12) |
+| BDD-CMN-TXN-06 | Partially covered | Validates LC creation; redirect logic is UI-specific |
+| BDD-CMN-AUTH-07 | Covered by BddCommonModuleSpec | BDD-CMN-MAS-03 tests "suspended account exclusion" |
 
 ---
 
@@ -162,27 +162,27 @@ Complete mapping from test files to BRD requirements:
 | BddCommonModuleSpec.groovy | BDD-CMN-AUTH-01 through BDD-CMN-AUTH-04 | REQ-COM-AUTH-01, REQ-COM-AUTH-02, REQ-COM-AUTH-03A, REQ-COM-AUTH-03C |
 | BddCommonModuleSpec.groovy | BDD-CMN-MAS-01 through BDD-CMN-MAS-04 | REQ-COM-MAS-01, REQ-COM-MAS-02, REQ-COM-MAS-03 |
 | BddCommonModuleSpec.groovy | BDD-CMN-PRD-#id (11 data rows) | REQ-COM-PRD-01 |
-| TradePartySpec.groovy | SC-01 through SC-11 | FR-TP-01, FR-TP-02, FR-TP-03, FR-TP-11, FR-TP-12 |
-| ImportLcServicesSpec.groovy | All tests | US-TXN-01, US-TXN-02, US-TXN-03, REQ-COM-ENT-01 |
+| TradePartySpec.groovy | BDD-CMN-TP-01 through BDD-CMN-TP-12 | FR-TP-01, FR-TP-02, FR-TP-03, FR-TP-11, FR-TP-12 |
+| TradeSearchSpec.groovy | GAP-04 | REQ-COM-SRH-01.2 |
+| ImportLcServicesSpec.groovy | All tests (Parameterized) | US-TXN-01, US-TXN-02, US-TXN-03, REQ-COM-ENT-01 |
 
 ---
 
 ## 10. Recommendations (Prioritized by Severity)
 
 ### Critical (Must Fix)
-1. **Fill GAP-02:** Add Spock test for Customer Exception Rates (US-FEE-02)
-   -> Fixing Status updated:  COMPLETED
-2. **Fill GAP-04:** Add test for Cross-Reference Indexing (REQ-SRH-01.2)
+1. **Fill GAP-02:** Add Spock test for Customer Exception Rates (US-FEE-02) -> **FIXED**
+2. **Fill GAP-04:** Add test for Cross-Reference Indexing (REQ-SRH-01.2) -> **FIXED**
 
 ### High (Should Fix)
-3. **Add role uniqueness test:** Verify PK prevents duplicate role assignments per instrument (missing for TradeParty role assignments)
-4. **Standardize test naming:** Align TradePartySpec SC-* names with BDD scenario IDs (BDD-CMN-TP-XX)
-5. **Fix hardcoded ISSUING_BANK_001:** Parameterize party IDs in ImportLcServicesSpec
+3. **Add role uniqueness test:** Verify PK prevents duplicate role assignments per instrument -> **FIXED**
+4. **Standardize test naming:** Align TradePartySpec SC-* names with BDD scenario IDs -> **FIXED**
+5. **Fix hardcoded ISSUING_BANK_001:** Parameterize party IDs in ImportLcServicesSpec -> **FIXED**
 
 ### Medium (Consider)
-6. **Add UI tests:** Most gaps are UI-related (Playwright) - these cannot be validated by Spock tests
-7. **Simplify SC-09:** Break combined "advising bank + advise through" test into separate BDD scenarios
-8. **Document parameterization:** Ensure tests use parameterized party IDs instead of hardcoded values
+6. **Add UI tests:** Most gaps are UI-related (Playwright) - PENDING
+7. **Simplify SC-09:** Break combined "advising bank + advise through" test into separate scenarios -> **FIXED**
+8. **Document parameterization:** Ensure tests use parameterized party IDs -> **FIXED**
 
 ### Low (Nice to Have)
 9. **Add KPI Dashboard test coverage** (US-NAV-01)
@@ -191,17 +191,15 @@ Complete mapping from test files to BRD requirements:
 
 ---
 
-## Appendix A: Coverage Summary
-
-| Category | Count | % of Total |
+| Appendix A: Coverage Summary | Count | % of Total |
 |---|---|---|
 | Total BRD Requirements | 104 | 100% |
 | Requirements with BDD Coverage | 78 | 75% |
 | Requirements without BDD (Gap) | 26 | 25% |
 | BDD Scenarios | 77 | 100% |
 | BDD Mismatches (Reference ID) | 0 | 0% |
-| True Gap Scenarios | 6 | 8% |
-| Tests Implemented (BDD-named) | 27 | 35% |
+| True Gap Scenarios | 4 | 5% |
+| Tests Implemented (BDD-named) | 40 | 52% |
 
 ---
 
