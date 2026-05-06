@@ -15,11 +15,11 @@ Restore stability to Trade Finance SWIFT message generation and harden the test 
 - [x] Refactored all MT700, MT701, MT707, MT750, MT734, MT752, MT732, MT799, MT103, and MT202 generation services.
 - [x] Verified `SwiftGenerationSpec` with a 100% pass rate.
 - [x] Verified `TradePartySpec` and `RestApiEndpointsSpec` with a 100% pass rate.
-- [x] Removed the legacy `SwiftMessageBuilder.groovy` file.
+- [x] Restored the legacy `SwiftMessageBuilder.groovy` file for user review.
 - [x] Committed all stabilization and hardening changes.
 
 ## Current Status
-The system is stable. All core tests are passing. The "Save Draft" error in the UI has been resolved.
+The system is stable. All core tests are passing. The "Save Draft" error in the UI has been resolved. Legacy builder is present but inactive.
 
 ## Next Failure to Work On
 None currently identified. The next phase involves completing the refactoring of the remaining backend tests to consistently use services instead of direct entity creation.

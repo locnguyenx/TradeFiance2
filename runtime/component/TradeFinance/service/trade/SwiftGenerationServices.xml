@@ -88,20 +88,10 @@
                 def confirmBank = getParty("TP_CONFIRMING_BANK")
                 def draweeBank = getParty("TP_DRAWEE_BANK")
 
-                // Helper to format values (Wrap at maxLineLength, limit to maxLines)
-                def formatValue = { val, maxLines, maxLineLength ->
-                    if (!val) return ""
-                    def cleaned = val.toString().replace('^', '').replace('_', '')
-                    def lines = cleaned.split(/\r?\n/)
-                    def resultLines = []
-                    lines.each { line ->
-                        while (line.length() > maxLineLength) {
-                            resultLines.add(line.substring(0, maxLineLength))
-                            line = line.substring(maxLineLength)
-                        }
-                        resultLines.add(line)
-                    }
-                    return resultLines.take(maxLines).join("\r\n")
+                // Helper to format values via utility service
+                def formatValue = { val, lines, len ->
+                    ec.service.sync().name("trade.SwiftUtilsServices.format#Value")
+                        .parameters([value:val, maxLines:lines, maxLineLength:len]).call().formattedValue
                 }
 
                 def fields = [:]
@@ -217,19 +207,9 @@
                 def advisingBankBic = advisingBankJunc ? ec.entity.find("trade.TradePartyBank").condition("partyId", advisingBankJunc.partyId).one()?.swiftBic : "RECEIVXX"
 
                 // Helper to format values
-                def formatValue = { val, maxLines, maxLineLength ->
-                    if (!val) return ""
-                    def cleaned = val.toString().replace('^', '').replace('_', '')
-                    def lines = cleaned.split(/\r?\n/)
-                    def resultLines = []
-                    lines.each { line ->
-                        while (line.length() > maxLineLength) {
-                            resultLines.add(line.substring(0, maxLineLength))
-                            line = line.substring(maxLineLength)
-                        }
-                        resultLines.add(line)
-                    }
-                    return resultLines.take(maxLines).join("\r\n")
+                def formatValue = { val, lines, len ->
+                    ec.service.sync().name("trade.SwiftUtilsServices.format#Value")
+                        .parameters([value:val, maxLines:lines, maxLineLength:len]).call().formattedValue
                 }
 
                 def fields = [:]
@@ -314,19 +294,9 @@
                 def advisingBankBic = advisingBankJunc ? ec.entity.find("trade.TradePartyBank").condition("partyId", advisingBankJunc.partyId).one()?.swiftBic : "ADVISINGXX"
 
                 // Helper to format values
-                def formatValue = { val, maxLines, maxLineLength ->
-                    if (!val) return ""
-                    def cleaned = val.toString().replace('^', '').replace('_', '')
-                    def lines = cleaned.split(/\r?\n/)
-                    def resultLines = []
-                    lines.each { line ->
-                        while (line.length() > maxLineLength) {
-                            resultLines.add(line.substring(0, maxLineLength))
-                            line = line.substring(maxLineLength)
-                        }
-                        resultLines.add(line)
-                    }
-                    return resultLines.take(maxLines).join("\r\n")
+                def formatValue = { val, lines, len ->
+                    ec.service.sync().name("trade.SwiftUtilsServices.format#Value")
+                        .parameters([value:val, maxLines:lines, maxLineLength:len]).call().formattedValue
                 }
 
                 def fields = [:]
@@ -408,19 +378,9 @@
                 }
 
                 // Helper to format values
-                def formatValue = { val, maxLines, maxLineLength ->
-                    if (!val) return ""
-                    def cleaned = val.toString().replace('^', '').replace('_', '')
-                    def lines = cleaned.split(/\r?\n/)
-                    def resultLines = []
-                    lines.each { line ->
-                        while (line.length() > maxLineLength) {
-                            resultLines.add(line.substring(0, maxLineLength))
-                            line = line.substring(maxLineLength)
-                        }
-                        resultLines.add(line)
-                    }
-                    return resultLines.take(maxLines).join("\r\n")
+                def formatValue = { val, lines, len ->
+                    ec.service.sync().name("trade.SwiftUtilsServices.format#Value")
+                        .parameters([value:val, maxLines:lines, maxLineLength:len]).call().formattedValue
                 }
 
                 def fields = [:]
@@ -485,19 +445,9 @@
                 def presentingBankBic = getPartyBic("TP_PRESENTING_BANK") ?: getPartyBic("TP_ADVISING_BANK") ?: "PRESENTX"
                 
                 // Helper to format values
-                def formatValue = { val, maxLines, maxLineLength ->
-                    if (!val) return ""
-                    def cleaned = val.toString().replace('^', '').replace('_', '')
-                    def lines = cleaned.split(/\r?\n/)
-                    def resultLines = []
-                    lines.each { line ->
-                        while (line.length() > maxLineLength) {
-                            resultLines.add(line.substring(0, maxLineLength))
-                            line = line.substring(maxLineLength)
-                        }
-                        resultLines.add(line)
-                    }
-                    return resultLines.take(maxLines).join("\r\n")
+                def formatValue = { val, lines, len ->
+                    ec.service.sync().name("trade.SwiftUtilsServices.format#Value")
+                        .parameters([value:val, maxLines:lines, maxLineLength:len]).call().formattedValue
                 }
 
                 def fields = [:]
@@ -557,19 +507,9 @@
                 def presentingBankBic = getPartyBic("TP_PRESENTING_BANK") ?: getPartyBic("TP_ADVISING_BANK") ?: "PRESENTX"
 
                 // Helper to format values
-                def formatValue = { val, maxLines, maxLineLength ->
-                    if (!val) return ""
-                    def cleaned = val.toString().replace('^', '').replace('_', '')
-                    def lines = cleaned.split(/\r?\n/)
-                    def resultLines = []
-                    lines.each { line ->
-                        while (line.length() > maxLineLength) {
-                            resultLines.add(line.substring(0, maxLineLength))
-                            line = line.substring(maxLineLength)
-                        }
-                        resultLines.add(line)
-                    }
-                    return resultLines.take(maxLines).join("\r\n")
+                def formatValue = { val, lines, len ->
+                    ec.service.sync().name("trade.SwiftUtilsServices.format#Value")
+                        .parameters([value:val, maxLines:lines, maxLineLength:len]).call().formattedValue
                 }
 
                 def fields = [:]
@@ -610,19 +550,9 @@
 
             <script><![CDATA[
                 // Helper to format values
-                def formatValue = { val, maxLines, maxLineLength ->
-                    if (!val) return ""
-                    def cleaned = val.toString().replace('^', '').replace('_', '')
-                    def lines = cleaned.split(/\r?\n/)
-                    def resultLines = []
-                    lines.each { line ->
-                        while (line.length() > maxLineLength) {
-                            resultLines.add(line.substring(0, maxLineLength))
-                            line = line.substring(maxLineLength)
-                        }
-                        resultLines.add(line)
-                    }
-                    return resultLines.take(maxLines).join("\r\n")
+                def formatValue = { val, lines, len ->
+                    ec.service.sync().name("trade.SwiftUtilsServices.format#Value")
+                        .parameters([value:val, maxLines:lines, maxLineLength:len]).call().formattedValue
                 }
 
                 def fields = [:]
@@ -671,19 +601,9 @@
 
             <script><![CDATA[
                 // Helper to format values
-                def formatValue = { val, maxLines, maxLineLength ->
-                    if (!val) return ""
-                    def cleaned = val.toString().replace('^', '').replace('_', '')
-                    def lines = cleaned.split(/\r?\n/)
-                    def resultLines = []
-                    lines.each { line ->
-                        while (line.length() > maxLineLength) {
-                            resultLines.add(line.substring(0, maxLineLength))
-                            line = line.substring(maxLineLength)
-                        }
-                        resultLines.add(line)
-                    }
-                    return resultLines.take(maxLines).join("\r\n")
+                def formatValue = { val, lines, len ->
+                    ec.service.sync().name("trade.SwiftUtilsServices.format#Value")
+                        .parameters([value:val, maxLines:lines, maxLineLength:len]).call().formattedValue
                 }
 
                 def fields = [:]
@@ -721,19 +641,9 @@
 
             <script><![CDATA[
                 // Helper to format values
-                def formatValue = { val, maxLines, maxLineLength ->
-                    if (!val) return ""
-                    def cleaned = val.toString().replace('^', '').replace('_', '')
-                    def lines = cleaned.split(/\r?\n/)
-                    def resultLines = []
-                    lines.each { line ->
-                        while (line.length() > maxLineLength) {
-                            resultLines.add(line.substring(0, maxLineLength))
-                            line = line.substring(maxLineLength)
-                        }
-                        resultLines.add(line)
-                    }
-                    return resultLines.take(maxLines).join("\r\n")
+                def formatValue = { val, lines, len ->
+                    ec.service.sync().name("trade.SwiftUtilsServices.format#Value")
+                        .parameters([value:val, maxLines:lines, maxLineLength:len]).call().formattedValue
                 }
 
                 def fields = [:]

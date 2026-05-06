@@ -82,4 +82,37 @@ ABOUTME: SwiftUtilsServices.xml provides core utilities for rendering and valida
         </actions>
     </service>
 
+    <service verb="format" noun="Value">
+        <description>Standard SWIFT field formatting: character cleaning, line wrapping, and line count limiting.</description>
+        <in-parameters>
+            <parameter name="value"/>
+            <parameter name="maxLines" type="Integer" default="35"/>
+            <parameter name="maxLineLength" type="Integer" default="50"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="formattedValue" required="true"/>
+        </out-parameters>
+        <actions>
+            <script><![CDATA[
+                if (!value) { formattedValue = ""; return }
+                // Clean characters (X character set basics + caretaker/underscore removals)
+                def cleaned = value.toString()
+                    .replace('^', '').replace('_', '')
+                    .replaceAll(/[^A-Za-z0-9\/ \-\?\:\(\)\.\,\'\+]/, " ")
+                
+                def lines = cleaned.split(/\r?\n/)
+                def resultLines = []
+                lines.each { line ->
+                    if (!line) { resultLines.add(""); return }
+                    while (line.length() > maxLineLength) {
+                        resultLines.add(line.substring(0, maxLineLength))
+                        line = line.substring(maxLineLength)
+                    }
+                    resultLines.add(line)
+                }
+                formattedValue = resultLines.take(maxLines).join("\r\n")
+            ]]></script>
+        </actions>
+    </service>
+
 </services>
