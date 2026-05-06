@@ -342,8 +342,35 @@ class BddCommonModuleSpec extends Specification {
                                    [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
             
         then:
+        ec.message.hasError()
+        ec.message.getErrorsString().contains("Expiry Date must be greater than or equal to Issue Date")
+        result.instrumentId == null
+    }
+
+    def "BDD-CMN-DATE-01: Date Sequence Logic - Valid date order accepted"() {
+        given:
+        def issue = Date.valueOf("2026-05-01")
+        def expiry = Date.valueOf("2026-06-01")
+        
+        when:
+        def result = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
+            .parameters([transactionRef: "TF-DATE-OK", lcAmount: 1000.0, lcCurrencyUomId: 'USD', issueDate: issue, expiryDate: expiry,
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
+            
+        then:
         !ec.message.hasError()
         result.instrumentId != null
+        
+        cleanup:
+        if (result.instrumentId) {
+            ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", result.instrumentId).deleteAll()
+            ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", result.instrumentId).deleteAll()
+            ec.entity.find("trade.TradeTransaction").condition("instrumentId", result.instrumentId).deleteAll()
+            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", result.instrumentId).deleteAll()
+            ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", result.instrumentId).deleteAll()
+            ec.entity.find("trade.TradeInstrument").condition("instrumentId", result.instrumentId).deleteAll()
+        }
     }
 
     def "BDD-CMN-AUTH-01: Tier Enforcement Calculation by Equivalent Amount"() {

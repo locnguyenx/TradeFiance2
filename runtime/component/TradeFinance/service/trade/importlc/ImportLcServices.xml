@@ -34,6 +34,12 @@
                 <service-call name="trade.TradeCommonServices.get#NextNumber" in-map="[sequenceId:'IMP_LC_REF', instrumentType:'IMP']" out-map="nextNumOut"/>
                 <set field="transactionRef" from="nextNumOut.nextNumberFormatted"/>
             </if>
+
+            <!-- Date Sequence Validation (REQ-COM-VAL-03) -->
+            <if condition="issueDate != null &amp;&amp; expiryDate != null &amp;&amp; expiryDate.before(issueDate)">
+                <return error="true" message="Expiry Date must be greater than or equal to Issue Date"/>
+            </if>
+
             <!-- 1. Create TradeInstrument -->
             <service-call name="create#trade.TradeInstrument" out-map="createInstOut"
                 in-map="[
