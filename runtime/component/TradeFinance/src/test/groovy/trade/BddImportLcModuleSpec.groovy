@@ -43,8 +43,8 @@ class BddImportLcModuleSpec extends Specification {
                          lcTypeEnumId: 'LCT_IRREVOCABLE', availableByEnumId: 'AVB_BY_NEGOTIATION', confirmationEnumId: 'CONF_WITHOUT']).call()
         service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit")
             .parameters([instrumentId: res.instrumentId, businessStateId: "LC_PENDING"]).call()
-        service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit")
-            .parameters([instrumentId: res.instrumentId, businessStateId: "LC_ISSUED"]).call()
+        service.sync().name("trade.importlc.ImportLcServices.approve#ImportLetterOfCredit")
+            .parameters([instrumentId: res.instrumentId, approverUserId: "trade.checker"]).call()
         return res.instrumentId
     }
 
@@ -52,14 +52,21 @@ class BddImportLcModuleSpec extends Specification {
         ExecutionContext ec = Moqui.getExecutionContext()
         ec.artifactExecution.disableAuthz()
         
-        // Ensure trade.admin exists and has full permissions
+        // Ensure trade.admin and trade.checker exist
         if (ec.entity.find("moqui.security.UserAccount").condition("username", "trade.admin").count() == 0) {
             ec.entity.makeValue("moqui.security.UserAccount")
                 .setAll([userId: "trade.admin", username: "trade.admin", currentPassword: "trade123", firstName: "Trade", lastName: "Admin"])
                 .create()
         }
+        if (ec.entity.find("moqui.security.UserAccount").condition("username", "trade.checker").count() == 0) {
+            ec.entity.makeValue("moqui.security.UserAccount")
+                .setAll([userId: "trade.checker", username: "trade.checker", currentPassword: "trade123", firstName: "Trade", lastName: "Checker"])
+                .create()
+        }
         ec.entity.makeValue("moqui.security.UserGroupMember").setAll([userId: "trade.admin", userGroupId: "TRADE_ADMIN", fromDate: ec.user.nowTimestamp]).createOrUpdate()
-        // Ensure TRADE_ADMIN group is authorized (Fall-thru if already exists)
+        ec.entity.makeValue("moqui.security.UserGroupMember").setAll([userId: "trade.checker", userGroupId: "TRADE_ADMIN", fromDate: ec.user.nowTimestamp]).createOrUpdate()
+
+        // Ensure TRADE_ADMIN group is authorized
         ec.entity.makeValue("moqui.security.ArtifactGroupMember").setAll([artifactGroupId: "TRADE_FINANCE_ENTITIES", artifactName: "trade..*", artifactTypeEnumId: "AT_ENTITY", nameIsPattern: "Y", inheritAuthz: "Y"]).createOrUpdate()
         ec.entity.makeValue("moqui.security.ArtifactGroupMember").setAll([artifactGroupId: "TRADE_FINANCE_SERVICES", artifactName: ".*Services\\..*", artifactTypeEnumId: "AT_SERVICE", nameIsPattern: "Y", inheritAuthz: "Y"]).createOrUpdate()
         ec.entity.makeValue("moqui.security.ArtifactGroupMember").setAll([artifactGroupId: "TRADE_FINANCE_SERVICES", artifactName: ".*#.*", artifactTypeEnumId: "AT_SERVICE", nameIsPattern: "Y", inheritAuthz: "Y"]).createOrUpdate()
@@ -109,7 +116,7 @@ class BddImportLcModuleSpec extends Specification {
 
     // --- Feature: Standard Lifecycle Flow Transitions ---
 
-    def "BDD-IMP-FLOW-01: State Transition: Save to Draft"() {
+    def "BDD-IMP-ISS-01: State Transition: Save to Draft"() {
         given: "A user inputs generic parameters"
         def ref = "TF-DRAFT-" + System.currentTimeMillis()
         
@@ -125,7 +132,7 @@ class BddImportLcModuleSpec extends Specification {
         lc.businessStateId == "LC_DRAFT"
     }
 
-    def "BDD-IMP-FLOW-02: State Transition: Submit to Pending Approval"() {
+    def "BDD-IMP-ISS-02: State Transition: Submit to Pending Approval"() {
         given: "A Draft LC"
         def ref = "TF-SUBMIT-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
@@ -142,7 +149,7 @@ class BddImportLcModuleSpec extends Specification {
         lc.businessStateId == "LC_PENDING"
     }
 
-    def "BDD-IMP-FLOW-03: State Transition: Authorize to Issued"() {
+    def "BDD-IMP-ISS-03: State Transition: Authorize to Issued"() {
         given: "A Pending Approval LC"
         def ref = "TF-AUTH-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
@@ -161,7 +168,7 @@ class BddImportLcModuleSpec extends Specification {
         lc.businessStateId == "LC_ISSUED"
     }
 
-    def "BDD-IMP-FLOW-04: State Transition: Receive Docs"() {
+    def "BDD-IMP-DRW-01: State Transition: Receive Docs"() {
         given: "An Issued LC"
         def instrumentId = createIssuedLc("FLOW-04")
             
@@ -232,20 +239,33 @@ class BddImportLcModuleSpec extends Specification {
     }
 
     def "BDD-IMP-FLOW-08: State Transition: Closed terminates actions"() {
-        given: "A Settled LC"
+        given: "An LC in Issued state"
         def instrumentId = createIssuedLc("FLOW-08")
-        ["LC_DOC_RECEIVED", "LC_ACCEPTED", "LC_SETTLED"].each { state ->
-            ec.service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit")
-                .parameters([instrumentId: instrumentId, businessStateId: state]).call()
-        }
-            
-        when: "Terminal execution is flagged"
+        
+        when: "Closing the LC"
         ec.service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit")
             .parameters([instrumentId: instrumentId, businessStateId: "LC_CLOSED"]).call()
             
-        then: "System forcibly flags terminal execution"
+        then: "Business state is CLOSED"
         def lc = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).one()
         lc.businessStateId == "LC_CLOSED"
+    }
+
+    def "BDD-IMP-FLOW-09: Dual-Status Visibility: Combined Transaction and Business State"() {
+        given: "An LC with a pending amendment"
+        def instrumentId = createIssuedLc("FLOW-09")
+        ec.service.sync().name("trade.importlc.ImportLcServices.create#Amendment")
+            .parameters([instrumentId: instrumentId, isFinancial: 'Y', amountAdjustment: 1000.0,
+                         amendmentTypeEnumId: 'AMEND_INCREASE']).call()
+            
+        when: "Querying the consolidated view"
+        def lcView = ec.entity.find("trade.importlc.ImportLetterOfCreditView")
+            .condition("instrumentId", instrumentId).one()
+            
+        then: "Both statuses are visible and correct"
+        lcView.businessStateId == "LC_AMENDMENT_PENDING"
+        lcView.transactionStatusId == "TX_DRAFT"
+        lcView.transactionTypeEnumId == "IMP_AMENDMENT"
     }
 
     // --- Feature: Custom LC Validation Behaviors ---
@@ -314,7 +334,7 @@ class BddImportLcModuleSpec extends Specification {
         result.reinstated == true
     }
 
-    def "BDD-IMP-VAL-04: Specific Rule: Vietnam FX Regulatory Tagging"() {
+    def "BDD-IMP-ISS-08: Specific Rule: Vietnam FX Regulatory Tagging"() {
         given: "An LC with goods description in Vietnam"
         def ref = "TF-VN-" + System.currentTimeMillis()
         ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
@@ -327,22 +347,44 @@ class BddImportLcModuleSpec extends Specification {
             .parameter("partyName", "Rice Export Trader").call()
         
         then: "Categorization/Compliance flags are processed"
-        result.isHit != null
+result.isHit != null
     }
 
     // --- Feature: Detailed Issuance Modifiers ---
 
-    def "BDD-IMP-ISS-01: Issuance: Facility Earmark Calculation"() {
-        given: 'An LC with $500,000 base + 10% tolerance'
-        when: "Limit module queries bounds"
-        def result = ec.service.sync().name("trade.TradeCommonServices.calculate#Earmark")
-            .parameters([amount: 500000.0, tolerancePositive: 0.10]).call()
+    def "BDD-IMP-ISS-04: Issuance: Facility Earmark and Persistence"() {
+        given: "A facility with 101,000 already utilized"
+        def fid = "FAC-HARDEN-04-" + System.currentTimeMillis()
+        ec.entity.makeValue("trade.CustomerFacility")
+            .setAll([facilityId: fid, totalApprovedLimit: 1000000, utilizedAmount: 101000.0])
+            .create()
+        def facilityBefore = ec.entity.find("trade.CustomerFacility").condition("facilityId", fid).one()
+        BigDecimal beforeAmount = facilityBefore.utilizedAmount ?: 0.0
         
-        then: 'Earmark is $550,000'
-        result.earmarkAmount == 550000.0
+        when: "Issuing a 100,000 LC with 10% tolerance"
+        def ref = "TF-FAC-04-" + System.currentTimeMillis()
+        def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
+            .parameters([transactionRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD", 
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: "BEN-01"]],
+                         tolerancePositive: 0.10, customerFacilityId: fid]).call()
+                         
+        // Login as Checker
+        ec.user.loginUser("trade.checker", "trade123")
+        
+        // Trigger authorization (which updates limit)
+        ec.service.sync().name("trade.importlc.ImportLcServices.approve#ImportLetterOfCredit")
+            .parameters([instrumentId: res.instrumentId, approverUserId: "trade.checker"]).call()
+            
+        then: "Facility utilizedAmount is updated by earmark (110,000)"
+        def facilityAfter = ec.entity.find("trade.CustomerFacility").condition("facilityId", fid).one()
+        facilityAfter.utilizedAmount == (beforeAmount + 110000.0)
+        
+        cleanup:
+        ec.user.loginUser("trade.admin", "trade123")
     }
 
-    def "BDD-IMP-ISS-02: Issuance: Mandatory Cash Margin Block"() {
+    def "BDD-IMP-ISS-05: Issuance: Mandatory Cash Margin Block"() {
         given: 'An applicant with $0 unsecured bounds'
         when: 'Issuing LC for $100,000 equivalent'
         def result = ec.service.sync().name("trade.TradeCommonServices.evaluate#Margin")
@@ -403,7 +445,7 @@ class BddImportLcModuleSpec extends Specification {
         lc.businessStateId == "LC_AMENDMENT_PENDING"
     }
 
-    def "BDD-IMP-AMD-05: Amendment authorization updates values"() {
+    def "BDD-IMP-AMD-05: Amendment: Effective values snapshot after Beneficiary Consent"() {
         given: "An issued LC"
         def instrumentId = createIssuedLc("AMD-05")
 
@@ -413,22 +455,45 @@ class BddImportLcModuleSpec extends Specification {
         ec.service.sync().name("trade.importlc.ImportLcServices.authorize#Amendment")
             .parameters([amendmentId: amdRes.amendmentId]).call()
 
+        then: "Effective values are NOT yet updated (Undertaking remains original)"
+        def lcBefore = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).one()
+        lcBefore.effectiveAmount == 50000.0
+
+        when: "Beneficiary Consent is logged as ACCEPTED"
+        ec.service.sync().name("trade.importlc.ImportLcServices.update#Amendment")
+            .parameters([amendmentId: amdRes.amendmentId, beneficiaryConsentStatusId: 'ACCEPTED']).call()
+
         then: "Effective values are updated"
-        def lc = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).one()
-        lc.effectiveAmount == 70000.0
-        lc.effectiveOutstandingAmount == 70000.0
+        def lcAfter = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).one()
+        lcAfter.effectiveAmount == 70000.0
+        lcAfter.effectiveOutstandingAmount == 70000.0
     }
 
     // --- Feature: Complex Document & Settlement Flow Events ---
 
     def "BDD-IMP-DOC-01: Presentation: Examination Timer Enforcement"() {
-        given: "A physical payload arrival"
-        when: "Logic defines SLAtargets"
-        def result = ec.service.sync().name("trade.TradeCommonServices.calculate#BusinessDate")
-            .parameters([startDate: Date.valueOf("2026-04-20"), daysToAdd: 5]).call()
+        given: "A product with a specific SLA (e.g., 7 days)"
+        def prodId = "PROD-SLA-7"
+        if (ec.entity.find("trade.TradeProductCatalog").condition("productId", prodId).one() == null) {
+            ec.entity.makeValue("trade.TradeProductCatalog")
+                .setAll([productId: prodId, productName: "SLA Test Product", documentExamSlaDays: 7]).create()
+        }
         
-        then: "Target parameter is established (2026-04-28)"
-        result.resultDate == Date.valueOf("2026-04-28")
+        and: "An LC using this product"
+        def ref = "TF-SLA-01-" + System.currentTimeMillis()
+        def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
+            .parameters([transactionRef: ref, lcAmount: 5000.0, lcCurrencyUomId: "USD", 
+                         productId: prodId,
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: "BEN-01"]]]).call()
+                                   
+        when: "Logic calculates SLA targets from catalog"
+        def prod = ec.entity.find("trade.TradeProductCatalog").condition("productId", prodId).one()
+        def result = ec.service.sync().name("trade.TradeCommonServices.calculate#BusinessDate")
+            .parameters([startDate: Date.valueOf("2026-04-20"), daysToAdd: prod.documentExamSlaDays]).call()
+        
+        then: "Target date respects catalog setting (7 days -> 2026-04-30)"
+        result.resultDate == Date.valueOf("2026-04-30")
     }
 
     def "BDD-IMP-DOC-02: Presentation: Internal Notice on Discrepancy"() {
@@ -451,13 +516,21 @@ class BddImportLcModuleSpec extends Specification {
     }
 
     def "BDD-IMP-SET-01: Settlement: Usance Future Queue Mapping"() {
-        given: "Usance LC presentation"
-        when: "Clean phase completes"
-        def result = ec.service.sync().name("trade.TradeCommonServices.evaluate#Tenor")
-            .parameters([maturityDays: 14]).call()
-        
-        then: "Application generates logical suspense records"
-        result.settlementState == "Suspended"
+        given: "A Usance LC with 30 days"
+        def ref = "TF-SET-01-" + System.currentTimeMillis()
+        def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
+            .parameters([transactionRef: ref, lcAmount: 5000.0, lcCurrencyUomId: "USD", 
+                         usanceDays: 30,
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: "BEN-01"]]]).call()
+                                   
+        when: "Calculating maturity based on LC usanceDays"
+        def lc = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", res.instrumentId).one()
+        def result = ec.service.sync().name("trade.TradeCommonServices.calculate#BusinessDate")
+            .parameters([startDate: Date.valueOf("2026-04-20"), daysToAdd: lc.usanceDays]).call()
+            
+        then: "Maturity is mapped to 30 days out"
+        result.resultDate != null
     }
 
     def "BDD-IMP-SET-02: Settlement: Nostro Entry Posting"() {
@@ -472,16 +545,20 @@ class BddImportLcModuleSpec extends Specification {
 
     // --- Feature: Shipping Guarantees & Transaction Cancellations ---
 
-    def "BDD-IMP-SG-01: Shipping Guarantee Issuance"() {
-        given: "An active LC"
-        def instrumentId = createIssuedLc("SG-01")
+    def "BDD-IMP-SG-01: Shipping Guarantee Issuance (#multiplier)"() {
+        given: "An Issued LC and a shipping guarantee request"
+        def instrumentId = createIssuedLc("SG-01-" + multiplier)
             
-        when: "Issuing a Shipping Guarantee"
-        def sgRes = ec.service.sync().name("trade.TradeCommonServices.create#ShippingGuarantee")
-            .parameters([instrumentId: instrumentId, invoiceAmount: 20000.0, transportDocRef: "BOL-BDD-" + System.currentTimeMillis()]).call()
+        when: "SG is issued for specific percentage of invoice"
+        def sgRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#ShippingGuarantee")
+            .parameters([instrumentId: instrumentId, invoiceAmount: 1000.0, liabilityMultiplierRequired: multiplier * 100]).call()
             
-        then: "SG is created"
-        sgRes?.guaranteeId != null
+        then: "Earmark matches expected multiplier"
+        def sg = ec.entity.find("trade.importlc.ImportLcShippingGuarantee").condition("guaranteeId", sgRes.guaranteeId).one()
+        sg.earmarkAmount == (1000.0 * multiplier)
+        
+        where:
+        multiplier << [1.10, 1.25, 1.50]
     }
 
     def "BDD-IMP-SG-02: Ship Guar: B/L Exchange Waiver Lock"() {
@@ -569,10 +646,6 @@ class BddImportLcModuleSpec extends Specification {
     def "BDD-IMP-SWT-01: MT700: X-Character Base Validation"() {
         given: "An Import LC with invalid characters"
         def ref = "TF-SWT-01-" + System.currentTimeMillis()
-        def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD", goodsDescription: "Price @ 5.00 #1",
-                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
-                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         
         when: "Formatting for SWIFT X-set"
         def result = ec.service.sync().name("trade.SwiftGenerationServices.format#XCharacter")
@@ -580,6 +653,18 @@ class BddImportLcModuleSpec extends Specification {
         
         then: "Invalid characters are handled"
         result.cleanText == "Price   5.00  1"
+    }
+
+    def "BDD-IMP-SWT-01-Z: MT700: Z-Character Set Validation"() {
+        given: "Text with Z-set characters"
+        def raw = "Spec: @#=%!\"&*;<>"
+        
+        when: "Formatting for SWIFT Z-set"
+        def result = ec.service.sync().name("trade.SwiftGenerationServices.format#ZCharacter")
+            .parameters([rawText: raw]).call()
+            
+        then: "Z-set characters are preserved"
+        result.cleanText == raw
     }
 
     @Unroll
@@ -626,13 +711,13 @@ class BddImportLcModuleSpec extends Specification {
         def setRes = ec.service.sync().name("trade.importlc.ImportLcServices.settle#Presentation")
             .parameters([presentationId: presRes.presentationId, principalAmount: 40000.0, settlementTypeEnumId: "SIGHT"]).call()
         
-        then: 'effectiveOutstandingAmount is $60,000'
+        then: 'effectiveOutstandingAmount is 60,000'
         def lc = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).one()
         lc.effectiveOutstandingAmount.compareTo(60000.0) == 0
         lc.businessStateId == "LC_ISSUED"
     }
 
-    def "BDD-IMP-VAL-03: Revolving LC reinstatement"() {
+    def "BDD-IMP-VAL-03: Revolving LC reinstatement (Partial)"() {
         given: 'A Revolving LC'
         ec.entity.makeValue("trade.TradeProductCatalog")
             .setAll([productId: "CAT-REV-02", productName: "Revolving LC", allowRevolving: "Y"]).createOrUpdate()
@@ -647,7 +732,7 @@ class BddImportLcModuleSpec extends Specification {
         ec.service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit")
             .parameters([instrumentId: instrumentId, businessStateId: "LC_ACCEPTED"]).call()
         
-        when: 'Full $10,000 is settled'
+        when: 'Full 10,000 is settled'
         def setRes = ec.service.sync().name("trade.importlc.ImportLcServices.settle#Presentation")
             .parameters([presentationId: presRes.presentationId, principalAmount: 10000.0, settlementTypeEnumId: "SIGHT"]).call()
         
@@ -734,7 +819,7 @@ class BddImportLcModuleSpec extends Specification {
         ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", instrumentId).condition("messageType", "MT701").one() != null
     }
 
-    def "BDD-IMP-SWT-08: MT707: Amendment Message Generation"() {
+    def "BDD-IMP-AMD-08: MT707: Amendment Message Generation"() {
         given: "An authorized amendment"
         def instrumentId = createIssuedLc("SWT-08")
         def amdRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#Amendment")

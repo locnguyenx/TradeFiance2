@@ -97,6 +97,9 @@ This document merges all source BDD specs into one traceable document aligned wi
 | **9: Navigation** | BDD-CMN-NAV-01 | Global transaction log | Happy | REQ-NAV-01.3 | US-NAV-02 |
 | **9: Navigation** | BDD-CMN-NAV-02 | Contextual search toggle | Happy | REQ-SRH-01.1 | US-SRH-01 |
 | **9: Navigation** | BDD-CMN-NAV-03 | Checker queue modal interaction | Happy | REQ-UI-CMN-02 | US-NAV-02 |
+| **9: Navigation** | BDD-CMN-SRH-01 | Cross-reference indexing | Happy | REQ-SRH-01.2 | US-SRH-01 |
+| **1: Trade Party** | BDD-CMN-TP-18 | Role uniqueness enforcement | Edge | FR-TP-18 | US-TP-02 |
+| **8: Fees** | BDD-CMN-FEE-01 | Customer exception rates | Happy | US-FEE-02 | US-FEE-02 |
 
 ---
 
@@ -302,18 +305,17 @@ This document merges all source BDD specs into one traceable document aligned wi
 * **Then** the service returns a validation error: "Party KYC status is expired." for the Advising Bank
 * **And** the instrument status is NOT changed to submitted
 
-#### Scenario BDD-CMN-TP-17: View entity resolves party names from junction
-**US-TP-04, US-TP-07 | FR-TP-14**
-*Type: Happy Path*
+*   **And** party names are resolved through `TradeInstrumentParty` junction joins, not flat fields
 
-* **Given** an `ImportLetterOfCredit` "LC_TEST_014" with:
-  - `TP_APPLICANT → "ACME_CORP_001"` (partyName = "Acme Corp")
-  - `TP_BENEFICIARY → "GLOBAL_EXP_002"` (partyName = "Global Exports Ltd")
-  - `TP_ADVISING_BANK → "CITI_BANK_001"` (partyName = "Citibank London")
-* **When** querying `ImportLetterOfCreditView` for "LC_TEST_014"
-* **Then** the view returns `applicantPartyName = "Acme Corp"`
-* **And** `beneficiaryPartyName = "Global Exports Ltd"`
-* **And** party names are resolved through `TradeInstrumentParty` junction joins, not flat fields
+#### Scenario BDD-CMN-TP-18: Role uniqueness enforcement
+**US-TP-02 | FR-TP-18**
+*Type: Edge Case*
+
+* **Given** an `ImportLetterOfCredit` "LC_TEST_UNIQUE_01"
+* **And** a `TradeInstrumentParty` record already exists for `(LC_TEST_UNIQUE_01, TP_APPLICANT, ACME_CORP_001)`
+* **When** a user attempts to manually insert a SECOND record for `(LC_TEST_UNIQUE_01, TP_APPLICANT, GLOBAL_EXP_002)`
+* **Then** the database must throw a Primary Key constraint violation
+* **And** only ONE party remains assigned to the `TP_APPLICANT` role for this instrument
 
 ---
 
@@ -775,16 +777,18 @@ This document merges all source BDD specs into one traceable document aligned wi
 * **When** the Tariff engine collects fee structure data points upon action termination
 * **Then** the engine overrides the default natively honoring specific customer tier mappings primarily before applying math
 
-#### Scenario BDD-CMN-PRD-13: Tariff matrix minimum floor fee
-**US-FEE-01 | REQ-COM-MAS-01**
-*Type: Edge Case*
+| Target Value Applied Against Ledgers |
+| $50 USD |
 
-* **Given** the applied fee computes arithmetically via the rate formulas to entirely equal `$15 USD`
-* **And** the `FeeConfiguration.minFloorAmount` rigidly states a Minimum Charge equivalent to `$50 USD`
-* **When** the fee collector executes the final summation
-* **Then** the output natively substitutes the minimum equivalent to eliminate undersized processing fees:
-  | Target Value Applied Against Ledgers |
-  | $50 USD |
+#### Scenario BDD-CMN-FEE-01: Customer exception rates
+**US-FEE-02 | US-FEE-02**
+*Type: Happy Path*
+
+* **Given** a standard fee configuration for `ISSUANCE_FEE` at `0.25%`
+* **And** a customer "TEST_CUSTOMER_001" has a negotiated override rate at `0.10%`
+* **When** `calculate#Fees` is called for "TEST_CUSTOMER_001" with a base amount of `$100,000`
+* **Then** the result evaluates to `$100.00` (0.10%)
+* **And** the standard rate (0.25% = $250) is ignored
 
 ---
 
@@ -967,7 +971,18 @@ This document merges all source BDD specs into one traceable document aligned wi
 **US-NAV-02 | REQ-UI-CMN-02**
 *Type: Happy Path*
 
-* **Given** a Checker is viewing the Checker Queue with pending transactions
-* **When** they click on a transaction row
-* **Then** a Full-Screen Overlay (Modal) opens displaying the Checker Authorization Screen
-* **And** it does NOT open a new tab
+* **Given** a Checker is viewing the global transaction log
+* **When** the Checker clicks on an "URGENT" issuance transaction
+* **Then** the application opens a full-screen modal overlay
+* **And** the background dashboard remains visible but inactive
+* **And** the modal displays all instrument details for authorization
+
+#### Scenario BDD-CMN-SRH-01: Cross-reference indexing
+**US-SRH-01 | REQ-SRH-01.2**
+*Type: Happy Path*
+
+* **Given** an Import LC "LC_SEARCH_001" exists
+* **And** multiple transactions (Issuance, Amendment) are associated with "LC_SEARCH_001"
+* **When** searching for "LC_SEARCH_001" with context "Transactions"
+* **Then** the result set includes both the Issuance and the Amendment transaction IDs
+* **And** the "Instrument" context still shows the legal master record

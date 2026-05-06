@@ -12,6 +12,7 @@
                         def newPrio = priorityEnumId ?: inst.priorityEnumId
                         inst.priorityEnumId = newPrio
                         if (!inst.makerUserId) inst.makerUserId = makerUserId
+                        inst.latestTransactionId = transactionId
                         inst.update()
                     }
                 } finally {

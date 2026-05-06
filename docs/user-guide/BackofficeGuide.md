@@ -68,8 +68,9 @@ This guide provides exhaustive, step-by-step instructions for Administrative and
 4.  **Audit Drill-Down**:
     - Click any underlined **Transaction Ref** in the breakdown to open the specific instrument.
     - **Exposure Tracking**: The system tracks exposure in real-time. "Issued" LCs contribute to **Firm Exposure**, while "Pending" or "Draft" LCs contribute to **Contingent/Reserved Exposure**.
+    - **Tolerance-Based Earmarking**: For Import LCs, the utilized amount includes the **Positive Tolerance %** at the time of issuance (e.g., a $100k LC with 10% tolerance earmarks $110k). This prevents credit facility breaches during full drawings.
     - **Settlement Impact**: Authorizing a settlement transaction immediately reduces the utilized amount and releases the facility limit for future transactions.
-    - **Unified Narrative Timeline**: Review a merged view of financial transactions and system audit logs. Every business action (Issuance, Amendment, Settlement) is linked to a unique **Transaction ID**.
+    - **Unified Narrative Timeline**: Review a merged view of financial transactions and system audit logs. Every business action (Issuance, Amendment, Settlement) is linked to a unique **Transaction ID** and tracked via the `latestTransactionId` on the instrument for high-fidelity audit chaining.
 
 ### Facility Attributes Reference
 

@@ -110,7 +110,7 @@
             <set field="errors" from="[]"/>
             <script package="trade.importlc"><![CDATA[
                 def X_PATTERN = /^[A-Za-z0-9\/ \-\?\:\(\)\.\,\'\+\r\n]*$/
-                def Z_PATTERN = /^[A-Za-z0-9\.\,\-\(\)\/\=\'\+\:\? \!\#\&\*<>\;\@\r\n]*$/
+                def Z_PATTERN = /^[A-Za-z0-9\.\,\-\(\)\/\=\'\+\:\? \!\#\&\*<>\;\@\%\"\_\r\n]*$/
                 def BIC_PATTERN = /^[A-Z0-9]{8}$|^[A-Z0-9]{11}$/
                 
                 def addError = { fieldName, message, type ->
@@ -128,7 +128,7 @@
                 def validateZCharset = { fieldName, value ->
                     if (!value) return
                     value.toString().eachWithIndex { ch, idx ->
-                        if (!(ch ==~ /[A-Za-z0-9\.\,\-\(\)\/\=\'\+\:\? \!\#\&\*<>\;\@\r\n]/)) {
+                        if (!(ch ==~ /[A-Za-z0-9\.\,\-\(\)\/\=\'\+\:\? \!\#\&\*<>\;\@\%\"\_\r\n]/)) {
                             addError(fieldName, "Invalid Z charset character '${ch}' at position ${idx+1}", "CHARSET")
                         }
                     }

@@ -90,7 +90,7 @@ class SwiftValidationSpec extends Specification {
     }
 
     // BDD-SWV-ZCS-01: Z Character Set — Valid Characters vs Invalid Characters
-    def "ZCS-01: Z charset validation for Amendment Narrative"() {
+    def "BDD-IMP-VAL-05: Z charset validation for Amendment Narrative"() {
         given: "An amendment with both valid and invalid Z charset characters"
         def ref = "TF-AMD-" + System.currentTimeMillis()
         def lcRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
@@ -99,17 +99,20 @@ class SwiftValidationSpec extends Specification {
                                    [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         
         def amdRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#Amendment")
-            .parameters([instrumentId: lcRes.instrumentId, amendmentNarrative: "Valid Z characters: @#=!\nInvalid: ^",
+            .parameters([instrumentId: lcRes.instrumentId, amendmentNarrative: "Valid Z: @#=!\"%_\nInvalid: ^",
                          amendmentTypeEnumId: "AMEND_NON_FINANCIAL", amendmentDate: ec.user.nowTimestamp]).call()
 
         when: "validate#SwiftFields is called on the Amendment"
         def result = ec.service.sync().name("trade.importlc.ImportLcValidationServices.validate#SwiftFields")
             .parameters([entityType: "ImportLcAmendment", entityId: amdRes.amendmentId]).call()
 
-        then: "Error is returned for the invalid character ^"
+        then: "Error is returned for the invalid character ^ and not for valid Z chars"
         result.errors != null
         result.errors.any { it.fieldName == "amendmentNarrative" && it.message.contains("^") }
         !result.errors.any { it.message.contains("@") }
+        !result.errors.any { it.message.contains("\"") }
+        !result.errors.any { it.message.contains("%") }
+        !result.errors.any { it.message.contains("_") }
     }
 
     // BDD-SWV-REF-02: Reference field length check

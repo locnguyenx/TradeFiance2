@@ -74,7 +74,8 @@ The **Operations Dashboard** is the primary launchpad for instrument-level actio
 1.  **Filter & Search**: Use the **Status Filter** (Draft, Pending, Issued, Doc Received) or the **Global Search** bar.
     - **Context Toggle**: Select **Inst** to search by Instrument ID (legal asset) or **Txn** to search by Transaction Ref (active workflow).
 2.  **View Detail Page**: Click any **Ref No** (underlined blue text) to exit the dashboard and enter the **Dedicated Full-Screen View**.
-3.  **SLA Health**: High-priority transactions with <3 days remaining are highlighted in **Urgent Red** in the "SLA Timer" column.
+3.  **Dual-Status Visibility**: The dashboard provides a combined view of the instrument's legal state (e.g., `Issued`) and its current active transaction status (e.g., `Draft Amendment`). This ensures high visibility for pending lifecycle actions.
+4.  **SLA Health**: High-priority transactions with <3 days remaining are highlighted in **Urgent Red** in the "SLA Timer" column.
 
 ### Row-Level Context Actions (•••)
 Click the triple-dot menu on any dashboard row to access status-specific actions:
@@ -249,7 +250,7 @@ Enforces strict 5-day UCP 600 examination rules.
 | Field | Tag | Requirement | Character Set | Max Lines | Validation Rule |
 |-------|-----|-------------|---------------|-----------|-----------------|
 | **Pres. Date** | - | **Mandatory** | **Date** | - | Date documents were received at bank counter. |
-| **Claim Amount** | - | **Mandatory** | **Numeric** | 1 | Cannot exceed LC Balance + Tolerance. |
+| **Claim Amount** | - | **Mandatory** | **Numeric** | 1 | Cannot exceed **LC Balance + Positive Tolerance**. |
 | **Currency** | - | **Mandatory** | - | - | Mapped from instrument. |
 | **Presenting Bank**| 54A | **Mandatory** | - | Select onboarded Bank from directory. System auto-retrieves BIC. |
 | **Bank Reference** | 20 | **Mandatory** | **X-Charset** | 1 | The presenting bank's unique reference number. |
@@ -270,7 +271,7 @@ Designed for mid-lifecycle adjustments.
 | **Amount Delta** | 32B | Optional | **Numeric** | Use `+` or `-` to adjust. Redefines Max Liability. |
 | **Expiry Delta** | 31D | Optional | **Date** | New validity date. |
 | **Narrative** | 77A | **Mandatory**| **Z-Charset** | Explicitly describe what was changed in the instrument. |
-| **Ben. Consent** | - | Optional | **Boolean** | If "Y", amendment is pending until beneficiary accepts. |
+| **Ben. Consent** | - | Optional | **Boolean** | If "Y", amendment is pending until beneficiary accepts. **Financial changes are only binding after consent is logged.** |
 
 ---
 
@@ -297,7 +298,7 @@ Allowed: `A-Z a-z 0-9 / - ? : ( ) . , ' + space`
 
 ### Z-Character Set (The "Extended" Set)
 Allowed in **Narratives** (Tags 73, 72Z, 77A):
-- `.` `,` `-` `(` `)` `/` `=` `'` `+` `:` `?` `!` `#` `&` `*` `<` `>` `;` `@` `space`
+- `.` `,` `-` `(` `)` `/` `=` `'` `+` `:` `?` `!` `#` `&` `*` `<` `>` `;` `@` `"` `_` `%` `space`
 
 ---
 

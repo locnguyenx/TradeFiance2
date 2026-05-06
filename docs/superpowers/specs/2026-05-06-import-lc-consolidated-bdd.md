@@ -23,22 +23,26 @@ This document merges all source BDD specs into one traceable document aligned wi
 | **2.1 Issuance** | BDD-IMP-ISS-05 | Issuance: Mandatory cash margin block | Edge | REQ-IMP-SPEC-01 | US-ISS-01 |
 | **2.1 Issuance** | BDD-IMP-ISS-06 | Issuance: Effective values initialized on LC | Happy | REQ-IMP-SPEC-01 | US-ISS-01 |
 | **2.1 Issuance** | BDD-IMP-ISS-07 | State transition: Invalid transition rejected | Edge | REQ-IMP-STATE-02 | US-ISS-01 |
-| **2.1 Issuance** | BDD-IMP-ISS-08 | Vietnam FX regulatory tagging | Happy | REQ-IMP-04 | US-ISS-01 |
+| **2.1 Issuance** | BDD-IMP-ISS-08 | Vietnam FX regulatory tagging | Happy | ISS-REG-01 | US-ISS-01 |
+| **2.1 Issuance** | BDD-IMP-VAL-05 | MT707/MT799: Z-Character set validation | Edge | SWV-02 | US-ISS-01 |
 | **2.1 Issuance** | BDD-IMP-SWT-01 | MT700: X-Character base validation | Edge | REQ-IMP-SWIFT-01 | US-ISS-01 |
 | **2.1 Issuance** | BDD-IMP-SWT-02 | MT700: Mandatory block validation | Happy | REQ-IMP-SWIFT-02 | US-ISS-01 |
 | **2.1 Issuance** | BDD-IMP-SWT-03 | MT700: Tolerance output formatter | Edge | REQ-IMP-SWIFT-03A | US-ISS-01 |
 | **2.1 Issuance** | BDD-IMP-SWT-04 | MT700: 'A' Designation swap (59/59A) | Edge | REQ-IMP-SWIFT-04 | US-ISS-01 |
 | **2.1 Issuance** | BDD-IMP-SWT-05 | MT700: 65-char splitting with MT 701 continuation | Edge | REQ-IMP-SWIFT-05 | US-ISS-01 |
+| **2.1 Issuance** | BDD-IMP-SWT-07 | MT700: Continuation Message MT701 Logic | Happy | REQ-IMP-SWIFT-05 | US-ISS-01 |
 | **2.2 Amendments** | BDD-IMP-AMD-01 | Amendment: Financial increase updates effective amount | Happy | REQ-IMP-SPEC-02 | US-AMD-01 |
 | **2.2 Amendments** | BDD-IMP-AMD-02 | Amendment: Negative delta releases limits | Happy | REQ-IMP-SPEC-02 | US-AMD-01 |
 | **2.2 Amendments** | BDD-IMP-AMD-03 | Amendment: Non-financial bypasses limits | Happy | REQ-IMP-SPEC-02 | US-AMD-01 |
 | **2.2 Amendments** | BDD-IMP-AMD-04 | Amendment: Pending beneficiary consent | Edge | REQ-IMP-SPEC-02 | US-AMD-01 |
 | **2.2 Amendments** | BDD-IMP-AMD-05 | Amendment: Version number incremented | Happy | REQ-IMP-SPEC-02 | US-AMD-01 |
-| **2.2 Amendments** | BDD-IMP-AMD-06 | MT707: Amendment message generation | Happy | REQ-IMP-SWIFT-06 | US-AMD-01 |
+| **2.2 Amendments** | BDD-IMP-AMD-06 | Amendment: Concurrent amendment block | Edge | AMD-VAL-01 | US-AMD-01 |
+| **2.2 Amendments** | BDD-IMP-AMD-07 | Amendment: Legal binding deferred until consent | Edge | AMD-VAL-02 | US-AMD-01 |
+| **2.2 Amendments** | BDD-IMP-AMD-08 | MT707: Amendment message generation | Happy | REQ-IMP-SWIFT-06 | US-AMD-01 |
 | **2.3 Presentation** | BDD-IMP-DOC-01 | Presentation: Examination timer enforcement | Happy | REQ-IMP-SPEC-03 | US-PRE-01 |
 | **2.3 Presentation** | BDD-IMP-DOC-02 | Presentation: Internal notice on discrepancy | Edge | REQ-IMP-SPEC-03 | US-PRE-01 |
 | **2.3 Presentation** | BDD-IMP-DOC-03 | Presentation: Waiver generates MT 752 | Happy | REQ-IMP-SPEC-03 | US-PRE-01 |
-| **2.3 Presentation** | BDD-IMP-DOC-04 | State transition: Receive docs | Happy | REQ-IMP-FLOW-04 | US-PRE-01 |
+| **2.3 Presentation** | BDD-IMP-DRW-01 | Presentation: Document Lodgement and Flow | Happy | REQ-IMP-FLOW-04 | US-PRE-01 |
 | **2.3 Presentation** | BDD-IMP-DOC-05 | State transition: Review to discrepant | Edge | REQ-IMP-FLOW-05 | US-PRE-01 |
 | **2.3 Presentation** | BDD-IMP-DOC-06 | State transition: Review to clean/accepted | Happy | REQ-IMP-FLOW-06 | US-PRE-01 |
 | **2.3 Presentation** | BDD-IMP-VAL-01 | Drawn tolerance over-draw block | Edge | REQ-IMP-04 | US-PRE-01 |
@@ -158,7 +162,7 @@ This document merges all source BDD specs into one traceable document aligned wi
   | `LC_DRAFT` → `LC_SETTLED` | Blocked: "Invalid state transition" |
 
 #### Scenario BDD-IMP-ISS-08: Vietnam FX regulatory tagging
-**US-ISS-01 | REQ-IMP-04**
+**US-ISS-01 | ISS-REG-01**
 *Type: Happy Path*
 
 * **Given** an LC Issued specifically by a Vietnam-based branch environment node
@@ -224,25 +228,36 @@ This document merges all source BDD specs into one traceable document aligned wi
   | MT 701 Tag 27 | `2/2` |
   | MT 701 Tag 45B | Overflow content |
   | MT 701 Tag 20 | Must exactly match MT 700 Tag 20 |
+| **BDD-IMP-VAL-05** | **MT707/MT799: Z-Character set validation** |
+| US-ISS-01 | SWV-02 |
+| *Type: Edge Case* |
+| * **Given** an amendment narrative containing `@ # = ! " % & * ; < > _` |
+| * **When** the MT generator begins parsing via `format#ZCharacter` |
+| * **Then** the parser allows the extended characters: |
+| | Input | Output |
+| | `@ # = !` | Accepted |
+| | `_` (underscore) | Accepted |
+| | `^` (caret) | Filtered / Rejected Exception |
 
 ---
 
 ### Feature 2.2: Amendments
 
-#### Scenario BDD-IMP-AMD-01: Amendment: Financial increase updates effective amount
-**US-AMD-01 | REQ-IMP-SPEC-02**
+#### Scenario BDD-IMP-AMD-01: Amendment: Financial increase updates effective amount after consent
+**US-AMD-01 | AMD-VAL-02**
 *Type: Happy Path*
 
 * **Given** an `ImportLetterOfCredit` with `effectiveAmount = 50,000`
 * **When** operations engages `create#Amendment` with `amountAdjustment = +20,000`
-* **And** the amendment is authorized
+* **And** the amendment is authorized by the Checker
+* **Then** the `effectiveAmount` remains 50,000 (Undertaking not yet updated)
+* **When** Beneficiary Consent is logged as `ACCEPTED`
 * **Then** the effective values on `ImportLetterOfCredit` are updated:
   | Field | Before | After |
   | `effectiveAmount` | 50,000 | 70,000 |
   | `effectiveOutstandingAmount` | 50,000 | 70,000 |
   | `totalAmendmentCount` | 0 | 1 |
 * **And** `TradeInstrument.amount` remains unchanged at 50,000 (original snapshot)
-* **And** Maker/Checker tier routing uses the **new effective liability** of 70,000 (not the 20k delta)
 
 #### Scenario BDD-IMP-AMD-02: Amendment: Negative delta releases limits
 **US-AMD-01 | REQ-IMP-SPEC-02**
@@ -291,7 +306,28 @@ This document merges all source BDD specs into one traceable document aligned wi
   | `ImportLetterOfCredit.totalAmendmentCount` | 0 | 1 |
   | `ImportLcAmendment.amendmentNumber` | — | 1 (auto-incremented) |
 
-#### Scenario BDD-IMP-AMD-06: MT707: Amendment message generation
+#### Scenario BDD-IMP-AMD-06: Amendment: Concurrent amendment block
+**US-AMD-01 | AMD-VAL-01**
+*Type: Edge Case*
+
+* **Given** an `ImportLetterOfCredit` with an existing amendment in `AMEND_DRAFT` or `AMEND_PENDING_APPROVAL`
+* **When** a user attempts to `create#Amendment` for the same parent LC
+* **Then** the service returns an error:
+  | Error Message |
+  | "Concurrent amendment in progress for LC" |
+
+#### Scenario BDD-IMP-AMD-07: Amendment: Legal binding deferred until consent
+**US-AMD-01 | AMD-VAL-02**
+*Type: Edge Case*
+
+* **Given** a newly authorized Amendment with `beneficiaryConsentStatusId = PENDING`
+* **When** subsequent requests attempt to settle drawings against the amended terms
+* **Then** the system checks Beneficiary Acknowledgement:
+  | Expected Status | Decision |
+  | `beneficiaryConsentStatusId` | `PENDING` |
+  | Amendment Legally Enforced | False — original terms still govern |
+
+#### Scenario BDD-IMP-AMD-08: MT707: Amendment message generation
 **US-AMD-01 | REQ-IMP-SWIFT-06**
 *Type: Happy Path*
 

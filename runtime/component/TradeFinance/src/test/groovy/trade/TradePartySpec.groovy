@@ -20,12 +20,22 @@ class TradePartySpec extends Specification {
         
         boolean began = ec.transaction.begin(60)
         try {
+            ec.entity.find("trade.importlc.ImportLcSettlement").condition("instrumentId", EntityCondition.LIKE, "INST_%").deleteAll()
+            ec.entity.find("trade.importlc.ImportLcAmendment").condition("instrumentId", EntityCondition.LIKE, "INST_%").deleteAll()
+            ec.entity.find("trade.importlc.ImportLcShippingGuarantee").condition("instrumentId", EntityCondition.LIKE, "INST_%").deleteAll()
+            ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", EntityCondition.LIKE, "INST_%").deleteAll()
+            ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.LIKE, "INST_%").deleteAll()
+            ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", EntityCondition.LIKE, "INST_%").deleteAll()
+            ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", EntityCondition.LIKE, "INST_%").deleteAll()
+            ec.entity.find("trade.TradeTransaction").condition("instrumentId", EntityCondition.LIKE, "INST_%").deleteAll()
+            ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", EntityCondition.LIKE, "INST_%").deleteAll()
             ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", EntityCondition.LIKE, "INST_%").deleteAll()
+            ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.LIKE, "INST_%").deleteAll()
+            
             ec.entity.find("trade.TradeInstrumentParty").condition("partyId", EntityCondition.LIKE, "SPEC_%").deleteAll()
             ec.entity.find("trade.TradePartyBank").condition("partyId", EntityCondition.LIKE, "SPEC_%").deleteAll()
             ec.entity.find("trade.TradeParty").condition("partyId", EntityCondition.LIKE, "SPEC_%").deleteAll()
-            ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.LIKE, "INST_%").deleteAll()
-            ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.LIKE, "INST_%").deleteAll()
+            
             ec.transaction.commit(began)
         } catch (Exception e) {
             ec.transaction.rollback(began, "Error in setupSpec", e)
@@ -123,7 +133,7 @@ class TradePartySpec extends Specification {
         ec.entity.find("trade.TradeInstrumentParty").condition([instrumentId: 'INST_ASSIGN_01', partyId: 'SPEC_BANK_01']).list().size() == 2
     }
 
-    def "BDD-CMN-TP-06: Assign Advising Bank (Missing RMA) -> Fail"() {
+    def "BDD-CMN-TP-08: Assign Advising Bank (Missing RMA) -> Fail"() {
         setup:
         ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
                 .parameters([partyId: 'SPEC_NO_RMA_BANK', partyTypeEnumId: 'PARTY_BANK', 
@@ -239,7 +249,7 @@ class TradePartySpec extends Specification {
         ec.message.clearAll()
     }
 
-    def "BDD-CMN-TP-11: Update: Role reassignment updates existing record"() {
+    def "BDD-CMN-TP-06: Update: Role reassignment updates existing record"() {
         setup:
         ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
                 .parameters([partyId: 'SPEC_COMM_03', partyTypeEnumId: 'PARTY_COMMERCIAL', partyName: 'New Applicant', kycStatus: 'Active'])
@@ -257,18 +267,59 @@ class TradePartySpec extends Specification {
         junc.partyId == 'SPEC_COMM_03'
     }
 
-    def "BDD-CMN-TP-12: Role Uniqueness Enforcement (PK Validation)"() {
+    def "BDD-CMN-TP-18: Role Uniqueness Enforcement (PK Validation)"() {
         when: "Attempting to assign multiple parties to the same role on an instrument"
         ec.service.sync().name("trade.TradeCommonServices.assign#InstrumentParty")
                 .parameters([instrumentId: 'INST_ASSIGN_01', roleEnumId: 'TP_ADVISING_BANK', partyId: 'SPEC_BANK_01'])
                 .call()
         ec.service.sync().name("trade.TradeCommonServices.assign#InstrumentParty")
-                .parameters([instrumentId: 'INST_ASSIGN_01', roleEnumId: 'TP_ADVISING_BANK', partyId: 'SPEC_BANK_01']) // Same party
+                .parameters([instrumentId: 'INST_ASSIGN_01', roleEnumId: 'TP_ADVISING_BANK', partyId: 'SPEC_NO_RMA_BANK'])
+                .call()
+
+        then: "Throws error or PK violation"
+        // In Moqui, createOrUpdate usually handles this, but since it's a junction, we expect the service to either update (TP-06) 
+        // or the DB to reject if manual insertion is attempted. TP-06 covers the service behavior. 
+        // This test ensures the junction remains unique.
+        ec.entity.find("trade.TradeInstrumentParty").condition([instrumentId: 'INST_ASSIGN_01', roleEnumId: 'TP_ADVISING_BANK']).count() == 1
+    }
+
+    def "BDD-CMN-TP-11: Reject confirming bank insufficient FI limit"() {
+        setup:
+        ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+                .parameters([partyId: 'SPEC_SMALL_LIMIT_BANK', partyTypeEnumId: 'PARTY_BANK', 
+                             partyName: 'Small Limit Bank', swiftBic: 'SMALLXXX', hasActiveRMA: true, 
+                             kycStatus: 'Active', fiLimitAvailable: 1000.0, fiLimitCurrencyUomId: 'USD'])
                 .call()
         
-        then: "Only one record should exist in the database for that (instrument, role) pair"
-        def juncList = ec.entity.find("trade.TradeInstrumentParty")
-                .condition([instrumentId: 'INST_ASSIGN_01', roleEnumId: 'TP_ADVISING_BANK']).list()
-        juncList.size() == 1
+        when: "Assigning as confirming bank for large liability"
+        // Create instrument with 10k amount
+        ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
+                .parameters([instrumentId: 'INST_LIMIT_TEST', lcAmount: 10000.0, lcCurrencyUomId: 'USD',
+                             instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'SPEC_COMM_01'],
+                                       [roleEnumId: 'TP_BENEFICIARY', partyId: 'SPEC_COMM_02']]])
+                .call()
+                
+        ec.service.sync().name("trade.TradeCommonServices.assign#InstrumentParty")
+                .parameters([instrumentId: 'INST_LIMIT_TEST', roleEnumId: 'TP_CONFIRMING_BANK', partyId: 'SPEC_SMALL_LIMIT_BANK'])
+                .call()
+
+        then: "Fails due to insufficient limit"
+        ec.message.hasError()
+        ec.message.getErrorsString().toLowerCase().contains("insufficient")
+    }
+
+    def "BDD-CMN-TP-12: Create LC with party role assignments"() {
+        when: "Creating LC with inline parties"
+        def result = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
+                .parameters([instrumentId: 'INST_INLINE_01', lcAmount: 5000.0, lcCurrencyUomId: 'USD',
+                             instrumentParties: [
+                                 [roleEnumId: 'TP_APPLICANT', partyId: 'SPEC_COMM_01'],
+                                 [roleEnumId: 'TP_BENEFICIARY', partyId: 'SPEC_COMM_02'],
+                                 [roleEnumId: 'TP_ADVISING_BANK', partyId: 'SPEC_BANK_01']
+                             ]])
+                .call()
+        
+        then: "All junction records are created"
+        ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", 'INST_INLINE_01').count() == 3
     }
 }

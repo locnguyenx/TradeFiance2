@@ -83,6 +83,7 @@
         <field name="instrumentId" type="id"/>
         <field name="invoiceAmount" type="number-decimal"/>
         <field name="liabilityMultiplierRequired" type="number-integer" default="110"/> <!-- 110% per BRD -->
+        <field name="earmarkAmount" type="number-decimal"/>
         <field name="transportDocReference" type="text-medium"/>
         <field name="guaranteeStatusId" type="id"/>
         <field name="sgStatusId" type="id"/>
@@ -222,8 +223,7 @@
         </member-entity>
         
         <member-entity entity-alias="tx" entity-name="trade.TradeTransaction" join-from-alias="inst" join-optional="true">
-            <key-map field-name="instrumentId"/>
-            <entity-condition><econdition field-name="transactionTypeEnumId" value="IMP_NEW"/></entity-condition>
+            <key-map field-name="latestTransactionId" related="transactionId"/>
         </member-entity>
 
         <alias-all entity-alias="lc"/>

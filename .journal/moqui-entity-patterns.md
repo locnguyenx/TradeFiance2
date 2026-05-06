@@ -222,3 +222,44 @@ def parent = ec.entity.find("moqui.example.Parent")
     .one()
 parent.delete()
 ```
+
+## 10. Latest Transaction Pointer Pattern (Dual-Status Visibility)
+
+### Problem
+In complex lifecycles (like Trade Finance), a master instrument (e.g., LC) can have a stable legal state (Issued) while an active transaction (e.g., Amendment) is in progress. Standard joins to "the last transaction" are expensive or unreliable when multiple types exist.
+
+### Solution
+Add a `latestTransactionId` field to the master entity and use an **EECA** (Entity ECA) to maintain it.
+
+```xml
+<!-- Master Entity -->
+<entity entity-name="TradeInstrument">
+    <field name="instrumentId" type="id" is-pk="true"/>
+    <field name="latestTransactionId" type="id"/>
+    <relationship type="one" related="trade.TradeTransaction">
+        <key-map field-name="latestTransactionId" related-field-name="transactionId"/>
+    </relationship>
+</entity>
+
+<!-- EECA to maintain the pointer -->
+<eeca entity-name="trade.TradeTransaction" get-entire-entity="true">
+    <actions>
+        <service-call name="update#trade.TradeInstrument" 
+                      in-map="[instrumentId:instrumentId, latestTransactionId:transactionId]"/>
+    </actions>
+</eeca>
+
+<!-- High-Performance View -->
+<view-entity entity-name="InstrumentView">
+    <member entity-alias="inst" entity-name="TradeInstrument"/>
+    <member entity-alias="tx" entity-name="TradeTransaction" join-from-alias="inst">
+        <key-map field-name="latestTransactionId" related-field-name="transactionId"/>
+    </member>
+    <!-- View aliases now show both Business State (inst) and Tx Status (tx) -->
+</view-entity>
+```
+
+### Benefits
+- **Performance**: O(1) lookup of the "current action" on the instrument.
+- **Reporting**: Enables dashboards to show "Issued / Amendment Pending" in a single row.
+- **Audit**: Decouples historical logs from the "current active workflow" pointer.

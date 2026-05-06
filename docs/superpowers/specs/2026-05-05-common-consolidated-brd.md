@@ -111,6 +111,7 @@ This document merges baseline requirements with refactoring and transaction trac
 *   **Mandatory Roles for Submission**: `TP_APPLICANT` and `TP_BENEFICIARY` must be assigned before `submit#ForApproval` (Ref: `FR-TP-17`).
 *   **SWIFT Option D Fallback**: If a BIC is not available, the system must utilize the `Legal Name` and `Registered Address` (SWIFT Option D) for banking tags.
 *   **SWIFT Tag Format Selection**: Determined at runtime from party data (Option A/B/C/D) (Ref: `FR-TP-17`).
+*   **Role Uniqueness Enforcement (FR-TP-18)**: Each instrument role (e.g., TP_APPLICANT) can only be assigned to a single party per instrument. The system must enforce this at the database level (Primary Key: `instrumentId`, `roleEnumId`) and prevent duplicate role assignments.
 
 #### E. User Stories
 

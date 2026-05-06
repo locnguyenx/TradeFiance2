@@ -262,7 +262,7 @@
             <!-- Note: MT707 is per amendment. In a more complex system, we'd link SwiftMessage to AmendmentId. 
                  For now, we check if an ACTIVE MT707 exists. -->
             <set field="activeMsg" from="existingMessages.find { it.messageStatusId == 'SWIFT_MSG_ACTIVE' }"/>
-            <if condition="activeMsg &amp;&amp; !forceRegenerate">
+            <if condition="activeMsg">
                 <set field="swiftMessageId" from="activeMsg.swiftMessageId"/>
                 <return message="Active MT707 already exists. Regeneration blocked for dispatched messages."/>
             </if>
@@ -742,6 +742,17 @@
         <actions>
             <script><![CDATA[
                 cleanText = rawText.replaceAll(/[^A-Za-z0-9\/ \-\?\:\(\)\.\,\'\+]/, " ")
+            ]]></script>
+        </actions>
+    </service>
+
+    <service verb="format" noun="ZCharacter" authenticate="false">
+        <in-parameters><parameter name="rawText" required="true" allow-html="any"/></in-parameters>
+        <out-parameters><parameter name="cleanText" required="true"/></out-parameters>
+        <actions>
+            <script><![CDATA[
+                // Z-set includes X-set plus: @ # = ! " % & * ; < > _
+                cleanText = rawText.replaceAll(/[^A-Za-z0-9\/ \-\?\:\(\)\.\,\'\+\@\#\=\!\"\%&\*;\<\>\_ ]/, " ")
             ]]></script>
         </actions>
     </service>

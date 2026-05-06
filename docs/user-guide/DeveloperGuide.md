@@ -28,12 +28,12 @@ The platform is built on **Moqui Framework**, utilizing a headless service archi
 - `trade.common`: Shared entities (Facilities, FX Rates, Party Config).
 - `trade.importlc`: Import LC domain logic.
 - **Junction-Based Party Model**: The platform uses `TradeInstrumentParty` to normalize all party role assignments (Applicant, Beneficiary, Advising Bank) across instruments, rather than flat fields.
-- **Transaction-Centric Model**: The platform decouples "Proposed State" (`TradeTransaction`) from "Current State" (`TradeInstrument`). All workflow actions Target `transactionId` rather than `instrumentId`.
+- **Transaction-Centric Model**: The platform decouples "Proposed State" (`TradeTransaction`) from "Current State" (`TradeInstrument`). All workflow actions Target `transactionId` rather than `instrumentId`. To enable efficient "Dual-Status" reporting, the `TradeInstrument` entity maintains a `latestTransactionId` reference, allowing the UI to join both the legal state and the active transaction status in a single query.
 
 ### Service Hardening
 All state-changing services must adhere to the following guards:
 1.  **Enforce Maker/Checker**: Implemented via `trade.AuthorizationServices`. Status transitions for `LC_ISSUED` are blocked until `INST_APPROVED`.
-2.  **Validate SWIFT**: Strict regex validation for X/Z character sets and BIC codes via `trade.importlc.ImportLcValidationServices`.
+2.  **Validate SWIFT**: Strict regex validation for X/Z character sets and BIC codes via `trade.importlc.ImportLcValidationServices`. Z-set validation (Tags 73, 72Z, 77A) allows extended characters like `@`, `#`, `<` and `>` using the `format#ZCharacter` service.
 3.  **Facility Utilization**: Atomic limit check-and-earmark logic in `LimitServices.xml` to prevent over-drawing.
 4.  **Transaction Audit Hub**: Automatic logging in `TradeTransaction` and `TradeTransactionAudit`. The frontend merges these into a **Unified Narrative Timeline** via the `getInstrumentTransactions` and `getAuditLogs` API end-points.
 5.  **Party Eligibility Gateway**: `TradeCommonServices.assign#InstrumentParty` enforces KYC status, RMA requirements, FI Limits, and party-type matching before any role assignment is persisted. This is the single compliance checkpoint for all party operations.
@@ -89,7 +89,7 @@ cd frontend && npm test src/components/GlobalShell.test.tsx
 ## 4. SWIFT Character Sets & Mappings
 The platform validates input strictly against SWIFT MT7xx standards:
 - **X-Charset**: `A-Z a-z 0-9 / - ? : ( ) . , ' + space`. (Standard narratives: 45A, 46A).
-- **Z-Charset**: Extended set allowed in Tag 73, 72Z, and 77A.
+- **Z-Charset**: Extended set (`@ # = ! " % & * ; < > _`) allowed in Tag 73, 72Z, and 77A. Implemented via the `trade.SwiftGenerationServices.format#ZCharacter` service.
 - **Line Enforcement**: Narrative fields are proactively checked for line-count compliance (e.g., Tag 73 max 6 lines).
 - **Utilities**: Centralized validation in `frontend/src/utils/SwiftUtils.ts`.
 

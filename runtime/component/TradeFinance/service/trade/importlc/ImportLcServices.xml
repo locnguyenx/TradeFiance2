@@ -263,10 +263,14 @@
                 <return error="true" message="User ${approverUserId} is not authorized: ${authOut.reason ?: 'Limit exceeded or Maker/Checker conflict'}"/>
             </if>
 
-            <!-- 2.5. Facility Limit Check -->
+            <!-- 2.5. Facility Limit Check (including tolerance) -->
             <if condition="instrument.customerFacilityId">
+                <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc">
+                    <field-map field-name="instrumentId"/>
+                </entity-find-one>
+                <set field="liabilityAmount" from="instrument.amount * (1 + (lc?.tolerancePositive ?: 0))"/>
                 <service-call name="trade.LimitServices.calculate#Earmark" 
-                              in-map="[facilityId: instrument.customerFacilityId, amount: instrument.amount]"/>
+                              in-map="[facilityId: instrument.customerFacilityId, amount: liabilityAmount]"/>
             </if>
 
             <!-- 3. Dual Checker Logic for Tier 4 -->
@@ -309,16 +313,30 @@
                              checkerUserId: approverUserId, 
                              checkerTimestamp: ec.user.nowTimestamp]"/>
                 
-                <!-- 5.5 Update Limit Utilization -->
+                <!-- 5.5 Update Limit Utilization (including tolerance) -->
                 <if condition="instrument.customerFacilityId">
+                    <if condition="!lc">
+                        <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc">
+                            <field-map field-name="instrumentId"/>
+                        </entity-find-one>
+                    </if>
+                    <set field="liabilityAmount" from="instrument.amount * (1 + (lc?.tolerancePositive ?: 0))"/>
                     <service-call name="trade.LimitServices.update#Utilization" 
-                                  in-map="[facilityId: instrument.customerFacilityId, amountDelta: instrument.amount]"/>
+                                  in-map="[facilityId: instrument.customerFacilityId, amountDelta: liabilityAmount]"/>
                 </if>
                 
                 <!-- 6. Update Business State to LC_ISSUED -->
-                <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" for-update="true">
-                    <field-map field-name="instrumentId"/>
-                </entity-find-one>
+                <if condition="!lc">
+                    <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" for-update="true">
+                        <field-map field-name="instrumentId"/>
+                    </entity-find-one>
+                </if>
+                <else>
+                    <!-- Refresh for update if already found -->
+                    <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" for-update="true">
+                        <field-map field-name="instrumentId"/>
+                    </entity-find-one>
+                </else>
                 <if condition="lc">
                     <set field="lc.businessStateId" value="LC_ISSUED"/>
                     <entity-update value-field="lc"/>
@@ -421,8 +439,6 @@
                 <field-map field-name="instrumentId" from="amendment.instrumentId"/>
             </entity-find-one>
             <if condition="lc">
-                <set field="lc.effectiveAmount" from="(lc.effectiveAmount ?: 0) + amendment.amountAdjustment"/>
-                <set field="lc.effectiveOutstandingAmount" from="(lc.effectiveOutstandingAmount ?: 0) + amendment.amountAdjustment"/>
                 <set field="lc.totalAmendmentCount" from="(lc.totalAmendmentCount ?: 0) + 1"/>
                 <entity-update value-field="lc"/>
             </if>
@@ -758,6 +774,7 @@
             </if>
             
             <!-- Update utilization -->
+            
             <service-call name="trade.LimitServices.update#Utilization" 
                           in-map="[facilityId: instrument.customerFacilityId, amountDelta: earmarkAmount]"/>
             

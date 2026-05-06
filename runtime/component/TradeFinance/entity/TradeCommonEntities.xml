@@ -24,6 +24,11 @@
         
         <field name="makerUserId" type="id"/>
         <field name="priorityEnumId" type="id"/>
+        <field name="latestTransactionId" type="id"/>
+        
+        <relationship type="one" related="trade.TradeTransaction">
+            <key-map field-name="latestTransactionId" related="transactionId"/>
+        </relationship>
     </entity>
 
     <entity entity-name="CustomerFacility" package="trade">

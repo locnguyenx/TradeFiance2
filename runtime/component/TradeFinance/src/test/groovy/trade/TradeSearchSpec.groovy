@@ -33,7 +33,7 @@ class TradeSearchSpec extends Specification {
         Moqui.getExecutionContext().destroy()
     }
 
-    def "GAP-04: Cross-Reference Indexing (REQ-SRH-01.2)"() {
+    def "BDD-CMN-SRH-01: Cross-Reference Indexing (REQ-SRH-01.2)"() {
         given: "An instrument with multiple transactions"
         def ref = "SRH-TEST-" + System.currentTimeMillis()
         def createRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")

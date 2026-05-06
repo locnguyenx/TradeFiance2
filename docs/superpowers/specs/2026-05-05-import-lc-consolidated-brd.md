@@ -241,6 +241,7 @@ Example: An Amendment can be in Transaction State "Pending Approval" while the u
 | ISS-SWV-15 | Narrative fields auto-wrapped at 65 chars/line for SWIFT output | Tags 45A, 46A, 47A, 78 |
 | ISS-SWV-16 | BIC fields: exactly 8 or 11 alphanumeric characters | Tags 41A, 42A, 53a, 57a |
 | ISS-SWV-17 | `transactionRef`: max 16 chars, X charset, slash rules | Tag 20 |
+| ISS-REG-01 | Vietnam-specific LCs require Goods Categorization and FX Outflow Sequence tagging | External reporting |
 
 ##### Source Traceability
 
@@ -263,6 +264,7 @@ Example: An Amendment can be in Transaction State "Pending Approval" while the u
 | ISS-SWV-15 | swift-validation-brd.md | FR-SWV-06 | Line format: 100×65 narrative auto-wrap at 65 chars |
 | ISS-SWV-16 | swift-validation-brd.md | FR-SWV-05 | BIC format: 8 or 11 alphanumeric characters |
 | ISS-SWV-17 | swift-validation-brd.md | FR-SWV-02, FR-SWV-01 | Reference rules + X charset |
+| ISS-REG-01 | baseline-brd.md | REQ-IMP-04 | Vietnam-specific FX regulatory tagging |
 
 #### F. Display / Computed Data
 
@@ -357,7 +359,8 @@ Upon Checker authorization:
 | AMD-SWV-03 | `amendmentNumber` auto-incremented (1, 2, 3...) per parent LC. Always included. | Tag 26E (Mandatory) |
 | AMD-SWV-04 | If `amendmentNarrative` changed, or shipping ports amended: re-screen against Sanctions | — |
 | AMD-SWV-05 | Tolerance (39A) and Max Credit (39B) mutual exclusion still applies if modified | Tags 39A, 39B |
-| AMD-SWV-06 | Authority tier calculated on **New Maximum Liability** (not delta) | — |
+| AMD-VAL-01 | Only one amendment can be in progress (Draft/Pending) at a time per instrument | Defensive block |
+| AMD-VAL-02 | Amendment effective values only snapshot upon Beneficiary Consent (financial) | Consent tracking |
 
 ##### Source Traceability
 
@@ -368,7 +371,8 @@ Upon Checker authorization:
 | AMD-SWV-03 | swift-gaps-consolidation-brd.md | FR-ENT-28 | Amendment number auto-increment, always included in MT707 |
 | AMD-SWV-04 | import-lc-brd.md | REQ-IMP-SPEC-02 Section I | Sanctions re-screening if narrative or shipping ports change |
 | AMD-SWV-05 | swift-validation-brd.md | FR-SWV-07 | Mutual exclusion 39A/39B inherited from issuance |
-| AMD-SWV-06 | common-module-brd.md | REQ-COM-AUTH-03 Section A | Financial amendments tiered on new total liability, not delta |
+| AMD-VAL-01 | baseline-brd.md | REQ-IMP-AMD-06 | Concurrent amendment blocking |
+| AMD-VAL-02 | baseline-brd.md | REQ-IMP-AMD-07 | Beneficiary consent trigger for legal binding |
 
 #### F. Display / Computed Data
 
@@ -452,6 +456,7 @@ Upon Checker authorization:
 | `documentDisposalEnumId` | Cond | id | Tag 77B | HOLDING_DOCUMENTS, RETURNING_DOCUMENTS. **Required when refusing discrepant documents**. |
 | `applicantDecision` | Opt | Enum | — | PENDING, WAIVED, REFUSED. Used only if discrepant. |
 | `chargesDeducted` | Opt | text-long | Tag 73 | Max 6×35, X charset. Discrepancy fee text. |
+| **FR-IMP-DRW-01** | **Req** | **Lodgement Processing** | — | System must initialize `TradeInstrument.transactionStatusId = TRANS_DRAFT` and `ImportLetterOfCredit.businessStateId = LC_DOCS_RECEIVED` upon presentation lodgement. |
 
 ##### Document Type Grid (per document received)
 | Field Name | Req/Opt | Data Type |
@@ -790,7 +795,7 @@ Upon Checker authorization:
 | Rule ID | Rule | Applies To |
 | :--- | :--- | :--- |
 | SWV-01 | X Character Set validation | All X charset fields (narratives, names, addresses, references, descriptions) |
-| SWV-02 | Z Character Set validation | Tag 79 only (amendment narrative, cancellation request) |
+| SWV-02 | Z Character Set validation (`@ # = ! " % & * ; < > _`) | Tag 79 only (amendment narrative, cancellation request) |
 | SWV-03 | Reference slash rules: no leading/trailing `/`, no `//` | Tags 20, 21, 23 (all reference fields) |
 | SWV-04 | Amount format: comma decimal, max 15 digits, positive | Tags 32A, 32B, 33B, 34B (all financial amount fields) |
 | SWV-05 | Date format: YYMMDD | All date fields in SWIFT tags |
@@ -814,6 +819,7 @@ Before assembling any SWIFT message:
 2. If errors: abort generation, return errors, log warning
 3. If data passes but contains unexpected characters: auto-convert (e.g., `&` → `AND`) and log warning
 4. All Layer 2 conversions logged with field name, original value, and converted value
+5. **FR-IMP-SWT-07**: **MT701 Continuation Logic**: When Tag 45A, 46A, or 47A exceed 65 lines/10,000 characters, the system must split the payload into MT701 continuation messages with sequential paging (Tag 27: 1/n).
 
 ### 3.5 User Stories
 
