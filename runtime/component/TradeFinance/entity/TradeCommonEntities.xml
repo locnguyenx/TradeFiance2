@@ -133,9 +133,12 @@
         <field name="currencyUomId" type="id"/>
         <field name="frequencyEnumId" type="id"/> <!-- ONCE, MONTHLY, QUARTERLY -->
         <field name="effectiveDate" type="date"/>
-        <field name="customerTierOverride" type="text-short"/>
+        <field name="partyId" type="id"/> <!-- Customer-specific override (null = standard rate) -->
         <field name="statusId" type="id" default="'FEE_ACTIVE'"/> <!-- FEE_DRAFT, FEE_ACTIVE -->
         <field name="isActive" type="text-indicator" default="'Y'"/>
+        <relationship type="one" related-entity-name="mantle.party.Party">
+            <key-map field-name="partyId"/>
+        </relationship>
     </entity>
 
     <entity entity-name="TradeProductCatalog" package="trade">

@@ -36,6 +36,7 @@
         <in-parameters>
             <parameter name="baseAmount" type="BigDecimal" required="true"/>
             <parameter name="feeEventEnumId" default-value="ISSUANCE_FEE"/>
+            <parameter name="partyId"/>
             <parameter name="minCharge" type="BigDecimal"/>
             <parameter name="maxCharge" type="BigDecimal"/>
         </in-parameters>
@@ -43,14 +44,21 @@
             <parameter name="totalFee" type="BigDecimal"/>
         </out-parameters>
         <actions>
-            <entity-find entity-name="trade.FeeConfiguration" list="feeConfigs">
+            <entity-find entity-name="trade.FeeConfiguration" list="customerConfigs" limit="1">
                 <econdition field-name="feeEventEnumId" from="feeEventEnumId ?: 'ISSUANCE_FEE'"/>
+                <econdition field-name="partyId" from="partyId"/>
                 <econdition field-name="statusId" value="FEE_ACTIVE"/>
                 <order-by field-name="-effectiveDate"/>
             </entity-find>
-            
+            <entity-find entity-name="trade.FeeConfiguration" list="standardConfigs" limit="1">
+                <econdition field-name="feeEventEnumId" from="feeEventEnumId ?: 'ISSUANCE_FEE'"/>
+                <econdition field-name="partyId" value=""/>
+                <econdition field-name="statusId" value="FEE_ACTIVE"/>
+                <order-by field-name="-effectiveDate"/>
+            </entity-find>
+
             <script><![CDATA[
-                def feeConfig = feeConfigs ? feeConfigs[0] : null
+                def feeConfig = customerConfigs ? customerConfigs[0] : (standardConfigs ? standardConfigs[0] : null)
                 BigDecimal result = 0.0
                 if (feeConfig == null) {
                     result = baseAmount * 0.0025

@@ -479,14 +479,14 @@ class BddCommonModuleSpec extends Specification {
     @Unroll
     def "BDD-CMN-PRD-#id: Configuration: #description"() {
         given: "A product configuration matrix"
-        
+
         when:
         def result = ec.service.sync().name("trade.TradeCommonServices.get#ProductConfig")
             .parameter("key", key).call().value
-        
+
         then:
         result == expected
-        
+
         where:
         id   | description                         | key                    | value          | expected
         "01" | "Active Component Verification"     | "SBLC_COMM_ACTIVE"     | false          | false
@@ -500,5 +500,35 @@ class BddCommonModuleSpec extends Specification {
         "09" | "Mandatory Margin Prerequisite"     | "MANDATORY_MARGIN"     | 1.00           | 1.00
         "10" | "Custom SLA Deadline Formula"       | "DOC_EXAM_SLA_DAYS"    | 2              | 2
         "11" | "Default SWIFT Base MT Generation"  | "DEFAULT_SWIFT_FORMAT" | "MT760"        | "MT760"
+    }
+
+    def "BDD-CMN-FEE-01: Customer Exception Rate Overrides Standard Rate"() {
+        given: "A standard fee configuration at 0.25% and a customer-specific override at 0.10%"
+        def partyId = "TEST_CUSTOMER_001"
+        def feeEvent = "ISSUANCE_FEE"
+
+        // Clean up any existing test data
+        ec.entity.find("trade.FeeConfiguration").condition("feeEventEnumId", feeEvent).deleteAll()
+
+        // Create standard rate: 0.25%
+        ec.entity.makeValue("trade.FeeConfiguration")
+            .setAll([feeEventEnumId: feeEvent, calculationTypeEnumId: "PERCENTAGE",
+                     baseValue: 0.0025, statusId: "FEE_ACTIVE",
+                     effectiveDate: new Date(System.currentTimeMillis() - 86400000)])
+            .setSequencedIdPrimary().create()
+
+        // Create customer-specific rate: 0.10%
+        ec.entity.makeValue("trade.FeeConfiguration")
+            .setAll([feeEventEnumId: feeEvent, calculationTypeEnumId: "PERCENTAGE",
+                     baseValue: 0.0010, partyId: partyId, statusId: "FEE_ACTIVE",
+                     effectiveDate: new Date(System.currentTimeMillis() - 86400000)])
+            .setSequencedIdPrimary().create()
+
+        when: "Calculating fees with customer override"
+        def result = ec.service.sync().name("trade.TradeAccountingServices.calculate#Fees")
+            .parameters([baseAmount: 100000.0, feeEventEnumId: feeEvent, partyId: partyId]).call()
+
+        then: "Customer rate (0.10% of 100k = 100) is applied instead of standard rate (0.25% = 250)"
+        result.totalFee == 100.0
     }
 }
