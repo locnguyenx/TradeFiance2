@@ -19,8 +19,8 @@ This document merges all source BDD specs into one traceable document aligned wi
 
 | Feature | Scenario ID | Title | Type | Source BRD Req | User Story |
 |---|---|---|---|---|---|
-| **1: Trade Party** | BDD-CMN-TP-01 | Create commercial trade party | Happy | FR-TP-01 | US-TP-01 |
-| **1: Trade Party** | BDD-CMN-TP-02 | Create bank party with extension | Happy | FR-TP-02 | US-TP-01 |
+| **1: Trade Party** | BDD-CMN-TP-01 | Create commercial trade party | Happy | US-TP-01 | US-TP-01 |
+| **1: Trade Party** | BDD-CMN-TP-02 | Create bank party with extension | Happy | US-TP-01 | US-TP-01 |
 | **1: Trade Party** | BDD-CMN-TP-03 | Reject commercial party invalid SWIFT chars | Edge | FR-TP-01 | US-TP-01 |
 | **1: Trade Party** | BDD-CMN-TP-04 | Assign parties to instrument roles | Happy | FR-TP-03 | US-TP-02 |
 | **1: Trade Party** | BDD-CMN-TP-05 | Same bank multiple roles on one instrument | Happy | FR-TP-03 | US-TP-02 |
@@ -31,23 +31,23 @@ This document merges all source BDD specs into one traceable document aligned wi
 | **1: Trade Party** | BDD-CMN-TP-10 | Reject reimbursing bank without Nostro | Edge | FR-TP-12 | US-TP-03 |
 | **1: Trade Party** | BDD-CMN-TP-11 | Reject confirming bank insufficient FI limit | Edge | FR-TP-12 | US-TP-04 |
 | **1: Trade Party** | BDD-CMN-TP-12 | Create LC with party role assignments | Happy | FR-TP-13 | US-TP-05 |
-| **1: Trade Party** | BDD-CMN-TP-13 | Select "ANY BANK" for Available With | Happy | FR-TP-09 | US-TP-05 |
+| **1: Trade Party** | BDD-CMN-TP-13 | Select "ANY BANK" for Available With | Happy | US-TP-05 | US-TP-05 |
 | **1: Trade Party** | BDD-CMN-TP-14 | Switch from specific bank to ANY BANK | Edge | FR-TP-09 | US-TP-05 |
 | **1: Trade Party** | BDD-CMN-TP-15 | Submit LC validates mandatory roles | Edge | FR-TP-13 | US-TP-05 |
 | **1: Trade Party** | BDD-CMN-TP-16 | Submit LC validates party eligibility | Edge | FR-TP-13 | US-TP-05 |
 | **1: Trade Party** | BDD-CMN-TP-17 | View entity resolves party names from junction | Happy | FR-TP-14 | US-TP-04 |
-| **2: Credit Facility** | BDD-CMN-FAC-01 | Facility limit earmark | Happy | REQ-COM-ENT-03 | US-LIM-01 |
+| **2: Credit Facility** | BDD-CMN-FAC-01 | Facility limit earmark | Happy | US-LIM-01 | US-LIM-01 |
 | **2: Credit Facility** | BDD-CMN-FAC-02 | Expired facility block | Edge | REQ-COM-ENT-03 | US-LIM-01 |
-| **2: Credit Facility** | BDD-CMN-FAC-03 | Facility 95% threshold warning | Happy | REQ-COM-NOT-01 | US-LIM-03 |
+| **2: Credit Facility** | BDD-CMN-FAC-03 | Facility 95% threshold warning | Happy | US-LIM-03 | US-LIM-03 |
 | **3: Transaction Lifecycle** | BDD-CMN-TXN-01 | Transaction base attributes and maker tracking | Happy | REQ-COM-ENT-01 | US-TXN-01 |
 | **3: Transaction Lifecycle** | BDD-CMN-TXN-02 | Version increment on authorization | Happy | REQ-COM-ENT-01 | US-TXN-01 |
 | **3: Transaction Lifecycle** | BDD-CMN-TXN-03 | Valid party KYC acceptance | Happy | REQ-COM-ENT-02 | US-TXN-01 |
 | **3: Transaction Lifecycle** | BDD-CMN-TXN-04 | Expired party KYC rejection | Edge | REQ-COM-ENT-02 | US-TXN-01 |
 | **3: Transaction Lifecycle** | BDD-CMN-TXN-05 | Processing flow: Draft to Submitted dual-status | Happy | REQ-COM-WF-01 | US-TXN-01 |
-| **3: Transaction Lifecycle** | BDD-CMN-TXN-06 | Transaction-primary: New LC creates issuance | Happy | REQ-TXN-01.1 | US-TXN-01 |
-| **3: Transaction Lifecycle** | BDD-CMN-TXN-07 | Checker authorizes by transactionId | Happy | REQ-TXN-01.2 | US-TXN-02 |
-| **3: Transaction Lifecycle** | BDD-CMN-TXN-08 | Decoupled data: View pending amendment snapshot | Happy | REQ-TXN-02 | US-TXN-01 |
-| **3: Transaction Lifecycle** | BDD-CMN-TXN-09 | Dual-status clarity: Workflow vs lifecycle | Happy | REQ-UTN-05 | US-TXN-03 |
+| **3: Transaction Lifecycle** | BDD-CMN-TXN-06 | Transaction-primary: New LC creates issuance | Happy | US-TXN-01 | US-TXN-01 |
+| **3: Transaction Lifecycle** | BDD-CMN-TXN-07 | Checker authorizes by transactionId | Happy | US-TXN-02 | US-TXN-02 |
+| **3: Transaction Lifecycle** | BDD-CMN-TXN-08 | Decoupled data: View pending amendment snapshot | Happy | US-TXN-01 | US-TXN-01 |
+| **3: Transaction Lifecycle** | BDD-CMN-TXN-09 | Dual-status clarity: Workflow vs lifecycle | Happy | US-TXN-03 | US-TXN-03 |
 | **4: Authority & Access** | BDD-CMN-AUTH-01 | Tier enforcement by equivalent amount | Happy | REQ-COM-AUTH-01 | US-UIA-01 |
 | **4: Authority & Access** | BDD-CMN-AUTH-02 | Tier 4 dual checker enforcement | Edge | REQ-COM-AUTH-02 | US-UIA-02 |
 | **4: Authority & Access** | BDD-CMN-AUTH-03 | Amendment total liability route determination | Happy | REQ-COM-AUTH-03A | US-UIA-01 |
@@ -82,9 +82,9 @@ This document merges all source BDD specs into one traceable document aligned wi
 | **5: Product Config** | BDD-CMN-PRD-12 | Tariff matrix priority overrides | Happy | REQ-COM-MAS-01 | US-FEE-01 |
 | **5: Product Config** | BDD-CMN-PRD-13 | Tariff matrix minimum floor fee | Edge | REQ-COM-MAS-01 | US-FEE-01 |
 | **6: Audit & Timeline** | BDD-CMN-AUD-01 | Full narrative rendering | Happy | REQ-UTN-01 | US-UTN-01 |
-| **6: Audit & Timeline** | BDD-CMN-AUD-02 | Timeline: Checker authorizes pending node | Happy | REQ-UTN-02.1 | US-UTN-02 |
-| **6: Audit & Timeline** | BDD-CMN-AUD-03 | Timeline: Rejection with reason display | Edge | REQ-UTN-02.3 | US-UTN-02 |
-| **6: Audit & Timeline** | BDD-CMN-AUD-04 | Delta analysis: Amendment differences | Happy | REQ-UTN-03.1 | US-UTN-03 |
+| **6: Audit & Timeline** | BDD-CMN-AUD-02 | Timeline: Checker authorizes pending node | Happy | US-UTN-02 | US-UTN-02 |
+| **6: Audit & Timeline** | BDD-CMN-AUD-03 | Timeline: Rejection with reason display | Edge | US-UTN-02 | US-UTN-02 |
+| **6: Audit & Timeline** | BDD-CMN-AUD-04 | Delta analysis: Amendment differences | Happy | US-UTN-03 | US-UTN-03 |
 | **6: Audit & Timeline** | BDD-CMN-AUD-05 | Mandatory transaction delta audit log | Happy | REQ-COM-MAS-03 | US-UTN-01 |
 | **6: Audit & Timeline** | BDD-CMN-AUD-06 | Sanctions check triggers hold | Edge | REQ-COM-NOT-02 | US-UTN-01 |
 | **7: FX, SLA & Notifs** | BDD-CMN-FX-01 | Precision: Zero decimal JPY | Edge | REQ-COM-FX-01 | US-FX-01 |
