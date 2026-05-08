@@ -12,6 +12,8 @@
 
 ## File Structure
 
+### Backend
+
 | Action | File | Responsibility |
 | :--- | :--- | :--- |
 | Modify | `entity/ImportLcEntities.xml` | Add fields to `ImportLetterOfCredit`, `ImportLcAmendment`; add `NostroReconciliation` entity |
@@ -22,6 +24,21 @@
 | Create | `src/test/groovy/trade/SwiftReimbursementSpec.groovy` | Tests for MT 740/747 generation and Nostro reconciliation |
 | Modify | `src/test/groovy/trade/SwiftGenerationSpec.groovy` | Tests for Tags 49G/49H/40E in MT 700, Tag 23S in MT 707 |
 | Modify | `src/test/groovy/trade/SwiftValidationSpec.groovy` | Tests for Tag 77J aggregate limit |
+
+### Frontend
+
+| Action | File | Responsibility |
+| :--- | :--- | :--- |
+| Modify | `frontend/src/components/IssuanceStepper.tsx` | Add fields: Reimbursing Bank selector, Payment Conditions (49G/49H), Applicable Rules (40E), Auth Expiry |
+| Modify | `frontend/src/components/AmendmentStepper.tsx` | Add cancellation request toggle (Tag 23S), mixed-cancel guard |
+| Modify | `frontend/src/components/DocumentExamination.tsx` | Add Tag 77J line-count indicator ("X/70 lines used"), block add when limit exceeded |
+| Create | `frontend/src/components/NostroReconciliation.tsx` | Manual matching screen: debit entry, status display, Maker/Checker |
+| Modify | `frontend/src/api/tradeApi.ts` | Add API calls for Nostro reconciliation CRUD |
+| Modify | `frontend/src/api/types.ts` | Add `NostroReconciliation` type, update `ImportLetterOfCredit` type |
+| Modify | `frontend/src/components/GlobalShell.tsx` | Add "Nostro Reconciliation" nav entry |
+| Modify | `frontend/src/components/IssuanceStepper.test.tsx` | Test new fields render and payload inclusion |
+| Create | `frontend/src/components/NostroReconciliation.test.tsx` | Test matching flow, amount mismatch warning |
+| Modify | `frontend/src/components/DocumentExamination.test.tsx` | Test 77J line-count indicator and blocking |
 
 ---
 
@@ -811,3 +828,490 @@ Expected commits (newest first):
 4. `feat(swift): add generate#Mt740 service with NostroReconciliation auto-creation`
 5. `feat(swift): add Tags 49G/49H/40E to MT700, Tag 23S to MT707`
 6. `feat(entity): add fields for MT700 49G/49H/40E, MT740/747 reimbursement, NostroReconciliation, Tag 23S`
+
+---
+
+### Task 7: Issuance Form — New Fields (49G/49H/40E, Reimbursing Bank, Auth Expiry)
+
+**BDD Scenarios:** S1 (payment conditions), S3 (reimbursing bank on issuance)
+**BRD Requirements:** FR-SWG-20 (UI input for 49G/49H/40E), FR-SWG-21 (reimbursing bank party selector)
+
+**User-Facing:** YES
+
+**Files:**
+- Modify: `frontend/src/components/IssuanceStepper.tsx`
+- Modify: `frontend/src/api/types.ts`
+- Modify: `frontend/src/components/IssuanceStepper.test.tsx`
+
+- [ ] **Step 1: Add types for new fields**
+
+In `frontend/src/api/types.ts`, add to the `ImportLetterOfCredit` interface:
+
+```typescript
+paymentCondBeneText?: string;   // Tag 49G
+paymentCondBankText?: string;   // Tag 49H
+applicableRulesEnumId?: string; // Tag 40E
+authExpiryDate?: string;        // MT740 reimbursement auth expiry
+reimbursingChargesEnumId?: string; // MT740 charges
+reimbursingBankPartyId?: string;
+```
+
+- [ ] **Step 2: Add formData state fields to IssuanceStepper**
+
+In `IssuanceStepper.tsx`, add to the `formData` useState initial object (after `availableWithEnumId`):
+
+```typescript
+reimbursingBankPartyId: '',
+paymentCondBeneText: '',
+paymentCondBankText: '',
+applicableRulesEnumId: 'UCP_LATEST',
+authExpiryDate: '',
+reimbursingChargesEnumId: 'REIMB_OUR',
+```
+
+- [ ] **Step 3: Add UI fields to Step 1 (Parties section)**
+
+In `IssuanceStepper.tsx`, after the Advise Through Bank field group (around line 679), add:
+
+```tsx
+<div className="field-group">
+    <label htmlFor="reimbursingBankPartyId">Reimbursing Bank (MT 740)</label>
+    <select
+        id="reimbursingBankPartyId"
+        value={formData.reimbursingBankPartyId}
+        onChange={e => setFormData({...formData, reimbursingBankPartyId: e.target.value})}
+    >
+        <option value="">None (No Reimbursement)</option>
+        {bankParties.map(p => <option key={p.partyId} value={p.partyId}>{p.partyName} {p.swiftBic ? `(${p.swiftBic})` : ''}</option>)}
+    </select>
+</div>
+{formData.reimbursingBankPartyId && (
+    <div className="field-group">
+        <label htmlFor="authExpiryDate">Reimbursement Auth Expiry</label>
+        <input id="authExpiryDate" type="date" value={formData.authExpiryDate}
+            onChange={e => setFormData({...formData, authExpiryDate: e.target.value})} />
+        <p className="helper-text">Must be ≥ LC Expiry. Defaults to LC Expiry + 30 days if blank.</p>
+    </div>
+)}
+```
+
+- [ ] **Step 4: Add UI fields to Step 2 (Main LC section)**
+
+After the Confirmation field (around line 714), add Applicable Rules and Payment Conditions:
+
+```tsx
+<div className="field-group">
+    <label htmlFor="applicableRulesEnumId">Applicable Rules (Tag 40E)</label>
+    <select id="applicableRulesEnumId" value={formData.applicableRulesEnumId}
+        onChange={e => setFormData({...formData, applicableRulesEnumId: e.target.value})}>
+        <option value="UCP_LATEST">UCP LATEST VERSION</option>
+        <option value="EUCP_LATEST">EUCP LATEST VERSION</option>
+        <option value="UCPDC_600">UCP 600</option>
+        <option value="ISP_LATEST">ISP LATEST VERSION</option>
+    </select>
+</div>
+<div className="field-group">
+    <label htmlFor="paymentCondBeneText">Payment Conditions — Beneficiary (Tag 49G)</label>
+    <textarea id="paymentCondBeneText" rows={3}
+        className={swiftErrors.paymentCondBeneText ? 'is-invalid' : ''}
+        value={formData.paymentCondBeneText}
+        onChange={e => {
+            setFormData({...formData, paymentCondBeneText: e.target.value});
+            validateSwiftField('paymentCondBeneText', e.target.value, 'X', 4);
+        }}
+        placeholder="e.g., Payment upon receipt of clean B/L" />
+    {swiftErrors.paymentCondBeneText && <p className="error-text text-xs mt-1">{swiftErrors.paymentCondBeneText}</p>}
+</div>
+<div className="field-group">
+    <label htmlFor="paymentCondBankText">Payment Conditions — Bank (Tag 49H)</label>
+    <textarea id="paymentCondBankText" rows={3}
+        className={swiftErrors.paymentCondBankText ? 'is-invalid' : ''}
+        value={formData.paymentCondBankText}
+        onChange={e => {
+            setFormData({...formData, paymentCondBankText: e.target.value});
+            validateSwiftField('paymentCondBankText', e.target.value, 'X', 4);
+        }}
+        placeholder="e.g., Reimburse via MT 202 only" />
+    {swiftErrors.paymentCondBankText && <p className="error-text text-xs mt-1">{swiftErrors.paymentCondBankText}</p>}
+</div>
+```
+
+- [ ] **Step 5: Include new fields in buildPartiesPayload and save payload**
+
+In `buildPartiesPayload()`, add:
+```typescript
+if (formData.reimbursingBankPartyId) result.push({ roleEnumId: 'TP_REIMBURSING_BANK', partyId: formData.reimbursingBankPartyId });
+```
+
+In `handleSaveDraft` payload, include:
+```typescript
+paymentCondBeneText: formData.paymentCondBeneText || undefined,
+paymentCondBankText: formData.paymentCondBankText || undefined,
+applicableRulesEnumId: formData.applicableRulesEnumId || undefined,
+authExpiryDate: formData.authExpiryDate || undefined,
+reimbursingChargesEnumId: formData.reimbursingChargesEnumId || undefined,
+```
+
+- [ ] **Step 6: Write test for new field rendering**
+
+Add to `IssuanceStepper.test.tsx`:
+
+```typescript
+it('renders Reimbursing Bank selector on Step 1', async () => {
+    render(<IssuanceStepper />);
+    expect(screen.getByLabelText(/Reimbursing Bank/)).toBeInTheDocument();
+});
+
+it('renders Payment Conditions fields on Step 2', async () => {
+    // Navigate to step 2
+    render(<IssuanceStepper />);
+    // ... fill required step 1 fields, click Next ...
+    expect(screen.getByLabelText(/Payment Conditions — Beneficiary/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Payment Conditions — Bank/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Applicable Rules/)).toBeInTheDocument();
+});
+```
+
+- [ ] **Step 7: Run frontend tests**
+
+Run: `cd frontend && npm test -- --testPathPattern="IssuanceStepper" --watchAll=false 2>&1 | tail -20`
+Expected: PASS
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add frontend/src/components/IssuanceStepper.tsx frontend/src/api/types.ts frontend/src/components/IssuanceStepper.test.tsx
+git commit -m "feat(ui): add Reimbursing Bank, Payment Conditions 49G/49H, Applicable Rules 40E to issuance form"
+```
+
+---
+
+### Task 8: Amendment Form — Tag 23S Cancellation Toggle
+
+**BDD Scenarios:** S12 (structured cancellation via Tag 23S), S13 (mixed cancel blocked)
+**BRD Requirements:** FR-CAN-04, CAN-SWV-04/05
+
+**User-Facing:** YES
+
+**Files:**
+- Modify: `frontend/src/components/AmendmentStepper.tsx`
+
+- [ ] **Step 1: Add `isCancellationRequest` to delta state**
+
+In `AmendmentStepper.tsx`, add to the `delta` useState (after `isBeneficiaryAcceptanceRequired`):
+
+```typescript
+isCancellationRequest: false,
+```
+
+- [ ] **Step 2: Add cancellation toggle UI to Step 1 (Financial Amendment)**
+
+In the `stepIndex === 1` section (after the amendment type selector, around line 212), add:
+
+```tsx
+<div className="field-group full-width">
+    <label className="flex items-center gap-2 cursor-pointer">
+        <input type="checkbox" id="isCancellationRequest"
+            checked={delta.isCancellationRequest}
+            onChange={e => {
+                const isCancelling = e.target.checked;
+                setDelta({...delta,
+                    isCancellationRequest: isCancelling,
+                    amountAdjustment: isCancelling ? '0' : delta.amountAdjustment,
+                    newExpiryDate: isCancelling ? '' : delta.newExpiryDate,
+                });
+            }} />
+        <span className="font-semibold text-sm">Request Full Cancellation (Tag 23S)</span>
+    </label>
+    {delta.isCancellationRequest && (
+        <p className="helper-text" style={{color: '#dc2626'}}>
+            This will generate MT 707 with Tag 23S = CANCEL. No other changes allowed.
+        </p>
+    )}
+</div>
+```
+
+- [ ] **Step 3: Add mixed-cancel guard in handleNext**
+
+In the `handleNext` validation for `stepIndex === 1`:
+
+```typescript
+if (delta.isCancellationRequest && (parseFloat(delta.amountAdjustment) !== 0 || delta.newExpiryDate)) {
+    setError('Cancellation request cannot be combined with other amendment changes');
+    return;
+}
+```
+
+- [ ] **Step 4: Include isCancellationRequest in submit payload**
+
+In `handleSubmit`, add to payload:
+```typescript
+isCancellationRequest: delta.isCancellationRequest ? 'Y' : 'N',
+```
+
+- [ ] **Step 5: Disable financial fields when cancellation is selected**
+
+Add `disabled={delta.isCancellationRequest}` to the `amountAdjustment` input and `newExpiryDate` input.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add frontend/src/components/AmendmentStepper.tsx
+git commit -m "feat(ui): add Tag 23S cancellation toggle to amendment form with mixed-cancel guard"
+```
+
+---
+
+### Task 9: Document Examination — Tag 77J Line Counter
+
+**BDD Scenarios:** S10 (line count enforced at submission), S11 (overflow blocked)
+**BRD Requirements:** FR-PRE-08, PRE-SWV-09
+
+**User-Facing:** YES
+
+**Files:**
+- Modify: `frontend/src/components/DocumentExamination.tsx`
+- Modify: `frontend/src/components/DocumentExamination.test.tsx`
+
+- [ ] **Step 1: Add line-count tracking state**
+
+In `DocumentExamination.tsx`, add after the `detail` state:
+
+```typescript
+const MAX_77J_LINES = 70;
+const CHARS_PER_LINE = 50;
+
+const calculateLineCount = (discrepancies: Discrepancy[]): number => {
+    const text = discrepancies.map(d => `${d.code}: ${d.description}`).join('\n');
+    return text.split('\n').reduce((total, line) => total + Math.ceil(Math.max(line.length, 1) / CHARS_PER_LINE), 0);
+};
+
+const [currentLineCount, setCurrentLineCount] = useState(0);
+```
+
+- [ ] **Step 2: Update line count on discrepancy changes**
+
+Add a `useEffect` that recalculates whenever `discrepancies` changes:
+
+```typescript
+useEffect(() => {
+    setCurrentLineCount(calculateLineCount(discrepancies));
+}, [discrepancies]);
+```
+
+- [ ] **Step 3: Add line-count indicator to the discrepancy header**
+
+Replace the discrepancy logger header:
+
+```tsx
+<header className="pane-header" style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+    <h3>Discrepancy Logger (ISBP-745)</h3>
+    <span className={`line-counter ${currentLineCount > 60 ? 'warning' : ''} ${currentLineCount >= MAX_77J_LINES ? 'error' : ''}`}>
+        {currentLineCount}/{MAX_77J_LINES} lines used
+    </span>
+</header>
+```
+
+Add CSS:
+```css
+.line-counter { font-size: 0.75rem; font-weight: 700; color: #64748b; background: #f1f5f9; padding: 0.25rem 0.75rem; border-radius: 12px; }
+.line-counter.warning { color: #d97706; background: #fffbeb; }
+.line-counter.error { color: #dc2626; background: #fef2f2; }
+```
+
+- [ ] **Step 4: Block adding discrepancies when limit would be exceeded**
+
+In `logDiscrepancy`, add check before pushing:
+
+```typescript
+const logDiscrepancy = () => {
+    if (!selectedCode) return;
+    const newDisc: Discrepancy = {
+        id: Math.random().toString(36).substr(2, 9),
+        code: selectedCode,
+        description: detail,
+        isWaived: false
+    };
+    const projectedCount = calculateLineCount([...discrepancies, newDisc]);
+    if (projectedCount > MAX_77J_LINES) {
+        // Block — show inline error
+        setError(`Adding this discrepancy would exceed the 70-line SWIFT limit (current: ${currentLineCount}/${MAX_77J_LINES}, adding: ${projectedCount - currentLineCount})`);
+        return;
+    }
+    setDiscrepancies([...discrepancies, newDisc]);
+    setDecision('Discrepant');
+    setSelectedCode('');
+    setDetail('');
+};
+```
+
+Add `error` state: `const [error, setError] = useState('');` and display it above the logger entry.
+
+- [ ] **Step 5: Write test for line-count indicator**
+
+Add to `DocumentExamination.test.tsx`:
+
+```typescript
+it('displays line count indicator', () => {
+    render(<DocumentExamination />);
+    expect(screen.getByText(/0\/70 lines used/)).toBeInTheDocument();
+});
+```
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add frontend/src/components/DocumentExamination.tsx frontend/src/components/DocumentExamination.test.tsx
+git commit -m "feat(ui): add Tag 77J line-count indicator and overflow blocking to discrepancy logger"
+```
+
+---
+
+### Task 10: Nostro Reconciliation Screen
+
+**BDD Scenarios:** S7 (manual matching), S8 (amount mismatch), S9 (closure block)
+**BRD Requirements:** FR-RMB-01, FR-RMB-02, RMB-REC-01 through RMB-REC-04
+
+**User-Facing:** YES
+
+**Files:**
+- Create: `frontend/src/components/NostroReconciliation.tsx`
+- Modify: `frontend/src/api/tradeApi.ts`
+- Modify: `frontend/src/api/types.ts`
+- Modify: `frontend/src/components/GlobalShell.tsx`
+- Create: `frontend/src/components/NostroReconciliation.test.tsx`
+
+- [ ] **Step 1: Add NostroReconciliation type**
+
+In `frontend/src/api/types.ts`:
+
+```typescript
+export interface NostroReconciliation {
+    reconciliationId: string;
+    instrumentId: string;
+    reimbursingBankPartyId: string;
+    expectedCurrency: string;
+    expectedAmount: number;
+    nostroDebitDate?: string;
+    nostroDebitAmount?: number;
+    nostroStatementRef?: string;
+    matchStatusEnumId: string;
+    matchedByUserId?: string;
+    matchedDate?: string;
+    remarks?: string;
+}
+```
+
+- [ ] **Step 2: Add API methods**
+
+In `frontend/src/api/tradeApi.ts`:
+
+```typescript
+async getNostroReconciliations(): Promise<{ reconciliationList: NostroReconciliation[] }> {
+    return this.fetchJson('/api/trade/nostro-reconciliations');
+},
+async matchNostroReconciliation(reconciliationId: string, data: any): Promise<any> {
+    return this.fetchJson(`/api/trade/nostro-reconciliations/${reconciliationId}/match`, {
+        method: 'PUT', body: JSON.stringify(data)
+    });
+},
+```
+
+- [ ] **Step 3: Create NostroReconciliation.tsx component**
+
+Create `frontend/src/components/NostroReconciliation.tsx`:
+
+Core structure:
+- Portfolio table listing all `NostroReconciliation` records with status badges
+- Expandable row for entering `nostroDebitDate`, `nostroDebitAmount`, `nostroStatementRef`
+- Amount mismatch warning when `nostroDebitAmount !== expectedAmount`
+- "Match" button that calls `matchNostroReconciliation`
+- Status columns: PENDING (amber), MATCHED (green), UNMATCHED (red)
+
+Key implementation:
+```tsx
+// Amount mismatch detection
+const isAmountMismatch = nostroDebitAmount && expectedAmount && 
+    Math.abs(nostroDebitAmount - expectedAmount) > 0.01;
+
+// Display warning
+{isAmountMismatch && (
+    <div className="warning-banner">
+        Nostro debit amount ({nostroDebitAmount.toLocaleString()}) does not match 
+        expected amount ({expectedAmount.toLocaleString()})
+    </div>
+)}
+```
+
+Follow the same premium-card, stepper-layout pattern as existing components (see `SettlementForm.tsx`).
+
+- [ ] **Step 4: Add nav entry to GlobalShell**
+
+In `GlobalShell.tsx`, add to the nav items array:
+
+```typescript
+{ label: 'Nostro Reconciliation', path: '/nostro-reconciliation', icon: '🏦' },
+```
+
+- [ ] **Step 5: Write basic component test**
+
+Create `frontend/src/components/NostroReconciliation.test.tsx`:
+
+```typescript
+it('renders the reconciliation table', async () => {
+    render(<NostroReconciliation />);
+    expect(screen.getByText(/Nostro Reconciliation/)).toBeInTheDocument();
+});
+
+it('shows amount mismatch warning when amounts differ', async () => {
+    // Mock API with mismatched amount
+    // Assert warning text appears
+});
+```
+
+- [ ] **Step 6: Run frontend tests**
+
+Run: `cd frontend && npm test -- --watchAll=false 2>&1 | tail -20`
+Expected: PASS
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add frontend/src/components/NostroReconciliation.tsx frontend/src/components/NostroReconciliation.test.tsx frontend/src/api/tradeApi.ts frontend/src/api/types.ts frontend/src/components/GlobalShell.tsx
+git commit -m "feat(ui): add Nostro Reconciliation screen with manual matching and mismatch detection"
+```
+
+---
+
+### Task 11: Full End-to-End Verification
+
+**BDD Scenarios:** All (S1-S13)
+**BRD Requirements:** All
+
+**User-Facing:** YES
+
+- [ ] **Step 1: Run backend test suite**
+
+Run: `./gradlew :runtime:component:TradeFinance:test 2>&1 | tail -40`
+Expected: All tests PASS
+
+- [ ] **Step 2: Run frontend test suite**
+
+Run: `cd frontend && npm test -- --watchAll=false 2>&1 | tail -40`
+Expected: All tests PASS
+
+- [ ] **Step 3: Run frontend dev server and verify UI**
+
+Run: `cd frontend && npm run dev`
+Manually verify:
+1. IssuanceStepper shows Reimbursing Bank, Payment Conditions, Applicable Rules
+2. AmendmentStepper shows Cancellation toggle and blocks mixed changes
+3. DocumentExamination shows line counter and blocks overflow
+4. NostroReconciliation screen loads from nav
+
+- [ ] **Step 4: Final commit**
+
+```bash
+git add -A && git status
+git commit -m "chore: final verification pass for SWIFT SRG 2024 remaining gaps"
+```
