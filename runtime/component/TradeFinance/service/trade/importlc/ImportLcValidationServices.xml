@@ -243,7 +243,10 @@
                 } else if (entityType == "ImportLcAmendment") {
                     def amd = ec.entity.find("trade.importlc.ImportLcAmendment").condition("amendmentId", entityId).one()
                     if (amd) {
-                        validateZCharset("amendmentNarrative", amd.amendmentNarrative)
+                        validateXCharset("goodsDeltaText", amd.goodsDeltaText)
+                        validateXCharset("docsDeltaText", amd.docsDeltaText)
+                        validateXCharset("conditionsDeltaText", amd.conditionsDeltaText)
+                        validateZCharset("senderToReceiverInfo", amd.senderToReceiverInfo)
                     }
                 }
             ]]></script>

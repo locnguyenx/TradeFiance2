@@ -233,21 +233,24 @@ class ImportLcServicesSpec extends Specification {
             .condition("instrumentId", instrumentId).updateAll([businessStateId: "LC_ISSUED"])
 
         when:
-        def amdResult = ec.service.sync().name("trade.importlc.ImportLcServices.create#Amendment").parameters([
+        def amdResult = ec.service.sync().name("trade.importlc.ImportLcServices.create#ExternalAmendment").parameters([
             instrumentId: instrumentId,
             amendmentTypeEnumId: "AMEND_INCREASE",
-            amountAdjustment: 50000.0,
+            amountIncrease: 50000.0,
             amendmentDate: new Date(System.currentTimeMillis()),
-            amendmentNarrative: "Increase for additional cargo"
+            goodsActionEnumId: 'ADD',
+            goodsDeltaText: 'New certificates required'
         ]).call()
         def amendmentId = amdResult.amendmentId
 
         then:
         !ec.message.hasError()
+
         amendmentId != null
         def amdLookup = ec.entity.find("trade.importlc.ImportLcAmendment").condition("amendmentId", amendmentId).one()
         amdLookup != null
-        Math.abs(amdLookup.amountAdjustment - 50000.0) < 0.001
+        amdLookup.goodsActionEnumId == 'ADD'
+        amdLookup.amountIncrease == 50000.0
         amdLookup.amendmentBusinessStateId == "AMEND_DRAFT"
 
         cleanup:
@@ -256,6 +259,57 @@ class ImportLcServicesSpec extends Specification {
             ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).updateAll([latestTransactionId: null])
             ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.importlc.ImportLcAmendment").condition("instrumentId", instrumentId).deleteAll()
+            ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instrumentId).deleteAll()
+            ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).deleteAll()
+            ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).deleteAll()
+            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", instrumentId).deleteAll()
+            ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).deleteAll()
+        }
+    }
+
+    def "should create Internal Amendment"() {
+        given:
+        def createResult = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
+            instrumentRef: "TF-IMP-INT-AMD-01",
+            instrumentParties: [
+                [roleEnumId: 'TP_APPLICANT', partyId: APPLICANT_ID],
+                [roleEnumId: 'TP_BENEFICIARY', partyId: BENEFICIARY_ID],
+                [roleEnumId: 'TP_ISSUING_BANK', partyId: ISSUING_BANK_ID]
+            ],
+            lcAmount: 500000.0,
+            lcCurrencyUomId: "USD",
+            lcTypeEnumId: 'LCT_IRREVOCABLE', availableByEnumId: 'AVB_BY_NEGOTIATION', confirmationEnumId: 'CONF_WITHOUT',
+            businessStateId: "LC_DRAFT"
+        ]).call()
+        def instrumentId = createResult.instrumentId
+
+        // Approve the issuance first to allow amendment
+        def txIss = ec.entity.find("trade.TradeTransaction")
+            .condition([instrumentId: instrumentId, transactionTypeEnumId: 'IMP_NEW']).disableAuthz().one()
+        ec.service.sync().name("trade.AuthorizationServices.authorize#Instrument")
+            .parameters([transactionId: txIss.transactionId, skipFourEyes: true]).call()
+
+        when:
+        def amdResult = ec.service.sync().name("trade.importlc.ImportLcServices.create#InternalAmendment").parameters([
+            instrumentId: instrumentId,
+            newFeeDebitAccountId: 'ACC_INT_001',
+            newFacilityId: 'FAC_001'
+        ]).call()
+        def internalAmendmentId = amdResult.internalAmendmentId
+
+        then:
+        !ec.message.hasError()
+        internalAmendmentId != null
+        def amdLookup = ec.entity.find("trade.importlc.ImportLcInternalAmendment").condition("internalAmendmentId", internalAmendmentId).one()
+        amdLookup != null
+        amdLookup.newFeeDebitAccountId == 'ACC_INT_001'
+
+        cleanup:
+        ec.artifactExecution.disableAuthz()
+        if (instrumentId) {
+            ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).updateAll([latestTransactionId: null])
+            ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", instrumentId).deleteAll()
+            ec.entity.find("trade.importlc.ImportLcInternalAmendment").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).deleteAll()

@@ -303,18 +303,30 @@
                 fields["26E"] = amendment.amendmentNumber ?: "1"
                 fields["31C"] = amendment.amendmentDate?.format("yyMMdd") ?: ec.user.nowTimestamp.format("yyMMdd")
                 
-                if (amendment.amountAdjustment != null) {
-                    fields["32B"] = (instrument.currencyUomId ?: "USD") + String.format("%.2f", amendment.amountAdjustment ?: 0.0).replace(".", ",")
-                    // FR-SGC-05: Tag 34B New Total Amount
-                    def newTotal = (instrument.amount ?: 0.0) + (amendment.amountAdjustment ?: 0.0)
+                if (amendment.amountIncrease != null || amendment.amountDecrease != null) {
+                    def adj = (amendment.amountIncrease ?: 0.0) - (amendment.amountDecrease ?: 0.0)
+                    def tag = adj >= 0 ? "32B" : "33B"
+                    fields[tag] = (instrument.currencyUomId ?: "USD") + String.format("%.2f", Math.abs(adj)).replace(".", ",")
+                    
+                    // Tag 34B: New Total Amount
+                    def newTotal = (instrument.amount ?: 0.0) + adj
                     fields["34B"] = (instrument.currencyUomId ?: "USD") + String.format("%.2f", newTotal).replace(".", ",")
                 }
                 
                 if (amendment.newExpiryDate) {
                     fields["31E"] = amendment.newExpiryDate.format("yyMMdd")
                 }
-                
-                fields["79Z"] = formatValue(amendment.amendmentNarrative, 35, 50)
+
+                if (amendment.newTolerancePositive != null || amendment.newToleranceNegative != null) {
+                    int pos = (int)((amendment.newTolerancePositive ?: 0.0) * 100)
+                    int neg = (int)((amendment.newToleranceNegative ?: 0.0) * 100)
+                    fields["39A"] = "${pos}/${neg}"
+                }
+
+                // SRG 2024 Narrative Deltas
+                if (amendment.goodsDeltaText) fields["45B"] = (amendment.goodsActionEnumId ?: "REP") + "\r\n" + formatValue(amendment.goodsDeltaText, 100, 65)
+                if (amendment.docsDeltaText) fields["46B"] = (amendment.docsActionEnumId ?: "REP") + "\r\n" + formatValue(amendment.docsDeltaText, 100, 65)
+                if (amendment.conditionsDeltaText) fields["47B"] = (amendment.conditionsActionEnumId ?: "REP") + "\r\n" + formatValue(amendment.conditionsDeltaText, 100, 65)
                 
                 def renderRes = ec.service.sync().name("trade.SwiftUtilsServices.render#SwiftMessage")
                     .parameters([messageType:"707", senderBic:issuerBic, receiverBic:advisingBankBic ?: "ADVISINGXX", 
