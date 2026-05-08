@@ -24,8 +24,9 @@
         <field name="latestShipmentDate" type="date"/>
         <field name="confirmationEnumId" type="id"/>
         <field name="lcTypeEnumId" type="id"/>
-        <field name="availableByEnumId" type="id"/>
-        <field name="availableWithEnumId" type="id"/> <!-- AvailableWithType -->
+        <field name="availableByEnumId" type="id"/> <!-- Tag 41a Payment Method (BY_PAYMENT, BY_NEGOTIATION, etc.) -->
+        <field name="availableWithEnumId" type="id"/> <!-- Tag 41a/d: AVAIL_ANY_BANK (Tag 41D) or AVAIL_SPECIFIC_BANK (Tag 41A). 
+                                                           If SPECIFIC, requires BIC via role TP_NEGOTIATING_BANK. -->
         <field name="productCatalogId" type="id"/>
 
         <!-- Effective Values (Snapshot vs Last Effective Pattern) -->
@@ -134,6 +135,13 @@
         <field name="amountAdjustment" type="number-decimal" default="0"/>
         <field name="newExpiryDate" type="date"/>
         <field name="amendmentNarrative" type="text-very-long"/>
+        <field name="goodsDescription" type="text-very-long"/>
+        <field name="documentsRequired" type="text-very-long"/>
+        <field name="additionalConditions" type="text-very-long"/>
+        <field name="bankToBankInstructions" type="text-very-long"/>
+        <field name="additionalAmountsText" type="text-long"/>
+        <field name="chargeAllocationText" type="text-long"/>
+        <field name="shipmentPeriodText" type="text-medium"/>
         <field name="isFinancial" type="text-indicator"/>
         <field name="beneficiaryConsentStatusId" type="id"/> <!-- PENDING, ACCEPTED, REJECTED -->
         <field name="amendmentBusinessStateId" type="id"/>
@@ -221,6 +229,22 @@
         <member-entity entity-alias="advparty" entity-name="trade.TradeParty" join-from-alias="advJunc" join-optional="true">
             <key-map field-name="partyId"/>
         </member-entity>
+
+        <member-entity entity-alias="negJunc" entity-name="trade.TradeInstrumentParty" join-from-alias="inst" join-optional="true">
+            <key-map field-name="instrumentId"/>
+            <entity-condition><econdition field-name="roleEnumId" value="TP_NEGOTIATING_BANK"/></entity-condition>
+        </member-entity>
+        <member-entity entity-alias="negparty" entity-name="trade.TradeParty" join-from-alias="negJunc" join-optional="true">
+            <key-map field-name="partyId"/>
+        </member-entity>
+
+        <member-entity entity-alias="draweeJunc" entity-name="trade.TradeInstrumentParty" join-from-alias="inst" join-optional="true">
+            <key-map field-name="instrumentId"/>
+            <entity-condition><econdition field-name="roleEnumId" value="TP_DRAWEE_BANK"/></entity-condition>
+        </member-entity>
+        <member-entity entity-alias="draweeparty" entity-name="trade.TradeParty" join-from-alias="draweeJunc" join-optional="true">
+            <key-map field-name="partyId"/>
+        </member-entity>
         
         <member-entity entity-alias="tx" entity-name="trade.TradeTransaction" join-from-alias="inst" join-optional="true">
             <key-map field-name="latestTransactionId" related="transactionId"/>
@@ -243,6 +267,10 @@
         <alias entity-alias="bparty" name="beneficiaryPartyId" field="partyId"/>
         <alias entity-alias="advparty" name="advisingBankPartyName" field="partyName"/>
         <alias entity-alias="advparty" name="advisingBankPartyId" field="partyId"/>
+        <alias entity-alias="negparty" name="negotiatingBankPartyName" field="partyName"/>
+        <alias entity-alias="negparty" name="negotiatingBankPartyId" field="partyId"/>
+        <alias entity-alias="draweeparty" name="draweeBankPartyName" field="partyName"/>
+        <alias entity-alias="draweeparty" name="draweeBankPartyId" field="partyId"/>
     </view-entity>
 
     <entity entity-name="DummyTestEntity" package="trade.importlc">

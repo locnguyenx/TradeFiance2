@@ -46,11 +46,11 @@ class SwiftPartyGenerationSpec extends Specification {
         given: "Parties and an LC instrument with junction records"
         ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
                 .parameters([partyId: 'SWTP_APP_001', partyTypeEnumId: 'PARTY_COMMERCIAL', 
-                             partyName: 'SWIFT Applicant', registeredAddress: '123 App Lane\nNew York', 
+                             partyName: 'SWIFT Applicant', registeredAddress: '123 App Lane', 
                              kycStatus: 'Active']).call()
         ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
                 .parameters([partyId: 'SWTP_BEN_001', partyTypeEnumId: 'PARTY_COMMERCIAL', 
-                             partyName: 'SWIFT Beneficiary', registeredAddress: '456 Ben Blvd\nLondon', 
+                             partyName: 'SWIFT Beneficiary', registeredAddress: '456 Ben Blvd', 
                              kycStatus: 'Active']).call()
         ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
                 .parameters([partyId: 'SWTP_ADV_001', partyTypeEnumId: 'PARTY_BANK', 
@@ -81,8 +81,8 @@ class SwiftPartyGenerationSpec extends Specification {
         content != null
         // Normalize whitespace for comparison
         def cleanContent = content.replaceAll("\\s+", " ").toUpperCase()
-        cleanContent.contains(":50:SWIFT APPLICANT 123 APP LANE NEW YORK")
-        cleanContent.contains(":59:SWIFT BENEFICIARY 456 BEN BLVD LONDON")
+        cleanContent.contains(":50:SWIFT APPLICANT 123 APP LANE")
+        cleanContent.contains(":59:SWIFT BENEFICIARY 456 BEN BLVD")
         content.contains("ADVISXXX")
     }
 

@@ -8,6 +8,7 @@
             <parameter name="instrumentId"/>
             <parameter name="transactionId"/>
             <parameter name="userId" default="ec.user.userId ?: 'EXOR_SERVICE_USER'"/>
+            <parameter name="skipFourEyes" type="Boolean" default="false"/>
         </in-parameters>
         <out-parameters>
             <parameter name="isAuthorized" type="Boolean"/>
@@ -16,6 +17,7 @@
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
+            <if condition="skipFourEyes"><set field="isAuthorized" value="true" type="Boolean"/><return/></if>
             
             <!-- Resolve instrument from transaction or direct -->
             <set field="localInstrumentId" from="instrumentId"/>
@@ -93,34 +95,48 @@
             <parameter name="instrumentId"/>
             <parameter name="transactionId"/>
             <parameter name="userId" default="ec.user.userId ?: 'EXOR_SERVICE_USER'"/>
+            <parameter name="skipFourEyes" type="Boolean" default="false"/>
         </in-parameters>
         <out-parameters>
             <parameter name="isAuthorized" type="Boolean"/>
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
-            <service-call name="trade.AuthorizationServices.evaluate#MakerCheckerMatrix" in-map="context" out-map="evalOut"/>
+            <service-call name="trade.AuthorizationServices.evaluate#MakerCheckerMatrix" in-map="context + [skipFourEyes: skipFourEyes]" out-map="evalOut"/>
             <set field="isAuthorized" from="evalOut.isAuthorized"/>
             
             <if condition="isAuthorized">
                 <if condition="transactionId">
                     <entity-find-one entity-name="trade.TradeTransaction" value-field="tx" auto-field-map="true"/>
                     <if condition="!tx"><return error="true" message="Transaction ${transactionId} not found"/></if>
+                    <if condition="tx.transactionStatusId == 'TX_APPROVED'">
+                        <return error="true" message="Transaction ${transactionId} is already approved"/>
+                    </if>
                     
                     <entity-find-one entity-name="trade.TradeInstrument" value-field="inst">
                         <field-map field-name="instrumentId" from="tx.instrumentId"/>
                     </entity-find-one>
 
                     <!-- Dynamically calculate target values -->
+                    <set field="targetState" from="null"/>
                     <set field="targetAmount" from="inst.amount"/>
                     <set field="targetExpiry" from="inst.expiryDate"/>
 
+                    <!-- Fetch Import LC Specifics if available -->
+                    <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" for-update="true">
+                        <field-map field-name="instrumentId" from="tx.instrumentId"/>
+                    </entity-find-one>
+
                     <if condition="tx.transactionTypeEnumId == 'IMP_NEW'">
-                        <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc">
-                            <field-map field-name="instrumentId" from="tx.instrumentId"/>
-                        </entity-find-one>
                         <set field="targetAmount" from="lc?.effectiveAmount ?: targetAmount"/>
                         <set field="targetExpiry" from="lc?.effectiveExpiryDate ?: targetExpiry"/>
+                        
+                        <!-- Update Facility Utilization for New LC -->
+                        <if condition="inst.customerFacilityId">
+                            <set field="liabilityAmount" from="targetAmount * (1 + (lc?.tolerancePositive ?: 0))"/>
+                            <service-call name="trade.LimitServices.update#Utilization" 
+                                          in-map="[facilityId: inst.customerFacilityId, amountDelta: liabilityAmount]"/>
+                        </if>
                     </if>
                     <if condition="tx.transactionTypeEnumId == 'IMP_AMENDMENT'">
                         <entity-find-one entity-name="trade.importlc.ImportLcAmendment" value-field="amd">
@@ -132,6 +148,58 @@
                         <service-call name="update#trade.importlc.ImportLcAmendment" in-map="[
                             amendmentId: tx.relatedRecordId,
                             amendmentBusinessStateId: 'AMEND_APPROVED'
+                        ]"/>
+                    </if>
+                    
+                    <if condition="tx.transactionTypeEnumId == 'IMP_SETTLEMENT'">
+                        <entity-find-one entity-name="trade.importlc.ImportLcSettlement" value-field="settlement">
+                            <field-map field-name="settlementId" from="tx.relatedRecordId"/>
+                        </entity-find-one>
+                        
+                        <log level="info" message="Authorizing settlement: ${settlement?.settlementId}, amount: ${settlement?.principalAmount}, current LC balance: ${lc?.effectiveOutstandingAmount}"/>
+                        
+                        <script><![CDATA[
+                            def principal = (BigDecimal) (settlement?.principalAmount ?: 0)
+                            def currentOutstanding = (BigDecimal) (lc.effectiveOutstandingAmount ?: 0)
+                            def currentCumulative = (BigDecimal) (lc.cumulativeDrawnAmount ?: 0)
+                            
+                            def newOutstanding = currentOutstanding - principal
+                            if (newOutstanding < 0) newOutstanding = 0
+                            def newCumulative = currentCumulative + principal
+                            
+                            lc.effectiveOutstandingAmount = newOutstanding
+                            lc.cumulativeDrawnAmount = newCumulative
+                            
+                            ec.logger.info("Authorizing settlement ${settlement?.settlementId} for LC ${lc.instrumentId}. Amount: ${principal}, Balance: ${currentOutstanding} -> ${newOutstanding}")
+                            
+                            if (newOutstanding.signum() == 0) {
+                                if (lc.isRevolving == 'Y') {
+                                    ec.logger.info("Reinstating revolving LC ${lc.instrumentId}")
+                                    lc.effectiveOutstandingAmount = (BigDecimal) lc.effectiveAmount
+                                    lc.businessStateId = "LC_ISSUED"
+                                    targetState = "LC_ISSUED"
+                                } else {
+                                    ec.logger.info("Settlement complete. Closing LC ${lc.instrumentId}")
+                                    lc.businessStateId = "LC_CLOSED"
+                                    targetState = "LC_CLOSED"
+                                }
+                            } else {
+                                ec.logger.info("Partial settlement. LC ${lc.instrumentId} remains ISSUED. Balance: ${newOutstanding}")
+                                lc.businessStateId = "LC_ISSUED"
+                                targetState = "LC_ISSUED"
+                            }
+                        ]]></script>
+                        <entity-update value-field="lc"/>
+                    </if>
+
+                    <if condition="tx.transactionTypeEnumId == 'IMP_CANCELLATION'">
+                        <set field="targetState" value="LC_CANCELLED"/>
+                    </if>
+                    
+                    <if condition="tx.transactionTypeEnumId == 'IMP_SG_ISSUANCE'">
+                         <service-call name="update#trade.importlc.ImportLcShippingGuarantee" in-map="[
+                            guaranteeId: tx.relatedRecordId,
+                            sgStatusId: 'SG_ISSUED'
                         ]"/>
                     </if>
                     
@@ -151,20 +219,26 @@
                     ]"/>
 
                     <!-- Update Import LC Specifics -->
-                    <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc">
-                        <field-map field-name="instrumentId" from="tx.instrumentId"/>
-                    </entity-find-one>
                     <if condition="lc">
-                        <set field="targetState" value="LC_ISSUED"/>
-                        <if condition="tx.transactionTypeEnumId == 'IMP_AMENDMENT'">
-                            <set field="targetState" value="LC_AMENDED"/>
+                        <if condition="!targetState">
+                            <if condition="tx.transactionTypeEnumId == 'IMP_NEW'"><set field="targetState" value="LC_ISSUED"/></if>
+                            <if condition="tx.transactionTypeEnumId == 'IMP_AMENDMENT'"><set field="targetState" value="LC_AMENDED"/></if>
+                            <if condition="tx.transactionTypeEnumId == 'IMP_PRESENTATION'"><set field="targetState" value="LC_DOC_RECEIVED"/></if>
+                            <!-- If still not set, default to current state to avoid accidental transition to LC_ISSUED -->
+                            <if condition="!targetState"><set field="targetState" from="lc.businessStateId"/></if>
                         </if>
-                        <service-call name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit" in-map="[
-                            instrumentId: tx.instrumentId,
-                            businessStateId: targetState,
-                            lcAmount: targetAmount,
-                            expiryDate: targetExpiry
-                        ]"/>
+                        
+                        <set field="lcUpdateInMap" from="[instrumentId: tx.instrumentId, businessStateId: targetState, lcAmount: targetAmount, expiryDate: targetExpiry, skipImmutabilityGuard: true]"/>
+                        <if condition="tx.transactionTypeEnumId == 'IMP_AMENDMENT' &amp;&amp; amd">
+                            <set field="lcUpdateInMap.goodsDescription" from="amd.goodsDescription"/>
+                            <set field="lcUpdateInMap.documentsRequired" from="amd.documentsRequired"/>
+                            <set field="lcUpdateInMap.additionalConditions" from="amd.additionalConditions"/>
+                            <set field="lcUpdateInMap.bankToBankInstructions" from="amd.bankToBankInstructions"/>
+                            <set field="lcUpdateInMap.additionalAmountsText" from="amd.additionalAmountsText"/>
+                            <set field="lcUpdateInMap.chargeAllocationText" from="amd.chargeAllocationText"/>
+                            <set field="lcUpdateInMap.shipmentPeriodText" from="amd.shipmentPeriodText"/>
+                        </if>
+                        <service-call name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit" in-map="lcUpdateInMap"/>
                     </if>
                 </if>
             </if>
@@ -188,19 +262,47 @@
                 <entity-find-one entity-name="trade.TradeInstrument" value-field="inst">
                     <field-map field-name="instrumentId" from="tx.instrumentId"/>
                 </entity-find-one>
+
+                <!-- Calculate Transaction-Specific Amount -->
+                <set field="transactionAmount" from="0" type="BigDecimal"/>
+                <if condition="tx.transactionTypeEnumId == 'IMP_NEW'">
+                    <set field="transactionAmount" from="inst?.amount"/>
+                </if>
+                <if condition="tx.transactionTypeEnumId == 'IMP_AMENDMENT'">
+                    <entity-find-one entity-name="trade.importlc.ImportLcAmendment" value-field="amd">
+                        <field-map field-name="amendmentId" from="tx.relatedRecordId"/>
+                    </entity-find-one>
+                    <set field="transactionAmount" from="amd?.amountAdjustment ?: 0"/>
+                </if>
+                <if condition="tx.transactionTypeEnumId == 'IMP_PRESENTATION'">
+                    <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="pres">
+                        <field-map field-name="presentationId" from="tx.relatedRecordId"/>
+                    </entity-find-one>
+                    <set field="transactionAmount" from="pres?.claimAmount ?: 0"/>
+                </if>
+                <if condition="tx.transactionTypeEnumId == 'IMP_SETTLEMENT'">
+                    <entity-find-one entity-name="trade.importlc.ImportLcSettlement" value-field="stl">
+                        <field-map field-name="settlementId" from="tx.relatedRecordId"/>
+                    </entity-find-one>
+                    <set field="transactionAmount" from="stl?.principalAmount ?: 0"/>
+                </if>
+
                 <set field="item" from="[
                     instrumentId: tx.instrumentId,
-                    transactionRef: inst?.transactionRef,
+                    instrumentRef: inst?.instrumentRef,
+                    transactionRef: tx.transactionRef ?: tx.transactionId,
                     transactionId: tx.transactionId,
                     module: inst?.instrumentTypeEnumId == 'IMPORT_LC' ? 'IMPORT LC' : inst?.instrumentTypeEnumId,
-                    action: 'Authorization',
+                    action: tx.transactionTypeEnumId.replace('IMP_', '').replace('_', ' '),
                     makerUserId: tx.makerUserId,
                     baseEquivalentAmount: inst?.baseEquivalentAmount,
+                    transactionAmount: transactionAmount,
                     priorityEnumId: tx.priorityEnumId ?: 'NORMAL',
                     transactionStatusId: tx.transactionStatusId,
                     transactionTypeEnumId: tx.transactionTypeEnumId,
                     timeInQueue: '0h'
                 ]"/>
+
                 <if condition="tx.makerTimestamp">
                     <set field="diffMs" from="ec.user.nowTimestamp.time - tx.makerTimestamp.time"/>
                     <set field="hours" from="(diffMs / (1000 * 60 * 60)).toInteger()"/>

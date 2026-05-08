@@ -65,6 +65,7 @@ class TradeFinanceHardeningSpec extends Specification {
         ec.message.clearAll()
         ec.user.loginUser("trade.admin", "trade123")
         ec.artifactExecution.disableAuthz()
+        ec.entity.find("trade.CustomerFacility").condition("facilityId", "FAC_TEST_001").updateAll([utilizedAmount: 0.0])
     }
 
     def cleanupSpec() {
@@ -105,7 +106,7 @@ class TradeFinanceHardeningSpec extends Specification {
         given:
         def txRef = "HARDEN-LIM-" + System.currentTimeMillis()
         def createResult = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
-            transactionRef: txRef,
+            instrumentRef: txRef,
             instrumentParties: [
                 [roleEnumId: 'TP_APPLICANT', partyId: "ACME_CORP_001"],
                 [roleEnumId: 'TP_BENEFICIARY', partyId: "GLOBAL_EXP_002"]
@@ -132,7 +133,7 @@ class TradeFinanceHardeningSpec extends Specification {
 
         when: "trying to approve another LC that exceeds limit"
         def createResult2 = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
-            transactionRef: txRef + "-2",
+            instrumentRef: txRef + "-2",
             instrumentParties: [
                 [roleEnumId: 'TP_APPLICANT', partyId: "ACME_CORP_001"],
                 [roleEnumId: 'TP_BENEFICIARY', partyId: "GLOBAL_EXP_002"]
@@ -154,12 +155,13 @@ class TradeFinanceHardeningSpec extends Specification {
         ec.message.hasError()
 
         cleanup:
+        ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).updateAll([latestTransactionId: null])
         ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", instrumentId).deleteAll()
         ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", instrumentId).deleteAll()
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instrumentId).deleteAll()
-        ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).deleteAll()
         ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).deleteAll()
         ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", instrumentId).deleteAll()
+        ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).deleteAll()
     }
 
@@ -167,7 +169,7 @@ class TradeFinanceHardeningSpec extends Specification {
         given:
         def txRef = "HARDEN-SET-" + System.currentTimeMillis()
         def createResult = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
-            transactionRef: txRef,
+            instrumentRef: txRef,
             instrumentParties: [
                 [roleEnumId: 'TP_APPLICANT', partyId: "ACME_CORP_001"],
                 [roleEnumId: 'TP_BENEFICIARY', partyId: "GLOBAL_EXP_002"]

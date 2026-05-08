@@ -77,3 +77,22 @@ Service-level guard checking business state before allowing updates to sensitive
 - **Non-Breaking Return**: Using `<return message="..." />` instead of `error="true"` allows the UI to display a warning without a hard system failure if appropriate.
 - **Draft Modification**: Ensure the guard only triggers for terminal states (e.g., `LC_ISSUED`, `LC_CLOSED`).
 - **Comprehensive Check**: Include both primary field names and aliases (e.g., `amount` and `lcAmount`) if `auto-parameters` are used.
+
+---
+
+## 3. Transaction-First Architecture
+All state-changing operations in the Trade Finance module MUST follow the Transaction-First lifecycle:
+1.  **Draft Creation**: Every operational action (Issuance, Amendment, Presentation, Settlement, SG, Cancellation) starts by creating a `TradeTransaction` record with `TX_DRAFT` status.
+2.  **Maker-Checker (Four-Eyes)**: No action shall modify the "Master Data" (Instrument state, balances, limits) directly. All modifications must be wrapped in a transaction that moves to `TX_PENDING` for authorization.
+3.  **Authorization Commitment**: Final updates to `TradeInstrument` and linked entities (e.g., `ImportLetterOfCredit`) MUST occur within the `AuthorizationServices.authorize#Instrument` flow only after Checker approval.
+
+## 4. REST API Pattern
+All operational endpoints must adhere to ID-based nested resource routing:
+-   `POST /{instrument-type}/{instrument-id}/{process}/{payload-id}/submit`
+-   This ensures robust draft resumption and consistent state transitions across the platform.
+
+## 5. Data Integrity in Approvals
+The Approvals Queue must always distinguish between:
+-   **Transaction Reference**: The ID of the specific action being authorized.
+-   **Instrument Reference**: The ID of the parent instrument (e.g., LC number).
+-   **Transaction Amount**: The financial impact of the specific transaction (e.g., amendment delta, settlement amount) rather than the aggregate balance of the instrument.

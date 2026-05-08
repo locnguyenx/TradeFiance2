@@ -39,10 +39,34 @@ export const TariffManager: React.FC = () => {
 
     const handleFieldChange = (field: keyof FeeConfiguration, value: any) => {
         if (!selectedFee) return;
-        setSelectedFee({
+        
+        // Handle numeric conversion and NaN
+        let processedValue = value;
+        if (field === 'ratePercent' || field === 'flatAmount' || field === 'baseValue' || field === 'minFloorAmount' || field === 'maxCeilingAmount') {
+            processedValue = value === '' ? 0 : parseFloat(value);
+            if (isNaN(processedValue)) processedValue = 0;
+        }
+
+        const update: Partial<FeeConfiguration> = { [field]: processedValue };
+        
+        // Synchronize baseValue with rate/amount fields
+        if (field === 'ratePercent' || field === 'flatAmount') {
+            update.baseValue = processedValue;
+        } else if (field === 'baseValue') {
+            if (selectedFee.calculationTypeEnumId === 'PERCENTAGE') update.ratePercent = processedValue;
+            if (selectedFee.calculationTypeEnumId === 'FLAT_RATE') update.flatAmount = processedValue;
+        }
+        
+        const newSelectedFee = {
             ...selectedFee,
-            [field]: value
-        });
+            ...update
+        };
+        setSelectedFee(newSelectedFee);
+
+        // Update main list for immediate reactive feedback
+        if (fees) {
+            setFees(fees.map(f => f.feeConfigurationId === selectedFee.feeConfigurationId ? newSelectedFee : f));
+        }
     };
 
     const handleSave = async (isPublish: boolean) => {
@@ -68,16 +92,29 @@ export const TariffManager: React.FC = () => {
                 <header className="pane-header">
                     <h3>Tariff Matrix</h3>
                 </header>
-                <div className="tariff-items">
+                <div className="fee-items">
                     {(fees || []).map((f, index) => (
                         <div 
                             key={f.feeConfigurationId || `tariff-${index}`} 
-                            className={`tariff-item ${selectedFee?.feeConfigurationId === f.feeConfigurationId ? 'active' : ''}`}
+                            className={`fee-item ${selectedFee?.feeConfigurationId === f.feeConfigurationId ? 'active' : ''}`}
                             onClick={() => handleSelectFee(f)}
                         >
-                            <span className="fee-type">{f.feeEventEnumId}</span>
-                            <span className="fee-description">{formatEnum(f.feeEventEnumId)}</span>
-                            <span className="fee-id">{f.feeConfigurationId}</span>
+                            <div className="fee-item-header">
+                                <span className="fee-description">{formatEnum(f.feeEventEnumId)}</span>
+                                <span className={`status-pill ${f.isActive === 'Y' ? 'active' : 'inactive'}`}>
+                                    {f.isActive === 'Y' ? 'Active' : 'Draft'}
+                                </span>
+                            </div>
+                            <div className="fee-item-details">
+                                <span className="fee-rate">
+                                    {(() => {
+                                        const val = f.baseValue ?? f.ratePercent ?? f.flatAmount ?? 0;
+                                        return f.calculationTypeEnumId === 'PERCENTAGE' ? `${val}%` : 
+                                               f.calculationTypeEnumId === 'FLAT_RATE' ? `${f.currencyUomId || 'USD'} ${val}` : 'Tiered';
+                                    })()}
+                                </span>
+                                <span className="fee-id">{f.feeConfigurationId}</span>
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -144,8 +181,8 @@ export const TariffManager: React.FC = () => {
                                             id="ratePercent"
                                             type="number" 
                                             step="0.001"
-                                            value={selectedFee.ratePercent || 0}
-                                            onChange={(e) => handleFieldChange('ratePercent', parseFloat(e.target.value))}
+                                            value={selectedFee.ratePercent ?? selectedFee.baseValue ?? ''}
+                                            onChange={(e) => handleFieldChange('ratePercent', e.target.value)}
                                             disabled={selectedFee.calculationTypeEnumId === 'FLAT_RATE'}
                                         />
                                     </div>
@@ -154,8 +191,8 @@ export const TariffManager: React.FC = () => {
                                         <input 
                                             id="flatAmount"
                                             type="number" 
-                                            value={selectedFee.flatAmount || 0}
-                                            onChange={(e) => handleFieldChange('flatAmount', parseFloat(e.target.value))}
+                                            value={selectedFee.flatAmount ?? selectedFee.baseValue ?? ''}
+                                            onChange={(e) => handleFieldChange('flatAmount', e.target.value)}
                                             disabled={selectedFee.calculationTypeEnumId === 'PERCENTAGE'}
                                         />
                                     </div>
@@ -201,33 +238,43 @@ export const TariffManager: React.FC = () => {
 
             <style jsx>{`
                 /* ... styles as seen in original ... */
-                .tariff-manager-layout { display: grid; grid-template-columns: 320px 1fr; background: white; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; min-height: 700px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-                .pane-header { padding: 1.5rem; border-bottom: 1px solid #f1f5f9; background: #f8fafc; }
-                .pane-header h3, .pane-header h2 { margin: 0; color: #1e293b; font-size: 1.125rem; }
-                .fee-list-pane { border-right: 1px solid #f1f5f9; background: #f8fafc; }
-                .fee-items { padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
-                .fee-item { padding: 1rem; border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; gap: 0.25rem; transition: all 0.2s; border: 1px solid transparent; }
-                .fee-item:hover { background: #f1f5f9; }
-                .fee-item.active { background: white; border-color: #2563eb; box-shadow: 0 1px 3px rgba(37, 99, 235, 0.1); }
-                .fee-type { font-weight: 600; color: #1e293b; }
-                .fee-id { font-size: 0.75rem; color: #64748b; }
-                .fee-detail-pane { background: white; display: flex; flex-direction: column; }
-                .detail-header { display: flex; justify-content: space-between; align-items: center; background: white; }
-                .action-bar { display: flex; gap: 1rem; }
-                .config-form { padding: 2rem; display: flex; flex-direction: column; gap: 2.5rem; overflow-y: auto; }
-                .form-section h3 { margin: 0 0 1.25rem 0; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.5rem; }
-                .field-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; }
-                .field { display: flex; flex-direction: column; gap: 0.5rem; }
-                .field label { font-size: 0.875rem; font-weight: 600; color: #475569; }
-                .field input, .field select { padding: 0.625rem; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.875rem; outline: none; transition: border-color 0.2s; }
-                .field input:focus, .field select:focus { border-color: #2563eb; }
-                .field input:disabled { background: #f1f5f9; cursor: not-allowed; }
-                .toggle-field { display: flex; align-items: center; gap: 1rem; padding: 1rem; background: #f8fafc; border-radius: 8px; border: 1px solid #f1f5f9; }
-                .toggle-field label { font-weight: 500; color: #334155; cursor: pointer; }
-                .primary-btn { background: #2563eb; color: white; border: none; padding: 0.625rem 1.25rem; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
-                .primary-btn:hover { background: #1d4ed8; }
-                .secondary-btn { background: white; color: #475569; border: 1px solid #e2e8f0; padding: 0.625rem 1.25rem; border-radius: 6px; font-weight: 600; cursor: pointer; }
-                .admin-loading { padding: 2rem; text-align: center; color: #64748b; }
+                .tariff-manager-layout { display: grid; grid-template-columns: 350px 1fr; background: white; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; height: calc(100vh - 180px); min-height: 600px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+                .pane-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid #f1f5f9; background: #f8fafc; flex-shrink: 0; }
+                .pane-header h3, .pane-header h2 { margin: 0; color: #1e293b; font-size: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.025em; }
+                .fee-list-pane { border-right: 1px solid #f1f5f9; background: #f8fafc; display: flex; flex-direction: column; }
+                .fee-items { padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; overflow-y: auto; flex: 1; }
+                .fee-item { padding: 1rem; border-radius: 10px; cursor: pointer; display: flex; flex-direction: column; gap: 0.5rem; transition: all 0.2s; border: 1px solid transparent; background: white; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+                .fee-item:hover { transform: translateY(-1px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+                .fee-item.active { border-color: #2563eb; box-shadow: 0 0 0 1px #2563eb, 0 4px 6px -1px rgba(37, 99, 235, 0.1); background: #f0f7ff; }
+                .fee-item-header { display: flex; justify-content: space-between; align-items: flex-start; }
+                .fee-description { font-weight: 600; color: #1e293b; font-size: 0.9375rem; }
+                .status-pill { font-size: 0.7rem; font-weight: 700; padding: 0.125rem 0.5rem; border-radius: 9999px; text-transform: uppercase; }
+                .status-pill.active { background: #dcfce7; color: #15803d; }
+                .status-pill.inactive { background: #f1f5f9; color: #475569; }
+                .fee-item-details { display: flex; justify-content: space-between; align-items: center; }
+                .fee-rate { font-size: 0.875rem; color: #4b5563; font-weight: 500; }
+                .fee-id { font-size: 0.75rem; color: #94a3b8; font-family: monospace; }
+                .fee-detail-pane { background: white; display: flex; flex-direction: column; overflow: hidden; }
+                .detail-header { display: flex; justify-content: space-between; align-items: center; background: white; border-bottom: 1px solid #f1f5f9; }
+                .action-bar { display: flex; gap: 0.75rem; }
+                .config-form { padding: 2rem; display: flex; flex-direction: column; gap: 2rem; overflow-y: auto; flex: 1; }
+                .form-section h3 { margin: 0 0 1.25rem 0; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: #64748b; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.5rem; font-weight: 700; }
+                .field-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; }
+                .field { display: flex; flex-direction: column; gap: 0.375rem; }
+                .field label { font-size: 0.75rem; font-weight: 700; color: #475569; text-transform: uppercase; }
+                .field input, .field select { padding: 0.625rem; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.875rem; outline: none; transition: all 0.2s; background: #fff; }
+                .field input:focus, .field select:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+                .field input:disabled { background: #f8fafc; cursor: not-allowed; color: #94a3b8; }
+                .toggle-field { display: flex; align-items: center; gap: 0.75rem; padding: 1rem; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0; transition: all 0.2s; }
+                .toggle-field:hover { background: #f1f5f9; }
+                .toggle-field label { font-size: 0.875rem; font-weight: 600; color: #334155; cursor: pointer; }
+                .primary-btn { background: #2563eb; color: white; border: none; padding: 0.625rem 1.25rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 0.875rem; }
+                .primary-btn:hover { background: #1d4ed8; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2); }
+                .primary-btn:disabled { background: #94a3b8; cursor: not-allowed; }
+                .secondary-btn { background: white; color: #475569; border: 1px solid #e2e8f0; padding: 0.625rem 1.25rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 0.875rem; }
+                .secondary-btn:hover { background: #f8fafc; border-color: #cbd5e1; }
+                .admin-loading { padding: 4rem; text-align: center; color: #64748b; font-weight: 500; }
+                .empty-selection { padding: 4rem; text-align: center; color: #94a3b8; font-style: italic; }
             `}</style>
         </div>
     );

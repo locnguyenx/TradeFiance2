@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { tradeApi } from '../api/tradeApi';
 import { TradeInstrument, ImportLetterOfCredit, TradeTransaction } from '../api/types';
 import { InstrumentDetails } from './InstrumentDetails';
-import { Clock, CheckCircle, AlertCircle, User, Calendar, Hash } from 'lucide-react';
+import { Clock, CheckCircle, AlertCircle, User, Calendar, Hash, Edit } from 'lucide-react';
 
 // ABOUTME: TransactionDetails provide a high-fidelity readonly view of a specific transaction.
 // ABOUTME: Emphasizes delta analysis and maker/checker audit trail.
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export const TransactionDetails: React.FC<Props> = ({ transactionId }) => {
+    const router = useRouter();
     const [transaction, setTransaction] = useState<TradeTransaction | null>(null);
     const [instrument, setInstrument] = useState<(TradeInstrument & ImportLetterOfCredit) | null>(null);
     const [loading, setLoading] = useState(true);
@@ -47,6 +49,13 @@ export const TransactionDetails: React.FC<Props> = ({ transactionId }) => {
         }
     };
 
+    const formatDate = (dateValue: any) => {
+        if (!dateValue) return '---';
+        const d = new Date(dateValue);
+        if (isNaN(d.getTime())) return dateValue.toString();
+        return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    };
+
     const statusStyle = getStatusStyle(transaction.transactionStatusId);
 
     return (
@@ -65,11 +74,15 @@ export const TransactionDetails: React.FC<Props> = ({ transactionId }) => {
                             <div className="header-data-grid">
                                 <div className="data-point">
                                     <label>Transaction Ref</label>
-                                    <span className="font-mono font-bold text-blue-600">{transaction.transactionId}</span>
+                                    <span className="font-mono font-bold text-blue-600">{transaction.transactionRef || '---'}</span>
                                 </div>
                                 <div className="data-point">
-                                    <label>Instrument ID</label>
-                                    <span className="font-semibold text-slate-700">{instrument.instrumentId}</span>
+                                    <label>Transaction ID</label>
+                                    <span className="font-semibold text-slate-500">{transaction.transactionId}</span>
+                                </div>
+                                <div className="data-point">
+                                    <label>Instrument Ref / ID</label>
+                                    <span className="font-semibold text-slate-700">{instrument.instrumentRef} / {instrument.instrumentId}</span>
                                 </div>
                                 <div className="data-point">
                                     <label>Transaction Type</label>
@@ -162,7 +175,7 @@ export const TransactionDetails: React.FC<Props> = ({ transactionId }) => {
                             <div className="snap-item">
                                 <label>Instrument Expiry</label>
                                 <div className={`val ${transaction.proposedExpiryDate !== instrument.expiryDate ? 'is-delta' : ''}`}>
-                                    {transaction.proposedExpiryDate || instrument.expiryDate}
+                                    {formatDate(transaction.proposedExpiryDate || instrument.expiryDate)}
                                 </div>
                                 {transaction.proposedExpiryDate !== instrument.expiryDate && (
                                     <span className="delta-label">Proposed Change</span>
@@ -171,10 +184,35 @@ export const TransactionDetails: React.FC<Props> = ({ transactionId }) => {
                         </div>
                     </section>
 
+                    {transaction.relatedRecord && (
+                        <section className="section-card payload-card premium-card mt-6">
+                            <div className="section-header">
+                                <h2>Transaction Specific Details</h2>
+                                <span className="text-xs text-slate-400">Payload details for {transaction.transactionTypeEnumId?.replace('TXN_', '').replace('_', ' ')}</span>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-6">
+                                {Object.entries(transaction.relatedRecord).map(([key, value]) => {
+                                    if (!value || typeof value === 'object' || key.toLowerCase().includes('id')) return null;
+                                    return (
+                                        <div key={key} className="detail-item">
+                                            <label className="text-xs font-bold text-slate-400 uppercase block mb-1">
+                                                {key.replace(/([A-Z])/g, ' $1').trim()}
+                                            </label>
+                                            <div className="text-sm text-slate-700 whitespace-pre-wrap">
+                                                {value.toString()}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </section>
+                    )}
+
                     <section className="section-card master-data-card premium-card mt-6">
                         <div className="instrument-full-view">
                             <h3 className="text-sm font-bold text-slate-800 mb-4 px-2">Instrument Master Data</h3>
-                            <InstrumentDetails instrument={instrument} />
+                            <InstrumentDetails instrument={instrument} transaction={transaction} />
                         </div>
                     </section>
                 </div>

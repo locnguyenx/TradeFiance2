@@ -37,10 +37,18 @@ class TradeSearchSpec extends Specification {
         given: "An instrument with multiple transactions"
         def ref = "SRH-TEST-" + System.currentTimeMillis()
         def createRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: 'USD',
+            .parameters([instrumentRef: ref, lcAmount: 1000.0, lcCurrencyUomId: 'USD',
                          instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
                                    [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         def instrumentId = createRes.instrumentId
+        
+        // Approve issuance to allow amendment
+        def txIss = ec.entity.find("trade.TradeTransaction")
+            .condition([instrumentId: instrumentId, transactionTypeEnumId: 'IMP_NEW']).disableAuthz().one()
+        ec.service.sync().name("trade.AuthorizationServices.authorize#Instrument")
+            .parameters([transactionId: txIss.transactionId, skipFourEyes: true]).call()
+        ec.entity.find("trade.importlc.ImportLetterOfCredit")
+            .condition("instrumentId", instrumentId).updateAll([businessStateId: "LC_ISSUED"])
 
         // Add an amendment transaction
         def amdRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#Amendment")
@@ -66,6 +74,10 @@ class TradeSearchSpec extends Specification {
             ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.importlc.ImportLcAmendment").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instrumentId).deleteAll()
+            
+            // Unset latestTransactionId to avoid FK violation
+            ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).updateAll([latestTransactionId: null])
+            
             ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", instrumentId).deleteAll()

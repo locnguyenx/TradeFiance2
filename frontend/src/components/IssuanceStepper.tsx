@@ -6,6 +6,7 @@ import { tradeApi } from '../api/tradeApi';
 import { TradeParty } from '../api/types';
 import { ClauseSelector } from './ClauseSelector';
 import { isValidXChars, isValidZChars, getLineCount } from '../utils/SwiftUtils';
+import { useToast } from '../context/ToastContext';
 
 // ABOUTME: High-fidelity LC Issuance Stepper implementing REQ-UI-IMP-03.
 // ABOUTME: Maps state to BDD sequences: BDD-IMP-FLOW-01 (Draft) and BDD-IMP-FLOW-02 (Submit).
@@ -55,8 +56,7 @@ export const IssuanceStepper: React.FC = () => {
         chargeAllocationEnumId: 'APPLICANT',
         confirmationEnumId: 'WITHOUT',
         latestShipmentDate: '',
-        lcTypeEnumId: 'IRREVOCABLE',
-        tenorTypeId: 'SIGHT',
+        lcTypeEnumId: 'SIGHT',
         usanceDays: 0,
         usanceBaseDate: '',
         expiryPlace: '',
@@ -159,6 +159,7 @@ export const IssuanceStepper: React.FC = () => {
     const [dateError, setDateError] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [loading, setLoading] = useState(false);
+    const { showToast } = useToast();
 
     useEffect(() => {
         if (formData.issueDate && formData.expiryDate) {
@@ -225,6 +226,7 @@ export const IssuanceStepper: React.FC = () => {
 
     const handleNext = async () => {
         setErrorMessage('');
+        setSwiftErrors({}); // Clear old SWIFT errors when trying to proceed
         
         const missingFields = [];
         if (stepIndex === 0) {
@@ -239,7 +241,7 @@ export const IssuanceStepper: React.FC = () => {
             if (!formData.expiryPlace) missingFields.push('Expiry Place');
             if (!formData.latestShipmentDate && !formData.shipmentPeriodText) missingFields.push('Latest Shipment Date or Shipment Period');
             if (!formData.goodsDescription) missingFields.push('Goods Description');
-            if (formData.tenorTypeId === 'USANCE' && !formData.usanceDays) missingFields.push('Usance Days');
+            if (formData.lcTypeEnumId === 'USANCE' && !formData.usanceDays) missingFields.push('Usance Days');
         } else if (stepIndex === 2) {
             if (!formData.chargeAllocationEnumId) missingFields.push('Charge Allocation');
         }
@@ -288,6 +290,7 @@ export const IssuanceStepper: React.FC = () => {
                 if (res.errors && res.errors.length > 0) {
                     const failingFields = res.errors.map((e: any) => `${e.fieldName}: ${e.message}`).join(' | ');
                     setErrorMessage(`SWIFT Validation: ${res.errors.length} violation(s) detected (${failingFields}).`);
+                    setStatus('IDLE'); // Ensure success message is hidden if validation fails
                     return; // Block transition to ensure user sees errors
                 }
             } catch (e) {
@@ -353,6 +356,7 @@ export const IssuanceStepper: React.FC = () => {
 
     const handleSaveDraft = async (): Promise<boolean> => {
         setErrorMessage('');
+        setStatus('IDLE'); // Clear previous success state
         setFieldErrors({});
         
         // Comprehensive Validation across all steps for final Save Draft
@@ -413,6 +417,7 @@ export const IssuanceStepper: React.FC = () => {
                     transactionRef: result.transactionRef || prev.transactionRef
                 }));
                 setStatus('DRAFT');
+                showToast('success', 'Draft Saved Successfully');
                 return true;
             } else {
                 const msg = result.errors?.[0] || result.error || 'Failed to save draft';
@@ -515,30 +520,21 @@ export const IssuanceStepper: React.FC = () => {
                             <button className="ml-4 opacity-70 hover:opacity-100" onClick={() => setErrorMessage('')}>✕</button>
                         </div>
                     )}
-                    {(status === 'SUBMITTED' || status === 'DRAFT') && (
-                        <div className="success-banner flex justify-between items-center">
-                            {status === 'SUBMITTED' ? (
-                                <div className="success-banner premium-card mb-6" style={{ backgroundColor: '#dcfce7', borderColor: '#166534', padding: '1.5rem', borderRadius: '12px', border: '1px solid' }}>
-                                    <h3 style={{ color: '#166534', fontWeight: 700, marginBottom: '0.5rem' }}>Submission Successful</h3>
-                                    <p style={{ color: '#166534', marginBottom: '1rem' }}>
-                                        Letter of Credit has been submitted for approval.
-                                        <br />
-                                        <strong>Transaction Ref: {formData.transactionRef || 'Generating...'}</strong>
-                                        <br />
-                                        <small>Instrument ID: {formData.instrumentId}</small>
-                                    </p>
-                                    <div style={{ display: 'flex', gap: '1rem' }}>
-                                        <a href="/transactions" style={{ color: '#166534', fontWeight: 600, textDecoration: 'underline' }}>Back to Dashboard</a>
-                                        <span>|</span>
-                                        <a href="/approvals" style={{ color: '#166534', fontWeight: 600, textDecoration: 'underline' }}>View Approvals Queue</a>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div>
-                                    Draft Saved Successfully
-                                    <button className="ml-4 opacity-70 hover:opacity-100" onClick={() => setStatus('IDLE')}>✕</button>
-                                </div>
-                            )}
+                    {status === 'SUBMITTED' && (
+                        <div className="success-banner premium-card mb-6" style={{ backgroundColor: '#dcfce7', borderColor: '#166534', padding: '1.5rem', borderRadius: '12px', border: '1px solid' }}>
+                            <h3 style={{ color: '#166534', fontWeight: 700, marginBottom: '0.5rem' }}>Submission Successful</h3>
+                            <p style={{ color: '#166534', marginBottom: '1rem' }}>
+                                Letter of Credit has been submitted for approval.
+                                <br />
+                                <strong>Transaction Ref: {formData.transactionRef || 'Generating...'}</strong>
+                                <br />
+                                <small>Instrument ID: {formData.instrumentId}</small>
+                            </p>
+                            <div style={{ display: 'flex', gap: '1rem' }}>
+                                <a href="/transactions" style={{ color: '#166534', fontWeight: 600, textDecoration: 'underline' }}>Back to Dashboard</a>
+                                <span>|</span>
+                                <a href="/approvals" style={{ color: '#166534', fontWeight: 600, textDecoration: 'underline' }}>View Approvals Queue</a>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -551,35 +547,6 @@ export const IssuanceStepper: React.FC = () => {
                     {stepIndex === 0 && (
                         <section id="parties-&-limits" className="form-grid">
                             <h3 className="section-title">Parties & Limits</h3>
-                            <div className="field-group">
-                                <label htmlFor="tenorTypeId" className="required-label">LC Type</label>
-                                <select 
-                                    id="tenorTypeId"
-                                    value={formData.tenorTypeId}
-                                    onChange={e => setFormData({...formData, tenorTypeId: e.target.value})}
-                                    className={fieldErrors.tenorTypeId ? 'is-invalid' : ''}
-                                >
-                                    <option value="SIGHT">Sight LC</option>
-                                    <option value="USANCE">Usance LC</option>
-                                </select>
-                                {fieldErrors.tenorTypeId && <p className="error-text text-xs mt-1">{fieldErrors.tenorTypeId}</p>}
-                                {swiftErrors.tenorTypeId && <p className="error-text text-xs mt-1">{swiftErrors.tenorTypeId}</p>}
-                            </div>
-                            <div className="field-group">
-                                <label htmlFor="confirmationEnumId">Confirmation Instruction</label>
-                                <select 
-                                    id="confirmationEnumId"
-                                    disabled={status === 'SUBMITTED'}
-                                    value={formData.confirmationEnumId}
-                                    onChange={e => setFormData({...formData, confirmationEnumId: e.target.value})}
-                                    className={swiftErrors.confirmationEnumId ? 'is-invalid' : ''}
-                                >
-                                    <option value="WITHOUT">Without</option>
-                                    <option value="CONFIRM">Confirm</option>
-                                    <option value="MAY_ADD">May Add</option>
-                                </select>
-                                {swiftErrors.confirmationEnumId && <p className="error-text text-xs mt-1">{swiftErrors.confirmationEnumId}</p>}
-                            </div>
                             <div className="field-group">
                                 <label htmlFor="productCatalogId" className="required-label">LC Product</label>
                                 <select 
@@ -716,7 +683,35 @@ export const IssuanceStepper: React.FC = () => {
                     {stepIndex === 1 && (
                         <div className="main-lc-scroll-area">
                             <section id="financials-&-dates" className="form-grid section-divider">
-                                <h3 className="section-title">Financials & Dates</h3>
+                                <h3 className="section-title">Main LC Information</h3>
+                                <div className="field-group">
+                                    <label htmlFor="lcTypeEnumId" className="required-label">LC Type (Tag 40A)</label>
+                                    <select 
+                                        id="lcTypeEnumId"
+                                        value={formData.lcTypeEnumId}
+                                        onChange={e => setFormData({...formData, lcTypeEnumId: e.target.value})}
+                                        className={swiftErrors.lcTypeEnumId ? 'is-invalid' : ''}
+                                    >
+                                        <option value="SIGHT">Sight LC</option>
+                                        <option value="USANCE">Usance LC</option>
+                                    </select>
+                                    {swiftErrors.lcTypeEnumId && <p className="error-text text-xs mt-1">{swiftErrors.lcTypeEnumId}</p>}
+                                </div>
+                                <div className="field-group">
+                                    <label htmlFor="confirmationEnumId">Confirmation Instruction (Tag 49)</label>
+                                    <select 
+                                        id="confirmationEnumId"
+                                        disabled={status === 'SUBMITTED'}
+                                        value={formData.confirmationEnumId}
+                                        onChange={e => setFormData({...formData, confirmationEnumId: e.target.value})}
+                                        className={swiftErrors.confirmationEnumId ? 'is-invalid' : ''}
+                                    >
+                                        <option value="WITHOUT">Without</option>
+                                        <option value="CONFIRM">Confirm</option>
+                                        <option value="MAY_ADD">May Add</option>
+                                    </select>
+                                    {swiftErrors.confirmationEnumId && <p className="error-text text-xs mt-1">{swiftErrors.confirmationEnumId}</p>}
+                                </div>
                                 <div className="field-group">
                                     <label htmlFor="amount" className="required-label">Amount</label>
                                     <div className="flex gap-2">
@@ -783,7 +778,7 @@ export const IssuanceStepper: React.FC = () => {
                                     />
                                     {swiftErrors.shipmentPeriodText && <p className="error-text text-xs mt-1">{swiftErrors.shipmentPeriodText}</p>}
                                 </div>
-                                {formData.tenorTypeId === 'USANCE' && (
+                                {formData.lcTypeEnumId === 'USANCE' && (
                                     <>
                                         <div className="field-group">
                                             <label htmlFor="usanceDays">Usance Days</label>

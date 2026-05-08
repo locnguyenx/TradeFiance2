@@ -10,6 +10,8 @@ export interface TradeTransaction {
   rejectionReason?: string;
   
   // v3.0 snapshot/delta fields
+  transactionRef: string;
+  instrumentRef?: string;
   proposedAmount?: number;
   proposedCurrencyUomId?: string;
   proposedExpiryDate?: string;
@@ -21,11 +23,12 @@ export interface TradeTransaction {
   versionNumber: number;
   relatedRecordId?: string;
   relatedRecordType?: string;
+  relatedRecord?: any;
 }
 
 export interface TradeInstrument {
   instrumentId: string;
-  transactionRef: string;
+  instrumentRef: string;
   productEnumId: string;
   amount: number;
   currencyUomId: string;
@@ -155,6 +158,7 @@ export interface FeeConfiguration {
   feeConfigurationId: string;
   feeEventEnumId: string;
   calculationTypeEnumId: string;
+  baseValue?: number;
   ratePercent?: number;
   flatAmount?: number;
   minFloorAmount?: number;
@@ -222,11 +226,13 @@ export interface PresentationDiscrepancy {
 export interface QueueItem {
   transactionId: string;
   instrumentId: string;
+  instrumentRef: string;
   transactionRef: string;
   module: string;
   action: string;
   makerUserId: string;
   baseEquivalentAmount: number;
+  transactionAmount: number;
   timeInQueue: string;
   priorityEnumId: string;
   transactionStatusId: string;

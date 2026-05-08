@@ -43,7 +43,7 @@ class EndToEndImportLcSpec extends Specification {
             
         when: "1. Create Import LC"
         def createResult = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
-            transactionRef: TEST_TRANS_REF,
+            instrumentRef: TEST_TRANS_REF,
             lcAmount: 50000.0,
             lcCurrencyUomId: "USD",
             customerFacilityId: TEST_FACILITY_ID,
@@ -78,6 +78,7 @@ class EndToEndImportLcSpec extends Specification {
         
         cleanup:
         if (instrumentId) {
+            ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).updateAll([latestTransactionId: null])
             ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instrumentId).deleteAll()
             ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).deleteAll()

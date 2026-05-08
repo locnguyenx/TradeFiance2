@@ -1,21 +1,28 @@
+jest.mock('../api/tradeApi');
+jest.mock('../context/ToastContext', () => ({
+    useToast: () => ({
+        showToast: jest.fn()
+    })
+}));
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { CancellationRequest } from './CancellationRequest';
 import { tradeApi } from '../api/tradeApi';
 
-jest.mock('../api/tradeApi', () => ({
-    tradeApi: {
-        getImportLc: jest.fn().mockResolvedValue({
-            instrumentId: 'IMLC/2026/001',
-            amount: 500000,
-            currencyUomId: 'USD'
-        })
-    }
-}));
+const mockLc = {
+    instrumentId: 'IMLC/2026/001',
+    amount: 500000,
+    currencyUomId: 'USD'
+};
 
 // ABOUTME: Test suite for LC Cancellation request mapping to REQ-IMP-PRC-06.
 // UI Traceability: REQ-UI-IMP-10 (Cancellation Request)
 
 describe('CancellationRequest (REQ-IMP-PRC-06)', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        (tradeApi.getImportLc as jest.Mock).mockResolvedValue(mockLc);
+    });
+
     it('Requires beneficiary consent verification for irrevocable LC closure', async () => {
         render(<CancellationRequest instrumentId="IMLC/2026/001" />);
         await waitFor(() => expect(screen.queryByText(/Loading LC Context/i)).not.toBeInTheDocument());

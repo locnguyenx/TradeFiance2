@@ -8,7 +8,7 @@
             <parameter name="instrumentId"/>
             <!-- TradeInstrument fields -->
             <auto-parameters entity-name="trade.TradeInstrument" include="nonpk"/>
-            <parameter name="transactionRef"/>
+            <parameter name="instrumentRef"/>
             
             <!-- ImportLetterOfCredit fields -->
             <auto-parameters entity-name="trade.importlc.ImportLetterOfCredit" include="nonpk"/>
@@ -26,14 +26,17 @@
         <out-parameters>
             <parameter name="instrumentId" required="true"/>
             <parameter name="transactionId" required="true"/>
-            <parameter name="transactionRef"/>
+            <parameter name="instrumentRef"/>
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
-            <if condition="!transactionRef">
-                <service-call name="trade.TradeCommonServices.get#NextNumber" in-map="[sequenceId:'IMP_LC_REF', instrumentType:'IMP']" out-map="nextNumOut"/>
-                <set field="transactionRef" from="nextNumOut.nextNumberFormatted"/>
+            <if condition="!instrumentRef">
+                <service-call name="trade.TradeCommonServices.get#NextNumber" in-map="[sequenceId:'SEQ_IMP_LC', instrumentType:'IMP']" out-map="nextNumOut"/>
+                <set field="instrumentRef" from="nextNumOut.nextNumberFormatted"/>
             </if>
+            
+            <service-call name="trade.TradeCommonServices.get#NextNumber" in-map="[sequenceId:'SEQ_TXN', instrumentType:'TXN']" out-map="txnNumOut"/>
+            <set field="transactionRef" from="txnNumOut.nextNumberFormatted"/>
 
             <!-- Date Sequence Validation (REQ-COM-VAL-03) -->
             <if condition="issueDate != null &amp;&amp; expiryDate != null &amp;&amp; expiryDate.before(issueDate)">
@@ -44,9 +47,10 @@
             <service-call name="create#trade.TradeInstrument" out-map="createInstOut"
                 in-map="[
                     instrumentId: instrumentId,
-                    transactionRef: transactionRef,
+                    instrumentRef: instrumentRef,
+
                     instrumentTypeEnumId: 'IMPORT_LC',
-                    businessStateId: 'LC_DRAFT',
+                    businessStateId: businessStateId ?: 'LC_DRAFT',
                     amount: lcAmount,
                     currencyUomId: lcCurrencyUomId,
                     expiryDate: expiryDate,
@@ -54,11 +58,14 @@
                     customerFacilityId: customerFacilityId
                 ]"/>
             <set field="instrumentId" from="createInstOut.instrumentId"/>
+            <log level="info" message="DEBUG: Created instrument ${instrumentId} with ref ${instrumentRef}"/>
 
             <!-- 2. Create TradeTransaction for Issuance -->
+            <log level="info" message="DEBUG: Creating transaction for ${instrumentId} with ref ${transactionRef}"/>
             <service-call name="create#trade.TradeTransaction" out-map="txOut"
                 in-map="[
                     instrumentId: instrumentId,
+                    transactionRef: transactionRef,
                     transactionTypeEnumId: 'IMP_NEW',
                     transactionStatusId: 'TX_DRAFT',
                     transactionDate: ec.user.nowTimestamp,
@@ -68,6 +75,7 @@
                     versionNumber: 1
                 ]"/>
             <set field="transactionId" from="txOut.transactionId"/>
+
 
             <!-- 3. Assign Parties -->
             <log message="Assigning parties for Instrument ${instrumentId}: ${instrumentParties}"/>
@@ -92,20 +100,45 @@
             </if>
 
             <!-- 5. Create ImportLetterOfCredit -->
-            <!-- Clean up context to avoid recursive creation of short-alias matches like 'parties' -->
-            <set field="createLcIn" from="new HashMap(context)"/>
-            <script>createLcIn.remove('instrumentParties')</script>
-            <service-call name="create#trade.importlc.ImportLetterOfCredit" out-map="createLcOut"
-                in-map="createLcIn + [
-                    instrumentId: instrumentId,
-                    businessStateId: 'LC_DRAFT',
-                    effectiveAmount: lcAmount,
-                    effectiveOutstandingAmount: lcAmount,
-                    effectiveExpiryDate: expiryDate,
-                    effectiveShipmentDate: latestShipmentDate,
-                    effectiveCurrencyUomId: lcCurrencyUomId,
-                    isRevolving: isRevolving ?: 'N'
-                ]"/>
+            <set field="createLcIn" from="[
+                instrumentId: instrumentId,
+                businessStateId: (businessStateId ?: 'LC_DRAFT'),
+                effectiveAmount: lcAmount,
+                effectiveOutstandingAmount: lcAmount,
+                effectiveExpiryDate: expiryDate,
+                effectiveShipmentDate: latestShipmentDate,
+                effectiveCurrencyUomId: lcCurrencyUomId,
+                isRevolving: (isRevolving ?: 'N'),
+                goodsDescription: goodsDescription,
+                documentsRequired: documentsRequired,
+                additionalConditions: additionalConditions,
+                bankToBankInstructions: bankToBankInstructions,
+                additionalAmountsText: additionalAmountsText,
+                chargeAllocationText: chargeAllocationText,
+                shipmentPeriodText: shipmentPeriodText,
+                lcTypeEnumId: lcTypeEnumId,
+                confirmationEnumId: confirmationEnumId,
+                availableByEnumId: availableByEnumId,
+                availableWithEnumId: availableWithEnumId,
+                partialShipmentEnumId: partialShipmentEnumId,
+                transhipmentEnumId: transhipmentEnumId,
+                expiryPlace: expiryPlace,
+                usanceDays: usanceDays,
+                usanceBaseDate: usanceBaseDate,
+                chargeAllocationEnumId: chargeAllocationEnumId,
+                tolerancePositive: tolerancePositive,
+                toleranceNegative: toleranceNegative,
+                maxCreditAmountFlag: maxCreditAmountFlag,
+                latestShipmentDate: latestShipmentDate,
+                portOfLoading: portOfLoading,
+                portOfDischarge: portOfDischarge,
+                receiptPlace: receiptPlace,
+                finalDeliveryPlace: finalDeliveryPlace,
+                mixedPaymentDetails: mixedPaymentDetails,
+                deferredPaymentDetails: deferredPaymentDetails,
+                presentationPeriodDays: presentationPeriodDays
+            ]"/>
+            <service-call name="create#trade.importlc.ImportLetterOfCredit" in-map="createLcIn" out-map="createLcOut"/>
 
             <!-- 6. Initial Fee Estimation -->
             <service-call name="trade.TradeAccountingServices.calculate#Fees" 
@@ -125,6 +158,7 @@
             <parameter name="expiryDate" type="Date"/>
             <parameter name="latestShipmentDate" type="Date"/>
             <parameter name="businessStateId"/>
+            <parameter name="skipImmutabilityGuard" type="Boolean" default="false"/>
             
             <parameter name="instrumentParties" type="List"><parameter name="party" type="Map">
                 <parameter name="roleEnumId" required="true"/>
@@ -133,7 +167,8 @@
         </in-parameters>
         <out-parameters>
             <parameter name="instrumentId" required="true"/>
-            <parameter name="transactionRef"/>
+            <parameter name="instrumentRef"/>
+
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
@@ -150,8 +185,10 @@
 
             <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc"/>
             <!-- FR-LIF-35: Immutability Guard for Issued Instruments -->
-            <if condition="lc?.businessStateId == 'LC_ISSUED' &amp;&amp; (amount != null || lcAmount != null || currencyUomId != null || lcCurrencyUomId != null)">
-                <return message="Cannot modify financial terms of an Issued LC via update. Use Amendment workflow."/>
+            <if condition="lc?.businessStateId == 'LC_ISSUED' &amp;&amp; !skipImmutabilityGuard">
+                <if condition="(lcAmount != null &amp;&amp; lcAmount != lc.effectiveAmount) || (expiryDate != null &amp;&amp; expiryDate != lc.effectiveExpiryDate) || (amount != null &amp;&amp; amount != instrument.amount) || (currencyUomId != null &amp;&amp; currencyUomId != instrument.currencyUomId)">
+                    <return message="Cannot modify financial terms of an Issued LC via update. Use Amendment workflow."/>
+                </if>
             </if>
             
             <if condition="tx?.transactionStatusId == 'TX_APPROVED'">
@@ -172,20 +209,21 @@
             <if condition="lcAmount != null"><set field="instrument.amount" from="lcAmount"/></if>
             <if condition="lcCurrencyUomId != null"><set field="instrument.currencyUomId" from="lcCurrencyUomId"/></if>
             <if condition="expiryDate != null"><set field="instrument.expiryDate" from="expiryDate"/></if>
-            <entity-set value-field="instrument" include="nonpk"/>
+            <entity-set value-field="instrument" include="nonpk" set-if-empty="false"/>
             <entity-update value-field="instrument"/>
 
             <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" auto-field-map="true"/>
-            <if condition="lcAmount != null">
-                <set field="lc.effectiveAmount" from="lcAmount"/>
-                <set field="lc.effectiveOutstandingAmount" from="lcAmount"/>
+            <set field="lcUpdateMap" from="[:]"/>
+            <if condition="lcAmount != null &amp;&amp; lcAmount != lc.effectiveAmount">
+                <set field="amountDelta" from="lcAmount - (lc.effectiveAmount ?: 0)"/>
+                <set field="lcUpdateMap.effectiveAmount" from="lcAmount"/>
+                <set field="lcUpdateMap.effectiveOutstandingAmount" from="(lc.effectiveOutstandingAmount ?: 0) + amountDelta"/>
             </if>
-            <if condition="lcCurrencyUomId != null"><set field="lc.effectiveCurrencyUomId" from="lcCurrencyUomId"/></if>
-            <if condition="expiryDate != null"><set field="lc.effectiveExpiryDate" from="expiryDate"/></if>
-            <if condition="latestShipmentDate != null"><set field="lc.effectiveShipmentDate" from="latestShipmentDate"/></if>
+            <if condition="lcCurrencyUomId != null"><set field="lcUpdateMap.effectiveCurrencyUomId" from="lcCurrencyUomId"/></if>
+            <if condition="expiryDate != null"><set field="lcUpdateMap.effectiveExpiryDate" from="expiryDate"/></if>
             <if condition="businessStateId != null &amp;&amp; businessStateId != lc.businessStateId">
                 <log level="info" message="Updating Import LC ${instrumentId}. Transitioning state from ${lc.businessStateId} to ${businessStateId}"/>
-                <set field="lc.businessStateId" from="businessStateId"/>
+                <set field="lcUpdateMap.businessStateId" from="businessStateId"/>
                 <!-- Sync with TradeTransaction -->
                 <if condition="businessStateId == 'LC_PENDING'">
                     <service-call name="update#trade.TradeTransaction" in-map="[transactionId: tx.transactionId, transactionStatusId: 'TX_PENDING']"/>
@@ -198,11 +236,53 @@
                         <log level="info" message="Reversing limit for LC ${instrumentId} on state ${businessStateId}. Amount: ${lc.effectiveOutstandingAmount}"/>
                         <service-call name="trade.LimitServices.update#Utilization" 
                                       in-map="[facilityId: instrument.customerFacilityId, amountDelta: -lc.effectiveOutstandingAmount]"/>
-                        <set field="lc.effectiveOutstandingAmount" value="0" type="BigDecimal"/>
+                        <set field="lcUpdateMap.effectiveOutstandingAmount" value="0" type="BigDecimal"/>
                     </if>
                 </if>
             </if>
-            <entity-set value-field="lc" include="nonpk"/>
+            
+            <if condition="latestShipmentDate != null">
+                <set field="lcUpdateMap.latestShipmentDate" from="latestShipmentDate"/>
+                <set field="lcUpdateMap.effectiveShipmentDate" from="latestShipmentDate"/>
+            </if>
+            
+            <!-- Narrative fields if passed -->
+            <if condition="goodsDescription != null"><set field="lcUpdateMap.goodsDescription" from="goodsDescription"/></if>
+            <if condition="documentsRequired != null"><set field="lcUpdateMap.documentsRequired" from="documentsRequired"/></if>
+            <if condition="additionalConditions != null"><set field="lcUpdateMap.additionalConditions" from="additionalConditions"/></if>
+            <if condition="bankToBankInstructions != null"><set field="lcUpdateMap.bankToBankInstructions" from="bankToBankInstructions"/></if>
+            <if condition="additionalAmountsText != null"><set field="lcUpdateMap.additionalAmountsText" from="additionalAmountsText"/></if>
+            <if condition="chargeAllocationText != null"><set field="lcUpdateMap.chargeAllocationText" from="chargeAllocationText"/></if>
+            <if condition="shipmentPeriodText != null"><set field="lcUpdateMap.shipmentPeriodText" from="shipmentPeriodText"/></if>
+            <if condition="lcTypeEnumId != null"><set field="lcUpdateMap.lcTypeEnumId" from="lcTypeEnumId"/></if>
+            <if condition="confirmationEnumId != null"><set field="lcUpdateMap.confirmationEnumId" from="confirmationEnumId"/></if>
+            <if condition="availableByEnumId != null"><set field="lcUpdateMap.availableByEnumId" from="availableByEnumId"/></if>
+            <if condition="availableWithEnumId != null"><set field="lcUpdateMap.availableWithEnumId" from="availableWithEnumId"/></if>
+            <if condition="partialShipmentEnumId != null"><set field="lcUpdateMap.partialShipmentEnumId" from="partialShipmentEnumId"/></if>
+            <if condition="transhipmentEnumId != null"><set field="lcUpdateMap.transhipmentEnumId" from="transhipmentEnumId"/></if>
+            <if condition="expiryPlace != null"><set field="lcUpdateMap.expiryPlace" from="expiryPlace"/></if>
+            <if condition="usanceDays != null"><set field="lcUpdateMap.usanceDays" from="usanceDays"/></if>
+            <if condition="usanceBaseDate != null"><set field="lcUpdateMap.usanceBaseDate" from="usanceBaseDate"/></if>
+            <if condition="chargeAllocationEnumId != null"><set field="lcUpdateMap.chargeAllocationEnumId" from="chargeAllocationEnumId"/></if>
+            <if condition="tolerancePositive != null"><set field="lcUpdateMap.tolerancePositive" from="tolerancePositive"/></if>
+            <if condition="toleranceNegative != null"><set field="lcUpdateMap.toleranceNegative" from="toleranceNegative"/></if>
+            <if condition="maxCreditAmountFlag != null"><set field="lcUpdateMap.maxCreditAmountFlag" from="maxCreditAmountFlag"/></if>
+            <if condition="portOfLoading != null"><set field="lcUpdateMap.portOfLoading" from="portOfLoading"/></if>
+            <if condition="portOfDischarge != null"><set field="lcUpdateMap.portOfDischarge" from="portOfDischarge"/></if>
+            <if condition="receiptPlace != null"><set field="lcUpdateMap.receiptPlace" from="receiptPlace"/></if>
+            <if condition="finalDeliveryPlace != null"><set field="lcUpdateMap.finalDeliveryPlace" from="finalDeliveryPlace"/></if>
+            <if condition="mixedPaymentDetails != null"><set field="lcUpdateMap.mixedPaymentDetails" from="mixedPaymentDetails"/></if>
+            <if condition="deferredPaymentDetails != null"><set field="lcUpdateMap.deferredPaymentDetails" from="deferredPaymentDetails"/></if>
+            <if condition="presentationPeriodDays != null"><set field="lcUpdateMap.presentationPeriodDays" from="presentationPeriodDays"/></if>
+            <if condition="tenorTypeId != null"><set field="lcUpdateMap.tenorTypeId" from="tenorTypeId"/></if>
+            <if condition="productCatalogId != null"><set field="lcUpdateMap.productCatalogId" from="productCatalogId"/></if>
+            <if condition="isRevolving != null"><set field="lcUpdateMap.isRevolving" from="isRevolving"/></if>
+            <if condition="marginType != null"><set field="lcUpdateMap.marginType" from="marginType"/></if>
+            <if condition="marginPercentage != null"><set field="lcUpdateMap.marginPercentage" from="marginPercentage"/></if>
+            <if condition="marginAmount != null"><set field="lcUpdateMap.marginAmount" from="marginAmount"/></if>
+            <if condition="marginDebitAccount != null"><set field="lcUpdateMap.marginDebitAccount" from="marginDebitAccount"/></if>
+
+            <entity-set value-field="lc" map="lcUpdateMap"/>
             <entity-update value-field="lc"/>
 
             <!-- Update Parties if passed -->
@@ -232,7 +312,8 @@
             <if condition="lcCheck.availableWithEnumId == 'AVAIL_SPECIFIC_BANK' &amp;&amp; !roles.contains('TP_NEGOTIATING_BANK')">
                 <return error="true" message="Negotiating Bank is mandatory when 'Available With Bank' is selected"/>
             </if>
-            <set field="transactionRef" from="instrument.transactionRef"/>
+            <set field="instrumentRef" from="instrument.instrumentRef"/>
+
         </actions>
     </service>
     <service verb="approve" noun="ImportLetterOfCredit" authenticate="false">
@@ -356,6 +437,13 @@
             <parameter name="amountAdjustment" type="BigDecimal"/>
             <parameter name="newExpiryDate" type="Date"/>
             <parameter name="amendmentNarrative" type="String"/>
+            <parameter name="goodsDescription" type="String"/>
+            <parameter name="documentsRequired" type="String"/>
+            <parameter name="additionalConditions" type="String"/>
+            <parameter name="bankToBankInstructions" type="String"/>
+            <parameter name="additionalAmountsText" type="String"/>
+            <parameter name="chargeAllocationText" type="String"/>
+            <parameter name="shipmentPeriodText" type="String"/>
             <parameter name="isFinancial" type="String"/>
             <parameter name="priorityEnumId"/>
         </in-parameters>
@@ -368,7 +456,10 @@
             <if condition="!instrument"><return error="true" message="Instrument ${instrumentId} not found"/></if>
             
             <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc"/>
-            <if condition="lc?.businessStateId == 'LC_AMENDMENT_PENDING'">
+            <if condition="!lc || !(lc.businessStateId in ['LC_ISSUED', 'LC_AMENDED', 'LC_DOC_RECEIVED'])">
+                <return error="true" message="Amendments can only be created for Issued or Amended instruments (Current State: ${lc?.businessStateId ?: 'UNKNOWN'})"/>
+            </if>
+            <if condition="lc.businessStateId == 'LC_AMENDMENT_PENDING'">
                 <return error="true" message="Cannot create new amendment while another is pending (Current State: LC_AMENDMENT_PENDING)"/>
             </if>
             
@@ -480,6 +571,7 @@
             <auto-parameters entity-name="trade.importlc.ImportLcAmendment" include="nonpk"/>
         </in-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.importlc.ImportLcAmendment" value-field="amendment" for-update="true"/>
             <if condition="!amendment"><return error="true" message="Amendment ${amendmentId} not found"/></if>
 
@@ -513,8 +605,26 @@
                 </if>
             </if>
 
-            <entity-set value-field="amendment" include-primary-key="false"/>
+            <entity-set value-field="amendment" include-primary-key="false" set-if-empty="false"/>
             <entity-update value-field="amendment"/>
+        </actions>
+    </service>
+    <service verb="submit" noun="Amendment" authenticate="false">
+        <in-parameters>
+            <parameter name="amendmentId" required="true"/>
+            <auto-parameters entity-name="trade.importlc.ImportLcAmendment" include="nonpk"/>
+        </in-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <service-call name="trade.importlc.ImportLcServices.update#Amendment" in-map="context"/>
+            <entity-find entity-name="trade.TradeTransaction" list="txList">
+                <econdition field-name="relatedRecordId" from="amendmentId"/>
+                <econdition field-name="transactionTypeEnumId" value="IMP_AMENDMENT"/>
+            </entity-find>
+            <if condition="txList">
+                <service-call name="trade.TradeCommonServices.update#TradeTransaction" 
+                    in-map="[transactionId: txList[0].transactionId, transactionStatusId: 'TX_PENDING']"/>
+            </if>
         </actions>
     </service>
 
@@ -547,41 +657,13 @@
                              checkerUserId: ec.user.userId, checkerTimestamp: ec.user.nowTimestamp]"/>
             </if>
 
-            <!-- 2. Create IMP_SETTLEMENT Transaction -->
-            <service-call name="create#trade.TradeTransaction" out-map="txOut"
-                in-map="[
-                    instrumentId: presentation.instrumentId,
-                    transactionTypeEnumId: 'IMP_SETTLEMENT',
-                    transactionStatusId: 'TX_APPROVED',
-                    transactionDate: ec.user.nowTimestamp,
-                    makerUserId: ec.user.userId,
-                    makerTimestamp: ec.user.nowTimestamp,
-                    checkerUserId: ec.user.userId,
-                    checkerTimestamp: ec.user.nowTimestamp,
-                    priorityEnumId: priorityEnumId ?: 'NORMAL',
-                    versionNumber: 1,
-                    relatedRecordId: presentationId,
-                    relatedRecordType: 'PRESENTATION'
-                ]"/>
-
-            <!-- 3. Record Settlement and Update State -->
-            <service-call name="trade.TradeAccountingServices.create#ImportLcSettlement"
-                in-map="context + [instrumentId: presentation.instrumentId]"/>
+            <!-- 2. Record Settlement (which now creates the IMP_SETTLEMENT transaction) -->
+            <service-call name="trade.TradeAccountingServices.create#ImportLcSettlement" out-map="settleOut"
+                in-map="context + [instrumentId: presentation.instrumentId, transactionStatusId: 'TX_PENDING']"/>
             
-            <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" for-update="true">
-                <field-map field-name="instrumentId" from="presentation.instrumentId"/>
-            </entity-find-one>
-            <if condition="lc">
-                <if condition="lc.isRevolving == 'Y'">
-                    <log level="info" message="Reinstating revolving LC ${lc.instrumentId} to ${lc.effectiveAmount}"/>
-                    <set field="lc.effectiveOutstandingAmount" from="lc.effectiveAmount"/>
-                    <entity-update value-field="lc"/>
-                </if>
-                
-                <set field="targetState" from="lc.effectiveOutstandingAmount.compareTo(java.math.BigDecimal.ZERO) == 0 ? 'LC_CLOSED' : 'LC_ISSUED'"/>
-                <service-call name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit"
-                    in-map="[instrumentId: presentation.instrumentId, businessStateId: targetState]"/>
-            </if>
+            <!-- 3. Authorize the settlement transaction to update balance and state -->
+            <service-call name="trade.AuthorizationServices.authorize#Instrument"
+                in-map="[transactionId: settleOut.transactionId, skipFourEyes: true]"/>
             
             <set field="presentation.presentationStatusId" value="PRES_SETTLED"/>
             <entity-update value-field="presentation"/>
@@ -654,11 +736,27 @@
             <!-- Handle REJECTED transition to LC_CLOSED if needed, but BDD focus is WAIVED -->
         </actions>
     </service>
+    <service verb="get" noun="Amendment" authenticate="false">
+        <in-parameters><parameter name="amendmentId" required="true"/></in-parameters>
+        <out-parameters>
+            <auto-parameters entity-name="trade.importlc.ImportLcAmendment" include="all"/>
+        </out-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find-one entity-name="trade.importlc.ImportLcAmendment" value-field="amendment"/>
+            <if condition="amendment == null">
+                <return error="true" message="Amendment ${amendmentId} not found"/>
+            </if>
+            <script>context.putAll(amendment)</script>
+        </actions>
+    </service>
     <service verb="get" noun="ImportLetterOfCreditList" authenticate="false">
         <in-parameters>
             <parameter name="instrumentId"/>
             <parameter name="transactionStatusId"/>
             <parameter name="businessStateId"/>
+            <parameter name="makerUserId"/>
+            <parameter name="transactionTypeEnumId"/>
         </in-parameters>
         <out-parameters>
             <parameter name="lcList" type="List"><parameter name="instrument" type="Map"/></parameter>
@@ -670,6 +768,8 @@
                 <econdition field-name="instrumentId" from="instrumentId" ignore-if-empty="true"/>
                 <econdition field-name="businessStateId" from="businessStateId" ignore-if-empty="true"/>
                 <econdition field-name="transactionStatusId" from="transactionStatusId" ignore-if-empty="true"/>
+                <econdition field-name="makerUserId" from="makerUserId" ignore-if-empty="true"/>
+                <econdition field-name="transactionTypeEnumId" from="transactionTypeEnumId" ignore-if-empty="true"/>
                 
                 <order-by field-name="prioritySequence, -instrumentId"/>
             </entity-find>
@@ -797,8 +897,8 @@
             <if condition="lc == null"><return error="true" message="Letter of Credit not found for instrument ${instrumentId}"/></if>
             <script>context.putAll(lc)</script>
             
-            <entity-find entity-name="trade.TradeInstrumentParty" list="parties">
-                <econdition field-name="instrumentId"/>
+            <entity-find entity-name="trade.TradeInstrumentPartyView" list="parties">
+                <econdition field-name="instrumentId" from="instrumentId"/>
             </entity-find>
             <set field="parties" from="parties"/>
             

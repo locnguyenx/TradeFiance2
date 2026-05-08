@@ -31,16 +31,16 @@ class DraftLcSpec extends Specification {
                 productCatalogId: 'PROD_IMP_LC'
             ]).call()
             
-        then: "It should succeed and auto-generate transactionRef"
+        then: "It should succeed and auto-generate transactionRef on the draft transaction"
         result.instrumentId != null
-        def autoInst = ec.entity.find("trade.TradeInstrument").condition("instrumentId", result.instrumentId).one()
-        autoInst.transactionRef != null
+        def draftTx = ec.entity.find("trade.TradeTransaction").condition("instrumentId", result.instrumentId).one()
+        draftTx.transactionRef != null
         
         when: "Creating a draft LC with random transactionRef"
         def ref = "DRAFT-" + System.currentTimeMillis()
         def createResult = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([
-                transactionRef: ref,
+                instrumentRef: ref,
                 lcAmount: 50000,
                 lcCurrencyUomId: 'USD',
                 instrumentParties: [
@@ -64,6 +64,6 @@ class DraftLcSpec extends Specification {
         
         then: "Draft LC should be in the list"
         found != null
-        found.transactionRef == ref
+        found.instrumentRef == ref
     }
 }

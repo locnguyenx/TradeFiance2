@@ -38,6 +38,7 @@ All state-changing services must adhere to the following guards:
 4.  **Transaction Audit Hub**: Automatic logging in `TradeTransaction` and `TradeTransactionAudit`. The frontend merges these into a **Unified Narrative Timeline** via the `getInstrumentTransactions` and `getAuditLogs` API end-points.
 5.  **Party Eligibility Gateway**: `TradeCommonServices.assign#InstrumentParty` enforces KYC status, RMA requirements, FI Limits, and party-type matching before any role assignment is persisted. This is the single compliance checkpoint for all party operations.
 6.  **Identity Hub**: Centralized authentication and role-based session management via `trade.UserAccountServices`. Enforces transactional auditing for all security events (password changes, profile updates).
+7.  **Immutability Guard**: `trade.importlc.ImportLcServices.update#ImportLetterOfCredit` enforces strict immutability for issued LCs. Manual modification of financial terms (amount, expiry) is blocked. These fields must only be updated by the system-level `AuthorizationServices.authorize#Instrument` flow using the `skipImmutabilityGuard: true` bypass flag, ensuring all changes are grounded in an approved transaction.
 
 ### SWIFT Generation Data Flow
 SWIFT message builders (MT700, MT707) read party data exclusively from the `TradeInstrumentParty` junction:
@@ -82,6 +83,11 @@ The frontend suite uses Playwright (frontend/e2e) and Vitest for unit tests.
 ```bash
 cd frontend && npm test src/context/AuthContext.test.tsx
 cd frontend && npm test src/components/GlobalShell.test.tsx
+```
+
+### Execution (Frontend E2E Tests)
+```bash
+cd frontend && npx playwright test
 ```
 
 ---

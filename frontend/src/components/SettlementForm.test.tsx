@@ -40,7 +40,8 @@ describe('SettlementForm', () => {
   });
 
   it('submits settlement when confirmed', async () => {
-    (tradeApi.settleLcPresentation as jest.Mock).mockResolvedValue({ success: true });
+    (tradeApi.createLcSettlement as jest.Mock).mockResolvedValue({ settlementId: 'STL_1' });
+    (tradeApi.submitLcSettlement as jest.Mock).mockResolvedValue({ success: true });
     
     await act(async () => {
       render(<SettlementForm instrumentId="LC_100" />);
@@ -52,8 +53,9 @@ describe('SettlementForm', () => {
       fireEvent.click(screen.getByRole('button', { name: /confirm settlement/i }));
     });
     
-    expect(tradeApi.settleLcPresentation).toHaveBeenCalledWith('LC_100', expect.any(String), expect.objectContaining({
+    expect(tradeApi.createLcSettlement).toHaveBeenCalledWith('LC_100', expect.objectContaining({
       principalAmount: 10000
     }));
+    expect(tradeApi.submitLcSettlement).toHaveBeenCalledWith('LC_100', 'STL_1', {});
   });
 });

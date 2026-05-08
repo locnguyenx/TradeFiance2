@@ -11,11 +11,13 @@ jest.mock('../api/tradeApi', () => ({
 const mockItem = {
     transactionId: 'TXN-001',
     instrumentId: '1',
+    instrumentRef: 'LC-BASE-REF',
     transactionRef: 'TF-IMP-001',
     module: 'Import LC',
     action: 'Issuance',
     makerUserId: 'maker1',
     baseEquivalentAmount: 50000,
+    transactionAmount: 5000,
     timeInQueue: '2h 15m',
     priorityEnumId: 'NORMAL',
     transactionStatusId: 'TXN_PENDING_APPROVAL',
@@ -49,13 +51,15 @@ describe('CheckersQueue v3.0 (REQ-UI-CMN-02)', () => {
     });
 
     it('fetches data from API if no items provided', async () => {
-        const mockApprovals = [{ ...mockItem, transactionRef: 'API-REF' }];
+        const mockApprovals = [{ ...mockItem, instrumentRef: 'INST-REF', transactionRef: 'API-REF', transactionAmount: 1234 }];
         (tradeApi.getApprovals as jest.Mock).mockResolvedValue({ approvalsList: mockApprovals });
         
         render(<CheckersQueue />);
         
         await waitFor(() => {
+            expect(screen.getByText('INST-REF')).toBeInTheDocument();
             expect(screen.getByText('API-REF')).toBeInTheDocument();
+            expect(screen.getByText('1,234')).toBeInTheDocument();
         });
     });
 });

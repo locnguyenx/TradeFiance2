@@ -6,7 +6,8 @@
 
     <entity entity-name="TradeInstrument" package="trade">
         <field name="instrumentId" type="id" is-pk="true"/>
-        <field name="transactionRef" type="text-short"/>
+        <field name="instrumentRef" type="text-short"/>
+
         <field name="businessStateId" type="id"/>
         <field name="previousBusinessStateId" type="id"/>
         <field name="instrumentTypeEnumId" type="id"/>
@@ -126,6 +127,23 @@
         </relationship>
     </entity>
     
+    <view-entity entity-name="TradeInstrumentPartyView" package="trade">
+        <member-entity entity-alias="tip" entity-name="trade.TradeInstrumentParty"/>
+        <member-entity entity-alias="tp" entity-name="trade.TradeParty" join-from-alias="tip">
+            <key-map field-name="partyId"/>
+        </member-entity>
+        <member-entity entity-alias="tpb" entity-name="trade.TradePartyBank" join-from-alias="tp" join-optional="true">
+            <key-map field-name="partyId"/>
+        </member-entity>
+        <alias-all entity-alias="tip"/>
+        <alias-all entity-alias="tp">
+            <exclude field="partyId"/>
+        </alias-all>
+        <alias-all entity-alias="tpb">
+            <exclude field="partyId"/>
+        </alias-all>
+    </view-entity>
+
     <entity entity-name="FeeConfiguration" package="trade">
         <field name="feeConfigurationId" type="id" is-pk="true"/>
         <field name="feeEventEnumId" type="id"/> <!-- ISSUANCE_FEE, AMENDMENT_FEE, etc. -->
@@ -205,6 +223,7 @@
     <entity entity-name="TradeTransaction" package="trade">
         <field name="transactionId" type="id" is-pk="true"/>
         <field name="instrumentId" type="id"/>
+        <field name="transactionRef" type="text-short"/>
         <field name="transactionTypeEnumId" type="id"/>
         <field name="transactionStatusId" type="id"/>
         <field name="transactionDate" type="date"/>
@@ -219,6 +238,7 @@
         
         <!-- Authorization -->
         <field name="rejectionReason" type="text-long"/>
+        <field name="comments" type="text-long"/>
         <field name="versionNumber" type="number-integer" default="1"/>
         <field name="priorityEnumId" type="id"/>
         

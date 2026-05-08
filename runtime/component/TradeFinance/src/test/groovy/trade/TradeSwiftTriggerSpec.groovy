@@ -47,7 +47,7 @@ class TradeSwiftTriggerSpec extends Specification {
         given: "A new Import LC in Pending state"
         def ref = "TF-TRG-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 50000.0, lcCurrencyUomId: "USD",
+            .parameters([instrumentRef: ref, lcAmount: 50000.0, lcCurrencyUomId: "USD",
                          instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
                                    [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002'],
                                    [roleEnumId: 'TP_ADVISING_BANK', partyId: 'ADVISING_BANK_001']],
@@ -96,7 +96,7 @@ class TradeSwiftTriggerSpec extends Specification {
         given: "An issued LC and a pending Amendment"
         def ref = "TF-AMD-TRG-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 50000.0, lcCurrencyUomId: "USD",
+            .parameters([instrumentRef: ref, lcAmount: 50000.0, lcCurrencyUomId: "USD",
                          instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
                                    [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002'],
                                    [roleEnumId: 'TP_ADVISING_BANK', partyId: 'ADVISING_BANK_001']],

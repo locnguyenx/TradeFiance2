@@ -62,8 +62,40 @@ export const ShippingGuaranteeForm: React.FC<ShippingGuaranteeFormProps> = ({ in
         );
     }
 
+    const handleSubmitSG = async () => {
+        setError('');
+        setLoading(true);
+        try {
+            const createRes = await tradeApi.createLcShippingGuarantee(instrumentId, {
+                ...formData,
+                invoiceAmount: parseFloat(formData.invoiceAmount) || 0
+            });
+
+            if (createRes.errors || createRes.error) {
+                setError(createRes.errors?.[0] || createRes.error || 'Failed to create SG request');
+                setLoading(false);
+                return;
+            }
+
+            const guaranteeId = createRes.guaranteeId;
+            const submitRes = await tradeApi.submitLcShippingGuarantee(instrumentId, guaranteeId, {});
+
+            if (submitRes.errors || submitRes.error) {
+                setError(submitRes.errors?.[0] || submitRes.error || 'Draft created, but failed to submit for approval');
+            } else {
+                // Success logic
+                window.location.href = `/import-lc/${instrumentId}`;
+            }
+        } catch (err: any) {
+            setError(err.message || 'SG submission failed');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="sg-container premium-card">
+            {error && <div className="error-banner mb-6" style={{ background: '#fef2f2', color: '#991b1b', padding: '1rem', borderRadius: '6px' }}>{error}</div>}
             <header className="header-flex">
                 <div>
                     <h2 className="title">Issue Shipping Guarantee</h2>
@@ -121,8 +153,10 @@ export const ShippingGuaranteeForm: React.FC<ShippingGuaranteeFormProps> = ({ in
             </main>
 
             <footer className="footer-actions">
-                <button className="secondary-btn">Cancel</button>
-                <button className="primary-btn">Submit SG Request</button>
+                <button className="secondary-btn" onClick={() => window.location.href = `/import-lc/${instrumentId}`}>Cancel</button>
+                <button className="primary-btn" onClick={handleSubmitSG} disabled={loading}>
+                    {loading ? 'Processing...' : 'Submit SG Request'}
+                </button>
             </footer>
 
             <style jsx>{`

@@ -1,27 +1,26 @@
-# Current State - Import LC Audit Hardening & Compliance
-**Last Update:** 2026-05-06
+# Current State - Trade Finance Suite Stabilization
+**Last Update:** 2026-05-08
 
 ## Goal
-Achieve 100% audit-readiness and functional integrity for the Import LC module.
+Restore a 100% test pass rate in the TradeFinanceMoquiSuite and Playwright E2E suite by enforcing strict instrument lifecycle state transitions and aligning UI expectations.
 
 ## Approach
-1.  **Dual-Status Visibility**: Introduce `latestTransactionId` on `TradeInstrument` and update `ImportLetterOfCreditView` to show both Business State and Transaction Status.
-2.  **Liability Hardening**: Factor in `tolerancePositive` during facility earmarking at issuance.
-3.  **Binding Logic**: Enforce Beneficiary Consent timing for financial amendments.
-4.  **Test Hardening**: Expand the BDD suite to 45 scenarios and enforce formal Maker/Checker approval flows in test helpers.
-5.  **SWIFT Compliance**: Implement `format#ZCharacter` for extended narrative character support.
+1.  **Backend Hardening**: Enforce `LC_PENDING` -> `LC_ISSUED` sequence using `authorize#Instrument`.
+2.  **Authorization Logic**: Update `authorize#Instrument` to correctly handle limits and state transitions (including revolving reinstatement).
+3.  **Data Integrity**: Synchronize settlement enums and mandatory fields across test suites.
+4.  **E2E Alignment**: Update Playwright tests to match the new Portfolio-style UI headers.
 
 ## Steps Completed
-- [x] Implemented `latestTransactionId` architectural fix.
-- [x] Refactored `ImportLetterOfCreditView` for dual-status visibility.
-- [x] Corrected facility earmarking calculations (Amount * 1+Tol).
-- [x] Enforced Beneficiary Consent binding logic for amendments.
-- [x] Expanded `BddImportLcModuleSpec` to 45 scenarios (100% Pass).
-- [x] Implemented SWIFT Z-Character set formatting service.
-- [x] Updated Enduser, Backoffice, and Developer Guides.
+- [x] Resolved `ArtifactAuthorizationException` regressions in Spock tests.
+- [x] Corrected lifecycle sequence failures in BDD tests.
+- [x] Fixed settlement enum constants (`SIGHT_PAYMENT`).
+- [x] Hardened `authorize#Instrument` for limit updates and revolving LC reinstatement.
+- [x] Updated Playwright E2E tests for Amendments, Settlements, and Shipping Guarantees.
+- [x] Verified 100% pass rate in `TradeFinanceMoquiSuite`.
+- [x] Verified 100% pass rate in Playwright E2E tests (21 passed).
 
 ## Current Status
-The Import LC module is fully audit-hardened and stable. All 45 BDD tests are passing. Documentation is synchronized.
+The entire Trade Finance testing ecosystem (Backend and Frontend) is stable and passing 100%.
 
 ## Next Failure to Work On
-None currently identified. The next phase involves completing the refactoring of the remaining backend tests to consistently use services instead of direct entity creation.
+None. System is stable. Ready for new feature development.

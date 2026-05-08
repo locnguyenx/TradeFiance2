@@ -22,7 +22,8 @@ class TradeCommonEntitiesSpec extends Specification {
     def "Test CREATE TradeInstrument implicitly checks structures"() {
         when:
         ec.entity.makeValue("trade.TradeInstrument")
-            .setAll([instrumentId:"RESTORE-1", transactionRef:"TF-TEST-01"]).create()
+            .setAll([instrumentId:"RESTORE-1", instrumentRef:"TF-TEST-01"]).create()
+
             
         then:
         ec.entity.find("trade.TradeInstrument")

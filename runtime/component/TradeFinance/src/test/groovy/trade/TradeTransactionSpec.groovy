@@ -23,7 +23,7 @@ class TradeTransactionSpec extends Specification {
         // 1. Create Instrument (minimal)
         def instOut = ec.service.sync().name("create#trade.TradeInstrument").parameters([
             instrumentId: "TX-TEST-INST-01",
-            transactionRef: "TF-TEST-01",
+            instrumentRef: "TF-TEST-01",
             businessStateId: "LC_DRAFT",
             instrumentTypeEnumId: "IMPORT_LC"
         ]).call()
@@ -51,9 +51,12 @@ class TradeTransactionSpec extends Specification {
         tx.transactionStatusId == "TX_DRAFT"
         
         cleanup:
+        ec.entity.find("trade.TradeInstrument").condition("instrumentId", "TX-TEST-INST-01")
+            .updateAll([latestTransactionId: null])
         ec.entity.find("trade.TradeTransaction").condition("transactionId", "TX-TEST-01").deleteAll()
         ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", "TX-TEST-INST-01").deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", "TX-TEST-INST-01").deleteAll()
+
     }
 
     def "TradeTransactionAudit should include transactionId"() {
@@ -83,4 +86,42 @@ class TradeTransactionSpec extends Specification {
             .condition("instrumentId", "INST-AUDIT-01")
             .condition("auditId", "1").deleteAll()
     }
+    def "TradeTransaction persists transactionRef"() {
+        when:
+        def testInstId = "INST-REF-TEST-001"
+        def testTxId = "TX-REF-TEST-001"
+        
+        // Create Instrument first
+        ec.service.sync().name("create#trade.TradeInstrument").parameters([
+            instrumentId: testInstId,
+            instrumentRef: "TF-INST-01",
+            instrumentTypeEnumId: "IMPORT_LC"
+        ]).call()
+
+        ec.service.sync().name("create#trade.TradeTransaction").parameters([
+            transactionId: testTxId,
+            instrumentId: testInstId,
+            transactionRef: "TF-TXN-26-0001",
+            transactionTypeEnumId: "IMP_NEW",
+            transactionStatusId: "TX_DRAFT"
+        ]).call()
+
+        def tx = ec.entity.find("trade.TradeTransaction")
+            .condition("transactionId", testTxId).one()
+
+        then:
+        if (ec.message.hasError()) println "DEBUG: Moqui Errors: ${ec.message.errorsString}"
+        tx != null
+        tx.transactionRef == "TF-TXN-26-0001"
+
+        cleanup:
+        ec.entity.find("trade.TradeInstrument").condition("instrumentId", "INST-REF-TEST-001")
+            .updateAll([latestTransactionId: null])
+        ec.entity.find("trade.TradeTransaction").condition("transactionId", "TX-REF-TEST-001").deleteAll()
+        ec.entity.find("trade.TradeInstrument").condition("instrumentId", "INST-REF-TEST-001").deleteAll()
+    }
 }
+
+
+
+

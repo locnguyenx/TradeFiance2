@@ -1,21 +1,23 @@
+jest.mock('../api/tradeApi');
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ShippingGuaranteeForm } from './ShippingGuaranteeForm';
 import { tradeApi } from '../api/tradeApi';
 
-jest.mock('../api/tradeApi', () => ({
-    tradeApi: {
-        getImportLc: jest.fn().mockResolvedValue({
-            instrumentId: 'IMLC/2026/001',
-            amount: 500000,
-            currencyUomId: 'USD'
-        })
-    }
-}));
+const mockLc = {
+    instrumentId: 'IMLC/2026/001',
+    amount: 500000,
+    currencyUomId: 'USD'
+};
 
 // ABOUTME: Test suite for Shipping Guarantee indemnity request mapping to REQ-IMP-PRC-05.
 // UI Traceability: REQ-UI-IMP-09 (Shipping Guarantee Form)
 
 describe('ShippingGuaranteeForm (REQ-IMP-PRC-05)', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        (tradeApi.getImportLc as jest.Mock).mockResolvedValue(mockLc);
+    });
+
     it('Captures transport document and invoice details for early release', async () => {
         render(<ShippingGuaranteeForm instrumentId="IMLC/2026/001" />);
         await waitFor(() => expect(screen.queryByText(/Loading LC Context/i)).not.toBeInTheDocument());

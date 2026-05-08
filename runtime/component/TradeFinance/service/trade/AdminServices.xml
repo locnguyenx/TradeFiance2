@@ -14,8 +14,10 @@
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
             <if condition="instrumentId &amp;&amp; !transactionRef">
-                <entity-find-one entity-name="trade.TradeInstrument" value-field="inst" auto-field-map="true"/>
-                <set field="transactionRef" from="inst?.transactionRef"/>
+                <entity-find-one entity-name="trade.TradeInstrument" value-field="inst">
+                    <field-map field-name="instrumentId"/>
+                </entity-find-one>
+                <set field="transactionRef" from="inst?.instrumentRef"/>
             </if>
             <entity-find entity-name="trade.common.TradeAuditLog" list="auditLogList">
                 <econdition field-name="transactionRef" from="transactionRef" ignore-if-empty="true"/>

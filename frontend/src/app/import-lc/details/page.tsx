@@ -86,7 +86,7 @@ const DetailsView = () => {
                         <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Instrument Details</h1>
                     </div>
                     <div className="header-meta">
-                        <span className="ref-tag">{instrument.transactionRef}</span>
+                        <span className="ref-tag">{instrument.instrumentRef}</span>
                         <span className="status-badge">{instrument.businessStateId?.replace('LC_', '').replace('INST_', '')}</span>
                     </div>
                 </div>

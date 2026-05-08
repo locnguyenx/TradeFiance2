@@ -21,6 +21,7 @@ class ComplianceServicesSpec extends Specification {
         
         // Clean up before each test
         String lcId = "COMP-HOLD-LC-01"
+        ec.entity.find("trade.TradeInstrument").condition("instrumentId", lcId).updateAll([latestTransactionId: null])
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", lcId).deleteAll()
         ec.entity.find("trade.TradeTransaction").condition("instrumentId", lcId).deleteAll()
         ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", lcId).deleteAll()
@@ -86,6 +87,7 @@ class ComplianceServicesSpec extends Specification {
         !ec.message.hasError()
 
         cleanup:
+        ec.entity.find("trade.TradeInstrument").condition("instrumentId", lcId).updateAll([latestTransactionId: null])
         ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", lcId).deleteAll()
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", lcId).deleteAll()
         ec.entity.find("trade.TradeTransaction").condition("instrumentId", lcId).deleteAll()

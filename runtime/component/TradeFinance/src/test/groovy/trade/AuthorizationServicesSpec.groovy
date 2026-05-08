@@ -17,6 +17,7 @@ class AuthorizationServicesSpec extends Specification {
         try {
             def ids = ["AUTH-1", "AUTH-AMD", "PRIO-LOW", "PRIO-HIGH"]
             for (id in ids) {
+                ec.entity.find("trade.TradeInstrument").condition("instrumentId", id).updateAll([latestTransactionId: null])
                 ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", id).deleteAll()
                 ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", id).deleteAll()
                 ec.entity.find("trade.TradeTransaction").condition("instrumentId", id).deleteAll()
@@ -49,7 +50,7 @@ class AuthorizationServicesSpec extends Specification {
     def "Test Maker/Checker matrix prohibits self-approval"() {
         setup:
         ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-                .parameters([instrumentId: "AUTH-1", transactionRef: "TF-AUTH-01", businessStateId: "LC_DRAFT",
+                .parameters([instrumentId: "AUTH-1", instrumentRef: "TF-AUTH-01", businessStateId: "LC_DRAFT",
                              lcAmount: 10000.0, lcCurrencyUomId: 'USD',
                              instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
                                                  [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
@@ -80,6 +81,7 @@ class AuthorizationServicesSpec extends Specification {
         cleanup:
         if (ec != null) ec.artifactExecution.disableAuthz()
         ec.entity.find("trade.UserAuthorityProfile").condition("userAuthorityId", "T1-02").deleteAll()
+        ec.entity.find("trade.TradeInstrument").condition("instrumentId", "AUTH-1").updateAll([latestTransactionId: null])
         ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", "AUTH-1").deleteAll()
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "AUTH-1").deleteAll()
         ec.entity.find("trade.TradeTransaction").condition("instrumentId", "AUTH-1").deleteAll()
@@ -91,7 +93,7 @@ class AuthorizationServicesSpec extends Specification {
     def "BDD-CMN-AUTH-03: Tier Routing uses effectiveAmount for amendments"() {
         given: "An LC with amount exceeding limit"
         ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-                .parameters([instrumentId: "AUTH-AMD", transactionRef: "TF-AUTH-03", businessStateId: "LC_ISSUED", 
+                .parameters([instrumentId: "AUTH-AMD", instrumentRef: "TF-AUTH-03", businessStateId: "LC_ISSUED", 
                              lcAmount: 150000.0, lcCurrencyUomId: 'USD',
                              instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
                                                  [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
@@ -117,6 +119,7 @@ class AuthorizationServicesSpec extends Specification {
         cleanup:
         if (ec != null) ec.artifactExecution.disableAuthz()
         ec.entity.find("trade.UserAuthorityProfile").condition("userAuthorityId", "T1-03").deleteAll()
+        ec.entity.find("trade.TradeInstrument").condition("instrumentId", "AUTH-AMD").updateAll([latestTransactionId: null])
         ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", "AUTH-AMD").deleteAll()
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "AUTH-AMD").deleteAll()
         ec.entity.find("trade.TradeTransaction").condition("instrumentId", "AUTH-AMD").deleteAll()
@@ -128,13 +131,13 @@ class AuthorizationServicesSpec extends Specification {
     def "BDD-CMN-AUTH-05: Priority Queue ordering sorts Urgent before Low"() {
         given: "Two instruments with different priorities"
         ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-                .parameters([instrumentId: "PRIO-LOW", transactionRef: "TF-PRIO-01", businessStateId: "LC_DRAFT", priorityEnumId: "PRIO_LOW",
+                .parameters([instrumentId: "PRIO-LOW", instrumentRef: "TF-PRIO-01", businessStateId: "LC_DRAFT", priorityEnumId: "PRIO_LOW",
                              lcAmount: 1000.0, lcCurrencyUomId: 'USD',
                              instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
                                                  [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         
         ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-                .parameters([instrumentId: "PRIO-HIGH", transactionRef: "TF-PRIO-02", businessStateId: "LC_DRAFT", priorityEnumId: "PRIO_URGENT",
+                .parameters([instrumentId: "PRIO-HIGH", instrumentRef: "TF-PRIO-02", businessStateId: "LC_DRAFT", priorityEnumId: "PRIO_URGENT",
                              lcAmount: 1000.0, lcCurrencyUomId: 'USD',
                              instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
                                                  [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
@@ -152,8 +155,9 @@ class AuthorizationServicesSpec extends Specification {
         
         cleanup:
         if (ec != null) ec.artifactExecution.disableAuthz()
-        def ids = ["PRIO-LOW", "PRIO-HIGH"]
+        def ids = ["PRIO-LOW", "PRIO-HIGH", "AUTH-TEST"]
         for (id in ids) {
+            ec.entity.find("trade.TradeInstrument").condition("instrumentId", id).updateAll([latestTransactionId: null])
             ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", id).deleteAll()
             ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", id).deleteAll()
             ec.entity.find("trade.TradeTransaction").condition("instrumentId", id).deleteAll()
@@ -161,5 +165,37 @@ class AuthorizationServicesSpec extends Specification {
             ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", id).deleteAll()
             ec.entity.find("trade.TradeInstrument").condition("instrumentId", id).deleteAll()
         }
+    }
+
+    def "BDD-CMN-AUTH-06: Pending Approvals shows transaction amount, not parent amount"() {
+        given: "An LC and an amendment"
+        def uniqueId = "AUTH-" + System.currentTimeMillis()
+        ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
+                .parameters([instrumentId: uniqueId, instrumentRef: "TF-" + uniqueId, 
+                             lcAmount: 5000.0, lcCurrencyUomId: 'USD',
+                             instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                                 [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
+        
+        // Approve issuance to allow amendment
+        def txIss = ec.entity.find("trade.TradeTransaction")
+                .condition([instrumentId: uniqueId, transactionTypeEnumId: 'IMP_NEW']).disableAuthz().one()
+        ec.service.sync().name("trade.AuthorizationServices.authorize#Instrument")
+                .parameters([transactionId: txIss.transactionId, skipFourEyes: true]).call()
+        ec.entity.find("trade.importlc.ImportLetterOfCredit")
+                .condition("instrumentId", uniqueId).updateAll([businessStateId: "LC_ISSUED"])
+        
+        def amdOut = ec.service.sync().name("trade.importlc.ImportLcServices.create#Amendment")
+                .parameters([instrumentId: uniqueId, amendmentTypeEnumId: 'AMEND_TYPE_AMOUNT', amountAdjustment: 1200.0, isFinancial: 'Y']).call()
+        
+        ec.service.sync().name("trade.importlc.ImportLcServices.submit#Amendment")
+                .parameters([amendmentId: amdOut.amendmentId]).call()
+        
+        when: "Retrieving pending approvals"
+        def result = ec.service.sync().name("trade.AuthorizationServices.get#PendingApprovals").call()
+        def amdItem = result.approvalsList.find { it.instrumentId == uniqueId && it.action == "AMENDMENT" }
+        
+        then: "Amount should be the adjustment (1200), not the parent amount (5000)"
+        amdItem != null
+        amdItem.transactionAmount == 1200.0
     }
 }

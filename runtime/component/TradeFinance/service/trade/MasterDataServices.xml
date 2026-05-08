@@ -81,4 +81,34 @@
             <script>ec.artifactExecution.enableAuthz()</script>
         </actions>
     </service>
+
+    <service verb="update" noun="FeeConfiguration" authenticate="false">
+        <in-parameters>
+            <parameter name="feeConfigurationId" required="true"/>
+            <parameter name="feeEventEnumId"/>
+            <parameter name="calculationTypeEnumId"/>
+            <parameter name="baseValue" type="BigDecimal"/>
+            <parameter name="ratePercent" type="BigDecimal"/>
+            <parameter name="flatAmount" type="BigDecimal"/>
+            <parameter name="minFloorAmount" type="BigDecimal"/>
+            <parameter name="maxCeilingAmount" type="BigDecimal"/>
+            <parameter name="currencyUomId"/>
+            <parameter name="isActive"/>
+            <parameter name="statusId"/>
+        </in-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find-one entity-name="trade.FeeConfiguration" value-field="fee"/>
+            <if condition="fee">
+                <entity-set value-field="fee" include="nonpk"/>
+                <entity-update value-field="fee"/>
+                <service-call name="create#trade.common.TradeAuditLog" in-map="[
+                    changedByUserId: ec.user.userId,
+                    actionName: 'UPDATE_FEE_CONFIG',
+                    deltaJson: '{&quot;feeConfigurationId&quot;: &quot;' + feeConfigurationId + '&quot;, &quot;feeEventEnumId&quot;: &quot;' + (feeEventEnumId ?: fee.feeEventEnumId) + '&quot;}'
+                ]"/>
+            </if>
+            <script>ec.artifactExecution.enableAuthz()</script>
+        </actions>
+    </service>
 </services>

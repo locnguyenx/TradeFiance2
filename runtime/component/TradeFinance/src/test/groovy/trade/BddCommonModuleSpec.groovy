@@ -17,49 +17,65 @@ class BddCommonModuleSpec extends Specification {
         ExecutionContext ec = Moqui.getExecutionContext()
         ec.artifactExecution.disableAuthz()
         
-        if (ec.entity.find("moqui.security.UserAccount").condition("username", "trade.admin").count() == 0) {
-            ec.entity.makeValue("moqui.security.UserAccount")
-                .setAll([userId: "trade.admin", username: "trade.admin", currentPassword: "trade123", firstName: "Trade", lastName: "Admin"])
-                .create()
-        }
-        ec.entity.makeValue("moqui.security.UserGroupMember").setAll([userId: "trade.admin", userGroupId: "TRADE_ADMIN", fromDate: ec.user.nowTimestamp]).createOrUpdate()
-        
-        ec.entity.makeValue("moqui.security.ArtifactGroupMember").setAll([artifactGroupId: "TRADE_FINANCE_ENTITIES", artifactName: "trade..*", artifactTypeEnumId: "AT_ENTITY", nameIsPattern: "Y", inheritAuthz: "Y"]).createOrUpdate()
-        ec.entity.makeValue("moqui.security.ArtifactGroupMember").setAll([artifactGroupId: "TRADE_FINANCE_SERVICES", artifactName: ".*Services\\..*", artifactTypeEnumId: "AT_SERVICE", nameIsPattern: "Y", inheritAuthz: "Y"]).createOrUpdate()
-        ec.entity.makeValue("moqui.security.ArtifactGroupMember").setAll([artifactGroupId: "TRADE_FINANCE_SERVICES", artifactName: ".*#.*", artifactTypeEnumId: "AT_SERVICE", nameIsPattern: "Y", inheritAuthz: "Y"]).createOrUpdate()
+        boolean begunTransaction = ec.transaction.begin(null)
+        try {
+            if (ec.entity.find("moqui.security.UserAccount").condition("username", "trade.admin").count() == 0) {
+                ec.entity.makeValue("moqui.security.UserAccount")
+                    .setAll([userId: "trade.admin", username: "trade.admin", currentPassword: "trade123", firstName: "Trade", lastName: "Admin"])
+                    .create()
+            }
+            ec.entity.makeValue("moqui.security.UserGroupMember").setAll([userId: "trade.admin", userGroupId: "TRADE_ADMIN", fromDate: ec.user.nowTimestamp]).createOrUpdate()
+            
+            ec.entity.makeValue("moqui.security.ArtifactGroupMember").setAll([artifactGroupId: "TRADE_FINANCE_ENTITIES", artifactName: "trade..*", artifactTypeEnumId: "AT_ENTITY", nameIsPattern: "Y", inheritAuthz: "Y"]).createOrUpdate()
+            ec.entity.makeValue("moqui.security.ArtifactGroupMember").setAll([artifactGroupId: "TRADE_FINANCE_SERVICES", artifactName: ".*Services\\..*", artifactTypeEnumId: "AT_SERVICE", nameIsPattern: "Y", inheritAuthz: "Y"]).createOrUpdate()
+            ec.entity.makeValue("moqui.security.ArtifactGroupMember").setAll([artifactGroupId: "TRADE_FINANCE_SERVICES", artifactName: ".*#.*", artifactTypeEnumId: "AT_SERVICE", nameIsPattern: "Y", inheritAuthz: "Y"]).createOrUpdate()
 
-        ec.entity.makeValue("moqui.security.ArtifactAuthz").setAll([artifactAuthzId: "TA_ALL_COM", userGroupId: "TRADE_ADMIN", artifactGroupId: "TRADE_FINANCE_ENTITIES", authzTypeEnumId: "AUTHZT_ALLOW", authzActionEnumId: "AUTHZA_ALL"]).createOrUpdate()
-        ec.entity.makeValue("moqui.security.ArtifactAuthz").setAll([artifactAuthzId: "TA_SRV_ALL_COM", userGroupId: "TRADE_ADMIN", artifactGroupId: "TRADE_FINANCE_SERVICES", authzTypeEnumId: "AUTHZT_ALLOW", authzActionEnumId: "AUTHZA_ALL"]).createOrUpdate()
+            ec.entity.makeValue("moqui.security.ArtifactAuthz").setAll([artifactAuthzId: "TA_ALL_COM", userGroupId: "TRADE_ADMIN", artifactGroupId: "TRADE_FINANCE_ENTITIES", authzTypeEnumId: "AUTHZT_ALLOW", authzActionEnumId: "AUTHZA_ALL"]).createOrUpdate()
+            ec.entity.makeValue("moqui.security.ArtifactAuthz").setAll([artifactAuthzId: "TA_SRV_ALL_COM", userGroupId: "TRADE_ADMIN", artifactGroupId: "TRADE_FINANCE_SERVICES", authzTypeEnumId: "AUTHZT_ALLOW", authzActionEnumId: "AUTHZA_ALL"]).createOrUpdate()
 
-        ec.entity.find("trade.importlc.ImportLcSettlement").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
-        def presList = ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").list()
-        def presIds = presList.collect{it.presentationId ?: ''}
-        if (presIds) {
-            ec.entity.find("trade.importlc.PresentationDiscrepancy").condition("presentationId", EntityCondition.IN, presIds).deleteAll()
-            ec.entity.find("trade.importlc.TradeDocumentPresentationItem").condition("presentationId", EntityCondition.IN, presIds).deleteAll()
-            ec.entity.find("trade.importlc.ImportLcSettlement").condition("presentationId", EntityCondition.IN, presIds).deleteAll()
-        }
-        ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
-        ec.entity.find("trade.importlc.ImportLcAmendment").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
-        ec.entity.find("trade.importlc.ImportLcShippingGuarantee").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
-        ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
-        ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
-        ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
-        ec.entity.find("trade.TradeTransaction").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
-        ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
-        ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
-        ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
-        ec.entity.find("trade.CustomerFacility").condition("facilityId", EntityCondition.LIKE, "FAC-BDD-%").deleteAll()
+            ec.entity.find("trade.importlc.ImportLcSettlement").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
+            def presList = ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").list()
+            def presIds = presList.collect{it.presentationId ?: ''}
+            if (presIds) {
+                ec.entity.find("trade.importlc.PresentationDiscrepancy").condition("presentationId", EntityCondition.IN, presIds).deleteAll()
+                ec.entity.find("trade.importlc.TradeDocumentPresentationItem").condition("presentationId", EntityCondition.IN, presIds).deleteAll()
+                ec.entity.find("trade.importlc.ImportLcSettlement").condition("presentationId", EntityCondition.IN, presIds).deleteAll()
+            }
+            ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").updateAll([latestTransactionId: null])
+            ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
+            ec.entity.find("trade.importlc.ImportLcAmendment").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
+            ec.entity.find("trade.importlc.ImportLcShippingGuarantee").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
+            ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
+            ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
+            ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
+            ec.entity.find("trade.TradeTransaction").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
+            ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
+            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
+            ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
+            ec.entity.find("trade.CustomerFacility").condition("facilityId", EntityCondition.LIKE, "FAC-BDD-%").deleteAll()
 
 
-        ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrument", 1000000, 1000)
-        ec.entity.tempSetSequencedIdPrimary("trade.CustomerFacility", 1000000, 1000)
-        ec.entity.tempSetSequencedIdPrimary("trade.importlc.ImportLetterOfCredit", 1000000, 1000)
-        
-        // Ensure holiday exists
-        def holidayDate = java.sql.Date.valueOf("2026-04-27")
-        if (ec.entity.find("trade.PublicHoliday").condition("holidayDate", holidayDate).count() == 0) {
-            ec.entity.makeValue("trade.PublicHoliday").setAll([holidayDate: holidayDate, description: "SLA Test Holiday"]).create()
+            ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrument", 1000000, 1000)
+            ec.entity.tempSetSequencedIdPrimary("trade.CustomerFacility", 1000000, 1000)
+            ec.entity.tempSetSequencedIdPrimary("trade.importlc.ImportLetterOfCredit", 1000000, 1000)
+            
+            // Ensure test parties exist
+            if (!ec.entity.find("mantle.party.Party").condition("partyId", "TEST_CUSTOMER_001").one()) {
+                ec.entity.makeValue("mantle.party.Party").setAll([partyId: "TEST_CUSTOMER_001", partyTypeEnumId: 'PtyOrganization']).create()
+            }
+            if (!ec.entity.find("trade.TradeParty").condition("partyId", "TEST_CUSTOMER_001").one()) {
+                ec.entity.makeValue("trade.TradeParty").setAll([partyId: "TEST_CUSTOMER_001", partyName: "Test Customer", kycStatus: "Active", partyTypeEnumId: 'PARTY_COMMERCIAL']).create()
+            }
+
+            // Ensure holiday exists
+            def holidayDate = java.sql.Date.valueOf("2026-04-27")
+            if (ec.entity.find("trade.PublicHoliday").condition("holidayDate", holidayDate).count() == 0) {
+                ec.entity.makeValue("trade.PublicHoliday").setAll([holidayDate: holidayDate, description: "SLA Test Holiday"]).create()
+            }
+            ec.transaction.commit(begunTransaction)
+        } catch (Exception e) {
+            ec.transaction.rollback(begunTransaction, "Error in setupSpec", e)
+            throw e
         }
     }
 
@@ -88,7 +104,7 @@ class BddCommonModuleSpec extends Specification {
         
         when:
         def result = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: 'USD',
+            .parameters([instrumentRef: ref, lcAmount: 1000.0, lcCurrencyUomId: 'USD',
                          instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
                                    [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         
@@ -107,7 +123,7 @@ class BddCommonModuleSpec extends Specification {
             
         when:
         def result = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: "TF-BDD-02", lcAmount: 1000.0, lcCurrencyUomId: 'USD', 
+            .parameters([instrumentRef: "TF-BDD-02", lcAmount: 1000.0, lcCurrencyUomId: 'USD', 
                          instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: pid],
                                    [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         
@@ -125,7 +141,7 @@ class BddCommonModuleSpec extends Specification {
             
         when:
         def result = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: "TF-BDD-03", lcAmount: 1000.0, lcCurrencyUomId: 'USD', 
+            .parameters([instrumentRef: "TF-BDD-03", lcAmount: 1000.0, lcCurrencyUomId: 'USD', 
                          instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: pid],
                                    [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         
@@ -169,7 +185,7 @@ class BddCommonModuleSpec extends Specification {
         given:
         def ref = "TF-FLOW-" + System.currentTimeMillis()
         def createRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: 'USD',
+            .parameters([instrumentRef: ref, lcAmount: 1000.0, lcCurrencyUomId: 'USD',
                          instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
                                    [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
             
@@ -219,7 +235,7 @@ class BddCommonModuleSpec extends Specification {
         ec.message.clearAll()
         def ref = "FX-BDD-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: 'USD',
+            .parameters([instrumentRef: ref, lcAmount: 1000.0, lcCurrencyUomId: 'USD',
                          instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
                                    [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         
@@ -315,7 +331,7 @@ class BddCommonModuleSpec extends Specification {
         given:
         def ref = "TF-IMM-" + System.currentTimeMillis()
         def createRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 1000.0, lcCurrencyUomId: 'USD',
+            .parameters([instrumentRef: ref, lcAmount: 1000.0, lcCurrencyUomId: 'USD',
                          instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
                                    [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         ec.service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit")
@@ -337,7 +353,7 @@ class BddCommonModuleSpec extends Specification {
         
         when:
         def result = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: "TF-DATE-ERR", lcAmount: 1000.0, lcCurrencyUomId: 'USD', issueDate: issue, expiryDate: expiry,
+            .parameters([instrumentRef: "TF-DATE-ERR", lcAmount: 1000.0, lcCurrencyUomId: 'USD', issueDate: issue, expiryDate: expiry,
                          instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
                                    [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
             
@@ -354,7 +370,7 @@ class BddCommonModuleSpec extends Specification {
         
         when:
         def result = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: "TF-DATE-OK", lcAmount: 1000.0, lcCurrencyUomId: 'USD', issueDate: issue, expiryDate: expiry,
+            .parameters([instrumentRef: "TF-DATE-OK", lcAmount: 1000.0, lcCurrencyUomId: 'USD', issueDate: issue, expiryDate: expiry,
                          instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
                                    [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
             
@@ -364,6 +380,7 @@ class BddCommonModuleSpec extends Specification {
         
         cleanup:
         if (result.instrumentId) {
+            ec.entity.find("trade.TradeInstrument").condition("instrumentId", result.instrumentId).updateAll([latestTransactionId: null])
             ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", result.instrumentId).deleteAll()
             ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", result.instrumentId).deleteAll()
             ec.entity.find("trade.TradeTransaction").condition("instrumentId", result.instrumentId).deleteAll()
@@ -466,7 +483,7 @@ class BddCommonModuleSpec extends Specification {
         
         when:
         def result = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 500.0, lcCurrencyUomId: 'USD',
+            .parameters([instrumentRef: ref, lcAmount: 500.0, lcCurrencyUomId: 'USD',
                          instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
                                    [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         
@@ -530,5 +547,8 @@ class BddCommonModuleSpec extends Specification {
 
         then: "Customer rate (0.10% of 100k = 100) is applied instead of standard rate (0.25% = 250)"
         result.totalFee == 100.0
+
+        cleanup:
+        ec.artifactExecution.enableAuthz()
     }
 }

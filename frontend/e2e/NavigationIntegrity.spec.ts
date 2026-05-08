@@ -22,19 +22,19 @@ test.describe('Navigation Integrity (True E2E)', () => {
   test('BDD-IMP-FLOW-03: LC Amendments navigation from sidebar', async ({ page }) => {
     await page.getByRole('link', { name: 'LC Amendments' }).click();
     await expect(page).toHaveURL(/.*amendments/);
-    await expect(page.getByText(/Issue LC Amendment|LC Amendment Request/)).toBeVisible();
+    await expect(page.getByText(/Import LC Amendment Portfolio/)).toBeVisible();
   });
 
   test('BDD-IMP-SET-01: Settlements navigation from sidebar', async ({ page }) => {
     await page.getByRole('link', { name: 'Settlements' }).click();
     await expect(page).toHaveURL(/.*settlement/);
-    await expect(page.getByRole('heading', { name: 'Initiate LC Settlement' })).toBeVisible();
+    await expect(page.getByText(/LC Settlement Portfolio/)).toBeVisible();
   });
 
   test('BDD-IMP-SG-01: Shipping Guarantees navigation from sidebar', async ({ page }) => {
     await page.getByRole('link', { name: 'Shipping Guarantees' }).click();
     await expect(page).toHaveURL(/.*shipping-guarantees/);
-    await expect(page.getByRole('heading', { name: 'Issue Shipping Guarantee' })).toBeVisible();
+    await expect(page.getByText(/Shipping Guarantee Portfolio/)).toBeVisible();
   });
 
   test('BDD-CMN-AUTH-01: User Authority Tiers navigation', async ({ page }) => {

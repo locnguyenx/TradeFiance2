@@ -173,7 +173,7 @@
                 <script>
                     transactions.add([
                         instrumentId: inst.instrumentId,
-                        transactionRef: inst.transactionRef,
+                        instrumentRef: inst.instrumentRef,
                         businessStateId: inst.businessStateId,
                         effectiveOutstandingAmount: inst.baseEquivalentAmount,
                         transactionDate: latestTx?.transactionDate

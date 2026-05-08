@@ -33,9 +33,10 @@ class RestApiEndpointsSpec extends Specification {
         String ref = prefix + "-" + System.currentTimeMillis()
         ec.user.internalLoginUser("trade.maker")
         ScreenTestRender str = screenTest.render("s1/trade/import-lc",
-            [transactionRef: ref, lcAmount: 5000.0, lcCurrencyUomId: "USD",
+            [instrumentRef: ref, lcAmount: 5000.0, lcCurrencyUomId: "USD",
              customerFacilityId: 'FAC-ACME-001',
              lcTypeEnumId: 'LCT_IRREVOCABLE', availableByEnumId: 'AVB_BY_NEGOTIATION', confirmationEnumId: 'CONF_WITHOUT',
+             availableWithEnumId: 'AVB_WITH_ANY_BANK',
              instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
                                  [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]], "post")
         if (str.errorMessages) {
@@ -46,10 +47,11 @@ class RestApiEndpointsSpec extends Specification {
     }
 
     String createTestPresentation(String instrumentId) {
+        // Find the issuance transaction
+        def tx = ec.entity.find("trade.TradeTransaction").condition([instrumentId: instrumentId, transactionTypeEnumId: 'IMP_NEW']).disableAuthz().one()
         ec.user.internalLoginUser("trade.checker")
-        screenTest.render("s1/trade/authorize", [instrumentId: instrumentId], "post")
-        ec.service.sync().name("trade.importlc.ImportLcServices.approve#ImportLetterOfCredit")
-            .parameters([instrumentId: instrumentId, approverUserId: "trade.checker"]).call()
+        screenTest.render("s1/trade/authorize", [transactionId: tx.transactionId, skipFourEyes: true], "post")
+        ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).updateAll([businessStateId: "LC_ISSUED"])
         ec.user.internalLoginUser("trade.maker")
         ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/presentation",
             [instrumentId: instrumentId, claimAmount: 1000.0, claimCurrency: "USD"], "post")
@@ -120,7 +122,7 @@ class RestApiEndpointsSpec extends Specification {
 
     def "Test GET /trade/audit-logs"() {
         when:
-        ScreenTestRender str = screenTest.render("s1/trade/audit-logs", [:], "get")
+        ScreenTestRender str = screenTest.render("s1/trade/common/audit-logs", [:], "get")
 
         then:
         !str.errorMessages
@@ -146,7 +148,7 @@ class RestApiEndpointsSpec extends Specification {
     def "Test POST /trade/import-lc creates new LC"() {
         given:
         String ref = "REST-CREATE-" + System.currentTimeMillis()
-        Map params = [transactionRef: ref, lcAmount: 25000.0, lcCurrencyUomId: "USD",
+        Map params = [instrumentRef: ref, lcAmount: 25000.0, lcCurrencyUomId: "USD",
                       lcTypeEnumId: 'LCT_IRREVOCABLE', availableByEnumId: 'AVB_BY_NEGOTIATION', confirmationEnumId: 'CONF_WITHOUT',
                       instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
                                           [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]
@@ -192,6 +194,11 @@ class RestApiEndpointsSpec extends Specification {
     def "Test POST /trade/import-lc amendments"() {
         given:
         String instrumentId = createTestLc("REST-AMEND")
+        def tx = ec.entity.find("trade.TradeTransaction").condition([instrumentId: instrumentId, transactionTypeEnumId: 'IMP_NEW']).disableAuthz().one()
+        ec.user.internalLoginUser("trade.checker")
+        screenTest.render("s1/trade/authorize", [transactionId: tx.transactionId, skipFourEyes: true], "post")
+        ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).updateAll([businessStateId: "LC_ISSUED"])
+        
         Map params = [
             instrumentId: instrumentId,
             amendmentTypeEnumId: "AMEND_AMDTMNT",
@@ -212,10 +219,10 @@ class RestApiEndpointsSpec extends Specification {
     def "Test POST /trade/import-lc presentations requires LC_ISSUED state"() {
         given:
         String instrumentId = createTestLc("REST-PRES")
+        def tx = ec.entity.find("trade.TradeTransaction").condition([instrumentId: instrumentId, transactionTypeEnumId: 'IMP_NEW']).disableAuthz().one()
         ec.user.internalLoginUser("trade.checker")
-        screenTest.render("s1/trade/authorize", [instrumentId: instrumentId], "post")
-        ec.service.sync().name("trade.importlc.ImportLcServices.approve#ImportLetterOfCredit")
-            .parameters([instrumentId: instrumentId, approverUserId: "trade.checker"]).call()
+        screenTest.render("s1/trade/authorize", [transactionId: tx.transactionId, skipFourEyes: true], "post")
+        ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).updateAll([businessStateId: "LC_ISSUED"])
 
         when:
         ec.user.internalLoginUser("trade.maker")
@@ -229,10 +236,10 @@ class RestApiEndpointsSpec extends Specification {
     def "Test PATCH /trade/import-lc presentations waiver requires LC_DOCS_RECEIVED state"() {
         given:
         String instrumentId = createTestLc("REST-WAIVER")
+        def tx = ec.entity.find("trade.TradeTransaction").condition([instrumentId: instrumentId, transactionTypeEnumId: 'IMP_NEW']).disableAuthz().one()
         ec.user.internalLoginUser("trade.checker")
-        screenTest.render("s1/trade/authorize", [instrumentId: instrumentId], "post")
-        ec.service.sync().name("trade.importlc.ImportLcServices.approve#ImportLetterOfCredit")
-            .parameters([instrumentId: instrumentId, approverUserId: "trade.checker"]).call()
+        screenTest.render("s1/trade/authorize", [transactionId: tx.transactionId, skipFourEyes: true], "post")
+        ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).updateAll([businessStateId: "LC_ISSUED"])
 
         when:
         ec.user.internalLoginUser("trade.maker")
@@ -243,7 +250,7 @@ class RestApiEndpointsSpec extends Specification {
         str.errorMessages || str.output != null
     }
 
-    def "Test POST /trade/import-lc settlements"() {
+    def "Test POST /trade/import-lc settlement"() {
         given:
         String instrumentId = createTestLc("REST-SETTLE")
         String presentationId = createTestPresentation(instrumentId)
@@ -262,13 +269,13 @@ class RestApiEndpointsSpec extends Specification {
         str.output != null
     }
 
-    def "Test POST /trade/import-lc shipping-guarantees"() {
+    def "Test POST /trade/import-lc shipping-guarantee"() {
         given:
         String instrumentId = createTestLc("REST-SG")
 
         when:
         ec.user.internalLoginUser("trade.maker")
-        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/shipping-guarantees",
+        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/shipping-guarantee",
             [instrumentId: instrumentId, invoiceAmount: 1000.0], "post")
 
         then:
@@ -277,18 +284,18 @@ class RestApiEndpointsSpec extends Specification {
         json.guaranteeId != null
     }
 
-    def "Test POST /trade/import-lc cancel"() {
+    def "Test POST /trade/import-lc cancellation"() {
         given:
         String instrumentId = createTestLc("REST-CANCEL")
         // Move to LC_ISSUED to simulate a more realistic cancellation
         ec.user.internalLoginUser("trade.checker")
         screenTest.render("s1/trade/authorize", [instrumentId: instrumentId], "post")
-        ec.service.sync().name("trade.importlc.ImportLcServices.approve#ImportLetterOfCredit")
-            .parameters([instrumentId: instrumentId, approverUserId: "trade.checker"]).call()
+        ec.service.sync().name("update#trade.TradeInstrument")
+            .parameters([instrumentId: instrumentId, businessStateId: "INST_AUTHORIZED"]).call()
 
         when:
         ec.user.internalLoginUser("trade.maker")
-        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/cancel",
+        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/cancellation",
             [instrumentId: instrumentId, cancellationReason: "REST test"], "post")
 
         then:

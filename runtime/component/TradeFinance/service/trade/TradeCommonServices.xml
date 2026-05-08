@@ -25,7 +25,8 @@
             <set field="yearShort" from="ec.user.nowTimestamp.toLocalDateTime().getYear().toString().substring(2)"/>
             <set field="numberFormatted" from="newNumber.toString().padLeft(4, '0')"/>
             
-            <set field="nextNumberFormatted" from="'TF-' + instrumentType + '-' + yearShort + '-' + numberFormatted"/>
+            <set field="prefix" from="seq.prefix ?: ('TF-' + instrumentType + '-' + yearShort + '-')"/>
+            <set field="nextNumberFormatted" from="prefix + numberFormatted"/>
         </actions>
     </service>
 
@@ -34,12 +35,18 @@
             <parameter name="instrumentId" required="true"/>
             <parameter name="claimAmount" type="BigDecimal" required="true"/>
             <parameter name="priorityEnumId"/>
+            <auto-parameters entity-name="trade.importlc.TradeDocumentPresentation" include="nonpk"/>
         </in-parameters>
         <out-parameters>
             <parameter name="presentationId" required="true"/>
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc"/>
+            <if condition="!lc || !(lc.businessStateId in ['LC_ISSUED', 'LC_AMENDED', 'LC_DOC_RECEIVED'])">
+                <return error="true" message="Document Presentations can only be lodged for Issued instruments (Current State: ${lc?.businessStateId ?: 'UNKNOWN'})"/>
+            </if>
+
             <service-call name="trade.importlc.ImportLcValidationServices.validate#Presentation" in-map="context" out-map="valOut"/>
             <if condition="valOut.isDiscrepant">
                 <return error="true" message="Presentation blocked: ${valOut.discrepancyMessage}"/>
@@ -49,7 +56,6 @@
                           in-map="context + [presentationStatusId: 'PRES_RECEIVED']"/>
             <set field="presentationId" from="presOut.presentationId"/>
             
-            <!-- NEW: Create TradeTransaction for Presentation -->
             <service-call name="create#trade.TradeTransaction" out-map="txOut"
                 in-map="[
                     instrumentId: instrumentId,
@@ -63,10 +69,48 @@
                     relatedRecordId: presentationId,
                     relatedRecordType: 'PRESENTATION'
                 ]"/>
-
-            <!-- Update LC state to DOC_RECEIVED -->
+            
             <service-call name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit"
                           in-map="[instrumentId: instrumentId, businessStateId: 'LC_DOC_RECEIVED']"/>
+        </actions>
+    </service>
+
+    <service verb="update" noun="Presentation" authenticate="false">
+        <in-parameters>
+            <parameter name="presentationId" required="true"/>
+            <auto-parameters entity-name="trade.importlc.TradeDocumentPresentation" include="nonpk"/>
+        </in-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="presentation" for-update="true"/>
+            <if condition="!presentation"><return error="true" message="Presentation ${presentationId} not found"/></if>
+            <entity-set value-field="presentation" include="nonpk" map="context"/>
+            <entity-update value-field="presentation"/>
+        </actions>
+    </service>
+
+    <service verb="submit" noun="Presentation" authenticate="false">
+        <in-parameters>
+            <parameter name="presentationId" required="true"/>
+            <auto-parameters entity-name="trade.importlc.TradeDocumentPresentation" include="nonpk"/>
+        </in-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <!-- Update payload -->
+            <service-call name="trade.TradeCommonServices.update#Presentation" in-map="context"/>
+            
+            <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="presentation"/>
+            
+            <!-- Transition Transaction to PENDING -->
+            <entity-find entity-name="trade.TradeTransaction" list="txList">
+                <econdition field-name="relatedRecordId" from="presentationId"/>
+                <econdition field-name="transactionTypeEnumId" value="IMP_PRESENTATION"/>
+                <econdition field-name="transactionStatusId" value="TX_DRAFT"/>
+            </entity-find>
+            <if condition="txList">
+                <service-call name="trade.TradeCommonServices.update#TradeTransaction" 
+                    in-map="[transactionId: txList[0].transactionId, transactionStatusId: 'TX_PENDING']"/>
+            </if>
         </actions>
     </service>
 
@@ -142,13 +186,68 @@
             <parameter name="instrumentId" required="true"/>
             <parameter name="invoiceAmount" type="BigDecimal" required="true"/>
             <parameter name="transportDocRef"/>
+            <auto-parameters entity-name="trade.importlc.ImportLcShippingGuarantee" include="nonpk"/>
         </in-parameters>
         <out-parameters><parameter name="guaranteeId"/></out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
             <service-call name="create#trade.importlc.ImportLcShippingGuarantee" out-map="sgOut"
-                          in-map="context + [transportDocReference: transportDocRef, sgStatusId: 'SG_ISSUED']"/>
+                          in-map="context + [transportDocReference: transportDocRef, sgStatusId: 'SG_DRAFT']"/>
             <set field="guaranteeId" from="sgOut.guaranteeId"/>
+
+            <!-- Create TradeTransaction for Shipping Guarantee -->
+            <service-call name="create#trade.TradeTransaction" out-map="txOut"
+                in-map="[
+                    instrumentId: instrumentId,
+                    transactionTypeEnumId: 'IMP_SG_ISSUANCE',
+                    transactionStatusId: 'TX_DRAFT',
+                    transactionDate: ec.user.nowTimestamp,
+                    makerUserId: ec.user.userId,
+                    makerTimestamp: ec.user.nowTimestamp,
+                    priorityEnumId: priorityEnumId ?: 'NORMAL',
+                    versionNumber: 1,
+                    relatedRecordId: guaranteeId,
+                    relatedRecordType: 'SHIPPING_GUARANTEE'
+                ]"/>
+        </actions>
+    </service>
+
+    <service verb="update" noun="ShippingGuarantee" authenticate="false">
+        <in-parameters>
+            <parameter name="guaranteeId" required="true"/>
+            <auto-parameters entity-name="trade.importlc.ImportLcShippingGuarantee" include="nonpk"/>
+        </in-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find-one entity-name="trade.importlc.ImportLcShippingGuarantee" value-field="sg" for-update="true"/>
+            <if condition="!sg"><return error="true" message="Shipping Guarantee ${guaranteeId} not found"/></if>
+            <entity-set value-field="sg" include="nonpk" map="context"/>
+            <entity-update value-field="sg"/>
+        </actions>
+    </service>
+
+    <service verb="submit" noun="ShippingGuarantee" authenticate="false">
+        <in-parameters>
+            <parameter name="guaranteeId" required="true"/>
+            <auto-parameters entity-name="trade.importlc.ImportLcShippingGuarantee" include="nonpk"/>
+        </in-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <!-- Update payload -->
+            <service-call name="trade.TradeCommonServices.update#ShippingGuarantee" in-map="context"/>
+            
+            <entity-find-one entity-name="trade.importlc.ImportLcShippingGuarantee" value-field="sg"/>
+
+            <!-- Transition Transaction to PENDING -->
+            <entity-find entity-name="trade.TradeTransaction" list="txList">
+                <econdition field-name="relatedRecordId" from="guaranteeId"/>
+                <econdition field-name="transactionTypeEnumId" value="IMP_SG_ISSUANCE"/>
+                <econdition field-name="transactionStatusId" value="TX_DRAFT"/>
+            </entity-find>
+            <if condition="txList">
+                <service-call name="trade.TradeCommonServices.update#TradeTransaction" 
+                    in-map="[transactionId: txList[0].transactionId, transactionStatusId: 'TX_PENDING']"/>
+            </if>
         </actions>
     </service>
 
@@ -160,17 +259,46 @@
         </actions>
     </service>
 
-    <service verb="update" noun="Cancellation" authenticate="false">
+    <service verb="create" noun="Cancellation" authenticate="false">
         <in-parameters>
             <parameter name="instrumentId" required="true"/>
             <parameter name="cancellationReason"/>
         </in-parameters>
+        <out-parameters><parameter name="transactionId"/></out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
-            <set field="targetStatus" from="cancellationReason?.contains('Auto-Expiry') ? 'LC_CLOSED' : 'LC_CANCELLED'"/>
-            <log level="info" message="Cancelling LC ${instrumentId}. Reason: ${cancellationReason}, Target state: ${targetStatus}"/>
-            <service-call name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit"
-                          in-map="[instrumentId: instrumentId, businessStateId: targetStatus]"/>
+            <service-call name="create#trade.TradeTransaction" out-map="txOut"
+                in-map="[
+                    instrumentId: instrumentId,
+                    transactionTypeEnumId: 'IMP_CANCELLATION',
+                    transactionStatusId: 'TX_DRAFT',
+                    transactionDate: ec.user.nowTimestamp,
+                    makerUserId: ec.user.userId,
+                    makerTimestamp: ec.user.nowTimestamp,
+                    comments: cancellationReason,
+                    versionNumber: 1
+                ]"/>
+            <set field="transactionId" from="txOut.transactionId"/>
+        </actions>
+    </service>
+
+    <service verb="submit" noun="Cancellation" authenticate="false">
+        <in-parameters>
+            <parameter name="transactionId" required="true"/>
+            <parameter name="cancellationReason"/>
+        </in-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find-one entity-name="trade.TradeTransaction" value-field="tx" for-update="true"/>
+            <if condition="!tx"><return error="true" message="Transaction ${transactionId} not found"/></if>
+            
+            <if condition="cancellationReason">
+                <set field="tx.comments" from="cancellationReason"/>
+            </if>
+            <set field="tx.transactionStatusId" value="TX_PENDING"/>
+            <entity-update value-field="tx"/>
+            
+            <!-- NOTE: Actual LC state change to LC_CANCELLED moved to Authorization flow -->
         </actions>
     </service>
 
@@ -277,6 +405,10 @@
         <in-parameters>
             <parameter name="transactionStatusId"/>
             <parameter name="priorityEnumId"/>
+            <parameter name="makerUserId"/>
+            <parameter name="transactionTypeEnumId"/>
+            <parameter name="instrumentSearch"/>
+            <parameter name="transactionSearch"/>
         </in-parameters>
         <out-parameters>
             <parameter name="transactionList" type="List"><parameter name="transaction" type="Map"/></parameter>
@@ -286,6 +418,20 @@
             <entity-find entity-name="trade.TradeTransactionView" list="transactionList">
                 <econdition field-name="transactionStatusId" from="transactionStatusId" ignore-if-empty="true"/>
                 <econdition field-name="priorityEnumId" from="priorityEnumId" ignore-if-empty="true"/>
+                <econdition field-name="makerUserId" from="makerUserId" ignore-if-empty="true"/>
+                <econdition field-name="transactionTypeEnumId" from="transactionTypeEnumId" ignore-if-empty="true"/>
+                <if condition="instrumentSearch">
+                    <econditions combine="or">
+                        <econdition field-name="instrumentId" operator="like" value="%${instrumentSearch}%" ignore-case="true"/>
+                        <econdition field-name="instrumentRef" operator="like" value="%${instrumentSearch}%" ignore-case="true"/>
+                    </econditions>
+                </if>
+                <if condition="transactionSearch">
+                    <econditions combine="or">
+                        <econdition field-name="transactionId" operator="like" value="%${transactionSearch}%" ignore-case="true"/>
+                        <econdition field-name="transactionRef" operator="like" value="%${transactionSearch}%" ignore-case="true"/>
+                    </econditions>
+                </if>
                 <order-by field-name="-transactionDate"/>
                 <order-by field-name="priorityEnumId"/>
             </entity-find>
@@ -328,6 +474,7 @@
         <out-parameters>
             <auto-parameters entity-name="trade.TradeTransaction" include="all"/>
             <parameter name="instrument" type="Map"/>
+            <parameter name="relatedRecord" type="Map"/>
             <parameter name="proposedAmount" type="BigDecimal"/>
             <parameter name="proposedExpiryDate" type="Date"/>
             <parameter name="proposedCurrencyUomId" type="String"/>
@@ -347,12 +494,58 @@
             
             <set field="result" from="tx.getMap()"/>
             
-            <!-- Dynamic Snapshot Calculation -->
-            <if condition="tx.transactionTypeEnumId == 'IMP_AMENDMENT'">
-                <entity-find-one entity-name="trade.importlc.ImportLcAmendment" value-field="amd">
-                    <field-map field-name="amendmentId" from="tx.relatedRecordId"/>
-                </entity-find-one>
-                <set field="result.proposedAmount" from="(inst?.amount ?: 0) + (amd?.amountAdjustment ?: 0)"/>
+            <!-- Fetch Related Record Details -->
+            <if condition="tx.relatedRecordId">
+                <if condition="tx.relatedRecordType == 'AMENDMENT'">
+                    <entity-find-one entity-name="trade.importlc.ImportLcAmendment" value-field="related">
+                        <field-map field-name="amendmentId" from="tx.relatedRecordId"/>
+                    </entity-find-one>
+                    <set field="result.relatedRecord" from="related?.getMap()"/>
+                </if>
+                <else-if condition="tx.relatedRecordType == 'PRESENTATION'">
+                    <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="related">
+                        <field-map field-name="presentationId" from="tx.relatedRecordId"/>
+                    </entity-find-one>
+                    <set field="result.relatedRecord" from="related?.getMap()"/>
+                </else-if>
+                <else-if condition="tx.relatedRecordType == 'SETTLEMENT'">
+                    <entity-find-one entity-name="trade.importlc.ImportLcSettlement" value-field="related">
+                        <field-map field-name="settlementId" from="tx.relatedRecordId"/>
+                    </entity-find-one>
+                    <set field="result.relatedRecord" from="related?.getMap()"/>
+                </else-if>
+                <else-if condition="tx.relatedRecordType == 'SHIPPING_GUARANTEE'">
+                    <entity-find-one entity-name="trade.importlc.ImportLcShippingGuarantee" value-field="related">
+                        <field-map field-name="guaranteeId" from="tx.relatedRecordId"/>
+                    </entity-find-one>
+                    <set field="result.relatedRecord" from="related?.getMap()"/>
+                </else-if>
+            </if>
+
+            <!-- Snapshot Logic: Prioritize Audit Log for historical accuracy -->
+            <entity-find entity-name="trade.TradeTransactionAudit" list="auditList">
+                <econdition field-name="transactionId" from="tx.transactionId"/>
+                <order-by field-name="-timestamp"/>
+            </entity-find>
+            <if condition="auditList">
+                <set field="audit" from="auditList[0]"/>
+                <set field="snapshot" from="groovy.json.JsonSlurper().parseText(audit.snapshotDeltaJSON ?: '{}')"/>
+                <if condition="snapshot.amount"><set field="result.proposedAmount" from="snapshot.amount"/></if>
+                <if condition="snapshot.expiryDate"><set field="result.proposedExpiryDate" from="snapshot.expiryDate"/></if>
+                <if condition="snapshot.currencyUomId"><set field="result.proposedCurrencyUomId" from="snapshot.currencyUomId"/></if>
+            </if>
+
+            <if condition="tx.transactionTypeEnumId == 'IMP_AMENDMENT' &amp;&amp; !result.proposedAmount">
+                <set field="amd" from="result.relatedRecord"/>
+                
+                <!-- Dynamic Heuristic: If approved and latest, amount is already merged -->
+                <if condition="tx.transactionStatusId == 'TX_APPROVED' &amp;&amp; inst?.latestTransactionId == tx.transactionId">
+                    <set field="result.proposedAmount" from="inst.amount"/>
+                </if>
+                <if condition="!result.proposedAmount">
+                    <set field="result.proposedAmount" from="(inst?.amount ?: 0) + (amd?.amountAdjustment ?: 0)"/>
+                </if>
+                
                 <set field="result.proposedExpiryDate" from="amd?.newExpiryDate ?: inst?.expiryDate"/>
                 <set field="result.proposedCurrencyUomId" from="inst?.currencyUomId"/>
             </if>
@@ -362,10 +555,42 @@
             <if condition="!result.proposedExpiryDate"><set field="result.proposedExpiryDate" from="inst?.expiryDate"/></if>
             <if condition="!result.proposedCurrencyUomId"><set field="result.proposedCurrencyUomId" from="inst?.currencyUomId"/></if>
             
-            <script>
-                context.putAll(result)
-                context.instrument = inst?.getMap()
-            </script>
+            <script><![CDATA[
+                def resultMap = tx.getMap()
+                def instMap = inst?.getMap() ?: [:]
+                
+                if (inst?.instrumentTypeEnumId == 'IMPORT_LC') {
+                    // Fetch full LC details (includes validation aliases and fields)
+                    def lcDetails = ec.service.sync().name("trade.importlc.ImportLcServices.get#ImportLetterOfCredit")
+                        .parameter("instrumentId", tx.instrumentId).call()
+                    if (lcDetails) {
+                        // Merge LC details into instrument map (excluding parties which we handle separately)
+                        def lcData = new HashMap(lcDetails)
+                        lcData.remove("parties")
+                        instMap.putAll(lcData)
+                        
+                        // Add parties list for BIC resolution
+                        instMap.parties = lcDetails.parties
+                    }
+                }
+                
+                context.putAll(resultMap)
+                context.instrument = instMap
+            ]]></script>
+        </actions>
+    </service>
+    <service verb="update" noun="TradeTransaction" authenticate="false">
+        <in-parameters>
+            <parameter name="transactionId" required="true"/>
+            <auto-parameters entity-name="trade.TradeTransaction" include="nonpk"/>
+        </in-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find-one entity-name="trade.TradeTransaction" value-field="transaction" for-update="true"/>
+            <if condition="transaction">
+                <entity-set value-field="transaction" include="nonpk" map="context"/>
+                <entity-update value-field="transaction"/>
+            </if>
         </actions>
     </service>
     <service verb="create" noun="TradeParty" authenticate="false">
@@ -620,4 +845,89 @@
             <script>context.putAll(party)</script>
         </actions>
     </service>
+    <service-eca service="create#trade.TradeTransaction" when="pre-validate">
+        <actions>
+            <if condition="!context.transactionRef">
+                <service-call name="trade.TradeCommonServices.get#NextNumber" in-map="[sequenceId:'SEQ_TXN', instrumentType:'TXN']" out-map="txnNumOut"/>
+                <set field="context.transactionRef" from="txnNumOut.nextNumberFormatted"/>
+            </if>
+        </actions>
+    </service-eca>
+    <service verb="get" noun="AmendmentList" authenticate="false">
+        <out-parameters>
+            <parameter name="amendmentList" type="List"><parameter name="amendment" type="Map"/></parameter>
+        </out-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find entity-name="trade.importlc.ImportLcAmendment" list="amendmentList">
+                <order-by field-name="-amendmentDate"/>
+            </entity-find>
+        </actions>
+    </service>
+    <service verb="get" noun="PresentationList" authenticate="false">
+        <out-parameters>
+            <parameter name="presentationList" type="List"><parameter name="presentation" type="Map"/></parameter>
+        </out-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find entity-name="trade.importlc.TradeDocumentPresentation" list="presentationList">
+                <order-by field-name="-presentationDate"/>
+            </entity-find>
+        </actions>
+    </service>
+    <service verb="get" noun="SettlementList" authenticate="false">
+        <out-parameters>
+            <parameter name="settlementList" type="List"><parameter name="settlement" type="Map"/></parameter>
+        </out-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find entity-name="trade.importlc.ImportLcSettlement" list="settlementList">
+                <order-by field-name="-valueDate"/>
+            </entity-find>
+        </actions>
+    </service>
+    <service verb="get" noun="ShippingGuaranteeList" authenticate="false">
+        <out-parameters>
+            <parameter name="guaranteeList" type="List"><parameter name="guarantee" type="Map"/></parameter>
+        </out-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find entity-name="trade.importlc.ImportLcShippingGuarantee" list="guaranteeList">
+                <order-by field-name="-guaranteeId"/>
+            </entity-find>
+        </actions>
+    </service>
+    <service verb="get" noun="Amendment">
+        <in-parameters><parameter name="amendmentId" required="true"/></in-parameters>
+        <out-parameters><parameter name="amendment" type="Map"/></out-parameters>
+        <actions>
+            <entity-find-one entity-name="trade.importlc.ImportLcAmendment" value-field="amendment"/>
+            <if condition="!amendment"><return error="true" message="Amendment not found"/></if>
+        </actions>
+    </service>
+    <service verb="get" noun="Presentation">
+        <in-parameters><parameter name="presentationId" required="true"/></in-parameters>
+        <out-parameters><parameter name="presentation" type="Map"/></out-parameters>
+        <actions>
+            <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="presentation"/>
+            <if condition="!presentation"><return error="true" message="Presentation not found"/></if>
+        </actions>
+    </service>
+    <service verb="get" noun="Settlement">
+        <in-parameters><parameter name="settlementId" required="true"/></in-parameters>
+        <out-parameters><parameter name="settlement" type="Map"/></out-parameters>
+        <actions>
+            <entity-find-one entity-name="trade.importlc.ImportLcSettlement" value-field="settlement"/>
+            <if condition="!settlement"><return error="true" message="Settlement not found"/></if>
+        </actions>
+    </service>
+    <service verb="get" noun="ShippingGuarantee">
+        <in-parameters><parameter name="guaranteeId" required="true"/></in-parameters>
+        <out-parameters><parameter name="guarantee" type="Map"/></out-parameters>
+        <actions>
+            <entity-find-one entity-name="trade.importlc.ImportLcShippingGuarantee" value-field="guarantee"/>
+            <if condition="!guarantee"><return error="true" message="Shipping Guarantee not found"/></if>
+        </actions>
+    </service>
 </services>
+

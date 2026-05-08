@@ -42,7 +42,7 @@ class ImportLcEntitiesSpec extends Specification {
     def "Test LC Relationship maps to TradeInstrument"() {
         setup:
         ec.service.sync().name("create#trade.TradeInstrument")
-            .parameters([instrumentId:"LC-ENT-1", transactionRef:"TF-LC-01"]).call()
+            .parameters([instrumentId:"LC-ENT-1", instrumentRef:"TF-LC-01"]).call()
         ec.service.sync().name("create#trade.importlc.ImportLetterOfCredit")
             .parameters([instrumentId:"LC-ENT-1", businessStateId:"LC_DRAFT"]).call()
             
@@ -65,7 +65,7 @@ class ImportLcEntitiesSpec extends Specification {
     def "ImportLetterOfCredit persists effective and new fields"() {
         setup:
         ec.service.sync().name("create#trade.TradeInstrument")
-                .parameters([instrumentId: "LC-ENT-PERSIST", transactionRef: "TF-IMP-TEST-01"]).call()
+                .parameters([instrumentId: "LC-ENT-PERSIST", instrumentRef: "TF-IMP-TEST-01"]).call()
 
         when:
         ec.service.sync().name("create#trade.importlc.ImportLetterOfCredit").parameters([
@@ -109,7 +109,7 @@ class ImportLcEntitiesSpec extends Specification {
     def "PresentationDiscrepancy persists correctly"() {
         setup:
         ec.service.sync().name("create#trade.TradeInstrument")
-                .parameters([instrumentId: "LC-ENT-DISC", transactionRef: "TF-IMP-TEST-01"]).call()
+                .parameters([instrumentId: "LC-ENT-DISC", instrumentRef: "TF-IMP-TEST-01"]).call()
         ec.service.sync().name("create#trade.importlc.ImportLetterOfCredit")
                 .parameters([instrumentId: "LC-ENT-DISC", businessStateId: "LC_DRAFT"]).call()
         ec.service.sync().name("create#trade.importlc.TradeDocumentPresentation")
@@ -144,7 +144,7 @@ class ImportLcEntitiesSpec extends Specification {
     def "ImportLcSettlement persists correctly"() {
         setup:
         ec.service.sync().name("create#trade.TradeInstrument")
-                .parameters([instrumentId: "LC-ENT-SETTLE", transactionRef: "TF-IMP-TEST-01"]).call()
+                .parameters([instrumentId: "LC-ENT-SETTLE", instrumentRef: "TF-IMP-TEST-01"]).call()
         ec.service.sync().name("create#trade.importlc.ImportLetterOfCredit")
                 .parameters([instrumentId: "LC-ENT-SETTLE", businessStateId: "LC_DRAFT"]).call()
         ec.service.sync().name("create#trade.importlc.TradeDocumentPresentation")
@@ -183,7 +183,7 @@ class ImportLcEntitiesSpec extends Specification {
     def "ImportLcAmendment persists extended fields"() {
         setup:
         ec.service.sync().name("create#trade.TradeInstrument")
-                .parameters([instrumentId: "LC-AMEND-TEST", transactionRef: "TF-LC-AM-01"]).call()
+                .parameters([instrumentId: "LC-AMEND-TEST", instrumentRef: "TF-LC-AM-01"]).call()
         ec.service.sync().name("create#trade.importlc.ImportLetterOfCredit")
                 .parameters([instrumentId: "LC-AMEND-TEST", businessStateId: "LC_ISSUED"]).call()
 
@@ -215,7 +215,7 @@ class ImportLcEntitiesSpec extends Specification {
     def "TradeDocumentPresentation persists status field"() {
         setup:
         ec.service.sync().name("create#trade.TradeInstrument")
-                .parameters([instrumentId: "LC-PRES-TEST", transactionRef: "TF-LC-PR-01"]).call()
+                .parameters([instrumentId: "LC-PRES-TEST", instrumentRef: "TF-LC-PR-01"]).call()
         ec.service.sync().name("create#trade.importlc.ImportLetterOfCredit")
                 .parameters([instrumentId: "LC-PRES-TEST", businessStateId: "LC_ISSUED"]).call()
 
@@ -245,7 +245,7 @@ class ImportLcEntitiesSpec extends Specification {
     def "ImportLcShippingGuarantee persists status field"() {
         setup:
         ec.service.sync().name("create#trade.TradeInstrument")
-                .parameters([instrumentId: "LC-SG-TEST", transactionRef: "TF-LC-SG-01"]).call()
+                .parameters([instrumentId: "LC-SG-TEST", instrumentRef: "TF-LC-SG-01"]).call()
         ec.service.sync().name("create#trade.importlc.ImportLetterOfCredit")
                 .parameters([instrumentId: "LC-SG-TEST", businessStateId: "LC_ISSUED"]).call()
 
@@ -275,7 +275,7 @@ class ImportLcEntitiesSpec extends Specification {
     def "ImportLcAmendment persists amendmentNumber, newTolerance, chargeAllocationEnumId"() {
         setup:
         ec.service.sync().name("create#trade.TradeInstrument")
-                .parameters([instrumentId: "LC-AMEND-EXT", transactionRef: "TF-LC-AM-EXT"]).call()
+                .parameters([instrumentId: "LC-AMEND-EXT", instrumentRef: "TF-LC-AM-EXT"]).call()
         ec.service.sync().name("create#trade.importlc.ImportLetterOfCredit")
                 .parameters([instrumentId: "LC-AMEND-EXT", businessStateId: "LC_ISSUED"]).call()
 
@@ -308,7 +308,7 @@ class ImportLcEntitiesSpec extends Specification {
     def "TradeDocumentPresentation persists claimCurrency, regulatoryDeadline and uses junction for presenting bank"() {
         setup:
         ec.service.sync().name("create#trade.TradeInstrument")
-                .parameters([instrumentId: "LC-PRES-EXT", transactionRef: "TF-LC-PR-EXT", instrumentTypeEnumId: "IMPORT_LC"]).call()
+                .parameters([instrumentId: "LC-PRES-EXT", instrumentRef: "TF-LC-PR-EXT", instrumentTypeEnumId: "IMPORT_LC"]).call()
         ec.service.sync().name("create#trade.importlc.ImportLetterOfCredit")
                 .parameters([instrumentId: "LC-PRES-EXT", businessStateId: "LC_ISSUED"]).call()
         
@@ -356,7 +356,7 @@ class ImportLcEntitiesSpec extends Specification {
     def "ImportLcShippingGuarantee persists sgStatusId, waiverLockFlag, redemptionDate, issuanceFee"() {
         setup:
         ec.service.sync().name("create#trade.TradeInstrument")
-                .parameters([instrumentId: "LC-SG-EXT", transactionRef: "TF-LC-SG-EXT"]).call()
+                .parameters([instrumentId: "LC-SG-EXT", instrumentRef: "TF-LC-SG-EXT"]).call()
         ec.service.sync().name("create#trade.importlc.ImportLetterOfCredit")
                 .parameters([instrumentId: "LC-SG-EXT", businessStateId: "LC_ISSUED"]).call()
 

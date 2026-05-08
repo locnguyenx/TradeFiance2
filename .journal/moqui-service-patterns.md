@@ -252,3 +252,33 @@ if (result.success) {
     <entity-update value-field="example"/>
 </actions>
 ```
+
+## 10. Safe Entity Update Pattern (CRITICAL)
+
+To prevent accidental nullification of existing data when performing partial updates via `entity-set` from a broad context (like service parameters), use **Explicit Field Mapping** to a dedicated update map.
+
+### Dangerous Pattern (Context Pollution)
+```xml
+<actions>
+    <entity-find-one entity-name="MyEntity" value-field="val"/>
+    <!-- if context has 'fieldB' as null, it will overwrite the database value! -->
+    <entity-set value-field="val" include="nonpk" set-if-empty="false"/>
+    <entity-update value-field="val"/>
+</actions>
+```
+
+### Safe Pattern (Explicit Mapping)
+```xml
+<actions>
+    <entity-find-one entity-name="MyEntity" value-field="val"/>
+    
+    <set field="updateMap" from="[:]"/>
+    <if condition="fieldA != null"><set field="updateMap.fieldA" from="fieldA"/></if>
+    <if condition="fieldB != null"><set field="updateMap.fieldB" from="fieldB"/></if>
+    
+    <entity-set value-field="val" map="updateMap"/>
+    <entity-update value-field="val"/>
+</actions>
+```
+> [!IMPORTANT]
+> Never use `entity-set` with the default `context` source in an update service if the entity contains narrative or long text fields that must be preserved. Use an explicit map to ensure atomicity and data integrity.

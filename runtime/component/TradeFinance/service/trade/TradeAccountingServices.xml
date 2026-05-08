@@ -87,22 +87,79 @@
             <parameter name="instrumentId" required="true"/>
             <parameter name="principalAmount" type="BigDecimal" required="true"/>
             <parameter name="settlementTypeEnumId" required="true"/>
+            <parameter name="transactionStatusId" default="TX_DRAFT"/>
+            <auto-parameters entity-name="trade.importlc.ImportLcSettlement" include="nonpk"/>
         </in-parameters>
+        <out-parameters>
+            <parameter name="settlementId" required="true"/>
+            <parameter name="transactionId" required="true"/>
+        </out-parameters>
         <actions>
-            <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" for-update="true"/>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc">
+                <field-map field-name="instrumentId"/>
+            </entity-find-one>
+            <if condition="!lc || !(lc.businessStateId in ['LC_ISSUED', 'LC_AMENDED', 'LC_DOC_RECEIVED', 'LC_ACCEPTED'])">
+                <return error="true" message="Settlements can only be created for Issued instruments (Current State: ${lc?.businessStateId ?: 'UNKNOWN'})"/>
+            </if>
+
             <entity-make-value entity-name="trade.importlc.ImportLcSettlement" value-field="settlement"/>
             <entity-set value-field="settlement" map="context"/>
             <entity-sequenced-id-primary value-field="settlement"/>
             <entity-create value-field="settlement"/>
-            <set field="lc.cumulativeDrawnAmount" from="(lc.cumulativeDrawnAmount ?: 0) + principalAmount"/>
-            <set field="lc.effectiveOutstandingAmount" from="(lc.effectiveOutstandingAmount ?: 0) - principalAmount"/>
-            <if condition="lc.effectiveOutstandingAmount &lt; 0"><set field="lc.effectiveOutstandingAmount" value="0" type="BigDecimal"/></if>
-            <entity-update value-field="lc"/>
+            <set field="settlementId" from="settlement.settlementId"/>
+
+            <service-call name="create#trade.TradeTransaction" out-map="txOut"
+                in-map="[
+                    instrumentId: instrumentId,
+                    transactionTypeEnumId: 'IMP_SETTLEMENT',
+                    transactionStatusId: transactionStatusId,
+                    transactionDate: ec.user.nowTimestamp,
+                    makerUserId: ec.user.userId,
+                    makerTimestamp: ec.user.nowTimestamp,
+                    priorityEnumId: priorityEnumId ?: 'NORMAL',
+                    versionNumber: 1,
+                    relatedRecordId: settlementId,
+                    relatedRecordType: 'SETTLEMENT'
+                ]"/>
+            <set field="transactionId" from="txOut.transactionId"/>
+        </actions>
+    </service>
+
+    <service verb="update" noun="ImportLcSettlement" authenticate="false">
+        <in-parameters>
+            <parameter name="settlementId" required="true"/>
+            <auto-parameters entity-name="trade.importlc.ImportLcSettlement" include="nonpk"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="trade.importlc.ImportLcSettlement" value-field="settlement" for-update="true"/>
+            <if condition="!settlement"><return error="true" message="Settlement ${settlementId} not found"/></if>
+            <entity-set value-field="settlement" include="nonpk" map="context"/>
+            <entity-update value-field="settlement"/>
+        </actions>
+    </service>
+
+    <service verb="submit" noun="ImportLcSettlement" authenticate="false">
+        <in-parameters>
+            <parameter name="settlementId" required="true"/>
+            <auto-parameters entity-name="trade.importlc.ImportLcSettlement" include="nonpk"/>
+        </in-parameters>
+        <actions>
+            <!-- Update payload -->
+            <service-call name="trade.TradeAccountingServices.update#ImportLcSettlement" in-map="context"/>
             
-            <if condition="lc.effectiveOutstandingAmount.compareTo(java.math.BigDecimal.ZERO) == 0">
-                <service-call name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit"
-                    in-map="[instrumentId: instrumentId, businessStateId: 'LC_CLOSED']"/>
+            <!-- Transition Transaction to PENDING -->
+            <entity-find entity-name="trade.TradeTransaction" list="txList">
+                <econdition field-name="relatedRecordId" from="settlementId"/>
+                <econdition field-name="transactionTypeEnumId" value="IMP_SETTLEMENT"/>
+                <econdition field-name="transactionStatusId" value="TX_DRAFT"/>
+            </entity-find>
+            <if condition="txList">
+                <service-call name="trade.TradeCommonServices.update#TradeTransaction" 
+                    in-map="[transactionId: txList[0].transactionId, transactionStatusId: 'TX_PENDING']"/>
             </if>
+            
+            <!-- NOTE: Actual LC balance update and state change moved to Authorization flow -->
         </actions>
     </service>
 </services>

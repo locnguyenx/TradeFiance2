@@ -42,6 +42,9 @@ class SwiftGenerationSpec extends Specification {
         ec.user.loginUser("john.doe", "moqui")
         ec.artifactExecution.disableAuthz()
         try {
+            // Nullify circular reference first
+            ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "7000000").updateAll([latestTransactionId: null])
+
             ec.entity.find("trade.importlc.ImportLcSettlement").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "7000000").deleteAll()
             ec.entity.find("trade.importlc.PresentationDiscrepancy").condition("presentationId", EntityCondition.IN, ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "7000000").list().collect { it.presentationId } ?: ["NONE"]).deleteAll()
             ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "7000000").deleteAll()
@@ -59,12 +62,13 @@ class SwiftGenerationSpec extends Specification {
         }
     }
 
+
     // BDD-SWG-LCY-01: Lifecycle — DRAFT Message on Creation
     def "LCY-01: Lifecycle - DRAFT message generated on creation"() {
         given: "A new Import LC that is not yet approved"
         def ref = "TF-LCY-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD",
+            .parameters([instrumentRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD",
                          lcTypeEnumId: 'IRREVOCABLE', availableByEnumId: 'SIGHT_PAYMENT',
                          availableWithEnumId: 'AVAIL_ANY_BANK', confirmationEnumId: 'WITHOUT',
                          instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
@@ -88,7 +92,7 @@ class SwiftGenerationSpec extends Specification {
         given: "An Import LC that is approved"
         def ref = "TF-APP-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD",
+            .parameters([instrumentRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD",
                          lcTypeEnumId: 'IRREVOCABLE', availableByEnumId: 'SIGHT_PAYMENT',
                          availableWithEnumId: 'AVAIL_ANY_BANK', confirmationEnumId: 'WITHOUT',
                          instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
@@ -117,7 +121,7 @@ class SwiftGenerationSpec extends Specification {
         given: "An active MT700 message"
         def ref = "TF-IMM-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD",
+            .parameters([instrumentRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD",
                          lcTypeEnumId: 'IRREVOCABLE', availableByEnumId: 'SIGHT_PAYMENT',
                          availableWithEnumId: 'AVAIL_ANY_BANK', confirmationEnumId: 'WITHOUT',
                          instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
@@ -145,7 +149,7 @@ class SwiftGenerationSpec extends Specification {
         def largeText = "STEEL PIPES " + ("X" * 7000)
         def ref = "TF-LARGE-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 50000.0, lcCurrencyUomId: "USD",
+            .parameters([instrumentRef: ref, lcAmount: 50000.0, lcCurrencyUomId: "USD",
                          goodsDescription: largeText,
                          lcTypeEnumId: 'IRREVOCABLE', availableByEnumId: 'SIGHT_PAYMENT',
                          availableWithEnumId: 'AVAIL_ANY_BANK', confirmationEnumId: 'WITHOUT',
@@ -167,7 +171,7 @@ class SwiftGenerationSpec extends Specification {
         given: "An Import LC Amendment"
         def ref = "TF-LC-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD",
+            .parameters([instrumentRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD",
                          lcTypeEnumId: 'IRREVOCABLE', availableByEnumId: 'SIGHT_PAYMENT',
                          availableWithEnumId: 'AVAIL_ANY_BANK', confirmationEnumId: 'WITHOUT',
                          instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
@@ -192,7 +196,7 @@ class SwiftGenerationSpec extends Specification {
         given: "An LC with new mandatory fields"
         def ref = "TF-TAGS-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD",
+            .parameters([instrumentRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD",
                          lcTypeEnumId: "IRREVOCABLE",
                          availableByEnumId: "NEGOTIATION",
                          availableWithEnumId: "AVAIL_ANY_BANK",
@@ -217,7 +221,7 @@ class SwiftGenerationSpec extends Specification {
         given: "A presentation for an LC"
         def ref = "TF-LC-734-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD",
+            .parameters([instrumentRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD",
                          instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
                                    [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002'],
                                    [roleEnumId: 'TP_ADVISING_BANK', partyId: 'ADVISING_BANK_001']]]).call()
@@ -240,7 +244,7 @@ class SwiftGenerationSpec extends Specification {
         def largeText = "OVERFLOW " + ("X" * 7000)
         def ref = "TF-LCY-701-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD",
+            .parameters([instrumentRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD",
                          goodsDescription: largeText,
                          lcTypeEnumId: 'IRREVOCABLE', availableByEnumId: 'SIGHT_PAYMENT',
                          availableWithEnumId: 'AVAIL_ANY_BANK', confirmationEnumId: 'WITHOUT',
@@ -263,7 +267,7 @@ class SwiftGenerationSpec extends Specification {
         given: "An approved LC and a new amendment"
         def ref = "TF-AMD-34B-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD",
+            .parameters([instrumentRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD",
                          lcTypeEnumId: 'IRREVOCABLE', availableByEnumId: 'SIGHT_PAYMENT',
                          availableWithEnumId: 'AVAIL_ANY_BANK', confirmationEnumId: 'WITHOUT',
                          instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
@@ -289,7 +293,7 @@ class SwiftGenerationSpec extends Specification {
         given: "A presentation with RETURNING_DOCUMENTS disposal"
         def ref = "TF-LC-DISP-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([transactionRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD",
+            .parameters([instrumentRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD",
                          instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
                                    [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         

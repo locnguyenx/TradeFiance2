@@ -215,3 +215,32 @@ If the entire test suite fails with `java.util.ServiceConfigurationError` or `bi
 *   **Background Conflict**: A background server (e.g., `java -jar moqui.war`) or a lingering Gradle daemon is likely holding a lock on the H2 database (`runtime/db/h2/moqui.mv.db`) or the Bitronix transaction log (`runtime/txlog/btm1.tlog`).
 *   **Resolution**: Run `./gradlew --stop` to kill all Gradle daemons. If the issue persists, stop any running Moqui server instances.
 *   **Manual Cleanup**: If locks persist, manually remove `runtime/txlog/*.tlog` or `runtime/db/h2/moqui.lock.db` before retrying.
+
+## 13. Advanced Business State Testing (Four-Eyes Principle)
+
+### Authorization Patterns
+In environments with strict "Four-Eyes" enforcement (Maker/Checker), automated tests MUST use the authorization facade to advance states rather than direct entity updates.
+
+#### authorize#Instrument Pattern
+```groovy
+// 1. Create the record (Maker - Transaction status is TX_PENDING)
+def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters(lcParams).call()
+
+// 2. Authorize (Checker - Skip manual approval)
+ec.service.sync().name("trade.AuthorizationServices.authorize#Instrument")
+    .parameters([transactionId: res.transactionId, skipFourEyes: true])
+    .call()
+
+// 3. Post-Authorization Context
+// IMPORTANT: After authorization, the business logic (SECA) often triggers status changes.
+// To perform further actions (e.g., settlement, presentation) in the same test:
+ec.artifactExecution.disableAuthz() 
+```
+
+### State Consistency
+*   **Revolving Reinstatement**: Verification for revolving LCs should check that the state is reset to `LC_ISSUED` and `effectiveOutstandingAmount` is restored to `effectiveAmount` after full settlement.
+*   **Sequence Integrity**: Always verify that `LC_PENDING` -> `LC_ISSUED` occurs before attempting `LC_DOC_RECEIVED` or `LC_ACCEPTED`.
+
+## 14. E2E (Playwright) Alignment
+*   **Portfolio vs. Action Headers**: When a module is upgraded to a "Portfolio" view (listing all records), E2E tests must be updated to expect the list header (e.g., `Import LC Amendment Portfolio`) instead of the creation header (e.g., `Issue LC Amendment`) when navigating from the sidebar.
+*   **Transient Failures**: Implement retry logic in the frontend API client (e.g., `tradeApi.ts`) to handle transient 500 errors during E2E runs on slower environments.

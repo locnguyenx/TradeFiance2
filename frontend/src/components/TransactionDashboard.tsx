@@ -21,13 +21,31 @@ export const TransactionDashboard: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState('');
     const [filterPriority, setFilterPriority] = useState('');
+    const [filterMaker, setFilterMaker] = useState('');
+    const [filterType, setFilterType] = useState('');
+    const [filterInstSearch, setFilterInstSearch] = useState('');
+    const [filterTxnSearch, setFilterTxnSearch] = useState('');
+    const [makers, setMakers] = useState<string[]>([]);
+
+    useEffect(() => {
+        const loadMakers = async () => {
+            try {
+                const authData = await tradeApi.getUserAuthorityProfiles();
+                const uniqueMakers = Array.from(new Set(authData.profileList.map(p => p.userId)));
+                setMakers(uniqueMakers);
+            } catch (error) {
+                console.error('Failed to load makers:', error);
+            }
+        };
+        loadMakers();
+    }, []);
 
     useEffect(() => {
         const loadTransactions = async () => {
             setLoading(true);
             try {
-                const data = await tradeApi.getTransactions(filterStatus, filterPriority);
-                setTransactions(data.transactionList || []);
+                const txnData = await tradeApi.getTransactions(filterStatus, filterPriority, filterMaker, filterType, filterInstSearch, filterTxnSearch);
+                setTransactions(txnData.transactionList || []);
             } catch (error) {
                 console.error('Failed to load transactions:', error);
             } finally {
@@ -35,7 +53,23 @@ export const TransactionDashboard: React.FC = () => {
             }
         };
         loadTransactions();
-    }, [filterStatus, filterPriority]);
+    }, [filterStatus, filterPriority, filterMaker, filterType, filterInstSearch, filterTxnSearch]);
+
+    const typeLabels: Record<string, string> = {
+        'IMP_NEW': 'Issuance',
+        'IMP_AMENDMENT': 'Amendment',
+        'IMP_PRESENTATION': 'Presentation',
+        'IMP_SETTLEMENT': 'Settlement',
+        'IMP_CANCELLATION': 'Cancellation',
+        'IMP_SG_ISSUANCE': 'Shipping Guarantee'
+    };
+
+    const statusLabels: Record<string, string> = {
+        'TX_DRAFT': 'Draft',
+        'TX_PENDING': 'Pending',
+        'TX_APPROVED': 'Approved',
+        'TX_REJECTED': 'Rejected'
+    };
 
     const getPriorityColor = (priority: string) => {
         switch (priority) {
@@ -72,9 +106,25 @@ export const TransactionDashboard: React.FC = () => {
             </header>
 
             <div className="filter-bar premium-card">
-                <div className="search-input-wrapper">
-                    <Search size={18} className="search-icon" />
-                    <input type="text" placeholder="Search by instrument reference..." />
+                <div className="search-group">
+                    <div className="search-input-wrapper">
+                        <Search size={18} className="search-icon" />
+                        <input 
+                            type="text" 
+                            placeholder="Instrument (Ref / ID)..." 
+                            value={filterInstSearch}
+                            onChange={(e) => setFilterInstSearch(e.target.value)}
+                        />
+                    </div>
+                    <div className="search-input-wrapper">
+                        <Search size={18} className="search-icon" />
+                        <input 
+                            type="text" 
+                            placeholder="Transaction (Ref / ID)..." 
+                            value={filterTxnSearch}
+                            onChange={(e) => setFilterTxnSearch(e.target.value)}
+                        />
+                    </div>
                 </div>
                 <div className="filter-actions">
                     <div className="filter-select">
@@ -97,6 +147,26 @@ export const TransactionDashboard: React.FC = () => {
                             <option value="TX_PRIO_LOW">Low</option>
                         </select>
                     </div>
+                    <div className="filter-select">
+                        <Filter size={14} />
+                        <select value={filterMaker} onChange={(e) => setFilterMaker(e.target.value)}>
+                            <option value="">All Makers</option>
+                            {makers.map(m => (
+                                <option key={m} value={m}>{m}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="filter-select">
+                        <Filter size={14} />
+                        <select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+                            <option value="">All Types</option>
+                            <option value="IMP_NEW">Issuance</option>
+                            <option value="IMP_AMENDMENT">Amendment</option>
+                            <option value="IMP_PRESENTATION">Presentation</option>
+                            <option value="IMP_SETTLEMENT">Settlement</option>
+                            <option value="IMP_CANCEL">Cancellation</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -105,8 +175,8 @@ export const TransactionDashboard: React.FC = () => {
                     <thead>
                         <tr>
                             <th>Priority</th>
-                            <th>Instrument Ref</th>
-                            <th>Inst / Txn ID</th>
+                            <th>Instrument (Ref / ID)</th>
+                            <th>Transaction (Ref / ID)</th>
                             <th>Type</th>
                             <th>Maker / Date</th>
                             <th>Status</th>
@@ -115,9 +185,9 @@ export const TransactionDashboard: React.FC = () => {
                     </thead>
                     <tbody>
                         {loading ? (
-                            <tr><td colSpan={6} style={{ textAlign: 'center', padding: '3rem' }}>Fetching real-time transaction data...</td></tr>
+                            <tr><td colSpan={7} style={{ textAlign: 'center', padding: '3rem' }}>Fetching real-time transaction data...</td></tr>
                         ) : transactions.length === 0 ? (
-                            <tr><td colSpan={6} style={{ textAlign: 'center', padding: '3rem' }}>No transactions found matching the filters.</td></tr>
+                            <tr><td colSpan={7} style={{ textAlign: 'center', padding: '3rem' }}>No transactions found matching the filters.</td></tr>
                         ) : transactions.map(txn => (
                             <tr key={txn.transactionId}>
                                 <td>
@@ -126,16 +196,19 @@ export const TransactionDashboard: React.FC = () => {
                                     </span>
                                 </td>
                                 <td>
-                                    <span className="instrument-ref-text">{txn.transactionRef || 'N/A'}</span>
+                                    <div className="ref-cell">
+                                        <span className="instrument-ref-text">{txn.instrumentRef}</span>
+                                        <span className="instrument-id" title="Instrument ID">{txn.instrumentId}</span>
+                                    </div>
                                 </td>
                                 <td>
                                     <div className="ref-cell">
-                                        <span className="instrument-id" title="Instrument ID">{txn.instrumentId}</span>
+                                        <span className="transaction-ref-text">{txn.transactionRef || 'N/A'}</span>
                                         <span className="txn-id" title="Transaction ID">{txn.transactionId}</span>
                                     </div>
                                 </td>
                                 <td className="type-cell">
-                                    {txn.transactionTypeEnumId?.replace('IMP_', '').replace('_', ' ')}
+                                    {typeLabels[txn.transactionTypeEnumId] || txn.transactionTypeEnumId?.replace('IMP_', '').replace('_', ' ')}
                                 </td>
                                 <td>
                                     <div className="maker-info">
@@ -146,7 +219,7 @@ export const TransactionDashboard: React.FC = () => {
                                 <td>
                                     <div className="status-cell">
                                         {getStatusIcon(txn.transactionStatusId)}
-                                        <span>{txn.transactionStatusId?.replace('TX_', '')}</span>
+                                        <span>{statusLabels[txn.transactionStatusId] || txn.transactionStatusId?.replace('TX_', '')}</span>
                                     </div>
                                 </td>
                                 <td>
@@ -170,13 +243,17 @@ export const TransactionDashboard: React.FC = () => {
                 .stat-label { font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
                 .stat-value { font-size: 1.5rem; font-weight: 800; color: #2563eb; }
 
-                .filter-bar { background: white; padding: 0.75rem 1.25rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
-                .search-input-wrapper { position: relative; flex: 1; max-width: 400px; }
+                .filter-bar { background: white; padding: 0.75rem 1.25rem; display: flex; flex-direction: column; gap: 1rem; }
+                @media (min-width: 1024px) {
+                    .filter-bar { flex-direction: row; justify-content: space-between; align-items: center; }
+                }
+                .search-group { display: flex; gap: 0.75rem; flex: 1; max-width: 650px; }
+                .search-input-wrapper { position: relative; flex: 1; }
                 .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
                 .search-input-wrapper input { width: 100%; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.5rem 1rem 0.5rem 2.5rem; font-size: 0.875rem; outline: none; transition: all 0.2s; }
                 .search-input-wrapper input:focus { border-color: #2563eb; background: white; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
                 
-                .filter-actions { display: flex; gap: 0.75rem; }
+                .filter-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
                 .filter-select { display: flex; align-items: center; gap: 0.5rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.25rem 0.75rem; color: #64748b; }
                 .filter-select select { background: transparent; border: none; font-size: 0.8125rem; font-weight: 600; color: #1e293b; outline: none; cursor: pointer; }
 
@@ -188,8 +265,9 @@ export const TransactionDashboard: React.FC = () => {
                 .priority-badge { font-size: 0.65rem; font-weight: 800; color: white; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; }
                 
                 .instrument-ref-text { font-weight: 700; color: #0f172a; }
+                .transaction-ref-text { font-weight: 700; color: #2563eb; font-size: 0.8125rem; }
                 .ref-cell { display: flex; flex-direction: column; }
-                .instrument-id { font-size: 0.75rem; color: #64748b; }
+                .instrument-id { font-size: 0.7rem; color: #94a3b8; font-family: monospace; }
                 .txn-id { font-size: 0.7rem; color: #94a3b8; font-family: monospace; }
                 
                 .type-cell { font-weight: 600; color: #1e293b; text-transform: capitalize; }

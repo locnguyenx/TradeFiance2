@@ -154,7 +154,7 @@
                 
                 def renderRes = ec.service.sync().name("trade.SwiftUtilsServices.render#SwiftMessage")
                     .parameters([messageType:"700", senderBic:issuerBic, receiverBic:advisingBank.bic ?: "RECEIVXX", 
-                                 senderRef:instrument.transactionRef, fields:fields]).call()
+                                 senderRef:instrument.instrumentRef, fields:fields]).call()
                 messageContent = renderRes.messageContent
                 
                 // FR-SWG-20: Continuation message logic
@@ -223,7 +223,7 @@
                 
                 def renderRes = ec.service.sync().name("trade.SwiftUtilsServices.render#SwiftMessage")
                     .parameters([messageType:"701", senderBic:issuerBic, receiverBic:advisingBankBic ?: "RECEIVXX", 
-                                 senderRef:instrument.transactionRef, fields:fields]).call()
+                                 senderRef:instrument.instrumentRef, fields:fields]).call()
                 messageContent = renderRes.messageContent
             ]]></script>
             <service-call name="create#trade.importlc.SwiftMessage" out-map="res"
@@ -318,7 +318,7 @@
                 
                 def renderRes = ec.service.sync().name("trade.SwiftUtilsServices.render#SwiftMessage")
                     .parameters([messageType:"707", senderBic:issuerBic, receiverBic:advisingBankBic ?: "ADVISINGXX", 
-                                 senderRef:instrument.transactionRef, fields:fields]).call()
+                                 senderRef:instrument.instrumentRef, fields:fields]).call()
                 messageContent = renderRes.messageContent
             ]]></script>
 
@@ -395,7 +395,7 @@
                 
                 def renderRes = ec.service.sync().name("trade.SwiftUtilsServices.render#SwiftMessage")
                     .parameters([messageType:"750", senderBic:issuerBic, receiverBic:getPartyBic("TP_PRESENTING_BANK") ?: "BENEBANK", 
-                                 senderRef:inst.transactionRef, fields:fields]).call()
+                                 senderRef:inst.instrumentRef, fields:fields]).call()
                 messageContent = renderRes.messageContent
             ]]></script>
             <service-call name="create#trade.importlc.SwiftMessage" out-map="createRes"
@@ -464,7 +464,7 @@
                 
                 def renderRes = ec.service.sync().name("trade.SwiftUtilsServices.render#SwiftMessage")
                     .parameters([messageType:"734", senderBic:issuerBic, receiverBic:presentingBankBic, 
-                                 senderRef:inst.transactionRef, fields:fields]).call()
+                                 senderRef:inst.instrumentRef, fields:fields]).call()
                 messageContent = renderRes.messageContent
             ]]></script>
             <service-call name="create#trade.importlc.SwiftMessage" out-map="createRes"
@@ -520,7 +520,7 @@
                 
                 def renderRes = ec.service.sync().name("trade.SwiftUtilsServices.render#SwiftMessage")
                     .parameters([messageType:"752", senderBic:issuerBic, receiverBic:presentingBankBic, 
-                                 senderRef:inst.transactionRef, fields:fields]).call()
+                                 senderRef:inst.instrumentRef, fields:fields]).call()
                 messageContent = renderRes.messageContent
             ]]></script>
             <service-call name="create#trade.importlc.SwiftMessage" out-map="createRes"
@@ -570,7 +570,7 @@
                 
                 def renderRes = ec.service.sync().name("trade.SwiftUtilsServices.render#SwiftMessage")
                     .parameters([messageType:"732", senderBic:issuerBic, receiverBic:pres.presentingBankBic ?: "BENEBANK", 
-                                 senderRef:inst.transactionRef, fields:fields]).call()
+                                 senderRef:inst.instrumentRef, fields:fields]).call()
                 messageContent = renderRes.messageContent
             ]]></script>
             <service-call name="create#trade.importlc.SwiftMessage" out-map="createRes"
@@ -611,7 +611,7 @@
                 
                 def renderRes = ec.service.sync().name("trade.SwiftUtilsServices.render#SwiftMessage")
                     .parameters([messageType:"799", senderBic:issuerBic, receiverBic:"TARGETXX", 
-                                 senderRef:inst.transactionRef, fields:fields]).call()
+                                 senderRef:inst.instrumentRef, fields:fields]).call()
                 messageContent = renderRes.messageContent
             ]]></script>
             <service-call name="create#trade.importlc.SwiftMessage" out-map="createRes"
@@ -655,7 +655,7 @@
                 
                 def renderRes = ec.service.sync().name("trade.SwiftUtilsServices.render#SwiftMessage")
                     .parameters([messageType:"103", senderBic:issuerBic, receiverBic:"BENEBANK", 
-                                 senderRef:inst.transactionRef, fields:fields]).call()
+                                 senderRef:inst.instrumentRef, fields:fields]).call()
                 messageContent = renderRes.messageContent
             ]]></script>
             <service-call name="create#trade.importlc.SwiftMessage" out-map="createRes"
@@ -685,13 +685,13 @@
 
             <script><![CDATA[
                 def fields = [:]
-                fields["21"] = inst.transactionRef
+                fields["21"] = inst.instrumentRef
                 fields["32A"] = ec.user.nowTimestamp.format("yyMMdd") + (settle.remittanceCurrency ?: "USD") + String.format("%.2f", settle.principalAmount).replace(".", ",")
                 fields["58A"] = "BENEBANK"
                 
                 def renderRes = ec.service.sync().name("trade.SwiftUtilsServices.render#SwiftMessage")
                     .parameters([messageType:"202", senderBic:issuerBic, receiverBic:"CORRESPBANK", 
-                                 senderRef:inst.transactionRef, fields:fields]).call()
+                                 senderRef:inst.instrumentRef, fields:fields]).call()
                 messageContent = renderRes.messageContent
             ]]></script>
             <service-call name="create#trade.importlc.SwiftMessage" out-map="createRes"

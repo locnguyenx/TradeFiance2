@@ -168,8 +168,32 @@ export const tradeApi = {
     return res.json();
   },
 
-  async getImportLc(instrumentId: string): Promise<TradeInstrument & ImportLetterOfCredit> {
-    const res = await this._fetch(`${API_BASE}/import-lc/${instrumentId}`);
+  async getImportLc(id: string): Promise<TradeInstrument & ImportLetterOfCredit> {
+    const res = await this._fetch(`${API_BASE}/import-lc/${id}`);
+    return res.json();
+  },
+
+  async getAmendment(lcId: string, amendmentId: string): Promise<any> {
+    const path = (lcId && lcId !== 'DUMMY') 
+      ? `${API_BASE}/import-lc/${lcId}/amendment/${amendmentId}`
+      : `${API_BASE}/common/amendment/${amendmentId}`;
+    const res = await this._fetch(path);
+    return res.json();
+  },
+
+  async createLcAmendment(lcId: string, amendment: any): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/import-lc/${lcId}/amendment`, {
+      method: 'POST',
+      body: JSON.stringify(amendment)
+    });
+    return res.json();
+  },
+
+  async submitLcAmendment(lcId: string, amendmentId: string, amendment: any): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/import-lc/${lcId}/amendment/${amendmentId}/submit`, {
+      method: 'POST',
+      body: JSON.stringify(amendment)
+    });
     return res.json();
   },
 
@@ -230,8 +254,71 @@ export const tradeApi = {
     return res.json();
   },
 
-  async createLcAmendment(instrumentId: string, data: any): Promise<any> {
-    const res = await this._fetch(`${API_BASE}/import-lc/${instrumentId}/amendment`, {
+  async updateLcPresentation(instrumentId: string, presentationId: string, data: any): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/import-lc/${instrumentId}/presentation/${presentationId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+
+  async submitLcPresentation(instrumentId: string, presentationId: string, data: any): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/import-lc/${instrumentId}/presentation/${presentationId}/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+
+  async createLcSettlement(instrumentId: string, data: any): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/import-lc/${instrumentId}/settlement`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+
+  async submitLcSettlement(instrumentId: string, settlementId: string, data: any): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/import-lc/${instrumentId}/settlement/${settlementId}/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+
+  async createLcShippingGuarantee(instrumentId: string, data: any): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/import-lc/${instrumentId}/shipping-guarantee`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+
+  async submitLcShippingGuarantee(instrumentId: string, guaranteeId: string, data: any): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/import-lc/${instrumentId}/shipping-guarantee/${guaranteeId}/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+
+  async createLcCancellation(instrumentId: string, data: any): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/import-lc/${instrumentId}/cancellation`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+
+  async submitLcCancellation(instrumentId: string, transactionId: string, data: any): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/import-lc/${instrumentId}/cancellation/${transactionId}/submit`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -368,7 +455,15 @@ export const tradeApi = {
   },
 
   async getTransaction(transactionId: string): Promise<TradeTransaction> {
-    const res = await this._fetch(`${API_BASE}/transaction/${transactionId}`);
+    const res = await this._fetch(`${API_BASE}/common/transactions/${transactionId}`);
+    return res.json();
+  },
+
+  async updateTransactionStatus(id: string, statusId: string): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/common/transactions/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ transactionStatusId: statusId })
+    });
     return res.json();
   },
 
@@ -395,12 +490,51 @@ export const tradeApi = {
     return res.json();
   },
 
-  async getTransactions(statusId?: string, priorityId?: string): Promise<{ transactionList: any[] }> {
+  async getTransactions(statusId?: string, priorityId?: string, makerId?: string, typeId?: string, instrumentSearch?: string, transactionSearch?: string): Promise<{ transactionList: any[] }> {
     const params = new URLSearchParams();
     if (statusId) params.append('transactionStatusId', statusId);
     if (priorityId) params.append('priorityEnumId', priorityId);
+    if (makerId) params.append('makerUserId', makerId);
+    if (typeId) params.append('transactionTypeEnumId', typeId);
+    if (instrumentSearch) params.append('instrumentSearch', instrumentSearch);
+    if (transactionSearch) params.append('transactionSearch', transactionSearch);
     const query = params.toString() ? `?${params.toString()}` : '';
     const res = await this._fetch(`${API_BASE}/common/transactions${query}`);
+    return res.json();
+  },
+
+  async getAmendments(): Promise<{ amendmentList: any[] }> {
+    const res = await this._fetch(`${API_BASE}/common/amendments`);
+    return res.json();
+  },
+
+  async getPresentations(): Promise<{ presentationList: any[] }> {
+    const res = await this._fetch(`${API_BASE}/common/presentations`);
+    return res.json();
+  },
+
+  async getPresentation(presentationId: string): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/common/presentation/${presentationId}`);
+    return res.json();
+  },
+
+  async getSettlements(): Promise<{ settlementList: any[] }> {
+    const res = await this._fetch(`${API_BASE}/common/settlements`);
+    return res.json();
+  },
+
+  async getSettlement(settlementId: string): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/common/settlement/${settlementId}`);
+    return res.json();
+  },
+
+  async getShippingGuarantees(): Promise<{ guaranteeList: any[] }> {
+    const res = await this._fetch(`${API_BASE}/common/shipping-guarantees`);
+    return res.json();
+  },
+
+  async getShippingGuarantee(guaranteeId: string): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/common/shipping-guarantee/${guaranteeId}`);
     return res.json();
   },
 };

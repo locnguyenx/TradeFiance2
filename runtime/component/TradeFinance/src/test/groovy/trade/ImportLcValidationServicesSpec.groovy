@@ -28,13 +28,14 @@ class ImportLcValidationServicesSpec extends Specification {
         def ref = "TF-SWIFT-BAD-" + System.currentTimeMillis()
         ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([
-                transactionRef: ref, 
+                instrumentRef: ref, 
                 goodsDescription: "Steel Rods @ 50mm diameter", 
                 lcAmount: 1000.0, 
                 lcCurrencyUomId: 'USD',
                 lcTypeEnumId: 'IRREVOCABLE',
                 availableByEnumId: 'SIGHT',
                 confirmationEnumId: 'WITHOUT',
+                availableWithEnumId: 'AVB_WITH_ANY_BANK',
                 productCatalogId: 'PROD_IMP_LC',
                 expiryDate: '2026-12-31',
                 instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
@@ -60,13 +61,14 @@ class ImportLcValidationServicesSpec extends Specification {
         def ref = "TF-SWIFT-GOOD-" + System.currentTimeMillis()
         ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([
-                transactionRef: ref, 
+                instrumentRef: ref, 
                 goodsDescription: "Steel Rods - 50mm diameter (standard)", 
                 lcAmount: 1000.0, 
                 lcCurrencyUomId: 'USD',
                 lcTypeEnumId: 'IRREVOCABLE',
                 availableByEnumId: 'SIGHT',
                 confirmationEnumId: 'WITHOUT',
+                availableWithEnumId: 'AVB_WITH_ANY_BANK',
                 productCatalogId: 'PROD_IMP_LC',
                 expiryDate: '2026-12-31',
                 instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],

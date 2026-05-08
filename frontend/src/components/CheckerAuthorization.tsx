@@ -71,6 +71,10 @@ export const CheckerAuthorization: React.FC<Props> = ({ transactionId }) => {
         }
     };
 
+    const isApproved = ['TX_APPROVED', 'TXN_APPROVED'].includes(transaction?.transactionStatusId || '');
+    const isRejected = ['TX_REJECTED', 'TXN_REJECTED'].includes(transaction?.transactionStatusId || '');
+    const isTerminal = isApproved || isRejected;
+
     if (loading) return <div className="p-8 text-center">Loading Instrument Data...</div>;
     if (!instrument) return <div className="p-8 text-center text-danger">Instrument not found</div>;
 
@@ -82,9 +86,9 @@ export const CheckerAuthorization: React.FC<Props> = ({ transactionId }) => {
                 </div>
             )}
 
-            {transaction?.transactionStatusId === 'TXN_REJECTED' && (
+            {isRejected && (
                 <div className="alert-ribbon error">
-                    Transaction Rejected: {transaction.rejectionReason}
+                    Transaction Rejected: {transaction?.rejectionReason}
                 </div>
             )}
 
@@ -94,7 +98,7 @@ export const CheckerAuthorization: React.FC<Props> = ({ transactionId }) => {
                 </div>
             )}
             
-            {transaction?.proposedAmount && transaction.proposedAmount >= 500000 && transaction.transactionStatusId === 'TXN_SUBMITTED' && (
+            {transaction?.proposedAmount && transaction.proposedAmount >= 500000 && transaction.transactionStatusId === 'TX_PENDING' && (
                 <div className="alert-ribbon info">
                     Tier 4 Transaction Detected: Dual Checker Authorization will be enforced.
                 </div>
@@ -107,14 +111,26 @@ export const CheckerAuthorization: React.FC<Props> = ({ transactionId }) => {
                         <span className="badge second-badge">Ref: {instrument.instrumentId}</span>
                         {transaction && (
                             <span className={`badge ${transaction.transactionStatusId.toLowerCase()}`}>
-                                Status: {transaction.transactionStatusId.replace('TXN_', '').replace('_', ' ')}
+                                Status: {transaction.transactionStatusId.replace('TXN_', '').replace('TX_', '').replace('_', ' ')}
                             </span>
                         )}
                     </div>
                     <div className="action-buttons">
-                        <button className="btn secondary" onClick={() => setShowRejectionModal(true)}>Reject</button>
-                        <button className="btn warning">Query Compliance</button>
-                        <button className="btn primary" onClick={handleApprove}>Authorize</button>
+                        <button 
+                            className="btn secondary" 
+                            onClick={() => setShowRejectionModal(true)}
+                            disabled={isTerminal}
+                        >
+                            Reject
+                        </button>
+                        <button className="btn warning" disabled={isTerminal}>Query Compliance</button>
+                        <button 
+                            className="btn primary" 
+                            onClick={handleApprove}
+                            disabled={isTerminal}
+                        >
+                            {isTerminal ? 'Authorized' : 'Authorize'}
+                        </button>
                     </div>
                 </div>
             </header>
@@ -270,8 +286,8 @@ export const CheckerAuthorization: React.FC<Props> = ({ transactionId }) => {
                 .badge.primary { background: #1e293b; color: white; }
                 .badge.second-badge { background: #e2e8f0; color: #475569; }
                 .badge.txn_pending { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
-                .badge.txn_approved { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
-                .badge.txn_rejected { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+                .badge.txn_approved, .badge.tx_approved { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+                .badge.txn_rejected, .badge.tx_rejected { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
 
                 .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 2rem; }
                 .modal { width: 450px; padding: 2rem; background: white; border-radius: 12px; }

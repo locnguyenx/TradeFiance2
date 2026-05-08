@@ -1,16 +1,19 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { ImportLcDashboard } from './ImportLcDashboard';
 import { tradeApi } from '../api/tradeApi';
 
 // ABOUTME: Test suite for Import LC Dashboard mapping to REQ-UI-IMP-02.
 // UI Traceability: REQ-UI-IMP-02, REQ-UI-IMP-01
 
-jest.mock('../api/tradeApi', () => ({
-    tradeApi: {
-        getImportLcs: jest.fn().mockResolvedValue({ 
+jest.mock('../api/tradeApi');
+
+describe('ImportLcDashboard (REQ-UI-IMP-02)', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        (tradeApi.getImportLcs as jest.Mock).mockResolvedValue({ 
             lcList: [{ 
                 instrumentId: '1', 
-                transactionRef: 'LC-2026-001', 
+                instrumentRef: 'LC-2026-001', 
                 applicantPartyName: 'Global Corp',
                 beneficiaryPartyName: 'Export Ltd',
                 amount: 50000,
@@ -20,18 +23,15 @@ jest.mock('../api/tradeApi', () => ({
                 slaDaysRemaining: 4
             }],
             lcListCount: 1 
-        }),
-        getKpis: jest.fn().mockResolvedValue({ 
+        });
+        (tradeApi.getKpis as jest.Mock).mockResolvedValue({ 
             pendingDrafts: 5, 
             expiringSoon: 2, 
             discrepantDocs: 1 
-        })
-    }
-}));
-
-describe('ImportLcDashboard (REQ-UI-IMP-02)', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
+        });
+        (tradeApi.getUserAuthorityProfiles as jest.Mock).mockResolvedValue({ 
+            profileList: [] 
+        });
     });
 
     it('Renders all standard KPI cards (REQ-UI-IMP-02)', async () => {
@@ -80,11 +80,10 @@ describe('ImportLcDashboard (REQ-UI-IMP-02)', () => {
         expect(screen.getByText(/Present Documents/i)).toBeInTheDocument();
     });
     it('v3.0: displays Effective values and "In Amendment" indicators', async () => {
-        const { tradeApi } = require('../api/tradeApi');
-        tradeApi.getImportLcs.mockResolvedValue({
+        (tradeApi.getImportLcs as jest.Mock).mockResolvedValue({
             lcList: [{ 
                 instrumentId: '2', 
-                transactionRef: 'LC-2026-002', 
+                instrumentRef: 'LC-2026-002', 
                 amount: 100000,
                 expiryDate: '2026-06-30',
                 effectiveAmount: 120000, // Amplitude increase
@@ -104,11 +103,10 @@ describe('ImportLcDashboard (REQ-UI-IMP-02)', () => {
     });
 
     it('v3.0: falls back to base values when effective values are null', async () => {
-        const { tradeApi } = require('../api/tradeApi');
-        tradeApi.getImportLcs.mockResolvedValue({
+        (tradeApi.getImportLcs as jest.Mock).mockResolvedValue({
             lcList: [{ 
                 instrumentId: '3', 
-                transactionRef: 'LC-2026-003', 
+                instrumentRef: 'LC-2026-003', 
                 amount: 80000,
                 expiryDate: '2026-05-30',
                 effectiveAmount: null,
@@ -127,11 +125,10 @@ describe('ImportLcDashboard (REQ-UI-IMP-02)', () => {
     });
 
     it('v3.0: displays Effective Outstanding Balance and Cumulative Drawn columns', async () => {
-        const { tradeApi } = require('../api/tradeApi');
-        tradeApi.getImportLcs.mockResolvedValue({
+        (tradeApi.getImportLcs as jest.Mock).mockResolvedValue({
             lcList: [{ 
                 instrumentId: '4', 
-                transactionRef: 'LC-2026-004', 
+                instrumentRef: 'LC-2026-004', 
                 effectiveAmount: 100000,
                 effectiveOutstandingAmount: 60000,
                 cumulativeDrawnAmount: 40000,

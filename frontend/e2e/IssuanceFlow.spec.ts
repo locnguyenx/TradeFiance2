@@ -1,6 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { loginAsAdmin } from './helpers/auth-helper';
 
 test.describe('Issuance Life-Cycle (True E2E)', () => {
+  test.beforeEach(async ({ page }) => {
+    await loginAsAdmin(page);
+  });
+
   test('completes a full LC issuance from dashboard to submission', async ({ page }) => {
     // Enable console log forwarding
     page.on('console', msg => {

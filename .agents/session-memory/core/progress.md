@@ -1,34 +1,16 @@
-# Progress Log - Trade Finance Stabilization
-**Last Update:** 2026-05-06
+# Progress - Import LC Stabilization
+**Last Update:** 2026-05-08
 
-## Milestones
+## Milestones Completed
+- [x] **Audit Hardening (2026-05-06)**: Dual-status, liability calculations, SWIFT Z-set.
+- [x] **Amendment Stabilization (2026-05-07)**: Fixed data loss bug, narrative propagation, and authorization idempotency.
+- [x] **Trade Finance Suite Pass (2026-05-08)**: 100% pass rate in Spock and Playwright suites.
 
-### 1. SWIFT Stabilization
-- [x] Create `SwiftUtilsServices` for rendering.
-- [x] Refactor `SwiftGenerationServices.xml` while preserving business logic.
-- [x] Verify MT700/701/707 generation parity.
-- [x] Resolve `ClassNotFoundException` in web runtime.
-- [x] Achieve 100% pass rate for `SwiftGenerationSpec`.
+## Current Work Stream
+Stabilization complete. Ready for next phase.
 
-### 2. Test Data Hardening
-- [x] Refactor `TradePartySpec` to use `create#ImportLetterOfCredit`.
-- [x] Verify REST API routing for Amendments and Presentations.
-- [x] Ensure `applicableRulesEnumId` errors are resolved via logical parity.
-
-### 3. Import LC Audit Hardening
-- [x] Implement `latestTransactionId` for Dual-Status Visibility.
-- [x] Correct Facility Earmarking (including tolerance).
-- [x] Enforce Beneficiary Consent for amendments.
-- [x] Achieve 100% pass rate for `BddImportLcModuleSpec` (45 scenarios).
-- [x] Implement SWIFT Z-Character set support.
-- [x] Update User Guides (Enduser, Backoffice, Developer).
-
-### 4. Environmental Fixes
-- [x] Resolve Bitronix/H2 lock collisions by stopping lingering Gradle daemons.
-- [x] Confirm UI "Save Draft" functionality is restored.
-
-## Completed Tasks
-- [2026-05-06] Migrated SWIFT generation to service-oriented architecture.
-- [2026-05-06] Resolved total test suite failure by managing background process locks.
-- [2026-05-06] Successfully committed SWIFT and Test Hardening baselines.
-- [2026-05-06] Completed Import LC Audit Hardening and functional certification.
+## Key Findings
+- **Lifecycle Enforcement**: Automated tests MUST use the authorization facade (`authorize#Instrument`) to advance business states in Maker/Checker environments.
+- **Post-Auth Context**: `ec.artifactExecution.disableAuthz()` is required after authorization in tests to allow subsequent service calls (like settlement) to access locked records.
+- **UI/Test Sync**: Upgrading to Portfolio-style views requires updating E2E expectations for header visibility.
+- **Resilience**: Frontend API retries are effective at mitigating transient backend errors during high-concurrency test runs.

@@ -25,7 +25,8 @@
         <alias entity-alias="TX" name="priorityEnumId"/>
         <alias entity-alias="TX" name="transactionTypeEnumId"/>
         <alias entity-alias="TX" name="transactionStatusId"/>
-        <alias entity-alias="TI" name="transactionRef"/>
+        <alias entity-alias="TX" name="transactionRef"/>
+        <alias entity-alias="TI" name="instrumentRef"/>
         <alias entity-alias="TI" name="instrumentTypeEnumId"/>
     </view-entity>
 

@@ -22,6 +22,7 @@ class DualApprovalSpec extends Specification {
         try {
             // Clean up dependencies
             String instId = "DUAL-APP-LC-01"
+            ec.entity.find("trade.TradeInstrument").condition("instrumentId", instId).updateAll([latestTransactionId: null])
             ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", instId).deleteAll()
             ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instId).deleteAll()
             ec.entity.find("trade.TradeTransaction").condition("instrumentId", instId).deleteAll()
@@ -62,7 +63,7 @@ class DualApprovalSpec extends Specification {
         given: "A Tier 4 transaction (2M USD LC)"
         String instId = "DUAL-APP-LC-01"
         ec.entity.makeValue("trade.TradeInstrument").setAll([
-            instrumentId: instId, transactionRef: "DUAL-01", instrumentTypeEnumId: 'IMPORT_LC',
+            instrumentId: instId, instrumentRef: "DUAL-01", instrumentTypeEnumId: 'IMPORT_LC',
             transactionStatusId: 'TX_PENDING', businessStateId: 'LC_DRAFT',
             amount: 2000000, currencyUomId: 'USD', versionNumber: 1
         ]).create()
@@ -137,6 +138,7 @@ class DualApprovalSpec extends Specification {
         approvals2.any { it.approverUserId == "trade.checker2" }
         
         cleanup:
+        ec.entity.find("trade.TradeInstrument").condition("instrumentId", instId).updateAll([latestTransactionId: null])
         ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", instId).deleteAll()
         ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", instId).deleteAll()
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instId).deleteAll()

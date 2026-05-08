@@ -10,6 +10,7 @@ jest.mock('../api/tradeApi', () => ({
     tradeApi: {
         createLc: jest.fn().mockResolvedValue({ instrumentId: '900001', transactionRef: 'TF-IMP-26-0001' }),
         updateLc: jest.fn().mockResolvedValue({ instrumentId: '900001', transactionRef: 'TF-IMP-26-0001' }),
+        getImportLc: jest.fn().mockResolvedValue({ instrumentId: '900001', transactionRef: 'TF-IMP-26-0001', amount: 100000 }),
         validateLcSwiftFields: jest.fn().mockResolvedValue({ errors: [] }),
         getStandardClauses: jest.fn().mockResolvedValue([
             { clauseId: '1', clauseName: 'General Merchandise', clauseText: 'General merchandise as per Proforma Invoice...' }
@@ -37,6 +38,13 @@ jest.mock('../api/tradeApi', () => ({
             ]
         })
     }
+}));
+
+const mockShowToast = jest.fn();
+jest.mock('../context/ToastContext', () => ({
+    useToast: () => ({
+        showToast: mockShowToast
+    })
 }));
 
 describe('IssuanceStepper v3.0 (BDD-IMP-FLOW-01, BDD-CMN-VAL-05)', () => {
@@ -203,7 +211,9 @@ describe('IssuanceStepper v3.0 (BDD-IMP-FLOW-01, BDD-CMN-VAL-05)', () => {
         await act(async () => {
             fireEvent.click(screen.getByText(/Save Draft/i));
         });
-        expect(await screen.findByText(/Draft Saved Successfully/i)).toBeInTheDocument();
+        await waitFor(() => {
+            expect(mockShowToast).toHaveBeenCalledWith('success', 'Draft Saved Successfully');
+        });
         
         await act(async () => {
             fireEvent.click(screen.getByTestId('submit-button'));
@@ -217,7 +227,7 @@ describe('IssuanceStepper v3.0 (BDD-IMP-FLOW-01, BDD-CMN-VAL-05)', () => {
         });
         // Step 1 (Parties)
         expect(screen.getByLabelText(/Advise Through Bank/i)).toBeInTheDocument();
-        expect(screen.getByLabelText(/Advising Bank/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/Advising Bank \(Receiver\)/i)).toBeInTheDocument();
         
         await completeStep0();
         await act(async () => {

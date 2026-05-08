@@ -16,6 +16,9 @@ export const ImportLcDashboard: React.FC = () => {
     const router = useRouter();
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
     const [filterStatus, setFilterStatus] = useState<string>('');
+    const [filterMaker, setFilterMaker] = useState<string>('');
+    const [filterType, setFilterType] = useState<string>('');
+    const [makers, setMakers] = useState<string[]>([]);
 
     const toggleMenu = (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
@@ -32,11 +35,22 @@ export const ImportLcDashboard: React.FC = () => {
         setLoading(true);
         const params: any = {};
         if (filterStatus) params.businessStateId = filterStatus;
+        if (filterMaker) params.makerUserId = filterMaker;
+        if (filterType) params.transactionTypeEnumId = filterType;
 
-        Promise.all([tradeApi.getImportLcs(params), tradeApi.getKpis()])
-            .then(([lcData, kpiData]) => {
+        Promise.all([
+            tradeApi.getImportLcs(params), 
+            tradeApi.getKpis(),
+            tradeApi.getUserAuthorityProfiles()
+        ])
+            .then(([lcData, kpiData, authData]) => {
                 setLcs(lcData?.lcList || []);
                 setKpis(kpiData || null);
+                
+                // Extract unique userIds from profiles for the maker filter
+                const uniqueMakers = Array.from(new Set(authData.profileList.map(p => p.userId)));
+                setMakers(uniqueMakers);
+                
                 setLoading(false);
             })
             .catch(err => {
@@ -44,7 +58,7 @@ export const ImportLcDashboard: React.FC = () => {
                 setError("System Temporarily Unavailable. Please contact Trade Support.");
                 setLoading(false);
             });
-    }, [filterStatus]);
+    }, [filterStatus, filterMaker, filterType]);
 
     if (loading) return (
         <div className="skeleton-dashboard">
@@ -88,6 +102,32 @@ export const ImportLcDashboard: React.FC = () => {
                             <option value="LC_ISSUED">Issued</option>
                             <option value="LC_DOC_RECEIVED">Docs Received</option>
                         </select>
+
+                        <select 
+                            aria-label="Maker Filter" 
+                            className="filter-select"
+                            value={filterMaker}
+                            onChange={(e) => setFilterMaker(e.target.value)}
+                        >
+                            <option value="">Maker: All</option>
+                            {makers.map(m => (
+                                <option key={m} value={m}>{m}</option>
+                            ))}
+                        </select>
+
+                        <select 
+                            aria-label="Type Filter" 
+                            className="filter-select"
+                            value={filterType}
+                            onChange={(e) => setFilterType(e.target.value)}
+                        >
+                            <option value="">Type: All</option>
+                            <option value="IMP_NEW">Issuance</option>
+                            <option value="IMP_AMENDMENT">Amendment</option>
+                            <option value="IMP_PRESENTATION">Presentation</option>
+                            <option value="IMP_SETTLEMENT">Settlement</option>
+                            <option value="IMP_CANCEL">Cancellation</option>
+                        </select>
                     </div>
                 </header>
 
@@ -125,7 +165,7 @@ export const ImportLcDashboard: React.FC = () => {
                                          
                                          return (
                                              <tr key={lc.instrumentId} className="clickable-row" onClick={() => router.push(`/import-lc/details?id=${lc.instrumentId}`)}>
-                                                 <td className="font-bold">{lc.transactionRef}</td>
+                                                 <td className="font-bold">{lc.instrumentRef}</td>
                                                  <td>{lc.applicantPartyName || lc.applicantName || '---'}</td>
                                                  <td>{lc.beneficiaryPartyName || lc.beneficiaryName || '---'}</td>
                                                  <td>{lc.currency || 'USD'}</td>
@@ -245,6 +285,7 @@ export const ImportLcDashboard: React.FC = () => {
                 .empty-state { text-align: center; padding: 3rem; color: #94a3b8; }
                 
                 .filter-select { padding: 0.5rem; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.875rem; outline: none; }
+                .table-filters { display: flex; gap: 0.75rem; }
             `}</style>
         </div>
     );

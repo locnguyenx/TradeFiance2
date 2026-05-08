@@ -79,6 +79,8 @@ export const CheckersQueue: React.FC<CheckersQueueProps> = ({ items: initialItem
                     <thead>
                         <tr>
                             <th>Priority</th>
+                            <th>Instrument Ref</th>
+                            <th>Instrument ID</th>
                             <th>Transaction Ref</th>
                             <th>Module</th>
                             <th>Action</th>
@@ -97,18 +99,27 @@ export const CheckersQueue: React.FC<CheckersQueueProps> = ({ items: initialItem
                                         {item.priorityEnumId}
                                     </span>
                                 </td>
-                                <td className="ref-cell">
-                                    {item.transactionRef}
-                                    {item.transactionStatusId === 'TXN_PARTIAL_APPROVED' && (
-                                        <div className="status-label partial">PARTIAL APPROVED</div>
-                                    )}
+                                <td className="instrument-ref">
+                                    <div className="ref-cell">{item.instrumentRef}</div>
                                 </td>
+                                <td className="instrument-id">
+                                    <div className="ref-cell">{item.instrumentId}</div>
+                                </td>
+                                <td className="transaction-ref">
+                                    <div className="ref-cell">
+                                        {item.transactionRef}
+                                        {item.transactionStatusId === 'TXN_PARTIAL_APPROVED' && (
+                                            <div className="status-label partial">PARTIAL APPROVED</div>
+                                        )}
+                                    </div>
+                                </td>
+
                                 <td><span className="module-tag">{item.module}</span></td>
                                 <td><span className="action-tag">{item.action}</span></td>
-                                <td className="amount-cell">{(item.baseEquivalentAmount || 0).toLocaleString()}</td>
+                                <td className="amount-cell">{(item.transactionAmount || 0).toLocaleString()}</td>
                                 <td>{item.makerUserId}</td>
                                 <td>
-                                    <div className={`sla-timer`}>
+                                    <div className="sla-timer">
                                         {item.timeInQueue}
                                     </div>
                                 </td>
@@ -160,14 +171,14 @@ export const CheckersQueue: React.FC<CheckersQueueProps> = ({ items: initialItem
                 .filter-chip.active { background: #1e293b; color: white; border-color: #1e293b; }
 
                 .queue-table-wrapper { overflow-x: auto; background: white; border-radius: 12px; }
-                .queue-table { width: 100%; border-collapse: collapse; }
+                .queue-table { width: 100%; border-collapse: collapse; table-layout: auto; }
                 .queue-table th { text-align: left; background: #f8fafc; padding: 1rem 1.5rem; font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; }
-                .queue-table td { padding: 1.25rem 1.5rem; border-bottom: 1px solid #f1f5f9; font-size: 0.875rem; color: #1e293b; }
+                .queue-table td { padding: 1.25rem 1.5rem; border-bottom: 1px solid #f1f5f9; font-size: 0.875rem; color: #1e293b; vertical-align: middle; }
                 
                 .clickable-row { cursor: pointer; transition: background 0.2s; }
                 .clickable-row:hover { background: #f8fafc; }
                 
-                .ref-cell { font-weight: 700; color: #2563eb; display: flex; flex-direction: column; gap: 0.25rem; }
+                .ref-cell { font-weight: 700; color: #2563eb; display: flex; flex-direction: column; gap: 0.125rem; min-width: 120px; }
                 .status-label { font-size: 0.625rem; font-weight: 800; padding: 0.125rem 0.375rem; border-radius: 2px; width: fit-content; }
                 .status-label.partial { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
                 

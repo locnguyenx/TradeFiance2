@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../context/ToastContext';
 import { tradeApi } from '../api/tradeApi';
 import { isValidZChars, getLineCount } from '../utils/SwiftUtils';
 
@@ -12,6 +13,7 @@ interface PresentationLodgementProps {
 }
 
 export const PresentationLodgement: React.FC<PresentationLodgementProps> = ({ instrumentId }) => {
+    const { showToast } = useToast();
     const [formData, setFormData] = useState({
         presentationDate: new Date().toISOString().split('T')[0],
         claimAmount: '',
@@ -85,15 +87,25 @@ export const PresentationLodgement: React.FC<PresentationLodgementProps> = ({ in
         setError('');
         setLoading(true);
         try {
-            const result = await tradeApi.createLcPresentation(instrumentId, {
+            const createRes = await tradeApi.createLcPresentation(instrumentId, {
                 ...formData,
                 claimAmount: parseFloat(formData.claimAmount) || 0
             });
-            if (result.errors || result.error) {
-                setError(result.errors?.[0] || result.error || 'Failed to log presentation');
+            
+            if (createRes.errors || createRes.error) {
+                setError(createRes.errors?.[0] || createRes.error || 'Failed to create presentation draft');
+                setLoading(false);
+                return;
+            }
+
+            const presentationId = createRes.presentationId;
+            const submitRes = await tradeApi.submitLcPresentation(instrumentId, presentationId, {});
+            
+            if (submitRes.errors || submitRes.error) {
+                setError(submitRes.errors?.[0] || submitRes.error || 'Draft created, but failed to submit for approval');
             } else {
-                // Success logic (e.g. redirect or notification)
-                alert('Presentation logged successfully');
+                showToast('success', 'Presentation submitted for approval');
+                // Redirect to dashboard or approvals
             }
         } catch (e: any) {
             setError(e.message || 'An unexpected error occurred');

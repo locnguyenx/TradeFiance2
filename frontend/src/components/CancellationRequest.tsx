@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../context/ToastContext';
 import { tradeApi } from '../api/tradeApi';
 
 // ABOUTME: LC Cancellation Request component implementing REQ-IMP-PRC-06.
@@ -11,6 +12,7 @@ interface CancellationRequestProps {
 }
 
 export const CancellationRequest: React.FC<CancellationRequestProps> = ({ instrumentId }) => {
+    const { showToast } = useToast();
     const [consentReceived, setConsentReceived] = useState(false);
     const [reason, setReason] = useState('');
     const [instrument, setInstrument] = useState<any>(null);
@@ -57,8 +59,41 @@ export const CancellationRequest: React.FC<CancellationRequestProps> = ({ instru
         );
     }
 
+    const handleCancellation = async () => {
+        setError('');
+        setLoading(true);
+        try {
+            const createRes = await tradeApi.createLcCancellation(instrumentId, {
+                cancellationReason: reason
+            });
+
+            if (createRes.errors || createRes.error) {
+                setError(createRes.errors?.[0] || createRes.error || 'Failed to initiate cancellation');
+                setLoading(false);
+                return;
+            }
+
+            const transactionId = createRes.transactionId;
+            const submitRes = await tradeApi.submitLcCancellation(instrumentId, transactionId, {
+                cancellationReason: reason
+            });
+
+            if (submitRes.errors || submitRes.error) {
+                setError(submitRes.errors?.[0] || submitRes.error || 'Draft created, but failed to submit for approval');
+            } else {
+                showToast('success', 'Cancellation request submitted for approval');
+                window.location.href = `/import-lc/${instrumentId}`;
+            }
+        } catch (err: any) {
+            setError(err.message || 'Cancellation submission failed');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="cancellation-container premium-card">
+            {error && <div className="alert-box error mb-6" style={{ background: '#fef2f2', color: '#991b1b', padding: '1rem', border: '1px solid #fecaca', borderRadius: '8px' }}>{error}</div>}
             <header className="header-box">
                 <h2 className="title">LC Cancellation Request</h2>
                 <p className="subtitle">Instrument: {instrumentId}</p>
@@ -104,13 +139,13 @@ export const CancellationRequest: React.FC<CancellationRequestProps> = ({ instru
             </main>
 
             <footer className="footer-actions">
-                <button className="secondary-btn">Cancel</button>
+                <button className="secondary-btn" onClick={() => window.location.href = `/import-lc/${instrumentId}`}>Cancel</button>
                 <button 
                     className="primary-btn danger" 
-                    disabled={!consentReceived}
-                    onClick={() => alert('Cancellation Submitted')}
+                    disabled={!consentReceived || loading}
+                    onClick={handleCancellation}
                 >
-                    Submit Cancellation
+                    {loading ? 'Processing...' : 'Submit Cancellation'}
                 </button>
             </footer>
 

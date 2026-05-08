@@ -27,7 +27,7 @@ class TradeSwiftAutoTriggerSpec extends Specification {
 
         // Create a basic LC draft manually (to avoid triggering other SECAs if they already exist, but here we want to test the 'get' trigger)
         ec.service.sync().name("create#trade.TradeInstrument").parameters([
-            instrumentId: instId, transactionRef: "AUTO-01", instrumentTypeEnumId: 'IMPORT_LC', businessStateId: 'LC_DRAFT', amount: 1000.0, currencyUomId: 'USD'
+            instrumentId: instId, instrumentRef: "AUTO-01", instrumentTypeEnumId: 'IMPORT_LC', businessStateId: 'LC_DRAFT', amount: 1000.0, currencyUomId: 'USD'
         ]).call()
         ec.service.sync().name("create#trade.importlc.ImportLetterOfCredit").parameters([
             instrumentId: instId, businessStateId: 'LC_DRAFT', lcAmount: 1000.0, lcCurrencyUomId: 'USD'

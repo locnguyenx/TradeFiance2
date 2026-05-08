@@ -76,7 +76,7 @@ describe('CheckerAuthorization v3.0 (REQ-UI-IMP-05)', () => {
         (tradeApi.getTransaction as jest.Mock).mockResolvedValueOnce({
             transactionId: 'TXN-002',
             instrumentId: 'IMLC/2026/002',
-            transactionStatusId: 'TXN_SUBMITTED',
+            transactionStatusId: 'TX_PENDING',
             proposedAmount: 750000,
         });
         

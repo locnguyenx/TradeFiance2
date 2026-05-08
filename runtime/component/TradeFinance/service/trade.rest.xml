@@ -37,23 +37,51 @@
             <method type="post"><service name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit"/></method>
             <resource name="amendment">
                 <method type="post"><service name="trade.importlc.ImportLcServices.create#Amendment"/></method>
+                <id name="amendmentId">
+                    <method type="get"><service name="trade.importlc.ImportLcServices.get#Amendment"/></method>
+                    <method type="put"><service name="trade.importlc.ImportLcServices.update#Amendment"/></method>
+                    <resource name="submit">
+                        <method type="post"><service name="trade.importlc.ImportLcServices.submit#Amendment"/></method>
+                    </resource>
+                </id>
             </resource>
             <resource name="presentation">
                 <method type="post"><service name="trade.TradeCommonServices.create#Presentation"/></method>
                 <id name="presentationId">
+                    <method type="put"><service name="trade.TradeCommonServices.update#Presentation"/></method>
                     <resource name="waiver">
                         <method type="patch"><service name="trade.importlc.ImportLcServices.update#PresentationWaiver"/></method>
+                    </resource>
+                    <resource name="submit">
+                        <method type="post"><service name="trade.TradeCommonServices.submit#Presentation"/></method>
                     </resource>
                 </id>
             </resource>
             <resource name="settlement">
                 <method type="post"><service name="trade.TradeAccountingServices.create#ImportLcSettlement"/></method>
+                <id name="settlementId">
+                    <method type="put"><service name="trade.TradeAccountingServices.update#ImportLcSettlement"/></method>
+                    <resource name="submit">
+                        <method type="post"><service name="trade.TradeAccountingServices.submit#ImportLcSettlement"/></method>
+                    </resource>
+                </id>
             </resource>
-            <resource name="shipping-guarantees">
+            <resource name="shipping-guarantee">
                 <method type="post"><service name="trade.TradeCommonServices.create#ShippingGuarantee"/></method>
+                <id name="guaranteeId">
+                    <method type="put"><service name="trade.TradeCommonServices.update#ShippingGuarantee"/></method>
+                    <resource name="submit">
+                        <method type="post"><service name="trade.TradeCommonServices.submit#ShippingGuarantee"/></method>
+                    </resource>
+                </id>
             </resource>
-            <resource name="cancel">
-                <method type="post"><service name="trade.TradeCommonServices.update#Cancellation"/></method>
+            <resource name="cancellation">
+                <method type="post"><service name="trade.TradeCommonServices.create#Cancellation"/></method>
+                <id name="transactionId">
+                    <resource name="submit">
+                        <method type="post"><service name="trade.TradeCommonServices.submit#Cancellation"/></method>
+                    </resource>
+                </id>
             </resource>
         </id>
     </resource>
@@ -71,23 +99,50 @@
     </resource>
 
     <resource name="common">
-        <resource name="transactions">
-            <method type="get"><service name="trade.TradeCommonServices.get#TradeTransactions"/></method>
+        <resource name="amendments">
+            <method type="get"><service name="trade.TradeCommonServices.get#AmendmentList"/></method>
+        </resource>
+        <resource name="amendment">
+            <id name="amendmentId">
+                <method type="get"><service name="trade.TradeCommonServices.get#Amendment"/></method>
+            </id>
+        </resource>
+        <resource name="presentations">
+            <method type="get"><service name="trade.TradeCommonServices.get#PresentationList"/></method>
+        </resource>
+        <resource name="presentation">
+            <id name="presentationId">
+                <method type="get"><service name="trade.TradeCommonServices.get#Presentation"/></method>
+            </id>
+        </resource>
+        <resource name="settlements">
+            <method type="get"><service name="trade.TradeCommonServices.get#SettlementList"/></method>
+        </resource>
+        <resource name="settlement">
+            <id name="settlementId">
+                <method type="get"><service name="trade.TradeCommonServices.get#Settlement"/></method>
+            </id>
+        </resource>
+        <resource name="shipping-guarantees">
+            <method type="get"><service name="trade.TradeCommonServices.get#ShippingGuaranteeList"/></method>
+        </resource>
+        <resource name="shipping-guarantee">
+            <id name="guaranteeId">
+                <method type="get"><service name="trade.TradeCommonServices.get#ShippingGuarantee"/></method>
+            </id>
         </resource>
         <resource name="audit-logs">
-            <method type="get"><service name="trade.TradeCommonServices.get#GlobalTransactionLogs"/></method>
+            <method type="get"><service name="trade.AdminServices.get#TradeAuditLogs"/></method>
+        </resource>
+        <resource name="transactions">
+            <method type="get"><service name="trade.TradeCommonServices.get#TradeTransactions"/></method>
+            <id name="transactionId">
+                <method type="get"><service name="trade.TradeCommonServices.get#TradeTransaction"/></method>
+                <method type="patch"><service name="trade.TradeCommonServices.update#TradeTransaction"/></method>
+            </id>
         </resource>
     </resource>
 
-    <resource name="transaction">
-        <id name="transactionId">
-            <method type="get"><service name="trade.TradeCommonServices.get#TradeTransaction"/></method>
-        </id>
-    </resource>
-
-    <resource name="audit-logs">
-        <method type="get"><service name="trade.AdminServices.get#TradeAuditLogs"/></method>
-    </resource>
 
     <resource name="product-config">
         <method type="post"><service name="trade.AdminServices.update#TradeProductConfig"/></method>
@@ -95,6 +150,9 @@
 
     <resource name="fee-configurations">
         <method type="get"><service name="trade.MasterDataServices.get#FeeConfigurations"/></method>
+        <id name="feeConfigurationId">
+            <method type="post"><service name="trade.MasterDataServices.update#FeeConfiguration"/></method>
+        </id>
     </resource>
 
     <resource name="product-catalog">

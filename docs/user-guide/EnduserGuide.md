@@ -27,14 +27,14 @@ The platform is organized into functional modules accessible via the **Sidebar**
 - **My Tasks**: Checker queue for authorizing transactions (requires `TRADE_CHECKER` role).
 - **Doc Examination**: Specialized workflow for verifying physical documents against LC terms.
 
-### IMPORT LC (Product-Specific Management)
+#### IMPORT LC (Product-Specific Management)
 - **Import LC Dashboard**: Central command for tracking current legal states of Import instruments.
 - **New LC Issuance**: Entry point for creating fresh MT 700 draft instruments.
-- **LC Amendments**: Capture delta changes (Amount, Expiry, Terms) via MT 707.
-- **Presentations**: Log beneficiary document claims and track 5-day examination SLAs.
-- **Settlements**: Finalize payment and release credit facility earmarks.
-- **Shipping Guarantees**: Issue guarantees for cargo release before docs arrival.
-- **Cancellations**: Request formal termination of an active instrument.
+- **LC Amendments**: Browse and view the full history of Amendment (MT 707) records independent of the dashboard.
+- **Presentations**: Direct access to historical document claim records and discrepancy status.
+- **Settlements**: Portfolio view of all payment releases and remittance history.
+- **Shipping Guarantees**: Independent record browsing for cargo release guarantees.
+- **Cancellations**: Track formal termination requests and historical closures.
 
 ### MASTER DATA & ADMIN
 - **Party & KYC Directory**: Manage corporate client records, BICs, and compliance status.
@@ -48,22 +48,19 @@ The platform is organized into functional modules accessible via the **Sidebar**
 
 ---
 
-## 3. Vertical Asset Management (REQ-NAV-01.2)
-Unlike the operational Dashboards which show pending work, the **Vertical Asset Lists** are designed for browsing the current legal state of trade products.
+## 3. Portfolio Record Browsing (REQ-NAV-01.2)
+Unlike the operational Dashboards which show pending work, the **Portfolio Record Views** provide direct, non-blocking access to the underlying business artifacts (Amendments, Presentations, etc.).
 
-### Accessing Vertical Lists
-Navigate to the specific product group in the sidebar to view its dedicated master list:
-- **Import LCs**: Accessible via `IMPORT LC > Import LC Dashboard`. This list provides a filtered view of all active and historical Import Letters of Credit.
-- **Shipping Guarantees**: Accessible via `IMPORT LC > Shipping Guarantees`.
-- **Other Verticals**: Export LCs and Standby LCs are accessible via their respective sidebar groups (where implemented).
-
-### Global Transaction Log (REQ-NAV-01.3)
-Access the **Global Transaction Log** via `ADMINISTRATION > Audit Logs`. This view provides a chronologically sorted, priority-aware list of all operational actions. It allows officers to trace decisions back to specific Maker/Checker IDs and view the data delta for every change.
+### Accessing Portfolio Records
+Navigate to the specific product group in the sidebar to view its dedicated master portfolio:
+- **Amendment Portfolio**: `IMPORT LC > LC Amendments`. View the specific delta changes and beneficiary consent status for every modification.
+- **Presentation Portfolio**: `IMPORT LC > Presentations`. Track claim amounts and exam results for all document submissions.
+- **Settlement Portfolio**: `IMPORT LC > Settlements`. Monitor specific remittance dates, FX rates, and debit account details.
 
 ### Functional Features
-- **Asset Snapshot**: Unlike transaction views, these lists always show the **Approved Version** of the instrument.
-- **Exposure Tracking**: Integrated with **REQ-NAV-01.1**, these views provide the primary source of truth for bank exposure at the instrument level.
-- **Deep Link Navigation**: Click any Reference Number to enter the **Unified Narrative Timeline** for that specific asset.
+- **Decoupled Navigation**: Browse historical records without first selecting an active instrument from the dashboard.
+- **Entity-Specific Details**: Clicking a record provides a specialized view of its payload (e.g., viewing an Amendment Narrative) rather than a generic transaction log.
+- **Audit Stability**: These views provide the permanent record of approved actions, ensuring full visibility into the lifecycle history of any trade asset.
 
 ---
 
@@ -72,10 +69,14 @@ The **Operations Dashboard** is the primary launchpad for instrument-level actio
 
 ### Data Interaction
 1.  **Filter & Search**: Use the **Status Filter** (Draft, Pending, Issued, Doc Received) or the **Global Search** bar.
-    - **Context Toggle**: Select **Inst** to search by Instrument ID (legal asset) or **Txn** to search by Transaction Ref (active workflow).
-2.  **View Detail Page**: Click any **Ref No** (underlined blue text) to exit the dashboard and enter the **Dedicated Full-Screen View**.
-3.  **Dual-Status Visibility**: The dashboard provides a combined view of the instrument's legal state (e.g., `Issued`) and its current active transaction status (e.g., `Draft Amendment`). This ensures high visibility for pending lifecycle actions.
-4.  **SLA Health**: High-priority transactions with <3 days remaining are highlighted in **Urgent Red** in the "SLA Timer" column.
+    - **Context Toggle**: Select **Inst** to search by **Instrument Ref** (legal asset) or **Txn** to search by **Transaction Ref** (active workflow).
+2.  **View Detail Page**: Click any **Instrument Ref** (underlined blue text) to exit the dashboard and enter the **Dedicated Full-Screen View**.
+3.  **Dual-Status Visibility**: The dashboard provides a combined view of the instrument's legal state (e.g., `ISSUED`) and its current active transaction status (e.g., `Draft Amendment`). This ensures high visibility for pending lifecycle actions.
+4.  **Financial Clarity**:
+    - **Effective Amount**: The current authorized face value of the instrument (includes amendments).
+    - **Outstanding Amount**: The remaining undrawn balance available for presentation.
+    - **Drawn Amount**: Total cumulative payments released to the beneficiary.
+5.  **SLA Health**: High-priority transactions with <3 days remaining are highlighted in **Urgent Red** in the "SLA Timer" column.
 
 ### Row-Level Context Actions (•••)
 Click the triple-dot menu on any dashboard row to access status-specific actions:
@@ -95,10 +96,11 @@ Click the triple-dot menu on any dashboard row to access status-specific actions
 Clicking a reference opens the **Full-Screen Workspace**. This view is optimized for audit and control.
 
 ### Navigation within Details
-The workspace features a triple-mode layout:
+The workspace features a high-fidelity layout:
 - **Current State**: Static view of the instrument's active data (Parties, Financials, Terms).
+- **Transaction Specific Details**: A dedicated payload section (visible when viewing a specific transaction) showing the exact data captured for that event (e.g., Amendment Narrative, Presentation Amounts).
 - **Audit Narrative**: Chronological **Unified Timeline** merging financial transactions and technical audit logs.
-- **SWIFT Messages**: Real-time view of all MT 7xx messages generated for this instrument. Messages are generated as **DRAFT** during the Maker phase and promoted to **ACTIVE** only after formal **Checker Approval**.
+- **SWIFT Messages**: Real-time view of all MT 7xx messages generated for this instrument.
 
 ### 5.1 SWIFT Message Preview (Maker Workflow)
 To ensure accuracy before submission, Makers can preview the generated SWIFT payload:
@@ -141,8 +143,8 @@ Users with the `TRADE_CHECKER` role can authorize transactions via the **My Task
 
 ### Authorizing an Instrument
 1.  Click **Authorize** to enter the high-fidelity workspace.
-2.  **Compare Proposed vs. Current**: The workspace displays the instrument data *as it will look* after the transaction (Proposed) alongside current recorded values.
-3.  **Submit Decision**: Actions are performed against the unique **Transaction ID**, ensuring atomicity regardless of the instrument's future versioning.
+2.  **Compare Proposed vs. Current**: The workspace displays the instrument data *as it will look* after the transaction (Proposed) alongside current recorded values. This is critical for verifyng Amendment deltas or Settlement amounts.
+3.  **Submit Decision**: Actions are performed against a unique **Transaction Ref** (e.g., `TF-TXN-26-0001`), ensuring atomicity. Once approved, the system promotes the "Proposed State" to the "Master Record" and updates the instrument's `businessStateId`.
 
 ### Structured Party Review
 When reviewing an LC, the Checker sees all assigned parties grouped by category:
@@ -276,10 +278,14 @@ Designed for mid-lifecycle adjustments.
 ---
 
 ## 10. Settlement & Drawings
-Captures payment release and liability reduction. Once authorized, the system automatically:
-1.  Reduces the **Outstanding Amount** of the LC.
-2.  Increases the **Cumulative Drawn Amount**.
-3.  Releases the corresponding portion of the **Credit Facility** limit.
+Captures payment release and liability reduction. To ensure audit integrity, settlements follow the **Maker-Checker** pattern:
+1.  **Initiation (Maker)**: Select an LC in `DOC_RECEIVED` or `LC_ISSUED` status and initiate settlement.
+2.  **Validation**: The system validates that the **Drawing Amount** does not exceed the current **Outstanding Amount** (including tolerance).
+3.  **Authorization (Checker)**: Upon Checker approval, the system automatically:
+    -   Reduces the **Outstanding Amount** of the LC.
+    -   Increases the **Cumulative Drawn Amount**.
+    -   Releases the corresponding portion of the **Credit Facility** limit.
+    -   Transitions the instrument state (e.g., to `LC_CLOSED` if fully drawn).
 
 | Field | Tag | Requirement | Character Set | Input Guideline |
 |-------|-----|-------------|---------------|-----------------|
@@ -298,7 +304,11 @@ Allowed: `A-Z a-z 0-9 / - ? : ( ) . , ' + space`
 
 ### Z-Character Set (The "Extended" Set)
 Allowed in **Narratives** (Tags 73, 72Z, 77A):
-- `.` `,` `-` `(` `)` `/` `=` `'` `+` `:` `?` `!` `#` `&` `*` `<` `>` `;` `@` `"` `_` `%` `space`
+### SWIFT Formatting Constraints
+To ensure 100% STP (Straight Through Processing), all narrative and address fields are subject to:
+- **Character Set Validation**: Automatic rejection of non-compliant symbols during the Maker phase.
+- **Line Length Enforcement**: Addresses are limited to **35 characters per line** across max 4 lines. Narrative fields (Tag 45A/46A) are wrapped automatically at 65 characters.
+- **Reference Uniqueness**: **Instrument Ref** must be unique bank-wide. **Transaction Ref** is auto-generated to ensure traceability across the lifecycle.
 
 ---
 

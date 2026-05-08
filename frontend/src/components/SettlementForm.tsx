@@ -57,14 +57,30 @@ export const SettlementForm: React.FC<SettlementFormProps> = ({ instrumentId, pr
 
         setSubmitting(true);
         try {
-            await tradeApi.settleLcPresentation(instrumentId, presentationId || 'AUTO_PRES', {
+            const createRes = await tradeApi.createLcSettlement(instrumentId, {
+                presentationId: presentationId || 'AUTO_PRES',
                 principalAmount: settlementAmount,
                 settlementDate,
-                currencyUomId: lc.currencyUomId
+                currencyUomId: lc.currencyUomId,
+                settlementTypeEnumId: 'SIGHT' // Default for now
             });
-            if (onSuccess) onSuccess();
-        } catch (err) {
-            setError('Settlement failed');
+
+            if (createRes.errors || createRes.error) {
+                setError(createRes.errors?.[0] || createRes.error || 'Failed to create settlement draft');
+                setSubmitting(false);
+                return;
+            }
+
+            const settlementId = createRes.settlementId;
+            const submitRes = await tradeApi.submitLcSettlement(instrumentId, settlementId, {});
+
+            if (submitRes.errors || submitRes.error) {
+                setError(submitRes.errors?.[0] || submitRes.error || 'Draft created, but failed to submit for approval');
+            } else {
+                if (onSuccess) onSuccess();
+            }
+        } catch (err: any) {
+            setError(err.message || 'Settlement submission failed');
         } finally {
             setSubmitting(false);
         }

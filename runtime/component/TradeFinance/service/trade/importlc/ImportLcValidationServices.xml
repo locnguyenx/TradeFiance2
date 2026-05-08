@@ -159,8 +159,9 @@
                 if (entityType == "TradeInstrument") {
                     def inst = ec.entity.find("trade.TradeInstrument").condition("instrumentId", entityId).one()
                     if (inst) {
-                        validateReference("transactionRef", inst.transactionRef)
+                        validateReference("instrumentRef", inst.instrumentRef)
                     }
+
                 } else if (entityType == "ImportLetterOfCredit") {
                     def lc = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", entityId).one()
                     if (lc) {
@@ -185,6 +186,7 @@
                         def beneficiary = getParty("TP_BENEFICIARY")
                         def advisingBank = getParty("TP_ADVISING_BANK")
                         def issuingBank = getParty("TP_ISSUING_BANK")
+                        def negotiatingBank = getParty("TP_NEGOTIATING_BANK")
 
                         validateXCharset("applicantName", applicant.name)
                         validateXCharset("beneficiaryName", beneficiary.name)
@@ -194,10 +196,21 @@
                         validateBic("issuingBankBic", issuingBank.bic)
                         validateBic("advisingBankBic", advisingBank.bic)
                         
-                        // Mandatory Fields for MT700
+                        // Mandatory Fields for MT700 (Tag 40A, 41a, 49)
                         if (!lc.lcTypeEnumId) addError("lcTypeEnumId", "Required (SWIFT Tag 40A)", "MANDATORY")
-                        if (!lc.availableByEnumId) addError("availableByEnumId", "Required (SWIFT Tag 41a)", "MANDATORY")
+                        if (!lc.availableByEnumId) addError("availableByEnumId", "Required (SWIFT Tag 41a Payment Method)", "MANDATORY")
+                        if (!lc.availableWithEnumId) addError("availableWithEnumId", "Required (SWIFT Tag 41a Available With)", "MANDATORY")
                         if (!lc.confirmationEnumId) addError("confirmationEnumId", "Required (SWIFT Tag 49)", "MANDATORY")
+
+                        // Tag 41a/d: Available With specific bank validation
+                        if (lc.availableWithEnumId == 'AVAIL_SPECIFIC_BANK') {
+                            def bankBic = negotiatingBank.bic ?: advisingBank.bic
+                            if (!bankBic) {
+                                addError("availableWithEnumId", "Negotiating Bank BIC is required for SPECIFIC_BANK (Tag 41A)", "MANDATORY")
+                            } else {
+                                validateBic("negotiatingBankBic", bankBic)
+                            }
+                        }
 
                         if (!applicant.name) addError("applicantPartyId", "Applicant is required (SWIFT Tag 50)", "MANDATORY")
                         if (!beneficiary.name) addError("beneficiaryPartyId", "Beneficiary is required (SWIFT Tag 59)", "MANDATORY")

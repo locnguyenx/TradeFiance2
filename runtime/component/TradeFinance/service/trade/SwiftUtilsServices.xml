@@ -4,7 +4,7 @@ ABOUTME: SwiftUtilsServices.xml provides core utilities for rendering and valida
 -->
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.0.xsd">
 
-    <service verb="render" noun="SwiftMessage">
+    <service verb="render" noun="SwiftMessage" authenticate="false">
         <description>Renders a SWIFT message string from header data and a map of fields.</description>
         <in-parameters>
             <parameter name="messageType" required="true"/>
@@ -82,7 +82,7 @@ ABOUTME: SwiftUtilsServices.xml provides core utilities for rendering and valida
         </actions>
     </service>
 
-    <service verb="format" noun="Value">
+    <service verb="format" noun="Value" authenticate="false">
         <description>Standard SWIFT field formatting: character cleaning, line wrapping, and line count limiting.</description>
         <in-parameters>
             <parameter name="value"/>

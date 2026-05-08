@@ -247,5 +247,10 @@
     <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="AMEND_PENDING_APPROVAL" toStatusId="AMEND_REJECTED" transitionName="Reject Amendment"/>
     <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="AMEND_APPROVED" toStatusId="AMEND_COMMITTED" transitionName="Commit to LC"/>
     
+    <!-- Sequences -->
+    <trade.common.NumberSequence sequenceId="SEQ_IMP_LC" lastNumber="1000" description="Import LC Numbering"/>
+    <trade.common.NumberSequence sequenceId="SEQ_TXN" lastNumber="5000" description="Trade Transaction Numbering"/>
+
     <trade.PublicHoliday holidayDate="2026-04-27" description="SLA Test Holiday"/>
 </entity-facade-xml>
+

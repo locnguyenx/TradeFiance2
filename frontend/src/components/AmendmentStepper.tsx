@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { tradeApi } from '../api/tradeApi';
 import { TradeInstrument, ImportLetterOfCredit } from '../api/types';
 import { isValidZChars } from '../utils/SwiftUtils';
+import { useToast } from '../context/ToastContext';
 
 // ABOUTME: LC Amendment Stepper implementing REQ-IMP-PRC-02.
 // ABOUTME: Allows makers to capture "Delta" changes to active LCs and preview SWIFT MT 707.
@@ -17,10 +18,12 @@ const steps = [
 ];
 
 interface AmendmentStepperProps {
-    lcId: string;
+    lcId?: string;
+    amendmentId?: string;
 }
 
-export const AmendmentStepper: React.FC<AmendmentStepperProps> = ({ lcId }) => {
+export const AmendmentStepper: React.FC<AmendmentStepperProps> = ({ lcId, amendmentId }) => {
+    const { showToast } = useToast();
     const [stepIndex, setStepIndex] = useState(0);
     const [instrument, setInstrument] = useState<(TradeInstrument & ImportLetterOfCredit) | null>(null);
     const [delta, setDelta] = useState({
@@ -28,33 +31,52 @@ export const AmendmentStepper: React.FC<AmendmentStepperProps> = ({ lcId }) => {
         newExpiryDate: '',
         amendmentNarrative: '',
         amendmentTypeEnumId: 'FINANCIAL',
-        beneficiaryConsentRequired: true,
+        isBeneficiaryAcceptanceRequired: true,
     });
 
     const [error, setError] = useState('');
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(true);
     const [status, setStatus] = useState<'IDLE' | 'SUBMITTED'>('IDLE');
+    const [existingAmendmentId, setExistingAmendmentId] = useState<string | null>(amendmentId || null);
+    const [resolvedLcId, setResolvedLcId] = useState<string | null>(null);
 
     useEffect(() => {
-        if (!lcId || lcId === 'NEW') {
-            setLoading(false);
-            setError('Please select an active Letter of Credit from the dashboard to initiate an amendment.');
-            return;
-        }
-
         setLoading(true);
         setError('');
-        tradeApi.getImportLc(lcId)
-            .then(data => {
-                setInstrument(data);
+        
+        const loadInitialData = async () => {
+            try {
+                let activeLcId = lcId;
+                
+                    if (amendmentId) {
+                        const amdData = await tradeApi.getAmendment(lcId || 'DUMMY', amendmentId);
+                        activeLcId = amdData.instrumentId;
+                        setDelta({
+                            amountAdjustment: amdData.amountAdjustment?.toString() || '0',
+                            newExpiryDate: amdData.newExpiryDate || '',
+                            amendmentNarrative: amdData.amendmentNarrative || '',
+                            amendmentTypeEnumId: amdData.amendmentTypeEnumId || 'FINANCIAL',
+                            isBeneficiaryAcceptanceRequired: amdData.isBeneficiaryAcceptanceRequired !== 'N',
+                        });
+                    }
+
+                if (!activeLcId || activeLcId === 'NEW') {
+                    throw new Error('Please select an active Letter of Credit from the dashboard to initiate an amendment.');
+                }
+
+                setResolvedLcId(activeLcId);
+                const instData = await tradeApi.getImportLc(activeLcId);
+                setInstrument(instData);
+            } catch (err: any) {
+                setError(err.message || 'Failed to load data. Please verify the IDs.');
+            } finally {
                 setLoading(false);
-            })
-            .catch(err => {
-                setError(err.message || 'Failed to load instrument context. Please verify the LC ID.');
-                setLoading(false);
-            });
-    }, [lcId]);
+            }
+        };
+
+        loadInitialData();
+    }, [lcId, amendmentId]);
 
     if (loading && !instrument) return <div className="p-8 text-center premium-card">Loading LC Context...</div>;
     if (!instrument) {
@@ -100,16 +122,35 @@ export const AmendmentStepper: React.FC<AmendmentStepperProps> = ({ lcId }) => {
         setError('');
         setLoading(true);
         try {
-            const result = await tradeApi.createLcAmendment(lcId, {
-                ...delta,
+            let result;
+            const targetLcId = resolvedLcId || lcId || '';
+            
+            // Build payload dynamically - only include truthy values
+            const payload: any = {
+                instrumentId: targetLcId,
                 amountAdjustment: parseFloat(delta.amountAdjustment) || 0,
-                instrumentId: lcId
-            });
+                amendmentTypeEnumId: delta.amendmentTypeEnumId,
+                isFinancial: delta.amendmentTypeEnumId === 'FINANCIAL' ? 'Y' : 'N',
+                isBeneficiaryAcceptanceRequired: delta.isBeneficiaryAcceptanceRequired ? 'Y' : 'N'
+            };
+
+            if (delta.newExpiryDate) payload.newExpiryDate = delta.newExpiryDate;
+            if (delta.amendmentNarrative) payload.amendmentNarrative = delta.amendmentNarrative;
+
+            if (existingAmendmentId) {
+                // Submit existing draft
+                payload.amendmentId = existingAmendmentId;
+                result = await tradeApi.submitLcAmendment(targetLcId, existingAmendmentId, payload);
+            } else {
+                // Create new amendment
+                result = await tradeApi.createLcAmendment(targetLcId, payload);
+            }
+
             if (result.errors || result.error) {
                 setError(result.errors?.[0] || result.error || 'Failed to submit amendment');
             } else {
                 setStatus('SUBMITTED');
-                alert('Amendment submitted successfully');
+                showToast('success', 'Amendment submitted successfully');
             }
         } catch (e: any) {
             setError(e.message || 'An unexpected error occurred');
@@ -227,8 +268,8 @@ export const AmendmentStepper: React.FC<AmendmentStepperProps> = ({ lcId }) => {
                         <h3>MT 707 Preview</h3>
                         <div className="swift-block" data-testid="swift-block">
                             <pre>
-{`:20: ${lcId.trim()}
-:32B: ${instrument.currencyUomId || 'USD'}${delta.amountAdjustment}
+                                {`:20: ${lcId?.trim() || ''}
+:32B: ${instrument?.currencyUomId || 'USD'}${delta.amountAdjustment}
 :77A: AMENDMENT TO LC
 ${delta.newExpiryDate ? `:31E: ${delta.newExpiryDate}` : ''}`}
                             </pre>
@@ -248,13 +289,13 @@ ${delta.newExpiryDate ? `:31E: ${delta.newExpiryDate}` : ''}`}
                                 <input 
                                     type="checkbox" 
                                     id="consentRequired"
-                                    checked={delta.beneficiaryConsentRequired}
-                                    onChange={e => setDelta({...delta, beneficiaryConsentRequired: e.target.checked})}
+                                    checked={delta.isBeneficiaryAcceptanceRequired}
+                                    onChange={e => setDelta({...delta, isBeneficiaryAcceptanceRequired: e.target.checked})}
                                 />
                                 Advise Beneficiary Consent Required
                             </label>
                         </div>
-                        {delta.beneficiaryConsentRequired && (
+                        {delta.isBeneficiaryAcceptanceRequired && (
                             <div className="status-badge consent-pending mt-4">
                                 <span className="pulse-dot"></span>
                                 Awaiting Beneficiary Consent (Conditional on Approval)

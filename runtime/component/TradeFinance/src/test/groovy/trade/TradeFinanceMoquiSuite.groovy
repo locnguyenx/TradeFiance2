@@ -9,13 +9,14 @@ import org.moqui.Moqui
 @SelectClasses([
     SwiftValidationSpec.class,
     SwiftGenerationSpec.class,
+    SwiftPartyGenerationSpec.class,
     ComplianceServicesSpec.class,
     DualApprovalSpec.class,
     EndToEndImportLcSpec.class,
     BddImportLcModuleSpec.class,
     BddCommonModuleSpec.class,
-    AuthVerificationSpec.class,
     AuthorizationServicesSpec.class,
+    AuthorizationDataLossSpec.class,
     DraftLcSpec.class,
     ImportLcEntitiesSpec.class,
     ImportLcServicesSpec.class,
@@ -27,7 +28,14 @@ import org.moqui.Moqui
     TradePartyLcIntegrationSpec.class,
     TradeCommonEntitiesSpec.class,
     TradeSeedDataSpec.class,
-    UserAccountServicesSpec.class
+    UserAccountServicesSpec.class,
+    InstrumentDataIntegritySpec.class,
+    TradeFinanceHardeningSpec.class,
+    TradeSwiftTriggerSpec.class,
+    TradeSwiftAutoTriggerSpec.class,
+    TradeTransactionSpec.class,
+    TradeTransactionViewSpec.class,
+    TradeSearchSpec.class
 ])
 class TradeFinanceMoquiSuite {
     @AfterAll
