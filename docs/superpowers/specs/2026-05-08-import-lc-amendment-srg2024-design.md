@@ -58,7 +58,7 @@ As per the BRD, we are splitting the amendment capabilities into two distinct en
 - `newMarginPercentage` (Decimal)
 - `newRelationshipManagerId` (String)
 
-## 2. Service Layer Refactoring (`ImportLcServices.xml`)
+## 2. Backend Service Layer (`ImportLcServices.xml`)
 
 ### 2.1 `create#ExternalAmendment`
 - Maps UI inputs to `ImportLcAmendment`.
@@ -87,3 +87,35 @@ As per the BRD, we are splitting the amendment capabilities into two distinct en
 - **`authorize#AmendmentConsent`**: Checker reviews the logged consent.
   - If ACCEPTED: Calls the "Merge" routine to overwrite Master LC fields with the Delta fields. If `amountDecrease` > 0, releases the facility limit.
   - If REJECTED: Amendment marked DEAD. If `amountIncrease` > 0, releases the previously earmarked facility limit.
+
+## 3. REST API Design (`trade.rest.xml`)
+- `POST /api/trade/v1/import-lc/{instrumentId}/amendments/external` - Maps to `create#ExternalAmendment`.
+- `POST /api/trade/v1/import-lc/{instrumentId}/amendments/internal` - Maps to `create#InternalAmendment`.
+- `GET /api/trade/v1/import-lc/{instrumentId}/amendments` - Lists both external and internal amendments for the timeline.
+
+## 4. Frontend UI Design (React)
+
+### 4.1 Amendment Scope Selector
+- When clicking "Initiate Amendment", user is presented with a Scope Selector:
+  - **External (UCP 600)** -> Renders `ExternalAmendmentForm.tsx`
+  - **Internal Bank Use Only** -> Renders `InternalAmendmentForm.tsx`
+
+### 4.2 External Amendment Form (`ExternalAmendmentForm.tsx`)
+- **Split-Pane Layout:** 
+  - Left pane: Read-only values from the current Master LC (Current Amount, Current Expiry, Current Goods Description).
+  - Right pane: Active input fields for the Delta.
+- **Locked Fields:** LC Number, Currency, and Applicant fields are rendered as disabled `Input` components.
+- **Smart Delta Narrative Components:** 
+  - For narrative fields (e.g., Goods Description), renders a `<SmartDeltaField />` component.
+  - `<SmartDeltaField />` contains a Select dropdown (Add, Delete, Replace All) and a Textarea for the exact text payload.
+- **Validation:** 
+  - Amount Decrease cannot be greater than the Unutilized Balance (fetched via API).
+  - Expiry Date must be $\ge$ current date.
+
+### 4.3 Internal Amendment Form (`InternalAmendmentForm.tsx`)
+- Renders only the internal fields: Facility ID, Fee Account, Margin Account, RM ID.
+- Displays a prominent banner: *"These changes will not be transmitted via SWIFT."*
+
+### 4.4 Dashboard & Consent UI
+- **Timeline View:** Amendments are badged as "Pending Consent" if they are Dispatched.
+- **Checker Consent Approval:** An Action button appears for Checkers to approve automatically-logged Beneficiary consents, triggering the final Master LC merge.
