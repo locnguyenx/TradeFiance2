@@ -124,6 +124,26 @@
     <moqui.basic.Enumeration enumId="HOLDING_DOCUMENTS" description="Holding Documents" enumTypeId="DocumentDisposal"/>
     <moqui.basic.Enumeration enumId="RETURNING_DOCUMENTS" description="Returning Documents" enumTypeId="DocumentDisposal"/>
 
+    <!-- Reimbursing Charges -->
+    <moqui.basic.EnumerationType enumTypeId="ReimbursingCharges" description="Reimbursing Charges Options (Tag 71D)"/>
+    <moqui.basic.Enumeration enumId="REIMB_OUR" description="Charges on Applicant" enumTypeId="ReimbursingCharges"/>
+    <moqui.basic.Enumeration enumId="REIMB_BEN" description="Charges on Beneficiary" enumTypeId="ReimbursingCharges"/>
+
+    <!-- Applicable Rules -->
+    <moqui.basic.EnumerationType enumTypeId="ApplicableRules" description="Applicable Rules (Tag 40E/40F)"/>
+    <moqui.basic.Enumeration enumId="UCP_LATEST" description="UCP LATEST VERSION" enumTypeId="ApplicableRules"/>
+    <moqui.basic.Enumeration enumId="EUCP_LATEST" description="EUCP LATEST VERSION" enumTypeId="ApplicableRules"/>
+    <moqui.basic.Enumeration enumId="UCPDC_600" description="UCP 600" enumTypeId="ApplicableRules"/>
+    <moqui.basic.Enumeration enumId="ISP_LATEST" description="ISP LATEST VERSION" enumTypeId="ApplicableRules"/>
+
+    <!-- Nostro Reconciliation Status -->
+    <moqui.basic.EnumerationType enumTypeId="NostroReconStatus" description="Nostro Reconciliation Statuses"/>
+    <moqui.basic.Enumeration enumId="RECON_PENDING" description="Pending Reconciliation" enumTypeId="NostroReconStatus"/>
+    <moqui.basic.Enumeration enumId="RECON_MATCHED" description="Matched" enumTypeId="NostroReconStatus"/>
+    <moqui.basic.Enumeration enumId="RECON_UNMATCHED" description="Unmatched" enumTypeId="NostroReconStatus"/>
+    <moqui.basic.Enumeration enumId="RECON_PARTIAL" description="Partial Match" enumTypeId="NostroReconStatus"/>
+
+
     <!-- Bank Configuration -->
     <trade.common.TradeConfig configId="ISSUING_BANK_BIC" configValue="VIETBANK1XXX" description="Issuing bank SWIFT BIC for message headers"/>
     <trade.common.TradeConfig configId="NOSTRO_ACCOUNT_USD" configValue="001-234567-USD" description="USD Nostro account for MT202 routing"/>

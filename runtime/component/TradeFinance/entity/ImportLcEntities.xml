@@ -53,6 +53,14 @@
         <field name="presentationPeriodDays" type="number-integer"/> <!-- Tag 48 -->
         <field name="chargeAllocationText" type="text-long"/> <!-- Tag 71D: max 6x35, X charset -->
         
+        <field name="paymentCondBeneText" type="text-long"/> <!-- Tag 49G: max 4x35, X charset -->
+        <field name="paymentCondBankText" type="text-long"/> <!-- Tag 49H: max 4x35, X charset -->
+        <field name="applicableRulesEnumId" type="id"/> <!-- Tag 40E: UCP_LATEST, EUCP_LATEST, etc. -->
+        <field name="authExpiryDate" type="date"/> <!-- Tag 31D (MT740): Reimbursement auth expiry -->
+        <field name="reimbursingChargesEnumId" type="id"/> <!-- Tag 71D (MT740): REIMB_OUR, REIMB_BEN -->
+        <field name="applicableReimbRulesText" type="text-medium"/> <!-- Tag 40F (MT740): default URR LATEST VERSION -->
+
+        
         <field name="marginType" type="id"/>
         <field name="marginPercentage" type="number-decimal"/>
         <field name="marginAmount" type="number-decimal"/>
@@ -151,6 +159,10 @@
         <field name="newTolerance" type="number-decimal"/>
         <field name="chargeAllocationEnumId" type="id"/>
         
+        <field name="isCancellationRequest" type="text-indicator" default="'N'"/> <!-- Tag 23S: Y triggers CANCEL -->
+        <field name="newAuthExpiryDate" type="date"/> <!-- Tag 31E (MT747): New reimbursement expiry -->
+
+        
         <relationship type="one" related="trade.importlc.ImportLetterOfCredit">
             <key-map field-name="instrumentId"/>
         </relationship>
@@ -191,6 +203,24 @@
         <relationship type="one" related="trade.importlc.TradeDocumentPresentation">
             <key-map field-name="presentationId"/>
         </relationship>
+        <relationship type="one" related="trade.importlc.ImportLetterOfCredit">
+            <key-map field-name="instrumentId"/>
+        </relationship>
+    </entity>
+
+    <entity entity-name="NostroReconciliation" package="trade.importlc">
+        <field name="reconciliationId" type="id" is-pk="true"/>
+        <field name="instrumentId" type="id"/>
+        <field name="reimbursingBankPartyId" type="id"/>
+        <field name="expectedCurrency" type="id"/>
+        <field name="expectedAmount" type="number-decimal"/>
+        <field name="nostroDebitDate" type="date"/>
+        <field name="nostroDebitAmount" type="number-decimal"/>
+        <field name="nostroStatementRef" type="text-short"/>
+        <field name="matchStatusEnumId" type="id" default="'RECON_PENDING'"/>
+        <field name="matchedByUserId" type="id"/>
+        <field name="matchedDate" type="date"/>
+        <field name="remarks" type="text-long"/>
         <relationship type="one" related="trade.importlc.ImportLetterOfCredit">
             <key-map field-name="instrumentId"/>
         </relationship>
