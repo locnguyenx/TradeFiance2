@@ -83,11 +83,23 @@ The system's global Maker/Checker service will be updated to switch on the two n
 - **Immediate Merge:** Overwrites internal fields on Master LC (`ImportLetterOfCredit`) immediately.
 - **State Transition:** Updates TradeTransaction to `TX_APPROVED` and Amendment state to `AMEND_APPROVED`.
 
-### 2.4 Consent Processing Workflow (External Only)
-- **`process#IncomingSwiftConsent`**: System listens for MT 730, maps to the corresponding `ImportLcAmendment`, and updates `beneficiaryDecisionEnumId` to ACCEPTED/REJECTED.
-- **`authorize#AmendmentConsent`**: Checker reviews the logged consent.
-  - If ACCEPTED: Calls the "Merge" routine to overwrite Master LC fields with the Delta fields. If `amountDecrease` > 0, releases the facility limit.
-  - If REJECTED: Amendment marked DEAD. If `amountIncrease` > 0, releases the previously earmarked facility limit.
+### 2.4 Consent Processing Workflow & Incoming SWIFT Matching (External Only)
+**Technical Solution (`process#IncomingSwiftConsent`):**
+When the system's SWIFT Gateway receives an incoming MT 730 (Acknowledgment) or MT 799 (Free Format):
+1. **LC Matching:** The parser extracts Tag 21 (Receiver's Reference). Assuming the external bank correctly populated this with our Master LC Number, the system locates the LC.
+2. **Amendment Matching:** The system queries for any `ImportLcAmendment` under that LC currently in the `AMEND_DISPATCHED` state.
+3. **Intent Parsing (Heuristics):** The system scans the message body (e.g., Tag 72Z or Tag 79) for keywords like "ACCEPT", "AGREE", or "REJECT".
+4. **Log & Attach:** The system updates the amendment's `beneficiaryDecisionEnumId` to `PENDING_APPROVAL` and links the incoming `SwiftMessage` record to the Amendment.
+
+**Requirements & Assumptions for External Bank Systems:**
+- **Assumption 1:** The Advising Bank *must* quote our Master LC Number in Tag 21 of their return message. Without this, auto-routing fails.
+- **Assumption 2:** The Advising Bank sends unstructured text for consent. Because MT 730/799 consent text is free-format, 100% reliable regex parsing is impossible.
+- **Strict Human-in-the-loop Requirement:** Because of Assumption 2, the system **will never auto-merge** an amendment. The `authorize#AmendmentConsent` service requires a human Checker to physically read the attached incoming SWIFT message on the Dashboard and explicitly confirm the Beneficiary's intent (Accept vs Reject) before the final Master LC merge occurs.
+
+### 2.5 `authorize#AmendmentConsent` (Final Merge Execution)
+- Checker reviews the logged consent and the attached SWIFT.
+- If ACCEPTED: Calls the "Merge" routine to overwrite Master LC fields with the Delta fields. If `amountDecrease` > 0, releases the facility limit.
+- If REJECTED: Amendment marked DEAD. If `amountIncrease` > 0, releases the previously earmarked facility limit.
 
 ## 3. REST API Design (`trade.rest.xml`)
 - `POST /api/trade/v1/import-lc/{instrumentId}/amendments/external` - Maps to `create#ExternalAmendment`.
