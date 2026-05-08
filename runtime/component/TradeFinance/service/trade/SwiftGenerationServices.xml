@@ -98,7 +98,18 @@
                 fields["27"] = "1/1"
                 fields["40A"] = lc.lcTypeEnumId ?: "IRREVOCABLE"
                 fields["31C"] = instrument.issueDate?.format("yyMMdd") ?: ec.user.nowTimestamp.format("yyMMdd")
-                fields["40E"] = "UCP LATEST VERSION"
+                if (lc.applicableRulesEnumId) {
+                    def rulesMap = [UCP_LATEST:"UCP LATEST VERSION", EUCP_LATEST:"EUCP LATEST VERSION",
+                                    UCPDC_600:"UCP 600", ISP_LATEST:"ISP LATEST VERSION"]
+                    fields["40E"] = rulesMap[lc.applicableRulesEnumId] ?: "UCP LATEST VERSION"
+                } else {
+                    fields["40E"] = "UCP LATEST VERSION"
+                }
+
+                // FR-SWG-20: Payment Conditions
+                if (lc.paymentCondBeneText) fields["49G"] = formatValue(lc.paymentCondBeneText, 4, 35)
+                if (lc.paymentCondBankText) fields["49H"] = formatValue(lc.paymentCondBankText, 4, 35)
+
                 fields["31D"] = (instrument.expiryDate?.format("yyMMdd") ?: "") + (lc.expiryPlace ?: "")
                 
                 // Tag 50: Applicant
@@ -301,6 +312,10 @@
 
                 def fields = [:]
                 fields["26E"] = amendment.amendmentNumber ?: "1"
+                
+                // FR-CAN-04: Cancellation Request
+                if (amendment.isCancellationRequest == "Y") fields["23S"] = "CANCEL"
+
                 fields["31C"] = amendment.amendmentDate?.format("yyMMdd") ?: ec.user.nowTimestamp.format("yyMMdd")
                 
                 if (amendment.amountAdjustment != null) {

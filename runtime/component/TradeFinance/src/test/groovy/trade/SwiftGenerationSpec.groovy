@@ -308,4 +308,54 @@ class SwiftGenerationSpec extends Specification {
         then: "Tag 77B contains the correct disposal text"
         genRes.messageContent.contains(":77B:RETURNING DOCUMENTS TO YOU")
     }
+
+    def "MT700 includes Tags 49G, 49H, and 40E when populated"() {
+        given: "An LC with payment conditions and applicable rules"
+        def ref = "TF-GAPS-" + System.currentTimeMillis()
+        def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
+            .parameters([instrumentRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD",
+                         lcTypeEnumId: 'IRREVOCABLE', availableByEnumId: 'SIGHT_PAYMENT',
+                         availableWithEnumId: 'AVAIL_ANY_BANK', confirmationEnumId: 'WITHOUT',
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
+        def instrumentId = res.instrumentId
+
+        ec.entity.find("trade.importlc.ImportLetterOfCredit")
+            .condition("instrumentId", instrumentId)
+            .updateAll([paymentCondBeneText: "Payment upon receipt of clean BL",
+                        paymentCondBankText: "Reimburse via MT 202 only",
+                        applicableRulesEnumId: "UCP_LATEST"])
+
+        when: "generate#Mt700 is called"
+        def genRes = ec.service.sync().name("trade.SwiftGenerationServices.generate#Mt700")
+            .parameters([instrumentId: instrumentId, forceRegenerate: true]).call()
+
+        then: "Generated content contains 49G, 49H, and 40E"
+        genRes.messageContent.contains(":49G:Payment upon receipt of clean BL")
+        genRes.messageContent.contains(":49H:Reimburse via MT 202 only")
+        genRes.messageContent.contains(":40E:UCP LATEST VERSION")
+    }
+
+    def "MT707 includes Tag 23S CANCEL when isCancellationRequest is Y"() {
+        given: "An amendment with cancellation request"
+        def ref = "TF-CANCEL-" + System.currentTimeMillis()
+        def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
+            .parameters([instrumentRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD",
+                         lcTypeEnumId: 'IRREVOCABLE', availableByEnumId: 'SIGHT_PAYMENT',
+                         availableWithEnumId: 'AVAIL_ANY_BANK', confirmationEnumId: 'WITHOUT',
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
+        
+        def amRes = ec.service.sync().name("create#trade.importlc.ImportLcAmendment")
+            .parameters([instrumentId: res.instrumentId, amendmentNumber: 1, 
+                         isCancellationRequest: "Y"]).call()
+
+        when: "generate#Mt707 is called"
+        def genRes = ec.service.sync().name("trade.SwiftGenerationServices.generate#Mt707")
+            .parameters([amendmentId: amRes.amendmentId, forceRegenerate: true]).call()
+
+        then: "MT707 content contains 23S:CANCEL"
+        genRes.messageContent.contains(":23S:CANCEL")
+    }
 }
+
