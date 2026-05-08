@@ -36,12 +36,26 @@
             <method type="get"><service name="trade.importlc.ImportLcServices.get#ImportLetterOfCredit"/></method>
             <method type="post"><service name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit"/></method>
             <resource name="amendment">
-                <method type="post"><service name="trade.importlc.ImportLcServices.create#Amendment"/></method>
+                <resource name="external">
+                    <method type="post"><service name="trade.importlc.ImportLcServices.create#ExternalAmendment"/></method>
+                </resource>
+                <resource name="internal">
+                    <method type="post"><service name="trade.importlc.ImportLcServices.create#InternalAmendment"/></method>
+                </resource>
                 <id name="amendmentId">
                     <method type="get"><service name="trade.importlc.ImportLcServices.get#Amendment"/></method>
                     <method type="put"><service name="trade.importlc.ImportLcServices.update#Amendment"/></method>
                     <resource name="submit">
                         <method type="post"><service name="trade.importlc.ImportLcServices.submit#Amendment"/></method>
+                    </resource>
+                    <resource name="authorize">
+                        <method type="post"><service name="trade.importlc.ImportLcServices.authorize#Amendment"/></method>
+                    </resource>
+                    <resource name="accept">
+                        <method type="post"><service name="trade.importlc.ImportLcServices.accept#Amendment"/></method>
+                    </resource>
+                    <resource name="reject">
+                        <method type="post"><service name="trade.importlc.ImportLcServices.reject#Amendment"/></method>
                     </resource>
                 </id>
             </resource>
@@ -100,11 +114,19 @@
 
     <resource name="common">
         <resource name="amendments">
-            <method type="get"><service name="trade.TradeCommonServices.get#AmendmentList"/></method>
+            <method type="get"><service name="trade.TradeCommonServices.get#ExternalAmendmentList"/></method>
+        </resource>
+        <resource name="internal-amendments">
+            <method type="get"><service name="trade.TradeCommonServices.get#InternalAmendmentList"/></method>
         </resource>
         <resource name="amendment">
             <id name="amendmentId">
-                <method type="get"><service name="trade.TradeCommonServices.get#Amendment"/></method>
+                <method type="get"><service name="trade.TradeCommonServices.get#ExternalAmendment"/></method>
+            </id>
+        </resource>
+        <resource name="internal-amendment">
+            <id name="amendmentId">
+                <method type="get"><service name="trade.TradeCommonServices.get#InternalAmendment"/></method>
             </id>
         </resource>
         <resource name="presentations">

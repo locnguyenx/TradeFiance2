@@ -30,7 +30,7 @@ The platform is organized into functional modules accessible via the **Sidebar**
 #### IMPORT LC (Product-Specific Management)
 - **Import LC Dashboard**: Central command for tracking current legal states of Import instruments.
 - **New LC Issuance**: Entry point for creating fresh MT 700 draft instruments.
-- **LC Amendments**: Browse and view the full history of Amendment (MT 707) records independent of the dashboard.
+- **LC Amendments**: Browse and view the full history of both **External** (MT 707) and **Internal** (Bank-only) amendment records independent of the dashboard.
 - **Presentations**: Direct access to historical document claim records and discrepancy status.
 - **Settlements**: Portfolio view of all payment releases and remittance history.
 - **Shipping Guarantees**: Independent record browsing for cargo release guarantees.
@@ -53,7 +53,7 @@ Unlike the operational Dashboards which show pending work, the **Portfolio Recor
 
 ### Accessing Portfolio Records
 Navigate to the specific product group in the sidebar to view its dedicated master portfolio:
-- **Amendment Portfolio**: `IMPORT LC > LC Amendments`. View the specific delta changes and beneficiary consent status for every modification.
+- **Amendment Portfolio**: `IMPORT_LC > LC Amendments`. View historical records for both **External** (MT 707) and **Internal** (Bank-only) adjustments, including specific delta changes and consent status.
 - **Presentation Portfolio**: `IMPORT LC > Presentations`. Track claim amounts and exam results for all document submissions.
 - **Settlement Portfolio**: `IMPORT LC > Settlements`. Monitor specific remittance dates, FX rates, and debit account details.
 
@@ -264,16 +264,47 @@ Enforces strict 5-day UCP 600 examination rules.
 
 ---
 
-## 9. LC Amendment (MT 707)
-Designed for mid-lifecycle adjustments.
+## 9. Import LC Amendment (MT 707) - SRG 2024 Revised
+The platform supports a dual-track amendment process aligned with SRG 2024 "Smart Delta" requirements, separating customer-facing (External) changes from operational (Internal) bank adjustments.
 
-| Field | Tag | Requirement | Character Set | Validation Rule |
-|-------|-----|-------------|---------------|-----------------|
-| **Amendment Type** | - | **Mandatory** | - | Select FINANCIAL or NARRATIVE. |
-| **Amount Delta** | 32B | Optional | **Numeric** | Use `+` or `-` to adjust. Redefines Max Liability. |
-| **Expiry Delta** | 31D | Optional | **Date** | New validity date. |
-| **Narrative** | 77A | **Mandatory**| **Z-Charset** | Explicitly describe what was changed in the instrument. |
-| **Ben. Consent** | - | Optional | **Boolean** | If "Y", amendment is pending until beneficiary accepts. **Financial changes are only binding after consent is logged.** |
+### 9.1 Amendment Tracks
+1.  **External Amendment (MT 707)**: Used for changes requiring beneficiary consent (e.g., amount, expiry, narrative terms). Generates a SWIFT MT 707 message.
+2.  **Internal Amendment**: Used for bank-only adjustments (e.g., RM assignment, margin account change, fee debit account) that do not require beneficiary notification or consent.
+
+### 9.2 Smart Delta Narrative Updates
+To prevent data loss and ensure precise audit trails, narrative fields (Goods, Documents, Conditions) are updated using structured **Delta Actions**:
+-   **REPLACE**: Overwrites the entire existing field with new text.
+-   **ADD**: Appends new text to the end of the existing narrative.
+-   **DELETE**: Marks specific text for removal (captured in the delta log).
+
+### 9.3 Amendment Workflow (Maker/Checker)
+| Field | Tag | Requirement | Character Set | Input Guideline / Validation Rule |
+|-------|-----|-------------|---------------|-----------------------------------|
+| **Amendment Type**| - | **Mandatory** | - | Select `AMD_TYPE_GEN` (External) or `AMD_TYPE_INTERNAL`. |
+| **Amount Increase**| 32B | Optional | **Numeric** | Incremental increase to the face value. |
+| **Amount Decrease**| 32B | Optional | **Numeric** | Incremental decrease to the face value. |
+| **New Expiry Date**| 31D | Optional | **Date** | Updates the instrument validity. |
+| **Goods Delta** | 45B | Optional | **X-Charset** | Structured update to Goods Description using REPLACE/ADD/DELETE. |
+| **Docs Delta** | 46B | Optional | **X-Charset** | Structured update to Documents Required. |
+| **Beneficiary Consent**| - | **Mandatory** | **Boolean** | Required for all External Amendments. |
+
+### 9.4 Beneficiary Consent (MT 730)
+1.  **Draft/Pending**: Upon authorization, an External Amendment enters `AMEND_DRAFT` (Pending Consent). The Master LC is **not updated** yet.
+2.  **Recording Consent**: When the beneficiary's decision (MT 730) is received:
+    -   **Accepted**: The system automatically merges the Smart Delta changes into the Master LC and updates the `businessStateId` to `LC_AMENDED`.
+    -   **Rejected**: The amendment is archived as `REJECTED`, and the Master LC remains unchanged.
+3.  **Historical Traceability**: The **Amendment Portfolio** maintains the full history of every proposed delta, regardless of consent outcome.
+
+### 9.5 Browsing and Viewing Amendments
+Due to the distinct operational and regulatory nature of amendments, **External** and **Internal** amendments are managed in separate portfolios:
+
+1.  **Access**: Use the sidebar navigation under the `IMPORT LC` section:
+    -   Click **External Amendments** to view adjustments requiring SWIFT MT 707 generation and Beneficiary Consent (e.g., amount changes, expiry updates, narrative deltas).
+    -   Click **Internal Amendments** to view bank-only operational adjustments (e.g., credit facility changes, margin account reassignments, RM updates).
+2.  **View Details**:
+    -   Click on any record row in either portfolio to view its full details.
+    -   The **External Amendment Details** view highlights the Smart Delta actions (Add/Delete/Replace) for narrative fields and clearly displays the current Beneficiary Consent status.
+    -   The **Internal Amendment Details** view focuses entirely on the new operational, accounting, and credit parameters.
 
 ---
 

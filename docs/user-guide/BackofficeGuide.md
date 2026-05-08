@@ -137,7 +137,11 @@ This guide provides exhaustive, step-by-step instructions for Administrative and
 ## 4. Security & Risk Controls
 - **Proactive Facility Enforcement**: The Checker workflow includes a hard block if a transaction exceeds the available facility limit. The system validates the "Proposed" exposure against the real-time available headroom before allowing authorization.
 - **Dual Checker Enforcement**: High-value transactions are locked to unique **Transaction IDs** that require multi-stage authorization before the legal instrument is updated.
-- **Role Isolation**: Makers cannot authorize their own transactions.
+- **Role Isolation**: Makers cannot authorize their own transactions. This is strictly enforced for **New LC Issuances**, **Amendments** (both External and Internal), and **Settlements**.
+- **Amendment Authorization (Checker Workflow)**:
+    - Checkers must verify the **Smart Delta** actions (ADD/DELETE/REPLACE) against the current LC narrative.
+    - For financial changes, the system calculates the **Net Delta Amount** (Increase - Decrease) and validates it against the user's approval limit.
+    - Self-authorization is blocked; the system validates `makerUserId != approverUserId` during the authorization call.
 - **Narrative Traceability**: The platform maintains a persistent, chronological record of every touchpoint on an instrument via the unified timeline.
 
 ---

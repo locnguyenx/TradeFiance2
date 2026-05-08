@@ -21,4 +21,10 @@
             </script>
         </actions>
     </eeca>
+    <eeca id="ImportLcAmendmentMergeDeltas" entity="trade.importlc.ImportLcAmendment" on-update="true">
+        <condition><expression>beneficiaryConsentStatusId == 'ACCEPTED' &amp;&amp; beneficiaryConsentStatusId != dbValue?.beneficiaryConsentStatusId</expression></condition>
+        <actions>
+            <service-call name="trade.importlc.ImportLcServices.merge#AmendmentDeltas" in-map="[amendmentId: amendmentId]"/>
+        </actions>
+    </eeca>
 </eecas>

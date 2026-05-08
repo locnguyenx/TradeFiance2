@@ -89,7 +89,8 @@ export const GlobalShell: React.FC<{ children: ReactNode }> = ({ children }) => 
         { group: 'IMPORT LC', items: [
             { id: 'dashboard', label: 'Import LC Dashboard', icon: <Globe size={18} />, path: '/import-lc' },
             { id: 'issuance', label: 'New LC Issuance', icon: <PlusCircle size={18} />, path: '/issuance' },
-            { id: 'amendments', label: 'LC Amendments', icon: <FileEdit size={18} />, path: '/import-lc/amendments' },
+            { id: 'external-amendments', label: 'External Amendments', icon: <FileEdit size={18} />, path: '/import-lc/amendments/external' },
+            { id: 'internal-amendments', label: 'Internal Amendments', icon: <FileText size={18} />, path: '/import-lc/amendments/internal' },
             { id: 'presentations', label: 'Presentations', icon: <FileText size={18} />, path: '/import-lc/presentations' },
             { id: 'settlement', label: 'Settlements', icon: <CreditCard size={18} />, path: '/import-lc/settlement' },
             { id: 'guarantees', label: 'Shipping Guarantees', icon: <ShieldAlert size={18} />, path: '/import-lc/shipping-guarantees' },

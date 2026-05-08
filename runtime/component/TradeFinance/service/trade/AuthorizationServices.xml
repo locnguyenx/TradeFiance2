@@ -39,7 +39,21 @@
 
             <!-- Get evaluation amount -->
             <set field="evaluationAmount" from="instrument.amount ?: 0"/>
-            <if condition="instrument.instrumentTypeEnumId == 'IMPORT_LC'">
+            <if condition="transactionId">
+                <entity-find-one entity-name="trade.TradeTransaction" value-field="evalTx">
+                    <field-map field-name="transactionId"/>
+                </entity-find-one>
+                <if condition="evalTx?.transactionTypeEnumId == 'IMP_AMENDMENT'">
+                    <entity-find-one entity-name="trade.importlc.ImportLcAmendment" value-field="evalAmd">
+                        <field-map field-name="amendmentId" from="evalTx.relatedRecordId"/>
+                    </entity-find-one>
+                    <if condition="evalAmd">
+                        <!-- Evaluation amount for amendment is the absolute value of change -->
+                        <set field="evaluationAmount" from="Math.abs((evalAmd.amountIncrease ?: 0.0) - (evalAmd.amountDecrease ?: 0.0))"/>
+                    </if>
+                </if>
+            </if>
+            <if condition="instrument.instrumentTypeEnumId == 'IMPORT_LC' &amp;&amp; !evaluationAmount">
                 <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc">
                     <field-map field-name="instrumentId" from="localInstrumentId"/>
                 </entity-find-one>
@@ -139,16 +153,28 @@
                         </if>
                     </if>
                     <if condition="tx.transactionTypeEnumId == 'IMP_AMENDMENT'">
-                        <entity-find-one entity-name="trade.importlc.ImportLcAmendment" value-field="amd">
-                            <field-map field-name="amendmentId" from="tx.relatedRecordId"/>
-                        </entity-find-one>
-                        <set field="targetAmount" from="(inst.amount ?: 0) + (amd?.amountAdjustment ?: 0)"/>
-                        <set field="targetExpiry" from="amd?.newExpiryDate ?: targetExpiry"/>
-                        
-                        <service-call name="update#trade.importlc.ImportLcAmendment" in-map="[
-                            amendmentId: tx.relatedRecordId,
-                            amendmentBusinessStateId: 'AMEND_APPROVED'
-                        ]"/>
+                        <if condition="tx.relatedRecordType == 'AMENDMENT'">
+                            <entity-find-one entity-name="trade.importlc.ImportLcAmendment" value-field="amd">
+                                <field-map field-name="amendmentId" from="tx.relatedRecordId"/>
+                            </entity-find-one>
+                            <!-- For External Amendments, we DON'T update amount/expiry yet. 
+                                 It stays in the Amendment record until Beneficiary Consent. -->
+                            <set field="targetAmount" from="inst.amount"/>
+                            <set field="targetExpiry" from="inst.expiryDate"/>
+                            
+                            <service-call name="update#trade.importlc.ImportLcAmendment" in-map="[
+                                amendmentId: tx.relatedRecordId,
+                                amendmentBusinessStateId: 'AMEND_APPROVED'
+                            ]"/>
+                        </if>
+                        <if condition="tx.relatedRecordType == 'INTERNAL_AMENDMENT' || tx.relatedRecordType == 'INTERNAL_AMD'">
+                            <entity-find-one entity-name="trade.importlc.ImportLcInternalAmendment" value-field="intAmd">
+                                <field-map field-name="internalAmendmentId" from="tx.relatedRecordId"/>
+                            </entity-find-one>
+                            <!-- Internal amendments ARE immediate -->
+                            <!-- Note: Internal amendments in this system don't usually change amount, 
+                                 but if they did, we'd handle them here. For now we just keep original. -->
+                        </if>
                     </if>
                     
                     <if condition="tx.transactionTypeEnumId == 'IMP_SETTLEMENT'">
@@ -230,13 +256,8 @@
                         
                         <set field="lcUpdateInMap" from="[instrumentId: tx.instrumentId, businessStateId: targetState, lcAmount: targetAmount, expiryDate: targetExpiry, skipImmutabilityGuard: true]"/>
                         <if condition="tx.transactionTypeEnumId == 'IMP_AMENDMENT' &amp;&amp; amd">
-                            <set field="lcUpdateInMap.goodsDescription" from="amd.goodsDescription"/>
-                            <set field="lcUpdateInMap.documentsRequired" from="amd.documentsRequired"/>
-                            <set field="lcUpdateInMap.additionalConditions" from="amd.additionalConditions"/>
-                            <set field="lcUpdateInMap.bankToBankInstructions" from="amd.bankToBankInstructions"/>
-                            <set field="lcUpdateInMap.additionalAmountsText" from="amd.additionalAmountsText"/>
-                            <set field="lcUpdateInMap.chargeAllocationText" from="amd.chargeAllocationText"/>
-                            <set field="lcUpdateInMap.shipmentPeriodText" from="amd.shipmentPeriodText"/>
+                            <!-- Narrative merging is handled upon Beneficiary Consent (ACCEPTED) 
+                                 or immediately for Internal Amendments via their specific services. -->
                         </if>
                         <service-call name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit" in-map="lcUpdateInMap"/>
                     </if>
@@ -272,7 +293,7 @@
                     <entity-find-one entity-name="trade.importlc.ImportLcAmendment" value-field="amd">
                         <field-map field-name="amendmentId" from="tx.relatedRecordId"/>
                     </entity-find-one>
-                    <set field="transactionAmount" from="amd?.amountAdjustment ?: 0"/>
+                    <set field="transactionAmount" from="Math.abs((amd?.amountIncrease ?: 0.0) - (amd?.amountDecrease ?: 0.0))"/>
                 </if>
                 <if condition="tx.transactionTypeEnumId == 'IMP_PRESENTATION'">
                     <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="pres">

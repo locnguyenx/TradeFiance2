@@ -1,11 +1,11 @@
 import { render, screen, waitFor, act } from '@testing-library/react';
 import AmendmentPage from './page';
-import { tradeApi } from '../../../api/tradeApi';
+import { tradeApi } from '../../../../api/tradeApi';
 
 // ABOUTME: Regression test for Amendment Portfolio page logic.
 // UI Traceability: REQ-UI-IMP-03 (Instrument Detail View / Portfolio)
 
-jest.mock('../../../api/tradeApi');
+jest.mock('../../../../api/tradeApi');
 jest.mock('next/navigation', () => ({
     useSearchParams: () => ({
         get: jest.fn().mockReturnValue(null)
@@ -21,8 +21,8 @@ jest.mock('next/navigation', () => ({
 
 describe('Amendment Portfolio Page', () => {
     const mockAmendments = [
-        { amendmentId: 'AMD-001', instrumentId: 'LC240003', amendmentDate: '2026-05-01', amountAdjustment: 5000 },
-        { amendmentId: 'AMD-002', instrumentId: 'LC240003', amendmentDate: '2026-05-02', amountAdjustment: -1000 }
+        { amendmentId: 'AMD-001', instrumentId: 'LC240003', amendmentDate: '2026-05-01', amountIncrease: 5000, amountDecrease: 0 },
+        { amendmentId: 'AMD-002', instrumentId: 'LC240003', amendmentDate: '2026-05-02', amountIncrease: 0, amountDecrease: 1000 }
     ];
 
     beforeEach(() => {
@@ -34,7 +34,7 @@ describe('Amendment Portfolio Page', () => {
     });
 
     it('loads and displays the amendment list', async () => {
-        (tradeApi.getAmendments as jest.Mock).mockResolvedValue({ amendmentList: mockAmendments });
+        (tradeApi.getExternalAmendments as jest.Mock).mockResolvedValue({ amendmentList: mockAmendments });
 
         await act(async () => {
             render(<AmendmentPage />);
@@ -45,12 +45,12 @@ describe('Amendment Portfolio Page', () => {
             expect(screen.getByText('AMD-002')).toBeInTheDocument();
         });
 
-        expect(screen.getByText('+5,000')).toBeInTheDocument();
-        expect(screen.getByText('-1,000')).toBeInTheDocument();
+        expect(screen.getByText('+5000.00')).toBeInTheDocument();
+        expect(screen.getByText('-1000.00')).toBeInTheDocument();
     });
 
     it('handles empty response gracefully', async () => {
-        (tradeApi.getAmendments as jest.Mock).mockResolvedValue({ amendmentList: [] });
+        (tradeApi.getExternalAmendments as jest.Mock).mockResolvedValue({ amendmentList: [] });
 
         await act(async () => {
             render(<AmendmentPage />);

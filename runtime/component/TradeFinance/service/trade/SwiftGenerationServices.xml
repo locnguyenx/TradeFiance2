@@ -301,7 +301,8 @@
 
                 def fields = [:]
                 fields["26E"] = amendment.amendmentNumber ?: "1"
-                fields["31C"] = amendment.amendmentDate?.format("yyMMdd") ?: ec.user.nowTimestamp.format("yyMMdd")
+                fields["22A"] = "ACNF"
+                fields["31C"] = instrument.issueDate?.format("yyMMdd") ?: ec.user.nowTimestamp.format("yyMMdd")
                 
                 if (amendment.amountIncrease != null || amendment.amountDecrease != null) {
                     def adj = (amendment.amountIncrease ?: 0.0) - (amendment.amountDecrease ?: 0.0)
@@ -324,9 +325,9 @@
                 }
 
                 // SRG 2024 Narrative Deltas
-                if (amendment.goodsDeltaText) fields["45B"] = (amendment.goodsActionEnumId ?: "REP") + "\r\n" + formatValue(amendment.goodsDeltaText, 100, 65)
-                if (amendment.docsDeltaText) fields["46B"] = (amendment.docsActionEnumId ?: "REP") + "\r\n" + formatValue(amendment.docsDeltaText, 100, 65)
-                if (amendment.conditionsDeltaText) fields["47B"] = (amendment.conditionsActionEnumId ?: "REP") + "\r\n" + formatValue(amendment.conditionsDeltaText, 100, 65)
+                if (amendment.goodsDeltaText) fields["45B"] = "/" + (amendment.goodsActionEnumId ?: "REP") + "/" + formatValue(amendment.goodsDeltaText, 100, 65)
+                if (amendment.docsDeltaText) fields["46B"] = "/" + (amendment.docsActionEnumId ?: "REP") + "/" + formatValue(amendment.docsDeltaText, 100, 65)
+                if (amendment.conditionsDeltaText) fields["47B"] = "/" + (amendment.conditionsActionEnumId ?: "REP") + "/" + formatValue(amendment.conditionsDeltaText, 100, 65)
                 
                 def renderRes = ec.service.sync().name("trade.SwiftUtilsServices.render#SwiftMessage")
                     .parameters([messageType:"707", senderBic:issuerBic, receiverBic:advisingBankBic ?: "ADVISINGXX", 

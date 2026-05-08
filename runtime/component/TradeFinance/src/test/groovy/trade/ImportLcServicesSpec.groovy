@@ -387,4 +387,173 @@ class ImportLcServicesSpec extends Specification {
             ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).deleteAll()
         }
     }
+
+    def "should enforce Maker/Checker on Amendment authorization"() {
+        setup:
+        ec.artifactExecution.disableAuthz()
+        // 1. Create LC as trade.maker
+        def lcResult = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
+            lcAmount: 100000.0, lcCurrencyUomId: 'USD',
+            instrumentParties: [[partyId: 'ACME_CORP_001', roleEnumId: 'TP_APPLICANT'], [partyId: 'GLOBAL_EXP_002', roleEnumId: 'TP_BENEFICIARY']]
+        ]).call()
+        String instrumentId = lcResult.instrumentId
+        
+        // Approve LC as trade.checker to make it ISSUED
+        ec.service.sync().name("trade.importlc.ImportLcServices.approve#ImportLetterOfCredit")
+            .parameters([instrumentId: instrumentId, approverUserId: 'trade.checker']).call()
+
+        // 2. Create Amendment as trade.maker
+        ec.user.pushUser("trade.maker")
+        def amdResult = ec.service.sync().name("trade.importlc.ImportLcServices.create#ExternalAmendment").parameters([
+            instrumentId: instrumentId, amendmentTypeEnumId: 'AMD_TYPE_GEN',
+            amountIncrease: 20000.0
+        ]).call()
+        String amendmentId = amdResult.amendmentId
+
+        when:
+        // 3. Attempt to authorize as the same user (trade.maker) -> should fail
+        ec.service.sync().name("trade.importlc.ImportLcServices.authorize#Amendment")
+            .parameters([amendmentId: amendmentId, approverUserId: 'trade.maker']).call()
+        ec.artifactExecution.disableAuthz()
+
+        then:
+        ec.message.hasError()
+        def amdLookup = ec.entity.find("trade.importlc.ImportLcAmendment").condition("amendmentId", amendmentId).one()
+        amdLookup.amendmentBusinessStateId == "AMEND_DRAFT"
+        
+        cleanup:
+        ec.user.popUser()
+    }
+
+    def "should allow Checker to authorize Amendment"() {
+        setup:
+        ec.artifactExecution.disableAuthz()
+        // 1. Create LC
+        def lcResult = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
+            lcAmount: 100000.0, lcCurrencyUomId: 'USD',
+            instrumentParties: [[partyId: 'ACME_CORP_001', roleEnumId: 'TP_APPLICANT'], [partyId: 'GLOBAL_EXP_002', roleEnumId: 'TP_BENEFICIARY']]
+        ]).call()
+        String instrumentId = lcResult.instrumentId
+        ec.service.sync().name("trade.importlc.ImportLcServices.approve#ImportLetterOfCredit")
+            .parameters([instrumentId: instrumentId, approverUserId: 'trade.checker']).call()
+
+        // 2. Create Amendment as trade.maker
+        ec.user.pushUser("trade.maker")
+        def amdResult = ec.service.sync().name("trade.importlc.ImportLcServices.create#ExternalAmendment").parameters([
+            instrumentId: instrumentId, amendmentTypeEnumId: 'AMD_TYPE_GEN',
+            amountIncrease: 20000.0
+        ]).call()
+        String amendmentId = amdResult.amendmentId
+        ec.user.popUser()
+
+        when:
+        // 3. Authorize as trade.checker
+        ec.service.sync().name("trade.importlc.ImportLcServices.authorize#Amendment")
+            .parameters([amendmentId: amendmentId, approverUserId: 'trade.checker']).call()
+        ec.artifactExecution.disableAuthz()
+
+        then:
+        !ec.message.hasError()
+        def amdLookup = ec.entity.find("trade.importlc.ImportLcAmendment").condition("amendmentId", amendmentId).one()
+        amdLookup.amendmentBusinessStateId == "AMEND_APPROVED"
+        
+        // Transaction should be approved
+        def tx = ec.entity.find("trade.TradeTransaction").condition("relatedRecordId", amendmentId).one()
+        tx.transactionStatusId == "TX_APPROVED"
+        tx.checkerUserId == "trade.checker"
+    }
+
+    def "should authorize Internal Amendment and immediately update Master LC (Scenario 3)"() {
+        setup:
+        ec.artifactExecution.disableAuthz()
+        // 1. Create and Approve LC
+        def lcResult = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
+            lcAmount: 100000.0, lcCurrencyUomId: 'USD',
+            instrumentParties: [[partyId: 'ACME_CORP_001', roleEnumId: 'TP_APPLICANT'], [partyId: 'GLOBAL_EXP_002', roleEnumId: 'TP_BENEFICIARY']]
+        ]).call()
+        String instrumentId = lcResult.instrumentId
+        ec.service.sync().name("trade.importlc.ImportLcServices.approve#ImportLetterOfCredit")
+            .parameters([instrumentId: instrumentId, approverUserId: 'trade.checker']).call()
+
+        // 2. Create Internal Amendment
+        ec.user.pushUser("trade.maker")
+        def amdResult = ec.service.sync().name("trade.importlc.ImportLcServices.create#InternalAmendment").parameters([
+            instrumentId: instrumentId,
+            newFeeDebitAccountId: 'ACC_INT_TEST',
+            newFacilityId: 'FAC_TEST_001'
+        ]).call()
+        String internalAmendmentId = amdResult.internalAmendmentId
+        ec.user.popUser()
+
+        when:
+        // 3. Authorize Internal Amendment
+        ec.service.sync().name("trade.importlc.ImportLcServices.authorize#Amendment")
+            .parameters([amendmentId: internalAmendmentId, approverUserId: 'trade.checker']).call()
+        ec.artifactExecution.disableAuthz()
+
+        then:
+        !ec.message.hasError()
+        ec.artifactExecution.disableAuthz()
+        def lcLookup = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).useCache(false).one()
+        lcLookup.feeDebitAccountId == 'ACC_INT_TEST'
+        def instLookup = ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).useCache(false).one()
+        instLookup.customerFacilityId == 'FAC_TEST_001'
+        lcLookup.totalAmendmentCount == 1
+    }
+
+    def "should merge Smart Delta changes upon Beneficiary Acceptance (Scenario 4)"() {
+        given:
+        // 0. Setup Instrument
+        ec.user.pushUser("trade.maker")
+        def lcResult = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
+            lcTypeEnumId: 'LC_SIGHT',
+            lcAmount: 100000,
+            lcCurrencyUomId: 'USD',
+            issueDate: ec.user.nowTimestamp,
+            expiryDate: ec.user.nowTimestamp + 90,
+            goodsDescription: 'ORIGINAL GOODS',
+            instrumentParties: [
+                [partyId: 'ACME_CORP_001', roleEnumId: 'TP_APPLICANT'],
+                [partyId: 'GLOBAL_EXP_002', roleEnumId: 'TP_BENEFICIARY']
+            ]
+        ]).call()
+        String instrumentId = lcResult.instrumentId
+        ec.user.popUser()
+        
+        // Approve it first
+        ec.service.sync().name("trade.importlc.ImportLcServices.approve#ImportLetterOfCredit")
+            .parameters([instrumentId: instrumentId, approverUserId: 'trade.checker']).call()
+
+        // 1. Create External Amendment with Deltas
+        ec.user.pushUser("trade.maker")
+        def amdResult = ec.service.sync().name("trade.importlc.ImportLcServices.create#ExternalAmendment").parameters([
+            instrumentId: instrumentId,
+            amendmentTypeEnumId: 'STANDARD_OUT',
+            amountIncrease: 50000,
+            goodsActionEnumId: 'REPLACE',
+            goodsDeltaText: 'MODIFIED GOODS DESCRIPTION'
+        ]).call()
+        String amendmentId = amdResult.amendmentId
+        
+        // 2. Authorize it
+        ec.user.popUser()
+        ec.service.sync().name("trade.importlc.ImportLcServices.authorize#Amendment")
+            .parameters([amendmentId: amendmentId, approverUserId: 'trade.checker']).call()
+        
+        when:
+        // 3. Beneficiary Accepts
+        ec.service.sync().name("trade.importlc.ImportLcServices.accept#Amendment")
+            .parameters([amendmentId: amendmentId]).call()
+        ec.artifactExecution.disableAuthz()
+        
+        then:
+        !ec.message.hasError()
+        def lcLookup = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).useCache(false).one()
+        lcLookup.effectiveAmount == 150000
+        lcLookup.goodsDescription == 'MODIFIED GOODS DESCRIPTION'
+        
+        def amdLookup = ec.entity.find("trade.importlc.ImportLcAmendment").condition("amendmentId", amendmentId).one()
+        amdLookup.beneficiaryConsentStatusId == 'ACCEPTED'
+        amdLookup.amendmentBusinessStateId == 'AMEND_COMMITTED'
+    }
 }

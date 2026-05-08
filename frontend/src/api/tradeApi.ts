@@ -180,6 +180,16 @@ export const tradeApi = {
     const res = await this._fetch(path);
     return res.json();
   },
+  
+  async getExternalAmendment(amendmentId: string): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/common/amendment/${amendmentId}`);
+    return res.json();
+  },
+
+  async getInternalAmendment(amendmentId: string): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/common/internal-amendment/${amendmentId}`);
+    return res.json();
+  },
 
   async createLcAmendment(lcId: string, amendment: any): Promise<any> {
     const res = await this._fetch(`${API_BASE}/import-lc/${lcId}/amendment`, {
@@ -505,6 +515,16 @@ export const tradeApi = {
 
   async getAmendments(): Promise<{ amendmentList: any[] }> {
     const res = await this._fetch(`${API_BASE}/common/amendments`);
+    return res.json();
+  },
+
+  async getExternalAmendments(): Promise<{ amendmentList: any[] }> {
+    const res = await this._fetch(`${API_BASE}/common/amendments`);
+    return res.json();
+  },
+
+  async getInternalAmendments(): Promise<{ amendmentList: any[] }> {
+    const res = await this._fetch(`${API_BASE}/common/internal-amendments`);
     return res.json();
   },
 
