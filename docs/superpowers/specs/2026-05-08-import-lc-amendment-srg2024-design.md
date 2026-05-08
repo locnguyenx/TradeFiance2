@@ -70,19 +70,20 @@ As per the BRD, we are splitting the amendment capabilities into two distinct en
 - Maps UI inputs to `ImportLcInternalAmendment`.
 - Creates `TradeTransaction` with type `IMP_AMENDMENT_INT`.
 
-### 2.3 `authorize#ExternalAmendment`
+### 2.3 `AuthorizationServices.authorize#Instrument` (Checker Approval)
+The system's global Maker/Checker service will be updated to switch on the two new transaction types:
+
+**Case: `IMP_AMEND_EXT` (External Amendment):**
 - **Liability Check:** If `amountIncrease` > 0, executes limit earmark from Core Banking immediately.
 - **SWIFT Gen:** Calls `SwiftMessageBuilder` to generate MT 707.
-  - Automatically queries Master LC for Issue Date (Tag 31C), Parent LC Ref (Tag 23).
-  - Uses the ActionEnumIds to format B-Tags (e.g., `/ADD/`).
-- Transitions TradeTransaction to `TX_DISPATCHED`.
+- **State Transition:** Updates TradeTransaction to `TX_DISPATCHED` (waiting for Beneficiary Consent) rather than `TX_APPROVED`. Updates Amendment state to `AMEND_DISPATCHED`.
 
-### 2.4 `authorize#InternalAmendment`
+**Case: `IMP_AMEND_INT` (Internal Amendment):**
 - No SWIFT Generation.
-- Executes merge immediately: Overwrites internal fields on Master LC (`ImportLetterOfCredit`).
-- Transitions TradeTransaction to `TX_APPROVED`.
+- **Immediate Merge:** Overwrites internal fields on Master LC (`ImportLetterOfCredit`) immediately.
+- **State Transition:** Updates TradeTransaction to `TX_APPROVED` and Amendment state to `AMEND_APPROVED`.
 
-### 2.5 Consent Processing Workflow
+### 2.4 Consent Processing Workflow (External Only)
 - **`process#IncomingSwiftConsent`**: System listens for MT 730, maps to the corresponding `ImportLcAmendment`, and updates `beneficiaryDecisionEnumId` to ACCEPTED/REJECTED.
 - **`authorize#AmendmentConsent`**: Checker reviews the logged consent.
   - If ACCEPTED: Calls the "Merge" routine to overwrite Master LC fields with the Delta fields. If `amountDecrease` > 0, releases the facility limit.
