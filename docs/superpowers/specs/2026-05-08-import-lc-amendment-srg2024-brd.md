@@ -109,7 +109,79 @@ The system must automatically inject these Mandatory tags without Maker input:
 
 ---
 
-## 7. Traceability Requirements
+## 7. Exhaustive MT 707 Data Dictionary (SRG 2024)
+
+### 7.1 Header & Message Control (Mandatory Block)
+| Tag | Field Name | Status | System / Mapping Rules |
+| :--- | :--- | :--- | :--- |
+| **27** | Sequence of Total | **M** | Used for pagination (e.g., `1/1`). If > 10,000 chars, spills into MT 708. |
+| **20** | Sender's Reference | **M** | The Issuing Bank's LC Number. |
+| **21** | Receiver's Reference | **M** | The Advising Bank's Reference. (If unknown, must explicitly be `NONREF`). |
+| **23** | Issuing Bank's Reference | **M** | *Made Mandatory.* Carried forward from the issuance event. |
+| **52a** | Issuing Bank | O | Used if the amendment is being relayed by a third-party bank. |
+| **50B** | Non-Bank Issuer | O | Used if the LC was issued by a non-bank entity. |
+| **31C** | Date of Issue | **M** | *Made Mandatory.* The issue date of the original MT 700. |
+| **26E** | Number of Amendment | **M** | *Made Mandatory.* Sequential integer. |
+| **30** | Date of Amendment | **M** | *Made Mandatory.* The business date this amendment is executed. |
+| **22A** | Purpose of Message | **M** | *Made Mandatory.* Must contain `ACNF`. |
+| **23S** | Cancellation Request | O | If cancelling entirely, contains `CANCEL`. |
+
+### 7.2 Contract Base & Financials
+| Tag | Field Name | Status | System / Mapping Rules |
+| :--- | :--- | :--- | :--- |
+| **40A** | Form of Doc. Credit | O | E.g., `IRREVOCABLE`. |
+| **40E** | Applicable Rules | O | E.g., `UCP LATEST VERSION`. |
+| **31D** | Date and Place of Expiry | O | Replaces the old expiry date/place. |
+| **50** | Changed Applicant Details | O | Used only if the Applicant's name/address changes. |
+| **59** | Beneficiary | O | Used only if the Beneficiary details change. |
+| **32B** | Increase of Amount | O | Exact delta amount added. Mutually exclusive with 33B. |
+| **33B** | Decrease of Amount | O | Exact delta amount subtracted. Mutually exclusive with 32B. |
+| **39A** | Percentage Tolerance | O | Overwrites original `+/-` tolerance. |
+| **39C** | Additional Amounts Covered | O | Overwrites original. |
+
+### 7.3 Payment Terms, Drafts & Routing
+| Tag | Field Name | Status | System / Mapping Rules |
+| :--- | :--- | :--- | :--- |
+| **41a** | Available With... By... | O | Changes Negotiating Bank or payment method. |
+| **42C** | Drafts at... | O | Changes Tenor of draft. |
+| **42a** | Drawee | O | Changes Bank draft is drawn upon. |
+| **42M** | Mixed Payment Details | O | Text describing complex payment schedules. |
+| **42P** | Deferred Payment Details | O | Text describing maturity dates for deferred payments. |
+| **48** | Period for Presentation | O | Changes required days to present documents. |
+| **49** | Confirmation Instructions | O | Amends to `CONFIRM`, `MAY ADD`, or `WITHOUT`. |
+| **58a** | Requested Confirming Party| O | Added/Amended if Tag 49 changes to require confirmation. |
+| **53a** | Reimbursing Bank | O | Added/Amended if settlement routing changes. |
+| **57a** | 'Advise Through' Bank | O | Changes routing of Second Advising Bank. |
+
+### 7.4 Logistics & Shipment
+| Tag | Field Name | Status | System / Mapping Rules |
+| :--- | :--- | :--- | :--- |
+| **43P** | Partial Shipments | O | Amends to `ALLOWED`, `NOT ALLOWED`, `CONDITIONAL`. |
+| **43T** | Transhipment | O | Amends to `ALLOWED`, `NOT ALLOWED`, `CONDITIONAL`. |
+| **44A** | Place of Taking in Charge | O | Overwrites previous value. |
+| **44E** | Port of Loading | O | Overwrites previous value. |
+| **44F** | Port of Discharge | O | Overwrites previous value. |
+| **44B** | Place of Final Destination | O | Overwrites previous value. |
+| **44C** | Latest Date of Shipment | O | Mutually exclusive with 44D. |
+| **44D** | Shipment Period | O | Mutually exclusive with 44C. |
+
+### 7.5 Narrative Text (The "B" Tags) & Charges
+*Uses Action Prefixes (`/ADD/`, `/DELETE/`, `/REPALL/`)*
+| Tag | Field Name | Status | System / Mapping Rules |
+| :--- | :--- | :--- | :--- |
+| **45B** | Description of Goods | O | Modifies Tag 45A. Max 100 lines of 65 chars. |
+| **46B** | Documents Required | O | Modifies Tag 46A. |
+| **47B** | Additional Conditions | O | Modifies Tag 47A. |
+| **49M** | Special Payment Cond. (Bene)| O | Modifies Tag 49G. |
+| **49N** | Special Payment Cond. (Bank)| O | Modifies Tag 49H. |
+| **71D** | Charges | O | Modifies overarching fee structure. |
+| **71N** | Amendment Charge Payable By| O | Dictates who pays for *this specific MT 707*. |
+| **78** | Instructions to Paying Bank| O | Modifies Interbank payment instructions. |
+| **72Z** | Sender to Receiver Info | O | Private notes not meant for Beneficiary. |
+
+---
+
+## 8. Traceability Requirements
 
 | Requirement ID | Description | Component |
 | :--- | :--- | :--- |
