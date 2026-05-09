@@ -210,3 +210,78 @@ The MT 750 remained largely unchanged structurally, but SWIFT enforced strict te
 
 ### The Future Gap (Post-2024)
 While the 2018–2024 standards are the current law of the land, the next actual gap your architecture team needs to monitor is the **ISO 20022 Migration (CBPR+)**. While Payments (MT 103, 202) are actively migrating to XML (pacs/camt messages) right now, Trade Finance (Category 7) is on a delayed timeline. Eventually, the MT 700 will be replaced entirely by XML schemas, but building a robust relational database in Moqui today will make that future XML mapping trivial.
+
+## The Final Piece: Bank-to-Bank Reimbursements (URR 725)
+
+**The Business Context:**
+When an LC is issued in a major international currency (like USD or EUR), the Vietnamese Issuing Bank and the foreign Advising Bank often do not hold direct accounts with each other. To settle the payment, they must use a mutually trusted third-party correspondent—known as the **Reimbursing Bank** (e.g., Citibank New York or Deutsche Bank Frankfurt). 
+
+This introduces a completely separate workflow governed by its own ICC rulebook: **URR 725 (Uniform Rules for Bank-to-Bank Reimbursements under Documentary Credits)**.
+
+To fully support this, the business requirements must include:
+
+1. **Reimbursement Authorization (MT 740):** When Process 3.1 (Issuance) is executed, if the LC designates a third-party Reimbursing Bank, the system must automatically generate an additional SWIFT message to that bank. This authorizes them to debit the Issuing Bank's account and pay the Presenting Bank when the time comes.
+2. **Reimbursement Amendments (MT 747):**
+   If Process 3.2 (Amendments) results in an increase or decrease of the LC amount, or an extension of the expiry date, the system must proactively send a corresponding amendment to the Reimbursing Bank so their authorized ledger matches the LC.
+3. **Nostro Reconciliation:** Because the Presenting Bank will claim the funds directly from the Reimbursing Bank (often via an MT 742 claim), the physical money moves outside of your direct control. The system must include a reconciliation workflow to match the eventual debit on your Nostro account statement against the settled LC liability.
+
+### Process: Bank-to-Bank Reimbursements (URR 725)
+This process manages the authorization and tracking of funds when the Issuing Bank and the Advising/Presenting Bank do not share a direct account relationship, requiring a third-party Reimbursing Bank to settle the claim.
+
+**A. Related States**
+* **Transaction State (System):** Active $\rightarrow$ Claim Processed $\rightarrow$ Closed
+* **Dependency:** This process runs in parallel to the main LC lifecycle. It is initiated during Process 3.1 (Issuance) and concludes during Process 3.4 (Settlement).
+
+**B. Business Process Workflow**
+1. **Initiation (Authorization):** During LC Issuance, the Maker designates a Reimbursing Bank. Upon Checker authorization of the LC, the system simultaneously generates the MT 700 (to the Advising Bank) and an MT 740 (to the Reimbursing Bank).
+2. **Amendment (Modification):** If the LC amount or expiry date is amended, the system automatically queues an MT 747 to update the Reimbursing Bank.
+3. **Claim Processing:** The Presenting Bank sends an MT 742 (Reimbursement Claim) directly to the Reimbursing Bank.
+4. **Settlement & Reconciliation:** The Reimbursing Bank honors the claim, debits the Issuing Bank's Nostro account, and sends an MT 900 (Debit Advice). The system matches this debit against the outstanding LC liability to execute final settlement.
+
+**C. Initiation & Post Conditions**
+* **Initiation Criteria:** Process 3.1 is completed, and Tag 53a (Reimbursing Bank) is populated in the MT 700.
+* **Post Condition:** The Reimbursing Bank is formally authorized to debit the bank's Nostro account up to the specified limit.
+
+**D. Inputs Capture (Data Dictionary)**
+
+| Data Group | Field Name | Req/Opt | Data Type | Validation Rules / Data Constraints |
+| :--- | :--- | :--- | :--- | :--- |
+| **Routing** | Reimbursing Bank BIC | Req | String | Must be an active SWIFT BIC where the Issuing Bank holds a Nostro account. |
+| **Routing** | Reimbursing Bank Acct | Opt | String | The Issuing Bank's specific Nostro account number at the Reimbursing Bank. |
+| **Financial** | Auth Expiry Date | Opt | Date | Usually the LC Expiry Date + a grace period (e.g., 30 days) for mail transit. |
+| **Charges** | Reimbursing Charges | Req | Enum | Values: `Applicant`, `Beneficiary`. Dictates who pays the Reimbursing Bank's processing fees. |
+
+**E. URR 725 Guidelines to Enforce**
+* **Independent Undertaking:** An authorization to reimburse is not subject to the terms of the commercial LC. The Reimbursing Bank does not check shipping documents; they only check if the claim amount matches the authorized amount.
+* **Expiry Dates:** The system must strictly track the `Auth Expiry Date`. If a claim arrives after this date, the Reimbursing Bank will reject it, causing a settlement failure.
+* **Amendments:** A Reimbursing Bank is not bound by an LC amendment until they receive a specific amendment to the authorization (MT 747).
+
+**F. SWIFT Data Mapping & Constraints (MT 740 / MT 747)**
+
+**Note:** if the 2024 version above has changes on this MT740 and MT747, use the 2024 version.
+
+* **MT 740: Authorization to Reimburse**
+*Automatically generated alongside the MT 700.*
+
+| SWIFT Tag | Description | M/O | System Source / Data Extraction Logic | SWIFT Validation & Constraints |
+| :--- | :--- | :--- | :--- | :--- |
+| **20** | Documentary Credit No. | M | `TradeInstrument.transactionRef` | Max 16 chars. Must match the MT 700 exactly. |
+| **31D** | Expiry Date | O | `ImportLc.authExpiryDate` | Exact format: `YYMMDD`. |
+| **32B** | Credit Amount | M | `TradeInstrument.currency` + `Amount` | Max 15 digits. |
+| **39A** | Percentage Tolerance | O | `ImportLc.tolerancePositive` / `Negative` | e.g., `10/10`. Must match the MT 700. |
+| **58a** | Negotiating Bank | O | `ImportLc.advisingBankBic` | Specifies which bank is explicitly allowed to claim the funds. |
+| **71A** | Details of Charges | M | `ImportLc.reimbursingCharges` | Enum mapping: `OUR` (Applicant) or `BEN` (Beneficiary). |
+| **72Z** | Sender to Receiver Info | O | Standard text instructions. | Max 6x35 chars. X Character Set. |
+
+* **MT 747: Amendment to an Authorization to Reimburse**
+*Automatically generated alongside an MT 707 if financials change.*
+
+| SWIFT Tag | Description | M/O | System Source / Data Extraction Logic | SWIFT Validation & Constraints |
+| :--- | :--- | :--- | :--- | :--- |
+| **20** | Documentary Credit No. | M | `TradeInstrument.transactionRef` | Max 16 chars. |
+| **21** | Reimbursing Bank's Ref | O | Their reference if provided previously. | Max 16 chars. |
+| **30** | Date of Amendment | M | `LcAmendment.amendmentDate` | Exact format: `YYMMDD`. |
+| **32B** | Increase of Amount | O | `LcAmendment.amountIncrease` | 3-letter CCY + Amount. |
+| **33B** | Decrease of Amount | O | `LcAmendment.amountDecrease` | 3-letter CCY + Amount. |
+| **34B** | New Authorized Amount | O | `ImportLc.newTotalAmount` | Must perfectly align with original + delta. |
+| **31E** | New Expiry Date | O | `LcAmendment.newAuthExpiryDate` | Exact format: `YYMMDD`. |

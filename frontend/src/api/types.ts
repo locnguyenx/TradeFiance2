@@ -108,7 +108,9 @@ export interface ImportLetterOfCredit {
   applicantPartyName?: string;
   beneficiaryName?: string;
   beneficiaryPartyName?: string;
+  reimbursingBankPartyId?: string;
   currency?: string;
+
   slaDaysRemaining?: number;
   // v3.0 effective values
   effectiveAmount: number;
@@ -119,7 +121,17 @@ export interface ImportLetterOfCredit {
   effectiveOutstandingAmount: number;
   cumulativeDrawnAmount: number;
   totalAmendmentCount: number;
+  
+  // SRG 2024 Compliance
+  paymentCondBeneText?: string;
+  paymentCondBankText?: string;
+  applicableRulesEnumId?: string;
+  applicableRulesText?: string;
+  authExpiryDate?: string;
+  reimbursingChargesEnumId?: string;
+  applicableReimbRulesText?: string;
 }
+
 
 export interface TradeParty {
   partyId: string;
@@ -188,11 +200,15 @@ export interface ImportLcAmendment {
   amendmentId: string;
   instrumentId: string;
   transactionId: string;
-  amount?: number;
-  expiryDate?: string;
-  beneficiaryPartyId?: string;
   amendmentDate: string;
+  amountAdjustment?: number;
+  newExpiryDate?: string;
+
+  // SRG 2024 Compliance
+  isCancellationRequest?: string;
+  newAuthExpiryDate?: string;
 }
+
 
 export interface TradePresentation {
   presentationId: string;
@@ -250,11 +266,18 @@ export interface ExposureData {
   facilityList?: any[];
 }
 
-export interface SwiftMessage {
-  swiftMessageId: string;
-  instrumentId: string;
-  messageType: string;
-  messageContent: string;
-  generatedDate: string;
-  messageStatusId: string;
+export interface NostroReconciliation {
+    reconciliationId: string;
+    instrumentId: string;
+    reimbursingBankPartyId: string;
+    expectedCurrency: string;
+    expectedAmount: number;
+    nostroDebitDate?: string;
+    nostroDebitAmount?: number;
+    nostroStatementRef?: string;
+    matchStatusEnumId: string;
+    matchedByUserId?: string;
+    matchedDate?: string;
+    remarks?: string;
 }
+

@@ -94,6 +94,7 @@ export const GlobalShell: React.FC<{ children: ReactNode }> = ({ children }) => 
             { id: 'settlement', label: 'Settlements', icon: <CreditCard size={18} />, path: '/import-lc/settlement' },
             { id: 'guarantees', label: 'Shipping Guarantees', icon: <ShieldAlert size={18} />, path: '/import-lc/shipping-guarantees' },
             { id: 'cancellations', label: 'Cancellations', icon: <XCircle size={18} />, path: '/import-lc/cancellations' },
+            { id: 'nostro', label: 'Nostro Reconciliation', icon: <History size={18} />, path: '/nostro' },
         ]},
         { group: 'MASTER DATA', items: [
             { id: 'parties', label: 'Party & KYC Directory', icon: <Users size={18} />, path: '/parties' },

@@ -77,8 +77,15 @@ export const IssuanceStepper: React.FC = () => {
         charges: [
             { type: 'Issuance Commission', rate: '0.125', amount: '0', account: '' }
         ],
+        reimbursingBankPartyId: '',
+        paymentCondBeneText: '',
+        paymentCondBankText: '',
+        applicableRulesEnumId: 'UCP_LATEST',
+        authExpiryDate: '',
+        reimbursingChargesEnumId: 'REIMB_OUR',
         instrumentId: ''
     });
+
     const [swiftErrors, setSwiftErrors] = useState<Record<string, string>>({});
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
@@ -143,8 +150,15 @@ export const IssuanceStepper: React.FC = () => {
                     advisingBankPartyId: lc.parties?.find((p: any) => p.roleEnumId === 'TP_ADVISING_BANK')?.partyId || '',
                     advisingThroughBankPartyId: lc.parties?.find((p: any) => p.roleEnumId === 'TP_ADVISE_THROUGH_BANK')?.partyId || '',
                     negotiatingBankPartyId: lc.parties?.find((p: any) => p.roleEnumId === 'TP_NEGOTIATING_BANK')?.partyId || '',
-                    draweeBankPartyId: lc.parties?.find((p: any) => p.roleEnumId === 'TP_DRAWEE_BANK')?.partyId || ''
+                    draweeBankPartyId: lc.parties?.find((p: any) => p.roleEnumId === 'TP_DRAWEE_BANK')?.partyId || '',
+                    reimbursingBankPartyId: lc.parties?.find((p: any) => p.roleEnumId === 'TP_REIMBURSING_BANK')?.partyId || lc.reimbursingBankPartyId || '',
+                    paymentCondBeneText: lc.paymentCondBeneText || '',
+                    paymentCondBankText: lc.paymentCondBankText || '',
+                    applicableRulesEnumId: lc.applicableRulesEnumId || 'UCP_LATEST',
+                    authExpiryDate: lc.authExpiryDate || '',
+                    reimbursingChargesEnumId: lc.reimbursingChargesEnumId || 'REIMB_OUR'
                 }));
+
                 setLoading(false);
             }).catch(err => {
                 console.error("Failed to load draft:", err);
@@ -351,8 +365,12 @@ export const IssuanceStepper: React.FC = () => {
         if (formData.availableWithEnumId === 'AVAIL_SPECIFIC_BANK' && formData.negotiatingBankPartyId) {
             result.push({ roleEnumId: 'TP_NEGOTIATING_BANK', partyId: formData.negotiatingBankPartyId });
         }
+        if (formData.reimbursingBankPartyId) {
+            result.push({ roleEnumId: 'TP_REIMBURSING_BANK', partyId: formData.reimbursingBankPartyId });
+        }
         return result;
     };
+
 
     const handleSaveDraft = async (): Promise<boolean> => {
         setErrorMessage('');
@@ -395,8 +413,14 @@ export const IssuanceStepper: React.FC = () => {
                 usanceBaseDate: formData.usanceBaseDate || formData.issueDate || new Date().toISOString().split('T')[0],
                 businessStateId: 'LC_DRAFT',
                 instrumentParties: buildPartiesPayload(),
-                availableWithEnumId: formData.availableWithEnumId
+                availableWithEnumId: formData.availableWithEnumId,
+                paymentCondBeneText: formData.paymentCondBeneText || undefined,
+                paymentCondBankText: formData.paymentCondBankText || undefined,
+                applicableRulesEnumId: formData.applicableRulesEnumId || undefined,
+                authExpiryDate: formData.authExpiryDate || undefined,
+                reimbursingChargesEnumId: formData.reimbursingChargesEnumId || undefined,
             };
+
             
             // Delete legacy flat fields so they aren't sent to the backend
             delete (payload as any).advisingBankBic;
@@ -677,7 +701,27 @@ export const IssuanceStepper: React.FC = () => {
                                     <p className="error-text text-xs mt-1">{swiftErrors.advisingThroughBankBic || fieldErrors.advisingThroughBankPartyId}</p>
                                 )}
                             </div>
+                            <div className="field-group">
+                                <label htmlFor="reimbursingBankPartyId">Reimbursing Bank (MT 740)</label>
+                                <select 
+                                    id="reimbursingBankPartyId"
+                                    value={formData.reimbursingBankPartyId}
+                                    onChange={e => setFormData({...formData, reimbursingBankPartyId: e.target.value})}
+                                >
+                                    <option value="">None (No Reimbursement)</option>
+                                    {bankParties.map(p => <option key={p.partyId} value={p.partyId}>{p.partyName} {p.swiftBic ? `(${p.swiftBic})` : ''}</option>)}
+                                </select>
+                            </div>
+                            {formData.reimbursingBankPartyId && (
+                                <div className="field-group">
+                                    <label htmlFor="authExpiryDate">Reimbursement Auth Expiry</label>
+                                    <input id="authExpiryDate" type="date" value={formData.authExpiryDate}
+                                        onChange={e => setFormData({...formData, authExpiryDate: e.target.value})} />
+                                    <p className="helper-text">Must be ≥ LC Expiry. Defaults to LC Expiry + 30 days if blank.</p>
+                                </div>
+                            )}
                         </section>
+
                     )}
 
                     {stepIndex === 1 && (
@@ -712,6 +756,41 @@ export const IssuanceStepper: React.FC = () => {
                                     </select>
                                     {swiftErrors.confirmationEnumId && <p className="error-text text-xs mt-1">{swiftErrors.confirmationEnumId}</p>}
                                 </div>
+                                <div className="field-group">
+                                    <label htmlFor="applicableRulesEnumId">Applicable Rules (Tag 40E)</label>
+                                    <select id="applicableRulesEnumId" value={formData.applicableRulesEnumId}
+                                        onChange={e => setFormData({...formData, applicableRulesEnumId: e.target.value})}>
+                                        <option value="UCP_LATEST">UCP LATEST VERSION</option>
+                                        <option value="EUCP_LATEST">EUCP LATEST VERSION</option>
+                                        <option value="UCPDC_600">UCP 600</option>
+                                        <option value="ISP_LATEST">ISP LATEST VERSION</option>
+                                    </select>
+                                </div>
+                                <div className="field-group">
+                                    <label htmlFor="paymentCondBeneText">Payment Conditions — Beneficiary (Tag 49G)</label>
+                                    <textarea id="paymentCondBeneText" rows={3}
+                                        className={swiftErrors.paymentCondBeneText ? 'is-invalid' : ''}
+                                        value={formData.paymentCondBeneText}
+                                        onChange={e => {
+                                            setFormData({...formData, paymentCondBeneText: e.target.value});
+                                            validateSwiftField('paymentCondBeneText', e.target.value, 'X', 4);
+                                        }}
+                                        placeholder="e.g., Payment upon receipt of clean B/L" />
+                                    {swiftErrors.paymentCondBeneText && <p className="error-text text-xs mt-1">{swiftErrors.paymentCondBeneText}</p>}
+                                </div>
+                                <div className="field-group">
+                                    <label htmlFor="paymentCondBankText">Payment Conditions — Bank (Tag 49H)</label>
+                                    <textarea id="paymentCondBankText" rows={3}
+                                        className={swiftErrors.paymentCondBankText ? 'is-invalid' : ''}
+                                        value={formData.paymentCondBankText}
+                                        onChange={e => {
+                                            setFormData({...formData, paymentCondBankText: e.target.value});
+                                            validateSwiftField('paymentCondBankText', e.target.value, 'X', 4);
+                                        }}
+                                        placeholder="e.g., Reimburse via MT 202 only" />
+                                    {swiftErrors.paymentCondBankText && <p className="error-text text-xs mt-1">{swiftErrors.paymentCondBankText}</p>}
+                                </div>
+
                                 <div className="field-group">
                                     <label htmlFor="amount" className="required-label">Amount</label>
                                     <div className="flex gap-2">

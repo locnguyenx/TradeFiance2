@@ -226,11 +226,24 @@
                             if (!lc.usanceBaseDate) addError("usanceBaseDate", "Required for USANCE tenor", "CONDITIONAL")
                         }
                         
+                        // SRG 2024: Tag 40E Applicable Rules
+                        if (lc.applicableRulesEnumId == 'APPL_OTHER' && !lc.applicableRulesText) {
+                            addError("applicableRulesText", "Rules Description required when OTHER selected (Tag 40E)", "CONDITIONAL")
+                        }
+
+                        // SRG 2024: Tag 49G/H Payment Conditions
+                        validateXCharset("paymentCondBeneText", lc.paymentCondBeneText)
+                        validateXCharset("paymentCondBankText", lc.paymentCondBankText)
+                        validateLineLimit("paymentCondBeneText", lc.paymentCondBeneText, 100)
+                        validateLineLimit("paymentCondBankText", lc.paymentCondBankText, 100)
+
+
                         // Mutual Exclusion: Shipment Period vs Latest Shipment Date
                         if (lc.shipmentPeriodText && lc.latestShipmentDate) {
                             addError("shipmentPeriodText", "Shipment Period and Latest Shipment Date are mutually exclusive", "LOGIC")
                         }
                     }
+
                 } else if (entityType == "TradeDocumentPresentation") {
                     def pres = ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("presentationId", entityId).one()
                     if (pres) {
@@ -239,7 +252,14 @@
                         
                         validateLineLimit("chargesDeducted", pres.chargesDeducted, 6)
                         validateLineLimit("senderToReceiverPresentationInfo", pres.senderToReceiverPresentationInfo, 6)
+
+                        // SRG 2024: Tag 77J Aggregate Discrepancy Line Limit (70x50)
+                        def discrepancies = ec.entity.find("trade.importlc.PresentationDiscrepancy")
+                            .condition("presentationId", entityId).list()
+                        def aggregateText = discrepancies.collect { it.discrepancyDescription }.join("\n")
+                        validateLineLimit("discrepancyNarrative", aggregateText, 70)
                     }
+
                 } else if (entityType == "ImportLcAmendment") {
                     def amd = ec.entity.find("trade.importlc.ImportLcAmendment").condition("amendmentId", entityId).one()
                     if (amd) {

@@ -106,9 +106,10 @@
                     fields["40E"] = "UCP LATEST VERSION"
                 }
 
-                // FR-SWG-20: Payment Conditions
-                if (lc.paymentCondBeneText) fields["49G"] = formatValue(lc.paymentCondBeneText, 4, 35)
-                if (lc.paymentCondBankText) fields["49H"] = formatValue(lc.paymentCondBankText, 4, 35)
+                // FR-SWG-20: Payment Conditions (SRG 2024: 100x65)
+                if (lc.paymentCondBeneText) fields["49G"] = formatValue(lc.paymentCondBeneText, 100, 65)
+                if (lc.paymentCondBankText) fields["49H"] = formatValue(lc.paymentCondBankText, 100, 65)
+
 
                 fields["31D"] = (instrument.expiryDate?.format("yyMMdd") ?: "") + (lc.expiryPlace ?: "")
                 
@@ -162,6 +163,11 @@
                 fields["48"] = lc.presentationPeriodDays ?: "21"
                 fields["49"] = confirmBank.bic ?: "WITHOUT" // Simplified for confirmed check
                 fields["78"] = formatValue(lc.bankToBankInstructions, 12, 65)
+                
+                // FR-SGC-03: SRG 2024 Tag 49G/H Payment Conditions
+                if (lc.paymentCondBeneText) fields["49G"] = formatValue(lc.paymentCondBeneText, 100, 65)
+                if (lc.paymentCondBankText) fields["49H"] = formatValue(lc.paymentCondBankText, 100, 65)
+
                 
                 def renderRes = ec.service.sync().name("trade.SwiftUtilsServices.render#SwiftMessage")
                     .parameters([messageType:"700", senderBic:issuerBic, receiverBic:advisingBank.bic ?: "RECEIVXX", 
@@ -791,4 +797,184 @@
             </entity-find>
         </actions>
     </service>
+    <service verb="generate" noun="Mt740" authenticate="false">
+        <description>Generates MT740 (Authorization to Reimburse). Auto-triggered alongside MT700 when TP_REIMBURSING_BANK assigned.</description>
+        <in-parameters>
+            <parameter name="instrumentId" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="swiftMessageId" type="id"/>
+            <parameter name="messageContent"/>
+        </out-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument" use-cache="false"/>
+            <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" use-cache="false"/>
+
+            <!-- RMB-SWV-01: Only generate if TP_REIMBURSING_BANK assigned -->
+            <entity-find entity-name="trade.TradeInstrumentParty" list="instrumentParties">
+                <econdition field-name="instrumentId"/>
+            </entity-find>
+            <set field="reimbJunc" from="instrumentParties.find { it.roleEnumId == 'TP_REIMBURSING_BANK' }"/>
+            <if condition="!reimbJunc">
+                <log level="info" message="No TP_REIMBURSING_BANK for instrument ${instrumentId}. Skipping MT740."/>
+                <return/>
+            </if>
+
+            <entity-find-one entity-name="trade.common.TradeConfig" value-field="bicConfig">
+                <field-map field-name="configId" value="ISSUING_BANK_BIC"/>
+            </entity-find-one>
+            <set field="issuerBic" from="bicConfig?.configValue ?: 'ISSUERXX'"/>
+
+            <set field="messageStatusId" value="SWIFT_MSG_ACTIVE"/>
+
+            <script><![CDATA[
+                def getParty(role) {
+                    def junc = instrumentParties.find { it.roleEnumId == role }
+                    if (!junc) return [:]
+                    def tp = ec.entity.find("trade.TradeParty").condition("partyId", junc.partyId).one()
+                    def tpb = ec.entity.find("trade.TradePartyBank").condition("partyId", junc.partyId).one()
+                    return [partyId: junc.partyId, name: tp?.partyName, address: tp?.registeredAddress, bic: tpb?.swiftBic, nostro: tpb?.nostroAccountRef]
+                }
+
+                def formatValue = { val, lines, len ->
+                    ec.service.sync().name("trade.SwiftUtilsServices.format#Value")
+                        .parameters([value:val, maxLines:lines, maxLineLength:len]).call().formattedValue
+                }
+
+                def reimbursingBank = getParty("TP_REIMBURSING_BANK")
+                def beneficiary = getParty("TP_BENEFICIARY")
+
+                def fields = [:]
+                fields["31D"] = (lc.authExpiryDate?.format("yyMMdd") ?: instrument.expiryDate?.format("yyMMdd") ?: "")
+                fields["32B"] = (instrument.currencyUomId ?: "USD") + String.format("%.2f", (instrument.amount ?: 0.0)).replace(".", ",")
+
+                if (lc.tolerancePositive != null || lc.toleranceNegative != null) {
+                    int pos = (int)((lc.tolerancePositive ?: 0.0) * 100)
+                    int neg = (int)((lc.toleranceNegative ?: 0.0) * 100)
+                    fields["39A"] = "${pos}/${neg}"
+                } else if (lc.maxCreditAmountFlag == "Y") {
+                    fields["39B"] = "MAXIMUM"
+                }
+
+                fields["40F"] = lc.applicableReimbRulesText ?: "URR LATEST VERSION"
+
+                // Tag 25: Nostro account
+                if (reimbursingBank.nostro) fields["25"] = reimbursingBank.nostro
+
+                // Tag 58a: Negotiating Bank (who can claim)
+                if (lc.availableWithEnumId == 'AVAIL_ANY_BANK') {
+                    fields["58D"] = "ANY BANK"
+                } else {
+                    def negBank = getParty("TP_NEGOTIATING_BANK")
+                    fields["58A"] = negBank.bic ?: "NEGOTXXX"
+                }
+
+                // Tag 59: Beneficiary
+                def benText = (beneficiary.name ?: "BENEFICIARY") + (beneficiary.address ? "\r\n" + beneficiary.address : "")
+                fields["59"] = formatValue(benText, 4, 35)
+
+                // Tag 71D: Charges
+                if (lc.reimbursingChargesEnumId) {
+                    def chargeMap = [REIMB_OUR:"OUR", REIMB_BEN:"BEN"]
+                    fields["71D"] = chargeMap[lc.reimbursingChargesEnumId] ?: "OUR"
+                }
+
+                def renderRes = ec.service.sync().name("trade.SwiftUtilsServices.render#SwiftMessage")
+                    .parameters([messageType:"740", senderBic:issuerBic, receiverBic:reimbursingBank.bic ?: "REIMBXXX",
+                                 senderRef:instrument.instrumentRef, fields:fields]).call()
+                messageContent = renderRes.messageContent
+
+                // FR-RMB-01: Auto-create NostroReconciliation record
+                ec.service.sync().name("create#trade.importlc.NostroReconciliation").parameters([
+                    instrumentId: instrumentId,
+                    reimbursingBankPartyId: reimbursingBank.partyId,
+                    expectedCurrency: instrument.currencyUomId ?: "USD",
+                    expectedAmount: instrument.amount ?: 0.0,
+                    matchStatusEnumId: "RECON_PENDING"
+                ]).call()
+                
+                context.messageContent = messageContent
+            ]]></script>
+
+            <service-call name="create#trade.importlc.SwiftMessage" out-map="createRes"
+                in-map="[instrumentId:instrumentId, messageType:'MT740', messageContent:messageContent, messageStatusId:messageStatusId]"/>
+            <set field="swiftMessageId" from="createRes.swiftMessageId"/>
+        </actions>
+    </service>
+    <service verb="generate" noun="Mt747" authenticate="false">
+        <description>Generates MT747 (Amendment to Authorization to Reimburse). Auto-triggered when reimbursement data changed in MT707.</description>
+        <in-parameters>
+            <parameter name="amendmentId" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="swiftMessageId" type="id"/>
+            <parameter name="messageContent"/>
+        </out-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find-one entity-name="trade.importlc.ImportLcAmendment" value-field="amend" use-cache="false"/>
+            <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument" use-cache="false">
+                <field-map field-name="instrumentId" from="amend.instrumentId"/>
+            </entity-find-one>
+            <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" use-cache="false">
+                <field-map field-name="instrumentId" from="amend.instrumentId"/>
+            </entity-find-one>
+
+            <!-- Only generate if TP_REIMBURSING_BANK assigned -->
+            <entity-find entity-name="trade.TradeInstrumentParty" list="instrumentParties">
+                <econdition field-name="instrumentId" from="amend.instrumentId"/>
+            </entity-find>
+            <set field="reimbJunc" from="instrumentParties.find { it.roleEnumId == 'TP_REIMBURSING_BANK' }"/>
+            <if condition="!reimbJunc">
+                <log level="info" message="No TP_REIMBURSING_BANK for instrument ${amend.instrumentId}. Skipping MT747."/>
+                <return/>
+            </if>
+
+            <entity-find-one entity-name="trade.common.TradeConfig" value-field="bicConfig">
+                <field-map field-name="configId" value="ISSUING_BANK_BIC"/>
+            </entity-find-one>
+            <set field="issuerBic" from="bicConfig?.configValue ?: 'ISSUERXX'"/>
+
+            <script><![CDATA[
+                def getParty(role) {
+                    def junc = instrumentParties.find { it.roleEnumId == role }
+                    if (!junc) return [:]
+                    def tp = ec.entity.find("trade.TradeParty").condition("partyId", junc.partyId).one()
+                    def tpb = ec.entity.find("trade.TradePartyBank").condition("partyId", junc.partyId).one()
+                    return [partyId: junc.partyId, name: tp?.partyName, bic: tpb?.swiftBic]
+                }
+
+                def reimbursingBank = getParty("TP_REIMBURSING_BANK")
+                
+                // Tag 21: Reimbursing Bank's Reference (from the MT740 we sent earlier)
+                def prev740 = ec.entity.find("trade.importlc.SwiftMessage")
+                    .condition("instrumentId", amend.instrumentId)
+                    .condition("messageType", "MT740")
+                    .orderBy("-generatedDate").one()
+                
+                def fields = [:]
+                fields["21"] = "NONREF" // Ideally we track the bank's ref, but for now use default
+
+                if (amend.authExpiryDate) fields["31E"] = amend.authExpiryDate.format("yyMMdd")
+                
+                if (amend.amountChange != null && amend.amountChange != 0) {
+                    def currency = instrument.currencyUomId ?: "USD"
+                    def sign = amend.amountChange > 0 ? "" : "-"
+                    fields["34B"] = currency + sign + String.format("%.2f", Math.abs(amend.amountChange)).replace(".", ",")
+                }
+
+                def renderRes = ec.service.sync().name("trade.SwiftUtilsServices.render#SwiftMessage")
+                    .parameters([messageType:"747", senderBic:issuerBic, receiverBic:reimbursingBank.bic ?: "REIMBXXX",
+                                 senderRef:instrument.instrumentRef, fields:fields]).call()
+                messageContent = renderRes.messageContent
+            ]]></script>
+
+            <service-call name="create#trade.importlc.SwiftMessage" out-map="createRes"
+                in-map="[instrumentId:amend.instrumentId, messageType:'MT747', messageContent:messageContent, messageStatusId:'SWIFT_MSG_ACTIVE']"/>
+            <set field="swiftMessageId" from="createRes.swiftMessageId"/>
+        </actions>
+    </service>
 </services>
+
+

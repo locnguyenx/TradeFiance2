@@ -29,10 +29,11 @@ export const AmendmentStepper: React.FC<AmendmentStepperProps> = ({ lcId, amendm
     const [delta, setDelta] = useState({
         amountAdjustment: '0',
         newExpiryDate: '',
-        amendmentNarrative: '',
         amendmentTypeEnumId: 'FINANCIAL',
         isBeneficiaryAcceptanceRequired: true,
+        isCancellationRequest: false,
     });
+
 
     const [error, setError] = useState('');
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -58,7 +59,9 @@ export const AmendmentStepper: React.FC<AmendmentStepperProps> = ({ lcId, amendm
                             amendmentNarrative: amdData.amendmentNarrative || '',
                             amendmentTypeEnumId: amdData.amendmentTypeEnumId || 'FINANCIAL',
                             isBeneficiaryAcceptanceRequired: amdData.isBeneficiaryAcceptanceRequired !== 'N',
+                            isCancellationRequest: amdData.isCancellationRequest === 'Y',
                         });
+
                     }
 
                 if (!activeLcId || activeLcId === 'NEW') {
@@ -109,7 +112,12 @@ export const AmendmentStepper: React.FC<AmendmentStepperProps> = ({ lcId, amendm
                     return;
                 }
             }
+            if (delta.isCancellationRequest && (parseFloat(delta.amountAdjustment) !== 0 || delta.newExpiryDate)) {
+                setError('Cancellation request cannot be combined with other amendment changes');
+                return;
+            }
         }
+
 
         setStepIndex(prev => Math.min(prev + 1, 4));
     }
@@ -131,8 +139,10 @@ export const AmendmentStepper: React.FC<AmendmentStepperProps> = ({ lcId, amendm
                 amountAdjustment: parseFloat(delta.amountAdjustment) || 0,
                 amendmentTypeEnumId: delta.amendmentTypeEnumId,
                 isFinancial: delta.amendmentTypeEnumId === 'FINANCIAL' ? 'Y' : 'N',
-                isBeneficiaryAcceptanceRequired: delta.isBeneficiaryAcceptanceRequired ? 'Y' : 'N'
+                isBeneficiaryAcceptanceRequired: delta.isBeneficiaryAcceptanceRequired ? 'Y' : 'N',
+                isCancellationRequest: delta.isCancellationRequest ? 'Y' : 'N',
             };
+
 
             if (delta.newExpiryDate) payload.newExpiryDate = delta.newExpiryDate;
             if (delta.amendmentNarrative) payload.amendmentNarrative = delta.amendmentNarrative;
@@ -206,19 +216,39 @@ export const AmendmentStepper: React.FC<AmendmentStepperProps> = ({ lcId, amendm
                                 value={delta.amendmentTypeEnumId}
                                 onChange={e => setDelta({...delta, amendmentTypeEnumId: e.target.value})}
                             >
-                                <option value="FINANCIAL">Financial (Amount/Expiry)</option>
                                 <option value="NARRATIVE">Narrative / Terms Only</option>
                             </select>
                         </div>
+                        <div className="field-group full-width">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="isCancellationRequest"
+                                    checked={delta.isCancellationRequest}
+                                    onChange={e => {
+                                        const isCancelling = e.target.checked;
+                                        setDelta({...delta,
+                                            isCancellationRequest: isCancelling,
+                                            amountAdjustment: isCancelling ? '0' : delta.amountAdjustment,
+                                            newExpiryDate: isCancelling ? '' : delta.newExpiryDate,
+                                        });
+                                    }} />
+                                <span className="font-semibold text-sm">Request Full Cancellation (Tag 23S)</span>
+                            </label>
+                            {delta.isCancellationRequest && (
+                                <p className="helper-text" style={{color: '#dc2626'}}>
+                                    This will generate MT 707 with Tag 23S = CANCEL. No other changes allowed.
+                                </p>
+                            )}
+                        </div>
+
                         <div className="field-group">
                             <label htmlFor="amountAdjustment">Amount Adjustment (Delta)</label>
                             <input 
-                                id="amountAdjustment"
-                                type="number"
                                 placeholder="e.g. +50000"
+                                disabled={delta.isCancellationRequest}
                                 value={delta.amountAdjustment}
                                 onChange={e => setDelta({...delta, amountAdjustment: e.target.value})}
                             />
+
                             <p className="helper-text">Current Effective Amount: {instrument.currencyUomId || 'USD'} {originalAmount.toLocaleString()}</p>
                         </div>
                         <div className="field-group">
@@ -226,9 +256,11 @@ export const AmendmentStepper: React.FC<AmendmentStepperProps> = ({ lcId, amendm
                             <input 
                                 id="newExpiryDate"
                                 type="date"
+                                disabled={delta.isCancellationRequest}
                                 value={delta.newExpiryDate}
                                 onChange={e => setDelta({...delta, newExpiryDate: e.target.value})}
                             />
+
                             <p className="helper-text">Original: {instrument.expiryDate}</p>
                         </div>
                     </section>

@@ -27,7 +27,9 @@
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
             <service-call name="trade.SwiftGenerationServices.generate#Mt700" in-map="[instrumentId: instrumentId]"/>
+            <service-call name="trade.SwiftGenerationServices.generate#Mt740" in-map="[instrumentId: instrumentId]"/>
         </actions>
+
     </seca>
     <!-- Keep DRAFT updated on changes -->
     <seca service="update#trade.importlc.ImportLetterOfCredit" when="post-service">
@@ -68,7 +70,9 @@
                 </entity-find-one>
                 <if condition="lc">
                     <service-call name="trade.SwiftGenerationServices.generate#Mt700" in-map="[instrumentId: lc.instrumentId]"/>
+                    <service-call name="trade.SwiftGenerationServices.generate#Mt740" in-map="[instrumentId: lc.instrumentId]"/>
                 </if>
+
             </if>
         </actions>
     </seca>
@@ -81,6 +85,7 @@
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
             <service-call name="trade.SwiftGenerationServices.generate#Mt707" in-map="[amendmentId: amendmentId]"/>
+            <service-call name="trade.SwiftGenerationServices.generate#Mt747" in-map="[amendmentId: amendmentId]"/>
         </actions>
     </seca>
 

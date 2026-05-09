@@ -537,4 +537,19 @@ export const tradeApi = {
     const res = await this._fetch(`${API_BASE}/common/shipping-guarantee/${guaranteeId}`);
     return res.json();
   },
+  
+  async getNostroReconciliations(): Promise<{ reconciliationList: NostroReconciliation[] }> {
+    const res = await this._fetch(`${API_BASE}/nostro-reconciliations`);
+    return res.json();
+  },
+
+  async matchNostroReconciliation(reconciliationId: string, data: any): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/nostro-reconciliations/${reconciliationId}/match`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return res.json();
+  },
 };
+

@@ -56,6 +56,8 @@
         <field name="paymentCondBeneText" type="text-long"/> <!-- Tag 49G: max 4x35, X charset -->
         <field name="paymentCondBankText" type="text-long"/> <!-- Tag 49H: max 4x35, X charset -->
         <field name="applicableRulesEnumId" type="id"/> <!-- Tag 40E: UCP_LATEST, EUCP_LATEST, etc. -->
+        <field name="applicableRulesText" type="text-medium"/> <!-- Tag 40E: Narrative if OTHER -->
+
         <field name="authExpiryDate" type="date"/> <!-- Tag 31D (MT740): Reimbursement auth expiry -->
         <field name="reimbursingChargesEnumId" type="id"/> <!-- Tag 71D (MT740): REIMB_OUR, REIMB_BEN -->
         <field name="applicableReimbRulesText" type="text-medium"/> <!-- Tag 40F (MT740): default URR LATEST VERSION -->

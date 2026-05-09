@@ -39,7 +39,9 @@ export const InstrumentDetails: React.FC<Props> = ({ instrument, transaction }) 
     { id: 'financials', title: 'Financials', icon: <CreditCard size={16} /> },
     { id: 'shipping', title: 'Shipment', icon: <Truck size={16} /> },
     { id: 'terms', title: 'Terms & Conditions', icon: <Scale size={16} /> },
+    { id: 'reimbursement', title: 'Reimbursement', icon: <Activity size={16} /> },
     { id: 'charges', title: 'Margin/Fees', icon: <ShieldCheck size={16} /> },
+
     { id: 'swift', title: 'SWIFT Messages', icon: <Mail size={16} /> }
   ];
 
@@ -251,8 +253,26 @@ export const InstrumentDetails: React.FC<Props> = ({ instrument, transaction }) 
                 <DataField label="Charges Rule (Tag 71D)" value={instrument.chargeAllocationEnumId} />
                 <DataField label="Charges Narrative (Tag 71B)" value={instrument.chargeAllocationText} />
                 <DataField label="Sender to Receiver (Tag 72Z)" value={instrument.bankToBankInstructions || instrument.senderToReceiverInfo} />
+                <div className="row-divider">SRG 2024 compliance</div>
+                <DataField label="Applicable Rules (Tag 40E)" value={instrument.applicableRulesEnumId?.replace('APPL_', '').replace('_', ' ') || '---'} highlight />
+                {instrument.applicableRulesEnumId === 'APPL_OTHER' && (
+                  <DataField label="Rules Description" value={instrument.applicableRulesText} />
+                )}
               </div>
               <div className="narrative-stack mt-6">
+                {instrument.paymentCondBeneText && (
+                  <div className="narrative-box">
+                    <header>Payment Conditions - Beneficiary (Tag 49G)</header>
+                    <p>{instrument.paymentCondBeneText}</p>
+                  </div>
+                )}
+                {instrument.paymentCondBankText && (
+                  <div className="narrative-box">
+                    <header>Payment Conditions - Bank (Tag 49H)</header>
+                    <p>{instrument.paymentCondBankText}</p>
+                  </div>
+                )}
+
                 {instrument.goodsDescription && (
                   <div className="narrative-box">
                     <header>Goods Description (Tag 45A)</header>
@@ -274,8 +294,21 @@ export const InstrumentDetails: React.FC<Props> = ({ instrument, transaction }) 
               </div>
             </section>
 
+            </section>
+            
+            <section className="audit-section">
+              <SectionHeader id="reimbursement" title="Authorization to Reimburse" icon={<Activity size={20} />} />
+              <div className="data-table">
+                <DataField label="Reimbursing Bank" value={getBankBic('TP_REIMBURSING_BANK')} highlight />
+                <DataField label="Auth Expiry Date (Tag 31D)" value={formatDate(instrument.authExpiryDate)} />
+                <DataField label="Reimbursing Charges (Tag 71D)" value={instrument.reimbursingChargesEnumId?.replace('REIMB_', '') || '---'} />
+                <DataField label="Applicable Rules (Tag 40F)" value={instrument.applicableReimbRulesText || 'URR LATEST VERSION'} />
+              </div>
+            </section>
+
             <section className="audit-section">
               <SectionHeader id="charges" title="Collateral Control" icon={<ShieldCheck size={20} />} />
+
               <div className="data-table">
                 <DataField label="Margin Requirement Type" value={instrument.marginType} />
                 <DataField label="Margin Percentage" value={instrument.marginPercentage ? `${instrument.marginPercentage}%` : null} />

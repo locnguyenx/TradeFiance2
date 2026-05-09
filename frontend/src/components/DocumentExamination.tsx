@@ -33,6 +33,15 @@ export const DocumentExamination: React.FC<{ instrument?: any, presentationDate?
     const [discrepancies, setDiscrepancies] = useState<Discrepancy[]>([]);
     const [selectedCode, setSelectedCode] = useState('');
     const [detail, setDetail] = useState('');
+    const [lineCount, setLineCount] = useState(0);
+    const [charViolation, setCharViolation] = useState(false);
+
+    useEffect(() => {
+        const lines = detail.split('\n');
+        setLineCount(lines.length);
+        setCharViolation(lines.some(l => l.length > 50));
+    }, [detail]);
+
 
     const logDiscrepancy = () => {
         if (!selectedCode) return;
@@ -140,8 +149,22 @@ export const DocumentExamination: React.FC<{ instrument?: any, presentationDate?
                             value={detail}
                             onChange={(e) => setDetail(e.target.value)}
                             placeholder="Specific discrepancy detail..."
+                            className={(lineCount > 70 || charViolation) ? 'border-red-500' : ''}
                         />
-                        <button className="log-btn" onClick={logDiscrepancy}>Log Discrepancy</button>
+                        <div className="text-xs flex justify-between mt-1">
+                            <span className={lineCount > 70 ? 'text-red-600 font-bold' : 'text-slate-500'}>
+                                Tag 77J Lines: {lineCount}/70
+                            </span>
+                            {charViolation && <span className="text-red-600 font-bold">Line exceeds 50 chars</span>}
+                        </div>
+                        <button 
+                            className="log-btn" 
+                            onClick={logDiscrepancy}
+                            disabled={lineCount > 70 || charViolation}
+                        >
+                            Log Discrepancy
+                        </button>
+
                     </div>
 
                     <div className="logged-discrepancies">
