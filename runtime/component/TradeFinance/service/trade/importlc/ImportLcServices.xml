@@ -429,29 +429,68 @@
         </actions>
     </service>
 
-    <service verb="create" noun="Amendment" authenticate="false">
+    <service verb="create" noun="ExternalAmendment" authenticate="false">
         <in-parameters>
             <parameter name="instrumentId" type="String" required="true"/>
             <parameter name="amendmentTypeEnumId" type="String" required="true"/>
             <parameter name="amendmentDate" type="Date" required="true" default="ec.user.nowTimestamp"/>
-            <parameter name="amountAdjustment" type="BigDecimal"/>
+            <parameter name="transactionRef" type="String"/>
+            
+            <!-- SRG 2024 Smart Delta Fields -->
+            <parameter name="amountIncrease" type="BigDecimal"/>
+            <parameter name="amountDecrease" type="BigDecimal"/>
             <parameter name="newExpiryDate" type="Date"/>
-            <parameter name="amendmentNarrative" type="String"/>
-            <parameter name="goodsDescription" type="String"/>
-            <parameter name="documentsRequired" type="String"/>
-            <parameter name="additionalConditions" type="String"/>
-            <parameter name="bankToBankInstructions" type="String"/>
-            <parameter name="additionalAmountsText" type="String"/>
-            <parameter name="chargeAllocationText" type="String"/>
-            <parameter name="shipmentPeriodText" type="String"/>
-            <parameter name="isFinancial" type="String"/>
+            <parameter name="newTolerancePositive" type="BigDecimal"/>
+            <parameter name="newToleranceNegative" type="BigDecimal"/>
+            <parameter name="goodsActionEnumId"/>
+            <parameter name="goodsDeltaText"/>
+            <parameter name="docsActionEnumId"/>
+            <parameter name="docsDeltaText"/>
+            <parameter name="conditionsActionEnumId"/>
+            <parameter name="conditionsDeltaText"/>
+            
             <parameter name="priorityEnumId"/>
+            <!-- Legacy Mapping Support -->
+            <parameter name="amountAdjustment" type="BigDecimal"/>
+            <parameter name="newLcAmount" type="BigDecimal"/>
+            <parameter name="documentsActionEnumId"/>
+            <parameter name="documentsDeltaText"/>
+            <parameter name="additionalActionEnumId"/>
+            <parameter name="additionalDeltaText"/>
+            <parameter name="amendmentNarrative"/>
         </in-parameters>
         <out-parameters>
             <parameter name="amendmentId" type="String"/>
+            <parameter name="transactionId" type="String"/>
         </out-parameters>
         <actions>
-            <script>ec.artifactExecution.disableAuthz()</script>
+            <script><![CDATA[
+                ec.artifactExecution.disableAuthz();
+                // Legacy amountAdjustment support
+                if (context.amountAdjustment != null) {
+                    if (context.amountAdjustment > 0) context.amountIncrease = context.amountAdjustment;
+                    else if (context.amountAdjustment < 0) context.amountDecrease = -context.amountAdjustment;
+                }
+                // Legacy newLcAmount support
+                if (context.newLcAmount != null) {
+                    def curLc = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).one();
+                    if (curLc != null) {
+                        def diff = context.newLcAmount - (curLc.effectiveAmount ?: 0);
+                        if (diff > 0) context.amountIncrease = diff;
+                        else if (diff < 0) context.amountDecrease = -diff;
+                    }
+                }
+                // Legacy narrative fields mapping
+                if (context.documentsActionEnumId) context.docsActionEnumId = context.documentsActionEnumId;
+                if (context.documentsDeltaText) context.docsDeltaText = context.documentsDeltaText;
+                if (context.additionalActionEnumId) context.conditionsActionEnumId = context.additionalActionEnumId;
+                if (context.additionalDeltaText) context.conditionsDeltaText = context.additionalDeltaText;
+                if (context.amendmentNarrative) {
+                    context.conditionsDeltaText = context.amendmentNarrative;
+                    context.conditionsActionEnumId = context.conditionsActionEnumId ?: 'REPLACE';
+                }
+                ec.logger.info("DEBUG: create#ExternalAmendment mapping: amountIncrease=${context.amountIncrease}, amountDecrease=${context.amountDecrease}, docsDeltaText=${context.docsDeltaText}")
+            ]]></script>
             <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument"/>
             <if condition="!instrument"><return error="true" message="Instrument ${instrumentId} not found"/></if>
             
@@ -459,35 +498,42 @@
             <if condition="!lc || !(lc.businessStateId in ['LC_ISSUED', 'LC_AMENDED', 'LC_DOC_RECEIVED'])">
                 <return error="true" message="Amendments can only be created for Issued or Amended instruments (Current State: ${lc?.businessStateId ?: 'UNKNOWN'})"/>
             </if>
-            <if condition="lc.businessStateId == 'LC_AMENDMENT_PENDING'">
-                <return error="true" message="Cannot create new amendment while another is pending (Current State: LC_AMENDMENT_PENDING)"/>
-            </if>
             
-            <!-- Find next amendment number -->
-            <entity-find entity-name="trade.importlc.ImportLcAmendment" list="existingAmends">
-                <econdition field-name="instrumentId"/>
-                <select-field field-name="amendmentNumber"/>
-                <order-by field-name="-amendmentNumber"/>
-            </entity-find>
-            <set field="amendmentNumber" from="(existingAmends ? existingAmends[0].amendmentNumber : 0) + 1"/>
-
-            <!-- Default status logic -->
-            <set field="amendmentBusinessStateId" value="AMEND_DRAFT"/>
-            <if condition="isFinancial == 'Y'"><set field="beneficiaryConsentStatusId" value="PENDING"/></if>
-
+            <!-- Concurrent amendment guard -->
             <entity-find entity-name="trade.importlc.ImportLcAmendment" list="existingAmds">
                 <econdition field-name="instrumentId"/>
                 <econdition field-name="amendmentBusinessStateId" operator="in" value="AMEND_DRAFT,AMEND_PENDING_APPROVAL,AMEND_APPROVED"/>
             </entity-find>
             <if condition="existingAmds"><return error="true" message="Concurrent amendment in progress for LC ${instrumentId}"/></if>
+            
+            <!-- Calculate next amendment number -->
+            <entity-find entity-name="trade.importlc.ImportLcAmendment" list="prevAmends">
+                <econdition field-name="instrumentId"/>
+                <select-field field-name="amendmentNumber"/>
+                <order-by field-name="-amendmentNumber"/>
+            </entity-find>
+            <set field="amendmentNumber" from="(prevAmends ? prevAmends[0].amendmentNumber : 0) + 1"/>
+
+            <if condition="!transactionRef">
+                <service-call name="trade.TradeCommonServices.get#NextNumber" in-map="[sequenceId:'SEQ_TXN', instrumentType:'AMD']" out-map="txnNumOut"/>
+                <set field="transactionRef" from="txnNumOut.nextNumberFormatted"/>
+            </if>
+
+            <service-call name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit"
+                in-map="[instrumentId: instrumentId, businessStateId: 'LC_AMENDMENT_PENDING']"/>
+
+            <set field="amendmentBusinessStateId" value="AMEND_DRAFT"/>
+            <set field="beneficiaryConsentStatusId" value="PENDING"/>
 
             <service-call name="create#trade.importlc.ImportLcAmendment" out-map="amdOut"
                 in-map="context + [amendmentBusinessStateId:amendmentBusinessStateId, amendmentNumber:amendmentNumber, beneficiaryConsentStatusId:beneficiaryConsentStatusId]"/>
-            
-            <!-- NEW: Create TradeTransaction for Amendment -->
+            <set field="amendmentId" from="amdOut.amendmentId"/>
+
+            <!-- Create TradeTransaction for Amendment -->
             <service-call name="create#trade.TradeTransaction" out-map="txOut"
                 in-map="[
                     instrumentId: instrumentId,
+                    transactionRef: transactionRef,
                     transactionTypeEnumId: 'IMP_AMENDMENT',
                     transactionStatusId: 'TX_DRAFT',
                     transactionDate: ec.user.nowTimestamp,
@@ -495,73 +541,217 @@
                     makerTimestamp: ec.user.nowTimestamp,
                     priorityEnumId: priorityEnumId ?: 'NORMAL',
                     versionNumber: 1,
-                    relatedRecordId: amdOut.amendmentId,
+                    relatedRecordId: amendmentId,
                     relatedRecordType: 'AMENDMENT'
                 ]"/>
+            <set field="transactionId" from="txOut.transactionId"/>
+        </actions>
+    </service>
+    
+    <service verb="create" noun="Amendment" authenticate="false">
+        <in-parameters>
+            <auto-parameters entity-name="trade.importlc.ImportLcAmendment" include="nonpk"/>
+            <parameter name="amountAdjustment" type="BigDecimal"/>
+            <parameter name="newLcAmount" type="BigDecimal"/>
+            <parameter name="amendmentNarrative"/>
+            <parameter name="amendmentTypeEnumId" default="amendmentTypeEnumId ?: 'STANDARD_OUT'"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="amendmentId"/>
+            <parameter name="transactionId"/>
+        </out-parameters>
+        <actions>
+            <service-call name="trade.importlc.ImportLcServices.create#ExternalAmendment" in-map="context" out-map="context"/>
+        </actions>
+    </service>
 
-            <set field="amendmentId" from="amdOut.amendmentId"/>
+    <service verb="create" noun="InternalAmendment" authenticate="false">
+        <in-parameters>
+            <parameter name="instrumentId" type="String" required="true"/>
+            <parameter name="amendmentDate" type="Date" required="true" default="ec.user.nowTimestamp"/>
+            <parameter name="transactionRef" type="String"/>
+            <auto-parameters entity-name="trade.importlc.ImportLcInternalAmendment" include="nonpk"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="internalAmendmentId" type="String"/>
+        </out-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument"/>
+            <if condition="!instrument"><return error="true" message="Instrument ${instrumentId} not found"/></if>
 
-            <!-- Transition LC state if financial and pending consent -->
-            <if condition="isFinancial == 'Y'">
-                <service-call name="update#trade.TradeInstrument"
-                              in-map="[instrumentId: instrumentId, businessStateId: 'LC_AMENDMENT_PENDING']"/>
-                <service-call name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit"
-                              in-map="[instrumentId: instrumentId, businessStateId: 'LC_AMENDMENT_PENDING']"/>
+            <if condition="!transactionRef">
+                <service-call name="trade.TradeCommonServices.get#NextNumber" in-map="[sequenceId:'SEQ_TXN', instrumentType:'INT_AMD']" out-map="txnNumOut"/>
+                <set field="transactionRef" from="txnNumOut.nextNumberFormatted"/>
             </if>
+
+            <service-call name="create#trade.importlc.ImportLcInternalAmendment" out-map="amdOut" in-map="context"/>
+            <set field="internalAmendmentId" from="amdOut.internalAmendmentId"/>
+
+            <!-- Create TradeTransaction for Internal Amendment -->
+            <service-call name="create#trade.TradeTransaction" out-map="txOut"
+                in-map="[
+                    instrumentId: instrumentId,
+                    transactionRef: transactionRef,
+                    transactionTypeEnumId: 'IMP_AMENDMENT',
+                    transactionStatusId: 'TX_DRAFT',
+                    transactionDate: ec.user.nowTimestamp,
+                    makerUserId: ec.user.userId,
+                    makerTimestamp: ec.user.nowTimestamp,
+                    priorityEnumId: priorityEnumId ?: 'NORMAL',
+                    versionNumber: 1,
+                    relatedRecordId: internalAmendmentId,
+                    relatedRecordType: 'INTERNAL_AMENDMENT'
+                ]"/>
+            <set field="transactionId" from="txOut.transactionId"/>
         </actions>
     </service>
 
     <service verb="authorize" noun="Amendment" authenticate="false">
         <in-parameters>
             <parameter name="amendmentId" type="String" required="true"/>
+            <parameter name="approverUserId" type="String" default="ec.user.userId"/>
+            <parameter name="skipFourEyes" type="Boolean" default="false"/>
         </in-parameters>
         <actions>
-            <entity-find-one entity-name="trade.importlc.ImportLcAmendment" value-field="amendment" for-update="true"/>
-            <if condition="!amendment"><return error="true" message="Amendment ${amendmentId} not found"/></if>
-
-            <if condition="amendment.amendmentBusinessStateId != 'AMEND_DRAFT'">
-                <return error="true" message="Only amendments in DRAFT state can be authorized (current: ${amendment.amendmentBusinessStateId})"/>
-            </if>
-
-            <service-call name="update#trade.importlc.ImportLcAmendment"
-                in-map="[amendmentId: amendmentId, amendmentBusinessStateId: 'AMEND_APPROVED']"/>
-
-            <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" for-update="true">
-                <field-map field-name="instrumentId" from="amendment.instrumentId"/>
-            </entity-find-one>
-            <if condition="lc">
-                <set field="lc.totalAmendmentCount" from="(lc.totalAmendmentCount ?: 0) + 1"/>
-                <entity-update value-field="lc"/>
-            </if>
-
-
-            <!-- Find the IMP_AMENDMENT transaction -->
+            <!-- Find the IMP_AMENDMENT transaction first to identify the actual amendment record -->
             <entity-find entity-name="trade.TradeTransaction" list="txList">
-                <econdition field-name="instrumentId" from="amendment.instrumentId"/>
                 <econdition field-name="relatedRecordId" from="amendmentId"/>
                 <econdition field-name="transactionTypeEnumId" value="IMP_AMENDMENT"/>
                 <order-by field-name="-transactionId"/>
             </entity-find>
-            <if condition="txList">
-                <set field="newVersion" from="(txList[0].versionNumber ?: 1) + 1"/>
-                <service-call name="update#trade.TradeTransaction"
-                    in-map="[transactionId: txList[0].transactionId,
-                             transactionStatusId: 'TX_APPROVED',
-                             versionNumber: newVersion,
-                             checkerUserId: ec.user.userId,
-                             checkerTimestamp: ec.user.nowTimestamp]"/>
+            <if condition="!txList"><return error="true" message="No pending transaction found for amendment ${amendmentId}"/></if>
+            <set field="transaction" from="txList[0]"/>
+            <set field="instrumentId" from="transaction.instrumentId"/>
+
+            <!-- Enforce Maker/Checker Gate -->
+            <service-call name="trade.AuthorizationServices.authorize#Instrument" 
+                          in-map="[transactionId: transaction.transactionId, userId: approverUserId, skipFourEyes: skipFourEyes]" out-map="authOut"/>
+            
+            <if condition="!authOut.isAuthorized">
+                <return error="true" message="Authorization failed: Maker/Checker validation or Authority limit exceeded."/>
             </if>
 
-            <if condition="amendment.isFinancial == 'Y'">
-                <log level="info" message="Authorizing financial amendment ${amendmentId} for LC ${amendment.instrumentId}. Transitioning state to LC_AMENDMENT_PENDING."/>
-                <service-call name="update#trade.TradeInstrument"
-                              in-map="[instrumentId: amendment.instrumentId, businessStateId: 'LC_AMENDMENT_PENDING']"/>
-                <service-call name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit"
-                              in-map="[instrumentId: amendment.instrumentId, businessStateId: 'LC_AMENDMENT_PENDING']"/>
+            <!-- Re-find based on transaction's related record to avoid ID overlap ambiguity -->
+            <if condition="transaction.relatedRecordType == 'AMENDMENT'">
+                <entity-find-one entity-name="trade.importlc.ImportLcAmendment" value-field="amendment" for-update="true">
+                    <field-map field-name="amendmentId" from="transaction.relatedRecordId"/>
+                </entity-find-one>
             </if>
-            <else>
-                <log level="info" message="Authorizing non-financial amendment ${amendmentId} for LC ${amendment.instrumentId}. State remains LC_ISSUED."/>
-            </else>
+            <if condition="transaction.relatedRecordType == 'INTERNAL_AMENDMENT' || transaction.relatedRecordType == 'INTERNAL_AMD'">
+                <entity-find-one entity-name="trade.importlc.ImportLcInternalAmendment" value-field="internalAmendment" for-update="true">
+                    <field-map field-name="internalAmendmentId" from="transaction.relatedRecordId"/>
+                </entity-find-one>
+            </if>
+            
+            <if condition="!amendment &amp;&amp; !internalAmendment"><return error="true" message="Amendment ${amendmentId} not found for type ${transaction.relatedRecordType}"/></if>
+
+            <!-- Side effects: Update LC Amendment count and state -->
+            <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" for-update="true">
+                <field-map field-name="instrumentId" from="instrumentId"/>
+            </entity-find-one>
+            <if condition="lc">
+                <set field="lc.totalAmendmentCount" from="(lc.totalAmendmentCount ?: 0) + 1"/>
+                
+                <!-- Scenario 3: Internal Amendment execution immediately updates Master LC -->
+                <if condition="internalAmendment">
+                    <if condition="internalAmendment.newFeeDebitAccountId"><set field="lc.feeDebitAccountId" from="internalAmendment.newFeeDebitAccountId"/></if>
+                    <if condition="internalAmendment.newFacilityId">
+                        <entity-find-one entity-name="trade.TradeInstrument" value-field="inst" for-update="true">
+                            <field-map field-name="instrumentId" from="instrumentId"/>
+                        </entity-find-one>
+                        <if condition="inst">
+                            <set field="inst.customerFacilityId" from="internalAmendment.newFacilityId"/>
+                            <entity-update value-field="inst"/>
+                        </if>
+                    </if>
+                </if>
+                <entity-update value-field="lc"/>
+            </if>
+
+            <if condition="amendment">
+                <set field="amendment.amendmentBusinessStateId" value="AMEND_APPROVED"/>
+                <entity-update value-field="amendment"/>
+            </if>
+        </actions>
+    </service>
+
+    <service verb="accept" noun="Amendment" authenticate="false">
+        <in-parameters>
+            <parameter name="amendmentId" required="true"/>
+            <parameter name="acceptanceDate" type="Timestamp" default="ec.user.nowTimestamp"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="trade.importlc.ImportLcAmendment" value-field="amendment" for-update="true"/>
+            <if condition="!amendment"><return error="true" message="Amendment ${amendmentId} not found"/></if>
+            
+            <set field="amendment.beneficiaryConsentStatusId" value="ACCEPTED"/>
+            <set field="amendment.amendmentBusinessStateId" value="AMEND_COMMITTED"/>
+            <log level="info" message="DEBUG: Accepting amendment ${amendmentId}. Status set to ACCEPTED."/>
+            <entity-update value-field="amendment"/>
+
+            <!-- Update LC state -->
+            <service-call name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit"
+                in-map="[instrumentId: amendment.instrumentId, businessStateId: 'LC_AMENDED']"/>
+        </actions>
+    </service>
+
+    <service verb="reject" noun="Amendment" authenticate="false">
+        <in-parameters>
+            <parameter name="amendmentId" required="true"/>
+            <parameter name="rejectionReason"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="trade.importlc.ImportLcAmendment" value-field="amendment" for-update="true"/>
+            <if condition="!amendment"><return error="true" message="Amendment ${amendmentId} not found"/></if>
+            
+            <set field="amendment.beneficiaryConsentStatusId" value="REJECTED"/>
+            <set field="amendment.amendmentBusinessStateId" value="AMEND_REJECTED"/>
+            <entity-update value-field="amendment"/>
+        </actions>
+    </service>
+
+    <service verb="merge" noun="AmendmentDeltas">
+        <in-parameters><parameter name="amendmentId" required="true"/></in-parameters>
+        <actions>
+            <entity-find-one entity-name="trade.importlc.ImportLcAmendment" value-field="amendment"/>
+            <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" for-update="true">
+                <field-map field-name="instrumentId" from="amendment.instrumentId"/>
+            </entity-find-one>
+            <log level="info" message="DEBUG: Merging deltas for amendment ${amendmentId} into LC ${amendment.instrumentId}. Amount Increase: ${amendment.amountIncrease}, Decrease: ${amendment.amountDecrease}"/>
+            
+            <!-- Handle Amount Changes -->
+            <if condition="amendment.amountIncrease || amendment.amountDecrease">
+                <set field="newAmount" from="(lc.effectiveAmount ?: 0) + (amendment.amountIncrease ?: 0) - (amendment.amountDecrease ?: 0)"/>
+                <set field="lc.effectiveAmount" from="newAmount"/>
+                <set field="lc.effectiveOutstandingAmount" from="newAmount"/>
+                <service-call name="update#trade.TradeInstrument" in-map="[instrumentId: lc.instrumentId, amount: newAmount]"/>
+            </if>
+            
+            <!-- Handle Expiry Date Changes -->
+            <if condition="amendment.newExpiryDate">
+                <set field="lc.effectiveExpiryDate" from="amendment.newExpiryDate"/>
+                <service-call name="update#trade.TradeInstrument" in-map="[instrumentId: lc.instrumentId, expiryDate: amendment.newExpiryDate]"/>
+            </if>
+
+            <!-- Handle Smart Narrative Deltas -->
+            <!-- Logic: /ADD/text appends, /REPLACE/text replaces -->
+            <iterate list="['goods', 'docs', 'conditions']" entry="fieldPrefix">
+                <set field="actionField" from="fieldPrefix + 'ActionEnumId'"/>
+                <set field="deltaField" from="fieldPrefix + 'DeltaText'"/>
+                <set field="targetField" from="(fieldPrefix == 'goods' ? 'goodsDescription' : (fieldPrefix == 'docs' ? 'documentsRequired' : 'additionalConditions'))"/>
+                
+                <if condition="amendment[deltaField]">
+                    <if condition="amendment[actionField] == 'ADD'">
+                        <set field="lc[targetField]" from="(lc[targetField] ? lc[targetField] + '\n' : '') + amendment[deltaField]"/>
+                    </if>
+                    <if condition="amendment[actionField] == 'REPLACE' || !lc[targetField]">
+                        <set field="lc[targetField]" from="amendment[deltaField]"/>
+                    </if>
+                </if>
+            </iterate>
+            
+            <entity-update value-field="lc"/>
         </actions>
     </service>
 
@@ -580,26 +770,6 @@
                     <!-- Transition back to LC_ISSUED -->
                     <service-call name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit"
                         in-map="[instrumentId: amendment.instrumentId, businessStateId: 'LC_ISSUED']"/>
-                    
-                    <if condition="beneficiaryConsentStatusId == 'ACCEPTED'">
-                        <!-- Apply effective values from amendment to LC -->
-                        <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" for-update="true">
-                            <field-map field-name="instrumentId" from="amendment.instrumentId"/>
-                        </entity-find-one>
-                        <if condition="lc">
-                            <if condition="amendment.amountAdjustment != null">
-                                <set field="lc.effectiveAmount" from="(lc.effectiveAmount ?: 0) + amendment.amountAdjustment"/>
-                                <set field="lc.effectiveOutstandingAmount" from="(lc.effectiveOutstandingAmount ?: 0) + amendment.amountAdjustment"/>
-                            </if>
-                            <if condition="amendment.newExpiryDate">
-                                <set field="lc.effectiveExpiryDate" from="amendment.newExpiryDate"/>
-                            </if>
-                            <if condition="amendment.newTolerance">
-                                <set field="lc.effectiveTolerancePositive" from="amendment.newTolerance"/>
-                            </if>
-                            <entity-update value-field="lc"/>
-                        </if>
-                    </if>
                     
                     <set field="amendment.amendmentBusinessStateId" value="AMEND_COMMITTED"/>
                 </if>

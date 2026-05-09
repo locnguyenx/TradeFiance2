@@ -166,8 +166,8 @@ class SwiftGenerationSpec extends Specification {
         genRes.messageContent.contains(":45B:")
     }
 
-    // BDD-SWG-AMD-01: Amendment — MT707 generated correctly
-    def "AMD-01: Amendment - MT707 generated correctly"() {
+    // BDD-SWG-AMD-01: Amendment — MT707 generated correctly (SRG 2024)
+    def "AMD-01: Amendment - MT707 generated correctly (SRG 2024)"() {
         given: "An Import LC Amendment"
         def ref = "TF-LC-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
@@ -177,19 +177,19 @@ class SwiftGenerationSpec extends Specification {
                          instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
                                    [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
         
-        // Add a mock amendment
+        // Add a SRG 2024 amendment
         def amRes = ec.service.sync().name("create#trade.importlc.ImportLcAmendment")
             .parameters([instrumentId: res.instrumentId, amendmentNumber: 1, 
-                         amountAdjustment: 5000.0, amendmentNarrative: "INCREASE AMOUNT"]).call()
+                         amountIncrease: 5000.0, goodsActionEnumId: 'ADD', goodsDeltaText: "INCREASE AMOUNT"]).call()
 
         when: "generate#Mt707 is called"
         def genRes = ec.service.sync().name("trade.SwiftGenerationServices.generate#Mt707")
             .parameters([amendmentId: amRes.amendmentId]).call()
 
-        then: "MT707 content exists with Tag 32B for increase"
+        then: "MT707 content exists with Tag 32B and Smart Delta Tag 45B"
         genRes.messageContent.contains("{2:I707")
         genRes.messageContent.contains(":32B:USD5000,00")
-        genRes.messageContent.contains("INCREASE AMOUNT")
+        genRes.messageContent.contains(":45B:/ADD/INCREASE AMOUNT")
     }
 
     def "MT700 contains Tags 40A, 41a, 49"() {
@@ -279,7 +279,7 @@ class SwiftGenerationSpec extends Specification {
 
         def amRes = ec.service.sync().name("create#trade.importlc.ImportLcAmendment")
             .parameters([instrumentId: res.instrumentId, amendmentNumber: 1, 
-                         amountAdjustment: 5000.0, amendmentNarrative: "INCREASE"]).call()
+                         amountIncrease: 5000.0, goodsActionEnumId: 'ADD', goodsDeltaText: "INCREASE"]).call()
 
         when: "generate#Mt707 is called"
         def genRes = ec.service.sync().name("trade.SwiftGenerationServices.generate#Mt707")
@@ -287,6 +287,29 @@ class SwiftGenerationSpec extends Specification {
 
         then: "Tag 34B contains the new total (105000)"
         genRes.messageContent.contains(":34B:USD105000,00")
+    }
+
+    def "MT707 contains Mandatory SRG 2024 Tags (31C, 26E, 22A)"() {
+        given: "An LC and a new amendment"
+        def ref = "TF-SRG-TAGS-" + System.currentTimeMillis()
+        def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
+            .parameters([instrumentRef: ref, lcAmount: 100000.0, lcCurrencyUomId: "USD",
+                         lcTypeEnumId: 'IRREVOCABLE', availableByEnumId: 'SIGHT_PAYMENT',
+                         availableWithEnumId: 'AVAIL_ANY_BANK', confirmationEnumId: 'WITHOUT',
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
+        
+        def amRes = ec.service.sync().name("create#trade.importlc.ImportLcAmendment")
+            .parameters([instrumentId: res.instrumentId, amendmentNumber: 2]).call()
+
+        when: "generate#Mt707 is called"
+        def genRes = ec.service.sync().name("trade.SwiftGenerationServices.generate#Mt707")
+            .parameters([amendmentId: amRes.amendmentId]).call()
+
+        then: "Content contains 31C (Issue Date), 26E (Amd Number), 22A (ACNF)"
+        genRes.messageContent.contains(":31C:")
+        genRes.messageContent.contains(":26E:2")
+        genRes.messageContent.contains(":22A:ACNF")
     }
 
     def "MT734 disposal mapping matches REQ-SWG-09"() {

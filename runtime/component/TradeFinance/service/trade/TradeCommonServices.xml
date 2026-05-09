@@ -853,13 +853,27 @@
             </if>
         </actions>
     </service-eca>
-    <service verb="get" noun="AmendmentList" authenticate="false">
+    <service verb="get" noun="ExternalAmendmentList" authenticate="false">
         <out-parameters>
             <parameter name="amendmentList" type="List"><parameter name="amendment" type="Map"/></parameter>
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find entity-name="trade.importlc.ImportLcAmendment" list="amendmentList">
+                <order-by field-name="-amendmentDate"/>
+            </entity-find>
+        </actions>
+    </service>
+    <service verb="get" noun="AmendmentList" authenticate="false">
+        <actions><service-call name="trade.TradeCommonServices.get#ExternalAmendmentList" in-map="context" out-map="context"/></actions>
+    </service>
+    <service verb="get" noun="InternalAmendmentList" authenticate="false">
+        <out-parameters>
+            <parameter name="amendmentList" type="List"><parameter name="amendment" type="Map"/></parameter>
+        </out-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find entity-name="trade.importlc.ImportLcInternalAmendment" list="amendmentList">
                 <order-by field-name="-amendmentDate"/>
             </entity-find>
         </actions>
@@ -897,12 +911,25 @@
             </entity-find>
         </actions>
     </service>
-    <service verb="get" noun="Amendment">
+    <service verb="get" noun="ExternalAmendment" authenticate="false">
         <in-parameters><parameter name="amendmentId" required="true"/></in-parameters>
         <out-parameters><parameter name="amendment" type="Map"/></out-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.importlc.ImportLcAmendment" value-field="amendment"/>
-            <if condition="!amendment"><return error="true" message="Amendment not found"/></if>
+            <if condition="!amendment"><return error="true" message="External Amendment not found"/></if>
+        </actions>
+    </service>
+    <service verb="get" noun="Amendment">
+        <actions><service-call name="trade.TradeCommonServices.get#ExternalAmendment" in-map="context" out-map="context"/></actions>
+    </service>
+    <service verb="get" noun="InternalAmendment" authenticate="false">
+        <in-parameters><parameter name="amendmentId" required="true"/></in-parameters>
+        <out-parameters><parameter name="amendment" type="Map"/></out-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find-one entity-name="trade.importlc.ImportLcInternalAmendment" value-field="amendment"/>
+            <if condition="!amendment"><return error="true" message="Internal Amendment not found"/></if>
         </actions>
     </service>
     <service verb="get" noun="Presentation">

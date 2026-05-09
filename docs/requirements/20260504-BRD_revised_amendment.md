@@ -1,8 +1,14 @@
-## Revise existing sections in BRD
+# BRD - REVISED AMENDMENTS
 
-**Suspressed:** Section 3: Core Business Processes (Detailed Specification) > 3.2. Process: Import LC Amendments (`Trade_Finance/BRD_ImportLC.md`)
+## 1. Revise existing sections in BRD
 
-Here is the fully revised and architecturally complete Business Requirements Document (BRD) section for Import LC Amendments. This incorporates the exhaustive MT 707 SWIFT mapping, the strict legal requirement for Beneficiary Consent on all UCP 600 changes, and the distinct workflow for Internal back-office amendments.
+**Suspressed:** Core Business Processes > Process: Import LC Amendments
+
+Here is the fully revised and architecturally complete Business Requirements Document (BRD) section for Import LC Amendments. This incorporates:
+- implements a "Smart Delta" UI
+- the exhaustive MT 707 SWIFT mapping
+- the strict legal requirement for Beneficiary Consent on all UCP 600 changes, and the distinct workflow for Internal back-office amendments.
+- comply the SWIFT Regulation Guide (SRG) release 2024
 
 This process dictates how an active, issued Import LC is modified. The system must rigorously separate amendments into two distinct operational scopes: **External (UCP 600) Amendments** and **Internal Bank Amendments**.
 
@@ -126,7 +132,7 @@ Your system UI must physically lock these fields. If the client wants to change 
 
 ### F. State Machine & Liability Impact Timing (The "When" & "What")
 
-Because External Amendments require consent, the Moqui system must maintain the **Master LC Record** and a floating **Pending Amendment Record**. The system executes logic at specific lifecycle statuses:
+Because External Amendments require consent, the Moqui system must maintain the **Master LC Record** and a floating **Pending Amendment Record**. The system executes logic at specific lifecycle statuses (for Amendment Record):
 
 **State 1: `Dispatched` (Checker Approves, MT 707 Sent)**
 *   **SWIFT:** MT 707 generated and transmitted.
@@ -150,13 +156,13 @@ Because External Amendments require consent, the Moqui system must maintain the 
 
 ***
 
-## **Revised MT 707 (LC Amendments)**
+## **2. Revised MT 707 (LC Amendments)**
 
 Here is the **complete, exhaustive list of every single tag permitted in an MT 707 message** according to the latest 2024 SWIFT Standards. 
 
 ---
 
-### 1. The Exhaustive MT 707 Data Dictionary (SRG 2024)
+### The Exhaustive MT 707 Data Dictionary (SRG 2024)
 
 The most critical system change for your developers to note is the **Header & Control Block**. Previously, only tags 20 and 21 were mandatory. Now, SWIFT forces your system to maintain state and carry forward data from the original MT 700 to validate the amendment. 
 
@@ -242,11 +248,13 @@ When your Java/Groovy SWIFT generation service builds the MT 707, it cannot just
 
 ---
 
-### 2. Do we need Beneficiary Consent for BOTH types of amendment?
+## **3. More about the internal and external amendment**
 
-**Yes, absolutely.**
+### Need of Beneficiary Consent for external amendment?
 
 Under **UCP 600 Article 10(a):** *"A credit can neither be amended nor cancelled without the agreement of the issuing bank, the confirming bank, if any, and the beneficiary."*
+
+Previously, we devide the amendment details into "Financial" and "Non-Financial" type. However, this is just to classified the data grouping, we won't consider these two ones are types of amendment anymore. See section "A. Amendment Scopes & Consent Rules" above for real 2 amendment types.
 
 UCP 600 makes zero distinction between a "Financial" and a "Non-Financial" amendment. If you change a single comma in the Port of Loading, it is legally an amendment to the contract. The Beneficiary must agree to it, because that new term might be impossible for them to fulfill (e.g., the ship already left the original port). 
 
@@ -256,22 +264,22 @@ If the Beneficiary does not explicitly accept the MT 707, they are legally permi
 
 ---
 
-### 3. Is there any case where an amendment is strictly "Internal Scope" (No Consent Needed)?
+### Internal amendment - No Consent Needed
 
-**Yes.** While UCP 600 requires consent for changes to the *contractual* terms, banks process "Internal Amendments" constantly. 
+While UCP 600 requires consent for changes to the *contractual* terms, banks process "Internal Amendments" constantly. 
 
 An internal amendment occurs when a data point changes that affects the bank's back-office accounting, but does **not** alter the UCP 600 text provided to the Beneficiary. 
 
 Because the legal contract isn't changing, **no MT 707 is generated, and no Beneficiary Consent is required.**
 
-**Cases for an Internal Scope Amendment in Moqui:**
+**Cases for an Internal Scope Amendment in system:**
 1.  **Changing the Fee Settlement Account:** The Applicant calls and says, "Please debit my EUR Account instead of my USD Account for the monthly LC commission fees going forward."
 2.  **Updating the Credit Facility ID (Limit Re-allocation):** The corporate relationship manager restructures the Applicant's credit lines. The LC's liability needs to be un-linked from "Facility 123" and re-linked to "Facility 456".
 3.  **Changing Internal Margin/Collateral:** The bank decides they want the client to deposit 10% cash margin against the LC due to a drop in the client's credit score.
 4.  **Re-assigning the Relationship Manager:** Changing the internal tracking codes or profit-center mapping for the LC.
 
-**How to handle this in your Moqui State Machine:**
-You need to build a distinct UI action called `Initiate Internal Amendment`. 
+**How to handle this in your system:**
+You need to build a distinct UI action called `Initiate Internal Amendment`. This is a transaction with type = `Internal Amendment`.
 *   This UI will *only* allow the Maker to edit internal fields (Limit IDs, Fee Accounts, Margin Accounts). 
 *   It routes to a Checker for internal dual-control.
 *   Upon approval, it updates the Master LC Record immediately. 

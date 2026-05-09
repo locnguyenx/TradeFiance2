@@ -13,11 +13,12 @@ class ImportLcEntitiesSpec extends Specification {
     def setupSpec() {
         ExecutionContext ec = Moqui.getExecutionContext()
         ec.artifactExecution.disableAuthz()
-        def ids = ["LC-ENT-1", "LC-ENT-PERSIST", "LC-AMEND-TEST", "LC-PRES-TEST", "LC-SG-TEST", "LC-AMEND-EXT", "LC-PRES-EXT", "LC-SG-EXT"]
+        def ids = ["LC-ENT-1", "LC-ENT-PERSIST", "LC-AMEND-TEST", "LC-PRES-TEST", "LC-SG-TEST", "LC-AMEND-EXT", "LC-PRES-EXT", "LC-SG-EXT", "LC_AMD_DELTA", "LC_INT_AMD"]
         for (id in ids) {
             ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", id).deleteAll()
             ec.entity.find("trade.importlc.ImportLcSettlement").condition("instrumentId", id).deleteAll()
             ec.entity.find("trade.importlc.ImportLcAmendment").condition("instrumentId", id).deleteAll()
+            ec.entity.find("trade.importlc.ImportLcInternalAmendment").condition("instrumentId", id).deleteAll()
             ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", id).deleteAll()
             ec.entity.find("trade.importlc.ImportLcShippingGuarantee").condition("instrumentId", id).deleteAll()
             ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", id).deleteAll()
@@ -182,26 +183,24 @@ class ImportLcEntitiesSpec extends Specification {
 
     def "ImportLcAmendment persists extended fields"() {
         setup:
-        ec.service.sync().name("create#trade.TradeInstrument")
-                .parameters([instrumentId: "LC-AMEND-TEST", instrumentRef: "TF-LC-AM-01"]).call()
-        ec.service.sync().name("create#trade.importlc.ImportLetterOfCredit")
-                .parameters([instrumentId: "LC-AMEND-TEST", businessStateId: "LC_ISSUED"]).call()
+        ec.entity.makeValue("trade.TradeInstrument").setAll([instrumentId: "LC-AMEND-TEST", instrumentRef: "TF-LC-AM-01"]).create()
+        ec.entity.makeValue("trade.importlc.ImportLetterOfCredit").setAll([instrumentId: "LC-AMEND-TEST", businessStateId: "LC_ISSUED"]).create()
 
         when:
-        ec.service.sync().name("create#trade.importlc.ImportLcAmendment").parameters([
+        def amValue = ec.entity.makeValue("trade.importlc.ImportLcAmendment").setAll([
             amendmentId: "AMEND_01",
             instrumentId: "LC-AMEND-TEST",
             amendmentBusinessStateId: "AMEND_DRAFT",
             amendmentTypeEnumId: "AMEND_INCREASE",
-            isBeneficiaryAcceptanceRequired: "Y"
-        ]).call()
+            beneficiaryConsentStatusId: "PENDING"
+        ]).create()
         def am = ec.entity.find("trade.importlc.ImportLcAmendment")
                 .condition("amendmentId", "AMEND_01").one()
 
         then:
         am != null
         am.amendmentBusinessStateId == "AMEND_DRAFT"
-        am.isBeneficiaryAcceptanceRequired == "Y"
+        am.beneficiaryConsentStatusId == "PENDING"
 
         cleanup:
         ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", "LC-AMEND-TEST").deleteAll()
@@ -274,19 +273,17 @@ class ImportLcEntitiesSpec extends Specification {
 
     def "ImportLcAmendment persists amendmentNumber, newTolerance, chargeAllocationEnumId"() {
         setup:
-        ec.service.sync().name("create#trade.TradeInstrument")
-                .parameters([instrumentId: "LC-AMEND-EXT", instrumentRef: "TF-LC-AM-EXT"]).call()
-        ec.service.sync().name("create#trade.importlc.ImportLetterOfCredit")
-                .parameters([instrumentId: "LC-AMEND-EXT", businessStateId: "LC_ISSUED"]).call()
+        ec.entity.makeValue("trade.TradeInstrument").setAll([instrumentId: "LC-AMEND-EXT", instrumentRef: "TF-LC-AM-EXT"]).create()
+        ec.entity.makeValue("trade.importlc.ImportLetterOfCredit").setAll([instrumentId: "LC-AMEND-EXT", businessStateId: "LC_ISSUED"]).create()
 
         when:
-        ec.service.sync().name("create#trade.importlc.ImportLcAmendment").parameters([
+        ec.entity.makeValue("trade.importlc.ImportLcAmendment").setAll([
             amendmentId: "AMEND_EXT_01",
             instrumentId: "LC-AMEND-EXT",
             amendmentNumber: 2,
             newTolerance: 5.0,
             chargeAllocationEnumId: "SHA"
-        ]).call()
+        ]).create()
         def am = ec.entity.find("trade.importlc.ImportLcAmendment")
                 .condition("amendmentId", "AMEND_EXT_01").one()
 
@@ -388,12 +385,55 @@ class ImportLcEntitiesSpec extends Specification {
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", "LC-SG-EXT").deleteAll()
     }
     
-    def "Entity has missing presentation fields"() {
-        given:
-        def presentation = ec.entity.makeValue("trade.importlc.TradeDocumentPresentation")
-        
-        expect:
-        presentation.set("chargesDeducted", "test") == presentation
-        presentation.set("senderToReceiverPresentationInfo", "test") == presentation
+    def "should persist external amendment with smart delta fields"() {
+        setup:
+        ec.entity.makeValue("trade.TradeInstrument").setAll([instrumentId: "LC_AMD_DELTA", instrumentRef: "TF-LC-AMD-DELTA"]).create()
+        ec.entity.makeValue("trade.importlc.ImportLetterOfCredit").setAll([instrumentId: "LC_AMD_DELTA", businessStateId: "LC_ISSUED"]).create()
+
+        when:
+        def amd = ec.entity.makeValue("trade.importlc.ImportLcAmendment")
+        amd.setAll([
+            amendmentId: 'AMD_TEST_01', instrumentId: 'LC_AMD_DELTA', amendmentNumber: 1, 
+            amendmentDate: ec.user.nowTimestamp, transactionRef: 'TX_1',
+            amountIncrease: 50000.0, goodsActionEnumId: 'ADD', goodsDeltaText: 'Cert required',
+            amendmentBusinessStateId: 'AMEND_DRAFT'
+        ])
+        amd.create()
+        def fetched = ec.entity.find("trade.importlc.ImportLcAmendment").condition("amendmentId", "AMD_TEST_01").one()
+
+        then:
+        fetched != null
+        fetched.goodsActionEnumId == 'ADD'
+        fetched.amountIncrease == 50000.0
+
+        cleanup:
+        ec.entity.find("trade.importlc.ImportLcAmendment").condition("amendmentId", "AMD_TEST_01").deleteAll()
+        ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", "LC_AMD_DELTA").deleteAll()
+        ec.entity.find("trade.TradeInstrument").condition("instrumentId", "LC_AMD_DELTA").deleteAll()
+    }
+
+    def "should persist internal amendment"() {
+        setup:
+        ec.entity.makeValue("trade.TradeInstrument").setAll([instrumentId: "LC_INT_AMD", instrumentRef: "TF-LC-INT-AMD"]).create()
+        ec.entity.makeValue("trade.importlc.ImportLetterOfCredit").setAll([instrumentId: "LC_INT_AMD", businessStateId: "LC_ISSUED"]).create()
+
+        when:
+        def intAmd = ec.entity.makeValue("trade.importlc.ImportLcInternalAmendment")
+        intAmd.setAll([
+            internalAmendmentId: 'INT_TEST_01', instrumentId: 'LC_INT_AMD', 
+            amendmentDate: ec.user.nowTimestamp, transactionRef: 'TX_2',
+            newFeeDebitAccountId: 'ACC_001'
+        ])
+        intAmd.create()
+        def fetched = ec.entity.find("trade.importlc.ImportLcInternalAmendment").condition("internalAmendmentId", "INT_TEST_01").one()
+
+        then:
+        fetched != null
+        fetched.newFeeDebitAccountId == 'ACC_001'
+
+        cleanup:
+        ec.entity.find("trade.importlc.ImportLcInternalAmendment").condition("internalAmendmentId", "INT_TEST_01").deleteAll()
+        ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", "LC_INT_AMD").deleteAll()
+        ec.entity.find("trade.TradeInstrument").condition("instrumentId", "LC_INT_AMD").deleteAll()
     }
 }

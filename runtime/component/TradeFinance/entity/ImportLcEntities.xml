@@ -67,6 +67,7 @@
         <field name="marginPercentage" type="number-decimal"/>
         <field name="marginAmount" type="number-decimal"/>
         <field name="marginDebitAccount" type="text-medium"/>
+        <field name="feeDebitAccountId" type="text-medium"/>
 
         <relationship type="one" related="trade.TradeInstrument">
             <key-map field-name="instrumentId"/>
@@ -142,21 +143,50 @@
         <field name="amendmentId" type="id" is-pk="true"/>
         <field name="instrumentId" type="id"/>
         <field name="amendmentDate" type="date" default="ec.user.nowTimestamp"/>
-        <field name="amountAdjustment" type="number-decimal" default="0"/>
+        <field name="transactionRef" type="text-medium"/>
+        <field name="beneficiaryDecisionEnumId" type="id"/> <!-- ACCEPTED, REJECTED -->
+        <field name="consentSwiftRef" type="text-medium"/>
+        <field name="amountIncrease" type="number-decimal" default="0"/>
+        <field name="amountDecrease" type="number-decimal" default="0"/>
         <field name="newExpiryDate" type="date"/>
-        <field name="amendmentNarrative" type="text-very-long"/>
-        <field name="goodsDescription" type="text-very-long"/>
-        <field name="documentsRequired" type="text-very-long"/>
-        <field name="additionalConditions" type="text-very-long"/>
-        <field name="bankToBankInstructions" type="text-very-long"/>
-        <field name="additionalAmountsText" type="text-long"/>
-        <field name="chargeAllocationText" type="text-long"/>
-        <field name="shipmentPeriodText" type="text-medium"/>
-        <field name="isFinancial" type="text-indicator"/>
+        <field name="newTolerancePositive" type="number-decimal"/>
+        <field name="newToleranceNegative" type="number-decimal"/>
+        <field name="goodsActionEnumId" type="id"/> <!-- ADD, DELETE, REPLACE -->
+        <field name="goodsDeltaText" type="text-very-long"/>
+        <field name="docsActionEnumId" type="id"/>
+        <field name="docsDeltaText" type="text-very-long"/>
+        <field name="conditionsActionEnumId" type="id"/>
+        <field name="conditionsDeltaText" type="text-very-long"/>
+        <field name="specialPaymentBeneActionEnumId" type="id"/>
+        <field name="specialPaymentBeneText" type="text-very-long"/>
+        <field name="specialPaymentBankActionEnumId" type="id"/>
+        <field name="specialPaymentBankText" type="text-very-long"/>
+        
+        <field name="newBeneficiaryPartyId" type="id"/>
+        <field name="newTenorTypeEnumId" type="id"/>
+        <field name="newUsanceDays" type="number-integer"/>
+        <field name="newUsanceBaseDate" type="text-medium"/>
+        <field name="newDraweeBic" type="text-medium"/>
+        <field name="newPartialShipmentEnumId" type="id"/>
+        <field name="newTranshipmentEnumId" type="id"/>
+        <field name="newPortOfLoading" type="text-medium"/>
+        <field name="newPortOfDischarge" type="text-medium"/>
+        <field name="newReceiptPlace" type="text-medium"/>
+        <field name="newFinalDeliveryPlace" type="text-medium"/>
+        <field name="newLatestShipmentDate" type="date"/>
+        <field name="newPresentationPeriodDays" type="number-integer"/>
+        <field name="newConfirmationEnumId" type="id"/>
+        <field name="newConfirmingBankBic" type="text-medium"/>
+        <field name="newReimbursingBankBic" type="text-medium"/>
+        <field name="newAdviseThroughBankBic" type="text-medium"/>
+        <field name="amendmentPaidByEnumId" type="id"/>
+        <field name="newChargeAllocationText" type="text-long"/>
+        <field name="newBankToBankInstructions" type="text-very-long"/>
+        <field name="senderToReceiverInfo" type="text-very-long"/>
+        
         <field name="beneficiaryConsentStatusId" type="id"/> <!-- PENDING, ACCEPTED, REJECTED -->
         <field name="amendmentBusinessStateId" type="id"/>
         <field name="amendmentTypeEnumId" type="id"/>
-        <field name="isBeneficiaryAcceptanceRequired" type="text-indicator" default="'Y'"/>
         <field name="amendmentNumber" type="number-integer"/>
         <field name="newTolerance" type="number-decimal"/>
         <field name="chargeAllocationEnumId" type="id"/>
@@ -165,6 +195,21 @@
         <field name="newAuthExpiryDate" type="date"/> <!-- Tag 31E (MT747): New reimbursement expiry -->
 
         
+        <relationship type="one" related="trade.importlc.ImportLetterOfCredit">
+            <key-map field-name="instrumentId"/>
+        </relationship>
+    </entity>
+
+    <entity entity-name="ImportLcInternalAmendment" package="trade.importlc">
+        <field name="internalAmendmentId" type="id" is-pk="true"/>
+        <field name="instrumentId" type="id"/>
+        <field name="amendmentDate" type="date" default="ec.user.nowTimestamp"/>
+        <field name="transactionRef" type="text-medium"/>
+        <field name="newFeeDebitAccountId" type="text-medium"/>
+        <field name="newFacilityId" type="text-medium"/>
+        <field name="newMarginAccountId" type="text-medium"/>
+        <field name="newMarginPercentage" type="number-decimal"/>
+        <field name="newRelationshipManagerId" type="id"/>
         <relationship type="one" related="trade.importlc.ImportLetterOfCredit">
             <key-map field-name="instrumentId"/>
         </relationship>

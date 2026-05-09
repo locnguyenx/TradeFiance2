@@ -39,6 +39,7 @@ All state-changing services must adhere to the following guards:
 5.  **Party Eligibility Gateway**: `TradeCommonServices.assign#InstrumentParty` enforces KYC status, RMA requirements, FI Limits, and party-type matching before any role assignment is persisted. This is the single compliance checkpoint for all party operations.
 6.  **Identity Hub**: Centralized authentication and role-based session management via `trade.UserAccountServices`. Enforces transactional auditing for all security events (password changes, profile updates).
 7.  **Immutability Guard**: `trade.importlc.ImportLcServices.update#ImportLetterOfCredit` enforces strict immutability for issued LCs. Manual modification of financial terms (amount, expiry) is blocked. These fields must only be updated by the system-level `AuthorizationServices.authorize#Instrument` flow using the `skipImmutabilityGuard: true` bypass flag, ensuring all changes are grounded in an approved transaction.
+8.  **Smart Delta Architecture (SRG 2024)**: To support UCP 600 compliant amendments, the platform uses a structured delta model (`ImportLcAmendment` entity). Narratives are not overwritten; instead, `goodsDeltaText`, `docsDeltaText`, and `conditionsDeltaText` capture precise `ADD`, `DELETE`, or `REPLACE` actions. These deltas are merged into the Master LC only upon recorded **Beneficiary Consent** (ACCEPTED).
 
 ### SWIFT Generation Data Flow
 SWIFT message builders (MT700, MT707) read party data exclusively from the `TradeInstrumentParty` junction:
@@ -62,6 +63,8 @@ The frontend uses a provider-based architecture for core services:
 - **Backend**: Moqui Framework 3.0 (Groovy/Java).
 - **Frontend**: Next.js 14 (TypeScript / Vanilla CSS / premium tokens).
 - **Communication**: REST API (v1 / trade namespace).
+    - **Amendment Creation**: `POST /import-lc/{id}/amendment/external` (Customer-facing MT 707) and `POST /import-lc/{id}/amendment/internal` (Bank-only adjustments).
+    - **Authorization**: `POST /import-lc/{id}/amendment/{amdId}/authorize` (Enforces Maker/Checker).
 - **Verification**: Playwright E2E and Spock Integration Tests.
 
 ---

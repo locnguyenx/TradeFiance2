@@ -89,6 +89,7 @@ class BddImportLcModuleSpec extends Specification {
         // Clean up any leaked test data
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "3000000").updateAll([latestTransactionId: null])
         ec.entity.find("trade.importlc.ImportLcAmendment").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "3000000").deleteAll()
+        ec.entity.find("trade.importlc.ImportLcInternalAmendment").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "3000000").deleteAll()
         ec.entity.find("trade.importlc.ImportLcSettlement").condition("presentationId", EntityCondition.IN, ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "3000000").list().collect{it.presentationId} ?: ["NONE"]).deleteAll()
         ec.entity.find("trade.importlc.TradeDocumentPresentationItem").condition("presentationId", EntityCondition.IN, ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "3000000").list().collect{it.presentationId} ?: ["NONE"]).deleteAll()
         ec.entity.find("trade.importlc.PresentationDiscrepancy").condition("presentationId", EntityCondition.IN, ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "3000000").list().collect{it.presentationId} ?: ["NONE"]).deleteAll()
@@ -489,7 +490,7 @@ result.isHit != null
         def amdRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#Amendment")
             .parameters([instrumentId: instrumentId, amendmentTypeEnumId: "AMEND_FINANCIAL", isFinancial: "Y", amountAdjustment: 20000.0, amendmentDate: new Date(System.currentTimeMillis())]).call()
         ec.service.sync().name("trade.importlc.ImportLcServices.authorize#Amendment")
-            .parameters([amendmentId: amdRes.amendmentId]).call()
+            .parameters([amendmentId: amdRes.amendmentId, skipFourEyes: true]).call()
 
         then: "Effective values are NOT yet updated (Undertaking remains original)"
         def lcBefore = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).one()
@@ -876,7 +877,7 @@ result.isHit != null
         def amdRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#Amendment")
             .parameters([instrumentId: instrumentId, amountAdjustment: 5000.0, amendmentNarrative: "Increase amount", amendmentTypeEnumId: 'AMEND_INCREASE', amendmentDate: new java.sql.Date(System.currentTimeMillis())]).call()
         ec.service.sync().name("trade.importlc.ImportLcServices.authorize#Amendment")
-            .parameters([amendmentId: amdRes.amendmentId]).call()
+            .parameters([amendmentId: amdRes.amendmentId, skipFourEyes: true]).call()
             
         when: "MT707 generated"
         ec.service.sync().name("trade.SwiftGenerationServices.generate#Mt707")

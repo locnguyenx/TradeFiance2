@@ -191,7 +191,7 @@ class RestApiEndpointsSpec extends Specification {
         json.isAuthorized != null
     }
 
-    def "Test POST /trade/import-lc amendments"() {
+    def "Test POST /trade/import-lc amendments (External)"() {
         given:
         String instrumentId = createTestLc("REST-AMEND")
         def tx = ec.entity.find("trade.TradeTransaction").condition([instrumentId: instrumentId, transactionTypeEnumId: 'IMP_NEW']).disableAuthz().one()
@@ -201,19 +201,42 @@ class RestApiEndpointsSpec extends Specification {
         
         Map params = [
             instrumentId: instrumentId,
-            amendmentTypeEnumId: "AMEND_AMDTMNT",
+            amendmentTypeEnumId: "AMD_TYPE_GEN",
             amendmentDate: new java.sql.Date(System.currentTimeMillis()),
-            amendmentNarrative: "Test amendment"
+            goodsActionEnumId: "REPLACE",
+            goodsDeltaText: "Revised goods description via REST"
         ]
 
         when:
         ec.user.internalLoginUser("trade.maker")
-        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/amendment", params, "post")
+        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/amendment/external", params, "post")
+
+        then:
+        if (str.errorMessages) println "REST AMEND ERRORS: ${str.errorMessages}"
+        !str.errorMessages
+        def json = new groovy.json.JsonSlurper().parseText(str.output)
+        json.amendmentId != null
+    }
+
+    def "Test POST /trade/import-lc amendments (Internal)"() {
+        given:
+        String instrumentId = createTestLc("REST-INT-AMEND")
+        ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).updateAll([businessStateId: "LC_ISSUED"])
+        
+        Map params = [
+            instrumentId: instrumentId,
+            amendmentTypeEnumId: "AMD_TYPE_INTERNAL",
+            newFacilityId: "FAC-INTERNAL-001"
+        ]
+
+        when:
+        ec.user.internalLoginUser("trade.maker")
+        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/amendment/internal", params, "post")
 
         then:
         !str.errorMessages
         def json = new groovy.json.JsonSlurper().parseText(str.output)
-        json.amendmentId != null
+        json.internalAmendmentId != null
     }
 
     def "Test POST /trade/import-lc presentations requires LC_ISSUED state"() {
