@@ -263,3 +263,248 @@ Add a `latestTransactionId` field to the master entity and use an **EECA** (Enti
 - **Performance**: O(1) lookup of the "current action" on the instrument.
 - **Reporting**: Enables dashboards to show "Issued / Amendment Pending" in a single row.
 - **Audit**: Decouples historical logs from the "current active workflow" pointer.
+
+## 11. Entity Definition Best Practices (Framework Features Reference)
+
+> Researched 2026-05-09 from `framework/entity/BasicEntities.xml`, `framework/entity/SecurityEntities.xml`,
+> `mantle-udm/AccountingAccountEntities.xml`, `mantle-udm/OrderEntities.xml`,
+> and `moqui-documentation/moqui-framework/Data+and+Resources_Data+Model+Definition.md`.
+
+### 11.1 Relationship Conventions
+
+Every `type="id"` field MUST have an explicit `<relationship>` definition. This enables:
+- Automatic form dropdown generation in XML screens
+- Entity graph navigation (`getRelated()`)
+- REST API nested expansion (`?dependents=true`)
+- Data integrity via foreign key constraints
+
+#### StatusItem Pattern
+The `title` attribute MUST match the `statusTypeId` value in seed data:
+```xml
+<!-- Field definition -->
+<field name="statusId" type="id" enable-audit-log="true"/>
+
+<!-- Relationship: title matches statusTypeId -->
+<relationship type="one" title="FinancialAccount" related="moqui.basic.StatusItem" short-alias="status"/>
+```
+Source: `mantle-udm/AccountingAccountEntities.xml:105` (FinancialAccount entity)
+
+#### Enumeration Pattern
+The `title` attribute MUST match the `enumTypeId` value in seed data:
+```xml
+<field name="dataSourceTypeEnumId" type="id"/>
+
+<relationship type="one" title="DataSourceType" related="moqui.basic.Enumeration" short-alias="type">
+    <key-map field-name="dataSourceTypeEnumId"/>
+</relationship>
+```
+Source: `framework/BasicEntities.xml` (DataSource entity), `Data+Model+Definition.md:46`
+
+The framework auto-filters Enumeration dropdown options based on the title→enumTypeId match.
+
+#### Uom (Currency) Pattern
+```xml
+<field name="currencyUomId" type="id"/>
+
+<relationship type="one" title="Currency" related="moqui.basic.Uom" short-alias="currencyUom">
+    <key-map field-name="currencyUomId" related="uomId"/>
+</relationship>
+```
+Source: `mantle-udm/AccountingAccountEntities.xml:112`
+
+#### UserAccount Pattern
+Always `type="one-nofk"` (no FK constraint, cross-package):
+```xml
+<field name="performedByUserId" type="id"/>
+
+<relationship type="one-nofk" title="PerformedBy" related="moqui.security.UserAccount" short-alias="performedByUser">
+    <key-map field-name="performedByUserId" related="userId"/>
+</relationship>
+```
+Source: `mantle-udm/AccountingAccountEntities.xml:220`
+
+#### Geo (Country) Pattern
+```xml
+<relationship type="one-nofk" title="CountryOfRisk" related="moqui.basic.Geo" short-alias="country">
+    <key-map field-name="countryOfRisk" related="geoId"/>
+</relationship>
+```
+
+#### When to use `one-nofk` vs `one`
+- `one` = creates DB foreign key constraint. Use when seed data exists and values are controlled.
+- `one-nofk` = relationship for navigation only, no DB FK. Use for:
+  - Cross-package references (e.g., security.UserAccount)
+  - Fields with ad-hoc/optional values (e.g., nullable enum fields)
+  - Fields where data loading order could cause constraint violations
+
+### 11.2 `enable-audit-log` Attribute
+
+Automatically tracks field changes in the `EntityAuditLog` entity. Two modes:
+
+| Value | Behavior | Use For |
+|---|---|---|
+| `"true"` | Logs initial value AND all changes | Status/state fields, critical business fields |
+| `"update"` | Logs changes only (not initial) | Mutable fields that change frequently (lighter weight) |
+
+```xml
+<field name="statusId" type="id" enable-audit-log="true"/>
+<field name="amount" type="currency-amount" enable-audit-log="update"/>
+<field name="ownerPartyId" type="id" enable-audit-log="update"/>
+```
+Source: `mantle-udm/AccountingAccountEntities.xml:83,89,95` (FinancialAccount), `Data+Model+Patterns.md:90-95`
+
+**Apply to all status/state lifecycle fields** — this replaces manual audit trail implementations.
+
+### 11.3 `short-alias` Attribute
+
+Used on both entities AND relationships for cleaner REST API paths and nested expansion.
+
+#### Entity-level short-alias
+Defines the REST API collection path: `/rest/s1/{package}/{short-alias}`
+```xml
+<entity entity-name="FinancialAccount" package="mantle.account.financial"
+        short-alias="financialAccounts" cache="never">
+```
+Source: `mantle-udm/AccountingAccountEntities.xml:80`
+
+Convention: **plural camelCase** of the entity name.
+
+#### Relationship-level short-alias
+Defines the nested expansion key in REST responses:
+```xml
+<relationship type="one" title="Owner" related="mantle.party.Party" short-alias="owner">
+    <key-map field-name="ownerPartyId"/>
+</relationship>
+<relationship type="many" related="mantle.account.financial.FinancialAccountTrans" short-alias="transactions">
+    <key-map field-name="finAccountId"/>
+</relationship>
+```
+Source: `mantle-udm/AccountingAccountEntities.xml:108,119`
+
+Convention: **singular camelCase** for `type="one"`, **plural camelCase** for `type="many"`.
+
+### 11.4 `cache` Attribute
+
+| Value | Meaning | Use For |
+|---|---|---|
+| `"true"` | Cache finds (code can override) | Configuration/reference data (catalogs, clauses, fee configs) |
+| `"false"` | No cache (code can override) | Default for most entities |
+| `"never"` | No cache (code CANNOT override) | Transactional entities with high write frequency |
+
+```xml
+<!-- Configuration entity -->
+<entity entity-name="DataSource" package="moqui.basic" cache="true">
+
+<!-- Transactional entity -->
+<entity entity-name="Invoice" package="mantle.account.invoice"
+        short-alias="invoices" cache="never" optimistic-lock="true">
+```
+Source: `framework/BasicEntities.xml:11`, `mantle-udm/AccountingAccountEntities.xml:328`
+
+### 11.5 `optimistic-lock` Attribute
+
+Compares `lastUpdatedStamp` before updates to detect concurrent modifications:
+```xml
+<entity entity-name="Invoice" package="mantle.account.invoice"
+        short-alias="invoices" cache="never" optimistic-lock="true">
+```
+Source: `mantle-udm/AccountingAccountEntities.xml:328`
+
+**Apply to entities where concurrent updates are a business risk** (e.g., instruments, LCs, orders).
+
+### 11.6 `master` Definitions
+
+Defines a pre-built graph of related data for `?dependents=true` REST expansion:
+```xml
+<entity entity-name="OrderHeader" ...>
+    <!-- fields and relationships... -->
+    <master>
+        <detail relationship="type"/>
+        <detail relationship="status"/>
+        <detail relationship="parts">
+            <detail relationship="items"/>
+            <detail relationship="party" use-master="contact"/>
+            <detail relationship="contactMech" use-master="default"/>
+        </detail>
+        <detail relationship="vendor" use-master="basic"/>
+        <detail relationship="customer" use-master="basic"/>
+        <detail relationship="payments" use-master="default"/>
+    </master>
+</entity>
+```
+Source: `mantle-udm/OrderEntities.xml:253-293`
+
+- `<detail relationship="..."/>` references a relationship `short-alias`
+- `use-master="..."` inherits the master definition of the related entity
+- Nested `<detail>` defines sub-graph expansion
+
+### 11.7 `type="many"` Reverse Relationships
+
+Parent entities should define reverse relationships to their children:
+```xml
+<!-- On FinancialAccount (parent) -->
+<relationship type="many" related="mantle.account.financial.FinancialAccountAuth" short-alias="authorizations">
+    <key-map field-name="finAccountId"/>
+</relationship>
+<relationship type="many" related="mantle.account.financial.FinancialAccountTrans" short-alias="transactions">
+    <key-map field-name="finAccountId"/>
+</relationship>
+<relationship type="many" related="mantle.account.financial.FinancialAccountParty" short-alias="parties">
+    <key-map field-name="finAccountId"/>
+</relationship>
+```
+Source: `mantle-udm/AccountingAccountEntities.xml:117-121`
+
+These enable:
+- `master` definitions to expand child collections
+- REST API to return nested arrays
+- UI lists to load child records automatically
+
+### 11.8 Inline `seed-data` Element
+
+Configuration data tightly coupled to the entity can be declared inline:
+```xml
+<entity entity-name="DataSource" package="moqui.basic" cache="true">
+    <field name="dataSourceId" type="id" is-pk="true"/>
+    <field name="dataSourceTypeEnumId" type="id"/>
+    <field name="description" type="text-medium"/>
+    <relationship type="one" title="DataSourceType" related="Enumeration">
+        <key-map field-name="dataSourceTypeEnumId"/>
+    </relationship>
+    <seed-data>
+        <moqui.basic.EnumerationType description="Data Source Type" enumTypeId="DataSourceType"/>
+        <moqui.basic.Enumeration description="Purchased Data" enumId="DST_PURCHASED_DATA" enumTypeId="DataSourceType"/>
+    </seed-data>
+</entity>
+```
+Source: `framework/BasicEntities.xml`, `Data+Model+Definition.md:18-21`
+
+Loaded with `./gradlew load` along with type=seed data.
+
+### 11.9 Entity Extension (Cross-Component)
+
+Extend entities from other components without modifying original files:
+```xml
+<extend-entity entity-name="Example" package="moqui.example">
+    <field name="auditedField" type="text-medium" enable-audit-log="true"/>
+    <field name="encryptedField" type="text-medium" encrypt="true"/>
+</extend-entity>
+```
+Source: `Data+Model+Definition.md:136-140`
+
+Useful for adding Trade Finance fields to Mantle entities without forking.
+
+### 11.10 Complete Entity Definition Checklist
+
+When defining or auditing an entity, verify:
+
+- [ ] All `type="id"` fields have explicit `<relationship>` definitions
+- [ ] `title` attributes match `enumTypeId`/`statusTypeId` for auto-filtering
+- [ ] `short-alias` on entity (plural camelCase) for REST paths
+- [ ] `short-alias` on all relationships for REST expansion
+- [ ] `enable-audit-log` on status fields and key mutable business fields
+- [ ] `cache="true"` on configuration/reference entities
+- [ ] `optimistic-lock="true"` on concurrency-sensitive master entities
+- [ ] `type="many"` reverse relationships from parent to children
+- [ ] `master` definition on key master entities for API graph expansion
+- [ ] Seed data in `<seed-data>` or separate seed data files for all EnumerationType/StatusType values
