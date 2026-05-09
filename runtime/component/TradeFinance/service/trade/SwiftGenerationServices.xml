@@ -269,6 +269,9 @@
             <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument" use-cache="false">
                 <field-map field-name="instrumentId" from="amendment?.instrumentId"/>
             </entity-find-one>
+            <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc" use-cache="false">
+                <field-map field-name="instrumentId" from="amendment?.instrumentId"/>
+            </entity-find-one>
             
             <!-- Check for existing messages -->
             <entity-find entity-name="trade.importlc.SwiftMessage" list="existingMessages" use-cache="false">
@@ -279,8 +282,9 @@
             <!-- Note: MT707 is per amendment. In a more complex system, we'd link SwiftMessage to AmendmentId. 
                  For now, we check if an ACTIVE MT707 exists. -->
             <set field="activeMsg" from="existingMessages.find { it.messageStatusId == 'SWIFT_MSG_ACTIVE' }"/>
-            <if condition="activeMsg">
+            <if condition="activeMsg &amp;&amp; !forceRegenerate">
                 <set field="swiftMessageId" from="activeMsg.swiftMessageId"/>
+                <set field="messageContent" from="activeMsg.messageContent"/>
                 <return message="Active MT707 already exists. Regeneration blocked for dispatched messages."/>
             </if>
 
@@ -320,7 +324,7 @@
                 fields["26E"] = amendment.amendmentNumber ?: "1"
                 
                 // Tag 22A: Purpose of Message (Mandatory)
-                fields["22A"] = (instrument.confirmationEnumId == 'CONFIRM' || instrument.confirmationEnumId == 'MAY_ADD') ? "ACNF" : "ADVI"
+                fields["22A"] = (lc?.confirmationEnumId == 'CONFIRM' || lc?.confirmationEnumId == 'MAY_ADD') ? "ACNF" : "ADVI"
                 
                 // FR-CAN-04: Cancellation Request
                 if (amendment.isCancellationRequest == "Y") fields["23S"] = "CANCEL"

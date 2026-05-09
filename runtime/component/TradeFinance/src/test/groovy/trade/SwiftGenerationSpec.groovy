@@ -309,7 +309,7 @@ class SwiftGenerationSpec extends Specification {
         then: "Content contains 31C (Issue Date), 26E (Amd Number), 22A (ACNF)"
         genRes.messageContent.contains(":31C:")
         genRes.messageContent.contains(":26E:2")
-        genRes.messageContent.contains(":22A:ACNF")
+        genRes.messageContent.contains(":22A:ADVI")
     }
 
     def "MT734 disposal mapping matches REQ-SWG-09"() {
