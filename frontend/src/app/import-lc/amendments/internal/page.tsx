@@ -16,13 +16,29 @@ export default function InternalAmendmentPage() {
   const [amendments, setAmendments] = useState<any[]>([]);
   const [selectedAmendment, setSelectedAmendment] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize] = useState(20);
+  const [totalCount, setTotalCount] = useState(0);
+  const [instrumentSearch, setInstrumentSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
 
   useEffect(() => {
+      const timer = setTimeout(() => setDebouncedSearch(instrumentSearch), 500);
+      return () => clearTimeout(timer);
+  }, [instrumentSearch]);
+
+    useEffect(() => {
     if (!amendmentId) {
       setLoading(true);
-      tradeApi.getInternalAmendments()
+      tradeApi.getInternalAmendments({ 
+        pageIndex, 
+        pageSize, 
+        instrumentSearch: debouncedSearch 
+      })
         .then(data => {
           setAmendments(data.amendmentList || []);
+          setTotalCount(data.amendmentCount || 0);
           setLoading(false);
         })
         .catch(err => {
@@ -41,7 +57,12 @@ export default function InternalAmendmentPage() {
           setLoading(false);
         });
     }
-  }, [amendmentId]);
+  }, [amendmentId, pageIndex, pageSize, debouncedSearch]);
+
+  // Reset page index on search
+  useEffect(() => {
+      setPageIndex(0);
+  }, [debouncedSearch]);
 
   if (amendmentId && selectedAmendment) {
     return (
@@ -74,6 +95,12 @@ export default function InternalAmendmentPage() {
         columns={columns}
         loading={loading}
         onRowClick={(rec) => window.location.href = `/import-lc/amendments/internal?amendmentId=${rec.internalAmendmentId}`}
+        totalCount={totalCount}
+        pageIndex={pageIndex}
+        pageSize={pageSize}
+        onPageChange={setPageIndex}
+        onSearchChange={setInstrumentSearch}
+        searchValue={instrumentSearch}
       />
     </div>
   );

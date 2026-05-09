@@ -43,8 +43,10 @@ class BddCommonModuleSpec extends Specification {
             }
             ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").updateAll([latestTransactionId: null])
             ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
+            ec.entity.find("trade.importlc.ImportLcInternalAmendment").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
             ec.entity.find("trade.importlc.ImportLcAmendment").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
             ec.entity.find("trade.importlc.ImportLcShippingGuarantee").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
+            ec.entity.find("trade.importlc.NostroReconciliation").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
             ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
             ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()
             ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", EntityCondition.GREATER_THAN_EQUAL_TO, "1000000").deleteAll()

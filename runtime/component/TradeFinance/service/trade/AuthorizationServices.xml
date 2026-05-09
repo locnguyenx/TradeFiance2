@@ -254,7 +254,7 @@
                             <if condition="!targetState"><set field="targetState" from="lc.businessStateId"/></if>
                         </if>
                         
-                        <set field="lcUpdateInMap" from="[instrumentId: tx.instrumentId, businessStateId: targetState, lcAmount: targetAmount, expiryDate: targetExpiry, skipImmutabilityGuard: true]"/>
+                        <set field="lcUpdateInMap" from="[instrumentId: tx.instrumentId, businessStateId: targetState, lcAmount: targetAmount, expiryDate: targetExpiry, skipImmutabilityGuard: true, transactionId: transactionId]"/>
                         <if condition="tx.transactionTypeEnumId == 'IMP_AMENDMENT' &amp;&amp; amd">
                             <!-- Narrative merging is handled upon Beneficiary Consent (ACCEPTED) 
                                  or immediately for Internal Amendments via their specific services. -->

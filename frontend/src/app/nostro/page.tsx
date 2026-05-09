@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { tradeApi } from '../api/tradeApi';
-import { NostroReconciliation } from '../api/types';
-import { useToast } from '../context/ToastContext';
+import { tradeApi } from '../../api/tradeApi';
+import { NostroReconciliation } from '../../api/types';
+import { useToast } from '../../context/ToastContext';
 
 // ABOUTME: Nostro Reconciliation Management Screen (REQ-UI-IMP-05).
 // ABOUTME: Enables manual matching of Nostro debit statements with MT 740/MT 747 expectations.

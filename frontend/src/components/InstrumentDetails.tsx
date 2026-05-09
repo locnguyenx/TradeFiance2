@@ -293,8 +293,6 @@ export const InstrumentDetails: React.FC<Props> = ({ instrument, transaction }) 
                 )}
               </div>
             </section>
-
-            </section>
             
             <section className="audit-section">
               <SectionHeader id="reimbursement" title="Authorization to Reimburse" icon={<Activity size={20} />} />

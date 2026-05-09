@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ABOUTME: TradeValidationServices houses cross-module lifecycle guards and business rule enforcement. -->
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          package="trade"
+          xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.0.xsd">
+
+    <service verb="validate" noun="NoConcurrentTransaction" authenticate="false">
+        <in-parameters>
+            <parameter name="instrumentId" required="true"/>
+            <parameter name="transactionId"/>
+        </in-parameters>
+        <actions>
+            <entity-find entity-name="trade.TradeTransaction" list="pendingTxList">
+                <econdition field-name="instrumentId"/>
+                <econdition field-name="transactionStatusId" operator="in" value="TX_DRAFT,TX_PENDING"/>
+                <if condition="transactionId"><econdition field-name="transactionId" operator="not-equals"/></if>
+            </entity-find>
+            
+            <if condition="pendingTxList">
+                <return error="true" message="Cannot create transaction. Instrument ${instrumentId} already has a transaction in progress (ID: ${pendingTxList[0].transactionId}, Status: ${pendingTxList[0].transactionStatusId})"/>
+            </if>
+        </actions>
+    </service>
+
+    <service verb="validate" noun="IssuanceFinality" authenticate="false">
+        <in-parameters>
+            <parameter name="instrumentId" required="true"/>
+            <parameter name="transactionTypeEnumId" required="true"/>
+        </in-parameters>
+        <actions>
+            <if condition="transactionTypeEnumId == 'IMP_NEW'">
+                <entity-find entity-name="trade.TradeTransaction" list="existingIssuance">
+                    <econdition field-name="instrumentId"/>
+                    <econdition field-name="transactionTypeEnumId" value="IMP_NEW"/>
+                </entity-find>
+                <if condition="existingIssuance">
+                    <return error="true" message="Cannot create a new Issuance transaction. LC ${instrumentId} has already been initiated."/>
+                </if>
+            </if>
+        </actions>
+    </service>
+</services>

@@ -18,13 +18,31 @@ export default function ShippingGuaranteesPage() {
     const [guarantees, setGuarantees] = useState<any[]>([]);
     const [selectedGuarantee, setSelectedGuarantee] = useState<any | null>(null);
     const [loading, setLoading] = useState(true);
+    
+    const [pageIndex, setPageIndex] = useState(0);
+    const [pageSize] = useState(20);
+    const [totalCount, setTotalCount] = useState(0);
+    const [instrumentSearch, setInstrumentSearch] = useState('');
+    const [statusFilter, setStatusFilter] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearch(instrumentSearch), 500);
+        return () => clearTimeout(timer);
+    }, [instrumentSearch]);
 
     useEffect(() => {
         if (!id && !guaranteeId) {
             setLoading(true);
-            tradeApi.getShippingGuarantees()
+            tradeApi.getShippingGuarantees({ 
+                pageIndex, 
+                pageSize, 
+                instrumentSearch: debouncedSearch,
+                sgStatusId: statusFilter
+            })
                 .then(data => {
                     setGuarantees(data.guaranteeList || []);
+                    setTotalCount(data.guaranteeCount || 0);
                     setLoading(false);
                 })
                 .catch(err => {
@@ -43,7 +61,12 @@ export default function ShippingGuaranteesPage() {
                     setLoading(false);
                 });
         }
-    }, [id, guaranteeId]);
+    }, [id, guaranteeId, pageIndex, pageSize, debouncedSearch, statusFilter]);
+
+    // Reset page index on search or filter change
+    useEffect(() => {
+        setPageIndex(0);
+    }, [debouncedSearch, statusFilter]);
 
     if (guaranteeId && selectedGuarantee) {
         return (
@@ -90,6 +113,19 @@ export default function ShippingGuaranteesPage() {
                 columns={columns}
                 loading={loading}
                 onRowClick={(rec) => window.location.href = `/import-lc/shipping-guarantees?id=${rec.instrumentId}&guaranteeId=${rec.guaranteeId}`}
+                totalCount={totalCount}
+                pageIndex={pageIndex}
+                pageSize={pageSize}
+                onPageChange={setPageIndex}
+                onSearchChange={setInstrumentSearch}
+                searchValue={instrumentSearch}
+                statusOptions={[
+                    { value: 'SG_DRAFT', label: 'Draft' },
+                    { value: 'SG_ISSUED', label: 'Issued' },
+                    { value: 'SG_RETURNED', label: 'Returned' }
+                ]}
+                statusValue={statusFilter}
+                onStatusChange={setStatusFilter}
             />
         </div>
     );

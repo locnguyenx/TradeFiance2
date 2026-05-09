@@ -18,13 +18,31 @@ export default function ExternalAmendmentPage() {
   const [amendments, setAmendments] = useState<any[]>([]);
   const [selectedAmendment, setSelectedAmendment] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize] = useState(20);
+  const [totalCount, setTotalCount] = useState(0);
+  const [instrumentSearch, setInstrumentSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
 
   useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(instrumentSearch), 500);
+    return () => clearTimeout(timer);
+  }, [instrumentSearch]);
+
+    useEffect(() => {
     if (!id && !amendmentId) {
       setLoading(true);
-      tradeApi.getExternalAmendments()
+      tradeApi.getExternalAmendments({ 
+        pageIndex, 
+        pageSize, 
+        instrumentSearch: debouncedSearch,
+        amendmentBusinessStateId: statusFilter
+      })
         .then(data => {
           setAmendments(data.amendmentList || []);
+          setTotalCount(data.amendmentCount || 0);
           setLoading(false);
         })
         .catch(err => {
@@ -43,7 +61,12 @@ export default function ExternalAmendmentPage() {
           setLoading(false);
         });
     }
-  }, [id, amendmentId]);
+  }, [id, amendmentId, pageIndex, pageSize, debouncedSearch, statusFilter]);
+
+  // Reset page index on search or filter change
+  useEffect(() => {
+      setPageIndex(0);
+  }, [debouncedSearch, statusFilter]);
 
   if (amendmentId && selectedAmendment) {
     return (
@@ -79,6 +102,15 @@ export default function ExternalAmendmentPage() {
       }
     },
     { key: 'beneficiaryConsentStatusId', label: 'Bene Consent' },
+    { 
+      key: 'amendmentBusinessStateId', 
+      label: 'Status',
+      render: (val: any) => (
+        <span className={`status-tag ${val === 'AMEND_COMMITTED' ? 'success' : val === 'AMEND_REJECTED' ? 'error' : 'warning'}`}>
+          {val?.replace('AMEND_', '') || 'DRAFT'}
+        </span>
+      )
+    },
     { key: 'newExpiryDate', label: 'New Expiry', render: (val: any) => val ? new Date(val).toLocaleDateString() : '---' }
   ];
 
@@ -91,7 +123,28 @@ export default function ExternalAmendmentPage() {
         columns={columns}
         loading={loading}
         onRowClick={(rec) => window.location.href = `/import-lc/amendments/external?id=${rec.instrumentId}&amendmentId=${rec.amendmentId}`}
+        totalCount={totalCount}
+        pageIndex={pageIndex}
+        pageSize={pageSize}
+        onPageChange={setPageIndex}
+        onSearchChange={setInstrumentSearch}
+        searchValue={instrumentSearch}
+        statusOptions={[
+            { value: 'AMEND_DRAFT', label: 'Draft' },
+            { value: 'AMEND_PENDING_APPROVAL', label: 'Pending Approval' },
+            { value: 'AMEND_APPROVED', label: 'Approved (Pending Consent)' },
+            { value: 'AMEND_REJECTED', label: 'Rejected' },
+            { value: 'AMEND_COMMITTED', label: 'Committed to LC' }
+        ]}
+        statusValue={statusFilter}
+        onStatusChange={setStatusFilter}
       />
     </div>
   );
 }
+<style jsx>{`
+  .status-tag { padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
+  .status-tag.warning { background: #fffbeb; color: #92400e; }
+  .status-tag.success { background: #dcfce7; color: #166534; }
+  .status-tag.error { background: #fee2e2; color: #991b1b; }
+`}</style>

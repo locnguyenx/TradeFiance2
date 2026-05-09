@@ -153,6 +153,7 @@
             <parameter name="instrumentId" required="true"/>
             <auto-parameters entity-name="trade.TradeInstrument" include="nonpk"/>
             <auto-parameters entity-name="trade.importlc.ImportLetterOfCredit" include="nonpk"/>
+            <parameter name="transactionId"/>
             <parameter name="lcAmount" type="BigDecimal"/>
             <parameter name="lcCurrencyUomId"/>
             <parameter name="expiryDate" type="Date"/>
@@ -175,7 +176,12 @@
             <entity-find-one entity-name="trade.TradeInstrument" value-field="instrument" auto-field-map="true"/>
             <if condition="!instrument"><return error="true" message="Letter of Credit not found with ID ${instrumentId}"/></if>
 
-            <!-- Versioning Logic -->
+            <!-- Versioning Control (Loc's Rule: Master Data Versioning) -->
+            <set field="instrument.versionNumber" from="(instrument.versionNumber ?: 0) + 1"/>
+            <if condition="transactionId"><set field="instrument.latestTransactionId" from="transactionId"/></if>
+            <entity-update value-field="instrument"/>
+
+            <!-- Find the original issuance transaction for backward compatibility logic -->
             <entity-find entity-name="trade.TradeTransaction" list="txList">
                 <econdition field-name="instrumentId"/>
                 <econdition field-name="transactionTypeEnumId" value="IMP_NEW"/>
@@ -191,20 +197,6 @@
                 </if>
             </if>
             
-            <if condition="tx?.transactionStatusId == 'TX_APPROVED'">
-                <service-call name="create#trade.TradeTransaction" out-map="newTxOut"
-                    in-map="[
-                        instrumentId: instrumentId,
-                        transactionTypeEnumId: 'IMP_NEW',
-                        transactionStatusId: 'TX_DRAFT',
-                        transactionDate: ec.user.nowTimestamp,
-                        makerUserId: ec.user.userId,
-                        makerTimestamp: ec.user.nowTimestamp,
-                        priorityEnumId: priorityEnumId ?: tx?.priorityEnumId ?: 'NORMAL',
-                        versionNumber: (tx.versionNumber ?: 1) + 1
-                    ]"/>
-                <set field="tx" from="ec.entity.find('trade.TradeTransaction').condition('transactionId', newTxOut.transactionId).one()"/>
-            </if>
 
             <if condition="lcAmount != null"><set field="instrument.amount" from="lcAmount"/></if>
             <if condition="lcCurrencyUomId != null"><set field="instrument.currencyUomId" from="lcCurrencyUomId"/></if>
@@ -225,7 +217,7 @@
                 <log level="info" message="Updating Import LC ${instrumentId}. Transitioning state from ${lc.businessStateId} to ${businessStateId}"/>
                 <set field="lcUpdateMap.businessStateId" from="businessStateId"/>
                 <!-- Sync with TradeTransaction -->
-                <if condition="businessStateId == 'LC_PENDING'">
+                <if condition="businessStateId == 'LC_PENDING' &amp;&amp; tx?.transactionStatusId == 'TX_DRAFT'">
                     <service-call name="update#trade.TradeTransaction" in-map="[transactionId: tx.transactionId, transactionStatusId: 'TX_PENDING']"/>
                 </if>
                 <if condition="businessStateId == 'LC_CANCELLED' || businessStateId == 'LC_CLOSED' || businessStateId == 'LC_EXPIRED'">
@@ -502,7 +494,7 @@
             <!-- Concurrent amendment guard -->
             <entity-find entity-name="trade.importlc.ImportLcAmendment" list="existingAmds">
                 <econdition field-name="instrumentId"/>
-                <econdition field-name="amendmentBusinessStateId" operator="in" value="AMEND_DRAFT,AMEND_PENDING_APPROVAL,AMEND_APPROVED"/>
+                <econdition field-name="amendmentBusinessStateId" operator="in" value="AMEND_DRAFT,AMEND_PENDING_APPROVAL"/>
             </entity-find>
             <if condition="existingAmds"><return error="true" message="Concurrent amendment in progress for LC ${instrumentId}"/></if>
             
@@ -927,19 +919,38 @@
             <parameter name="businessStateId"/>
             <parameter name="makerUserId"/>
             <parameter name="transactionTypeEnumId"/>
+            <parameter name="instrumentSearch"/>
+            <parameter name="pageIndex" type="Integer" default="0"/>
+            <parameter name="pageSize" type="Integer" default="20"/>
         </in-parameters>
         <out-parameters>
             <parameter name="lcList" type="List"><parameter name="instrument" type="Map"/></parameter>
+            <parameter name="lcCount" type="Integer"/>
+            <parameter name="pageIndex" type="Integer"/>
+            <parameter name="pageSize" type="Integer"/>
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
-            
-            <entity-find entity-name="trade.importlc.ImportLetterOfCreditView" list="lcList">
+            <script>
+                if (instrumentSearch) {
+                    instrumentSearchLike = '%' + instrumentSearch.replace('*', '%') + '%'
+                }
+            </script>
+            <entity-find-count entity-name="trade.importlc.ImportLetterOfCreditView" count-field="lcCount">
                 <econdition field-name="instrumentId" from="instrumentId" ignore-if-empty="true"/>
                 <econdition field-name="businessStateId" from="businessStateId" ignore-if-empty="true"/>
                 <econdition field-name="transactionStatusId" from="transactionStatusId" ignore-if-empty="true"/>
                 <econdition field-name="makerUserId" from="makerUserId" ignore-if-empty="true"/>
                 <econdition field-name="transactionTypeEnumId" from="transactionTypeEnumId" ignore-if-empty="true"/>
+                <econdition field-name="instrumentRef" operator="like" from="instrumentSearchLike" ignore-if-empty="true"/>
+            </entity-find-count>
+            <entity-find entity-name="trade.importlc.ImportLetterOfCreditView" list="lcList" offset="pageIndex * pageSize" limit="pageSize">
+                <econdition field-name="instrumentId" from="instrumentId" ignore-if-empty="true"/>
+                <econdition field-name="businessStateId" from="businessStateId" ignore-if-empty="true"/>
+                <econdition field-name="transactionStatusId" from="transactionStatusId" ignore-if-empty="true"/>
+                <econdition field-name="makerUserId" from="makerUserId" ignore-if-empty="true"/>
+                <econdition field-name="transactionTypeEnumId" from="transactionTypeEnumId" ignore-if-empty="true"/>
+                <econdition field-name="instrumentRef" operator="like" from="instrumentSearchLike" ignore-if-empty="true"/>
                 
                 <order-by field-name="prioritySequence, -instrumentId"/>
             </entity-find>
@@ -971,9 +982,11 @@
             <if condition="!instrument"><return error="true" message="Instrument ${instrumentId} not found"/></if>
             <if condition="instrument.businessStateId == 'LC_HOLD'"><return/></if>
             
-            <entity-find-one entity-name="trade.TradeTransaction" value-field="transaction">
-                <field-map field-name="instrumentId" from="instrumentId"/>
-            </entity-find-one>
+            <entity-find entity-name="trade.TradeTransaction" list="txList">
+                <econdition field-name="instrumentId"/>
+                <order-by field-name="-transactionId"/>
+            </entity-find>
+            <set field="transaction" from="txList ? txList[0] : null"/>
 
             <set field="instrument.previousBusinessStateId" from="instrument.businessStateId"/>
             <set field="instrument.businessStateId" value="LC_HOLD"/>
@@ -1003,9 +1016,11 @@
             <set field="oldState" from="instrument.businessStateId"/>
             <set field="newState" from="instrument.previousBusinessStateId"/>
             
-            <entity-find-one entity-name="trade.TradeTransaction" value-field="transaction">
-                <field-map field-name="instrumentId" from="instrumentId"/>
-            </entity-find-one>
+            <entity-find entity-name="trade.TradeTransaction" list="txList">
+                <econdition field-name="instrumentId"/>
+                <order-by field-name="-transactionId"/>
+            </entity-find>
+            <set field="transaction" from="txList ? txList[0] : null"/>
 
             <set field="instrument.businessStateId" from="instrument.previousBusinessStateId"/>
             <set field="instrument.previousBusinessStateId" from="null"/>
@@ -1049,7 +1064,7 @@
                           in-map="[facilityId: instrument.customerFacilityId, amountDelta: earmarkAmount]"/>
             
             <service-call name="create#trade.importlc.ImportLcShippingGuarantee" out-map="sgOut"
-                          in-map="context + [earmarkAmount: earmarkAmount, guaranteeStatusId: 'SG_ACTIVE']"/>
+                          in-map="context + [earmarkAmount: earmarkAmount, guaranteeStatusId: 'SG_ISSUED']"/>
             <set field="guaranteeId" from="sgOut.guaranteeId"/>
         </actions>
     </service>

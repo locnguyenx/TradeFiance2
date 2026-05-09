@@ -35,6 +35,7 @@ The platform is organized into functional modules accessible via the **Sidebar**
 - **Settlements**: Portfolio view of all payment releases and remittance history.
 - **Shipping Guarantees**: Independent record browsing for cargo release guarantees.
 - **Cancellations**: Track formal termination requests and historical closures.
+- **Nostro Reconciliation**: Manage the matching of MT 740/747 expectations with actual bank statement debits.
 
 ### MASTER DATA & ADMIN
 - **Party & KYC Directory**: Manage corporate client records, BICs, and compliance status.
@@ -261,6 +262,7 @@ Enforces strict 5-day UCP 600 examination rules.
 | **Doc Disposal** | 77B | Optional | - | 3 | Instructions if docs are refused (e.g., HOLDING). |
 | **Charges Ded.** | 73 | Optional | **Z-Charset** | 6 | Fees taken from proceeds. Ex: `ADVISING FEES USD 50`. |
 | **Sender/Receiver**| 72Z | Optional | **Z-Charset** | 6 | Special instructions to the bank. |
+| **Discrepancy Tag** | 77J | **SRG 2024** | **X-Charset** | 70 | **Aggregate Line Limit**: The total text of all logged discrepancies must not exceed 70 lines of 50 characters each. |
 
 ---
 
@@ -271,7 +273,13 @@ The platform supports a dual-track amendment process aligned with SRG 2024 "Smar
 1.  **External Amendment (MT 707)**: Used for changes requiring beneficiary consent (e.g., amount, expiry, narrative terms). Generates a SWIFT MT 707 message.
 2.  **Internal Amendment**: Used for bank-only adjustments (e.g., RM assignment, margin account change, fee debit account) that do not require beneficiary notification or consent.
 
-### 9.2 Smart Delta Narrative Updates
+### 9.2 Structured Cancellation (Tag 23S)
+SRG 2024 introduces formal cancellation requests via Tag 23S in the MT 707:
+- **Toggle**: Use the "Request Full Cancellation" toggle in the Amendment Stepper.
+- **Mixed-Change Guard**: A cancellation request **cannot** be combined with any other changes (e.g., amount adjustment or expiry extension). Selecting cancellation will disable other financial fields.
+- **Outcome**: Generates an MT 707 with Tag 23S set to `CANCEL`.
+
+### 9.3 Smart Delta Narrative Updates
 To prevent data loss and ensure precise audit trails, narrative fields (Goods, Documents, Conditions) are updated using structured **Delta Actions**:
 -   **REPLACE**: Overwrites the entire existing field with new text.
 -   **ADD**: Appends new text to the end of the existing narrative.
@@ -343,5 +351,21 @@ To ensure 100% STP (Straight Through Processing), all narrative and address fiel
 
 ---
 
-## 12. Support & Helpdesk
-For operational support, contact the **Trade Finance Operations Helpdesk** at ext 9999 or email `trade-support@bank.com`.
+## 12. Nostro Reconciliation (MT 740/747)
+The system automates the tracking of reimbursement expectations to comply with SRG 2024 standards.
+
+### 12.1 Auto-Generation
+- **MT 740**: Automatically generated when an LC is issued with a Reimbursing Bank assigned.
+- **MT 747**: Automatically generated when a financial amendment increases or decreases the LC amount on an instrument with an active reimbursement authorization.
+
+### 12.2 Manual Matching Workflow
+1.  Navigate to **IMPORT LC > Nostro Reconciliation**.
+2.  **Portfolio View**: Review the list of "Pending" reconciliation records. Each record represents an MT 740/747 message sent to a reimbursing bank.
+3.  **Manual Match**: Click **Manual Match** on a pending record when the actual bank debit statement is received.
+4.  **Input Details**:
+    - **Debit Date**: The actual date the account was debited.
+    - **Debit Amount**: The actual amount debited by the bank.
+    - **Statement Ref**: The bank's statement reference number.
+5.  **Amount Mismatch Guard**: If the `Debit Amount` differs from the `Expected Amount`, the system will display a high-visibility warning. You must provide a reason in the **Remarks** field before confirming the match.
+
+---

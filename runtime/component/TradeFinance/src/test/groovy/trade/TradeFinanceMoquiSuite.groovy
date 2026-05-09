@@ -10,6 +10,7 @@ import org.moqui.Moqui
     SwiftValidationSpec.class,
     SwiftGenerationSpec.class,
     SwiftPartyGenerationSpec.class,
+    SwiftReimbursementSpec.class,
     ComplianceServicesSpec.class,
     DualApprovalSpec.class,
     EndToEndImportLcSpec.class,
@@ -22,6 +23,7 @@ import org.moqui.Moqui
     ImportLcServicesSpec.class,
     ImportLcValidationServicesSpec.class,
     LimitServicesSpec.class,
+    NostroApiSpec.class,
     RestApiEndpointsSpec.class,
     ShippingGuaranteeSpec.class,
     TradePartySpec.class,
@@ -35,7 +37,9 @@ import org.moqui.Moqui
     TradeSwiftAutoTriggerSpec.class,
     TradeTransactionSpec.class,
     TradeTransactionViewSpec.class,
-    TradeSearchSpec.class
+    TradeSearchSpec.class,
+    TransactionIssuanceBugSpec.class,
+    TradeListServicesSpec.class
 ])
 class TradeFinanceMoquiSuite {
     @AfterAll

@@ -19,10 +19,16 @@ test.describe('Navigation Integrity (True E2E)', () => {
     await expect(page.getByRole('heading', { name: 'Authorization Queue' }).or(page.getByText('Global Checker Queue'))).toBeVisible();
   });
 
-  test('BDD-IMP-FLOW-03: LC Amendments navigation from sidebar', async ({ page }) => {
-    await page.getByRole('link', { name: 'LC Amendments' }).click();
-    await expect(page).toHaveURL(/.*amendments/);
-    await expect(page.getByText(/Import LC Amendment Portfolio/)).toBeVisible();
+  test('BDD-IMP-FLOW-03: External LC Amendments navigation from sidebar', async ({ page }) => {
+    await page.getByRole('link', { name: 'External Amendments' }).click();
+    await expect(page).toHaveURL(/.*amendments\/external/);
+    await expect(page.getByText(/External .* Amendment Portfolio/)).toBeVisible();
+  });
+
+  test('BDD-IMP-FLOW-03: Internal LC Amendments navigation from sidebar', async ({ page }) => {
+    await page.getByRole('link', { name: 'Internal Amendments' }).click();
+    await expect(page).toHaveURL(/.*amendments\/internal/);
+    await expect(page.getByText(/Internal .* Amendment Portfolio/)).toBeVisible();
   });
 
   test('BDD-IMP-SET-01: Settlements navigation from sidebar', async ({ page }) => {
@@ -69,15 +75,15 @@ test.describe('Navigation Integrity (True E2E)', () => {
 
   test('BDD-CMN-PRD-01: Product Config navigation from sidebar', async ({ page }) => {
     await page.getByRole('link', { name: 'Product Configuration' }).click();
-    await expect(page).toHaveURL(/.*product/);
+    await expect(page).toHaveURL(/.*admin\/product/);
     await expect(page.getByRole('heading', { name: 'Products' })).toBeVisible();
   });
 
   test('BDD-CMN-WF-01: Operations Dashboard (Return from Navigation)', async ({ page }) => {
-    await page.getByRole('link', { name: 'LC Amendments' }).click();
+    await page.getByRole('link', { name: 'External Amendments' }).click();
     await page.getByRole('link', { name: 'Import LC Dashboard' }).click();
     await expect(page).toHaveURL(/\/import-lc/);
-    await expect(page.getByRole('heading', { name: 'Import LC Portfolio' })).toBeVisible();
+    await expect(page.getByText(/Import LC Portfolio/i)).toBeVisible();
   });
 
   test('REQ-NAV-01.3: Operations Dashboard visibility and content', async ({ page }) => {
@@ -85,6 +91,6 @@ test.describe('Navigation Integrity (True E2E)', () => {
     await expect(page).toHaveURL(/\/transactions/);
     await expect(page.getByRole('heading', { name: 'Operations Dashboard' })).toBeVisible();
     // Verify that at least the header or a table row appears without 404 error
-    await expect(page.getByText('Unified operational view')).toBeVisible();
+    await expect(page.getByText(/Unified operational view/i)).toBeVisible();
   });
 });

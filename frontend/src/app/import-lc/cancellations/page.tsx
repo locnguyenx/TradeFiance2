@@ -17,13 +17,34 @@ export default function CancellationsPage() {
     
     const [cancellations, setCancellations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [pageIndex, setPageIndex] = useState(0);
+    const [pageSize] = useState(20);
+    const [totalCount, setTotalCount] = useState(0);
+    const [instrumentSearch, setInstrumentSearch] = useState('');
+    const [statusFilter, setStatusFilter] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearch(instrumentSearch), 500);
+        return () => clearTimeout(timer);
+    }, [instrumentSearch]);
 
     useEffect(() => {
         if (!id && !transactionId) {
             setLoading(true);
-            tradeApi.getTransactions({ transactionTypeEnumId: 'IMP_CANCEL' })
+            tradeApi.getTransactions(
+                statusFilter, 
+                '', 
+                '', 
+                'IMP_CANCEL', 
+                debouncedSearch, 
+                '', 
+                pageIndex, 
+                pageSize
+            )
                 .then(data => {
                     setCancellations(data.transactionList || []);
+                    setTotalCount(data.transactionCount || 0);
                     setLoading(false);
                 })
                 .catch(err => {
@@ -31,7 +52,11 @@ export default function CancellationsPage() {
                     setLoading(false);
                 });
         }
-    }, [id, transactionId]);
+    }, [id, transactionId, pageIndex, pageSize, debouncedSearch, statusFilter]);
+
+    useEffect(() => {
+        setPageIndex(0);
+    }, [debouncedSearch, statusFilter]);
 
     if (transactionId) {
         return (
@@ -81,6 +106,20 @@ export default function CancellationsPage() {
                 columns={columns}
                 loading={loading}
                 onRowClick={(rec) => window.location.href = `/import-lc/cancellations?transactionId=${rec.transactionId}`}
+                totalCount={totalCount}
+                pageIndex={pageIndex}
+                pageSize={pageSize}
+                onPageChange={setPageIndex}
+                onSearchChange={setInstrumentSearch}
+                searchValue={instrumentSearch}
+                statusOptions={[
+                    { value: 'TX_DRAFT', label: 'Draft' },
+                    { value: 'TX_PENDING', label: 'Pending' },
+                    { value: 'TX_APPROVED', label: 'Approved' },
+                    { value: 'TX_REJECTED', label: 'Rejected' }
+                ]}
+                statusValue={statusFilter}
+                onStatusChange={setStatusFilter}
             />
             <style jsx>{`
                 .status-tag { padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }

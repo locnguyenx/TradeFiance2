@@ -179,8 +179,11 @@ class TradeFinanceHardeningSpec extends Specification {
         ]).call()
         def instrumentId = createResult.instrumentId
         
-        // Transition to issued
-        ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).updateAll([businessStateId: "LC_ISSUED"])
+        // Transition to issued via proper approval
+        def tx = ec.entity.find("trade.TradeTransaction").condition([instrumentId: instrumentId, transactionTypeEnumId: 'IMP_NEW']).one()
+        ec.service.sync().name("trade.importlc.ImportLcServices.approve#ImportLetterOfCredit").parameters([
+            instrumentId: instrumentId, approverUserId: "trade.checker", transactionId: tx.transactionId
+        ]).call()
 
         // Create presentation
         def presValue = ec.entity.makeValue("trade.importlc.TradeDocumentPresentation")

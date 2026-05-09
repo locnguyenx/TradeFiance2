@@ -16,6 +16,14 @@
         </if>
     </seca>
 
+    <seca service="create#trade.TradeTransaction" when="pre-service">
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <service-call name="trade.TradeValidationServices.validate#NoConcurrentTransaction" in-map="context"/>
+            <service-call name="trade.TradeValidationServices.validate#IssuanceFinality" in-map="context"/>
+        </actions>
+    </seca>
+
     <!-- Presentation Validation -->
     <seca service="trade.TradeCommonServices.create#Presentation" when="pre-service">
         <service-call name="trade.importlc.ImportLcValidationServices.validate#Presentation" in-map="context"/>
@@ -99,6 +107,7 @@
             ]]></script>
         </condition>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <log level="info" message="SECA generating MT750 for presentation: ${presentationId}"/>
             <service-call name="trade.SwiftGenerationServices.generate#Mt750" in-map="[presentationId: presentationId]"/>
         </actions>
@@ -108,6 +117,7 @@
     <seca service="trade.importlc.ImportLcServices.update#PresentationWaiver" when="post-service">
         <condition><expression>applicantDecisionEnumId == 'WAIVED'</expression></condition>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="pres"/>
             <service-call name="trade.SwiftGenerationServices.generate#Mt752" in-map="[presentationId: presentationId]"/>
         </actions>

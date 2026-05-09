@@ -26,7 +26,7 @@ The platform is built on **Moqui Framework**, utilizing a headless service archi
 
 ### Namespace Convention
 - `trade.common`: Shared entities (Facilities, FX Rates, Party Config).
-- `trade.importlc`: Import LC domain logic.
+- `trade.importlc`: Import LC domain logic and `NostroReconciliation` entity.
 - **Junction-Based Party Model**: The platform uses `TradeInstrumentParty` to normalize all party role assignments (Applicant, Beneficiary, Advising Bank) across instruments, rather than flat fields.
 - **Transaction-Centric Model**: The platform decouples "Proposed State" (`TradeTransaction`) from "Current State" (`TradeInstrument`). All workflow actions Target `transactionId` rather than `instrumentId`. To enable efficient "Dual-Status" reporting, the `TradeInstrument` entity maintains a `latestTransactionId` reference, allowing the UI to join both the legal state and the active transaction status in a single query.
 
@@ -40,6 +40,8 @@ All state-changing services must adhere to the following guards:
 6.  **Identity Hub**: Centralized authentication and role-based session management via `trade.UserAccountServices`. Enforces transactional auditing for all security events (password changes, profile updates).
 7.  **Immutability Guard**: `trade.importlc.ImportLcServices.update#ImportLetterOfCredit` enforces strict immutability for issued LCs. Manual modification of financial terms (amount, expiry) is blocked. These fields must only be updated by the system-level `AuthorizationServices.authorize#Instrument` flow using the `skipImmutabilityGuard: true` bypass flag, ensuring all changes are grounded in an approved transaction.
 8.  **Smart Delta Architecture (SRG 2024)**: To support UCP 600 compliant amendments, the platform uses a structured delta model (`ImportLcAmendment` entity). Narratives are not overwritten; instead, `goodsDeltaText`, `docsDeltaText`, and `conditionsDeltaText` capture precise `ADD`, `DELETE`, or `REPLACE` actions. These deltas are merged into the Master LC only upon recorded **Beneficiary Consent** (ACCEPTED).
+9.  **Automated Reimbursement (SRG 2024)**: `trade.SwiftGenerationServices.generate#Mt740` and `generate#Mt747` are triggered by SECA hooks on issuance/amendment authorization. These services also auto-create `NostroReconciliation` records to ensure end-to-end tracking of bank debits.
+10. **Tag 77J Aggregate Validation**: `trade.importlc.ImportLcValidationServices.validate#Tag77JAggregateLimit` enforces a hard limit of 70 lines (at 50 characters each) for the total discrepancy text in MT 750/734 messages.
 
 ### SWIFT Generation Data Flow
 SWIFT message builders (MT700, MT707) read party data exclusively from the `TradeInstrumentParty` junction:
@@ -99,8 +101,8 @@ cd frontend && npx playwright test
 The platform validates input strictly against SWIFT MT7xx standards:
 - **X-Charset**: `A-Z a-z 0-9 / - ? : ( ) . , ' + space`. (Standard narratives: 45A, 46A).
 - **Z-Charset**: Extended set (`@ # = ! " % & * ; < > _`) allowed in Tag 73, 72Z, and 77A. Implemented via the `trade.SwiftGenerationServices.format#ZCharacter` service.
-- **Line Enforcement**: Narrative fields are proactively checked for line-count compliance (e.g., Tag 73 max 6 lines).
-- **Utilities**: Centralized validation in `frontend/src/utils/SwiftUtils.ts`.
+- **Line Enforcement**: Narrative fields are proactively checked for line-count compliance. **Tag 77J** (Discrepancies) is strictly limited to an **aggregate of 70 lines** (50 characters per line) across all logged discrepancies.
+- **Utilities**: Centralized validation in `frontend/src/utils/SwiftUtils.ts` and backend `SwiftUtilsServices.xml`.
 
 ---
 

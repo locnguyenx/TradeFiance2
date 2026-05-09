@@ -409,33 +409,61 @@
             <parameter name="transactionTypeEnumId"/>
             <parameter name="instrumentSearch"/>
             <parameter name="transactionSearch"/>
+            <parameter name="pageIndex" type="Integer" default="0"/>
+            <parameter name="pageSize" type="Integer" default="20"/>
         </in-parameters>
         <out-parameters>
             <parameter name="transactionList" type="List"><parameter name="transaction" type="Map"/></parameter>
+            <parameter name="transactionCount" type="Integer"/>
+            <parameter name="pageIndex" type="Integer"/>
+            <parameter name="pageSize" type="Integer"/>
         </out-parameters>
         <actions>
-            <script>ec.artifactExecution.disableAuthz();</script>
-            <entity-find entity-name="trade.TradeTransactionView" list="transactionList">
+            <script>
+                ec.artifactExecution.disableAuthz();
+                context.offset = (pageIndex ?: 0) * (pageSize ?: 20)
+                context.instrumentSearchLike = instrumentSearch ? "%${instrumentSearch}%" : null
+                context.transactionSearchLike = transactionSearch ? "%${transactionSearch}%" : null
+            </script>
+            <entity-find-count entity-name="trade.TradeTransactionView" count-field="transactionCount">
                 <econdition field-name="transactionStatusId" from="transactionStatusId" ignore-if-empty="true"/>
                 <econdition field-name="priorityEnumId" from="priorityEnumId" ignore-if-empty="true"/>
                 <econdition field-name="makerUserId" from="makerUserId" ignore-if-empty="true"/>
                 <econdition field-name="transactionTypeEnumId" from="transactionTypeEnumId" ignore-if-empty="true"/>
-                <if condition="instrumentSearch">
-                    <econditions combine="or">
-                        <econdition field-name="instrumentId" operator="like" value="%${instrumentSearch}%" ignore-case="true"/>
-                        <econdition field-name="instrumentRef" operator="like" value="%${instrumentSearch}%" ignore-case="true"/>
-                    </econditions>
-                </if>
-                <if condition="transactionSearch">
-                    <econditions combine="or">
-                        <econdition field-name="transactionId" operator="like" value="%${transactionSearch}%" ignore-case="true"/>
-                        <econdition field-name="transactionRef" operator="like" value="%${transactionSearch}%" ignore-case="true"/>
-                    </econditions>
-                </if>
+                <econditions combine="or">
+                    <econdition field-name="instrumentId" operator="like" from="instrumentSearchLike" ignore-if-empty="true" ignore-case="true"/>
+                    <econdition field-name="instrumentRef" operator="like" from="instrumentSearchLike" ignore-if-empty="true" ignore-case="true"/>
+                </econditions>
+                <econditions combine="or">
+                    <econdition field-name="transactionId" operator="like" from="transactionSearchLike" ignore-if-empty="true" ignore-case="true"/>
+                    <econdition field-name="transactionRef" operator="like" from="transactionSearchLike" ignore-if-empty="true" ignore-case="true"/>
+                </econditions>
+            </entity-find-count>
+            <entity-find entity-name="trade.TradeTransactionView" list="transactionList"
+                         offset="offset" limit="pageSize">
+                <econdition field-name="transactionStatusId" from="transactionStatusId" ignore-if-empty="true"/>
+                <econdition field-name="priorityEnumId" from="priorityEnumId" ignore-if-empty="true"/>
+                <econdition field-name="makerUserId" from="makerUserId" ignore-if-empty="true"/>
+                <econdition field-name="transactionTypeEnumId" from="transactionTypeEnumId" ignore-if-empty="true"/>
+                <econditions combine="or">
+                    <econdition field-name="instrumentId" operator="like" from="instrumentSearchLike" ignore-if-empty="true" ignore-case="true"/>
+                    <econdition field-name="instrumentRef" operator="like" from="instrumentSearchLike" ignore-if-empty="true" ignore-case="true"/>
+                </econditions>
+                <econditions combine="or">
+                    <econdition field-name="transactionId" operator="like" from="transactionSearchLike" ignore-if-empty="true" ignore-case="true"/>
+                    <econdition field-name="transactionRef" operator="like" from="transactionSearchLike" ignore-if-empty="true" ignore-case="true"/>
+                </econditions>
                 <order-by field-name="-transactionDate"/>
                 <order-by field-name="priorityEnumId"/>
             </entity-find>
-            <script>ec.artifactExecution.enableAuthz();</script>
+            <script>
+                ec.logger.info("DEBUG: get#TradeTransactions - instSearch: ${instrumentSearch}, txnSearch: ${transactionSearch}, found ${transactionList?.size()} records. Total: ${transactionCount}. offset: ${offset}, limit: ${pageSize}")
+                context.transactionList = transactionList ?: []
+                context.transactionCount = transactionCount?.intValue() ?: 0
+                context.pageIndex = pageIndex ?: 0
+                context.pageSize = pageSize ?: 20
+                ec.artifactExecution.enableAuthz();
+            </script>
         </actions>
     </service>
 
@@ -854,12 +882,33 @@
         </actions>
     </service-eca>
     <service verb="get" noun="ExternalAmendmentList" authenticate="false">
+        <in-parameters>
+            <parameter name="instrumentSearch"/>
+            <parameter name="amendmentBusinessStateId"/>
+            <parameter name="pageIndex" type="Integer" default="0"/>
+            <parameter name="pageSize" type="Integer" default="20"/>
+        </in-parameters>
         <out-parameters>
             <parameter name="amendmentList" type="List"><parameter name="amendment" type="Map"/></parameter>
+            <parameter name="amendmentCount" type="Integer"/>
+            <parameter name="pageIndex" type="Integer"/>
+            <parameter name="pageSize" type="Integer"/>
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
-            <entity-find entity-name="trade.importlc.ImportLcAmendment" list="amendmentList">
+            <script>
+                context.offset = (pageIndex ?: 0) * (pageSize ?: 20)
+                if (instrumentSearch) {
+                    instrumentSearchLike = '%' + instrumentSearch.replace('*', '%') + '%'
+                }
+            </script>
+            <entity-find-count entity-name="trade.importlc.ImportLcAmendmentView" count-field="amendmentCount">
+                <econdition field-name="instrumentRef" operator="like" from="instrumentSearchLike" ignore-if-empty="true"/>
+                <econdition field-name="amendmentBusinessStateId" from="amendmentBusinessStateId" ignore-if-empty="true"/>
+            </entity-find-count>
+            <entity-find entity-name="trade.importlc.ImportLcAmendmentView" list="amendmentList" offset="offset" limit="pageSize">
+                <econdition field-name="instrumentRef" operator="like" from="instrumentSearchLike" ignore-if-empty="true"/>
+                <econdition field-name="amendmentBusinessStateId" from="amendmentBusinessStateId" ignore-if-empty="true"/>
                 <order-by field-name="-amendmentDate"/>
             </entity-find>
         </actions>
@@ -868,45 +917,126 @@
         <actions><service-call name="trade.TradeCommonServices.get#ExternalAmendmentList" in-map="context" out-map="context"/></actions>
     </service>
     <service verb="get" noun="InternalAmendmentList" authenticate="false">
+        <in-parameters>
+            <parameter name="instrumentSearch"/>
+            <parameter name="pageIndex" type="Integer" default="0"/>
+            <parameter name="pageSize" type="Integer" default="20"/>
+        </in-parameters>
         <out-parameters>
             <parameter name="amendmentList" type="List"><parameter name="amendment" type="Map"/></parameter>
+            <parameter name="amendmentCount" type="Integer"/>
+            <parameter name="pageIndex" type="Integer"/>
+            <parameter name="pageSize" type="Integer"/>
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
-            <entity-find entity-name="trade.importlc.ImportLcInternalAmendment" list="amendmentList">
+            <script>
+                context.offset = (pageIndex ?: 0) * (pageSize ?: 20)
+                if (instrumentSearch) {
+                    instrumentSearchLike = '%' + instrumentSearch.replace('*', '%') + '%'
+                }
+            </script>
+            <entity-find-count entity-name="trade.importlc.ImportLcInternalAmendmentView" count-field="amendmentCount">
+                <econdition field-name="instrumentRef" operator="like" from="instrumentSearchLike" ignore-if-empty="true"/>
+            </entity-find-count>
+            <entity-find entity-name="trade.importlc.ImportLcInternalAmendmentView" list="amendmentList" offset="offset" limit="pageSize">
+                <econdition field-name="instrumentRef" operator="like" from="instrumentSearchLike" ignore-if-empty="true"/>
                 <order-by field-name="-amendmentDate"/>
             </entity-find>
         </actions>
     </service>
     <service verb="get" noun="PresentationList" authenticate="false">
+        <in-parameters>
+            <parameter name="instrumentSearch"/>
+            <parameter name="isDiscrepant"/>
+            <parameter name="pageIndex" type="Integer" default="0"/>
+            <parameter name="pageSize" type="Integer" default="20"/>
+        </in-parameters>
         <out-parameters>
             <parameter name="presentationList" type="List"><parameter name="presentation" type="Map"/></parameter>
+            <parameter name="presentationCount" type="Integer"/>
+            <parameter name="pageIndex" type="Integer"/>
+            <parameter name="pageSize" type="Integer"/>
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
-            <entity-find entity-name="trade.importlc.TradeDocumentPresentation" list="presentationList">
+            <script>
+                context.offset = (pageIndex ?: 0) * (pageSize ?: 20)
+                if (instrumentSearch) {
+                    instrumentSearchLike = '%' + instrumentSearch.replace('*', '%') + '%'
+                }
+            </script>
+            <entity-find-count entity-name="trade.importlc.TradeDocumentPresentationView" count-field="presentationCount">
+                <econdition field-name="instrumentRef" operator="like" from="instrumentSearchLike" ignore-if-empty="true"/>
+                <econdition field-name="isDiscrepant" from="isDiscrepant" ignore-if-empty="true"/>
+            </entity-find-count>
+            <entity-find entity-name="trade.importlc.TradeDocumentPresentationView" list="presentationList" offset="offset" limit="pageSize">
+                <econdition field-name="instrumentRef" operator="like" from="instrumentSearchLike" ignore-if-empty="true"/>
+                <econdition field-name="isDiscrepant" from="isDiscrepant" ignore-if-empty="true"/>
                 <order-by field-name="-presentationDate"/>
             </entity-find>
         </actions>
     </service>
     <service verb="get" noun="SettlementList" authenticate="false">
+        <in-parameters>
+            <parameter name="instrumentSearch"/>
+            <parameter name="settlementStatusId"/>
+            <parameter name="pageIndex" type="Integer" default="0"/>
+            <parameter name="pageSize" type="Integer" default="20"/>
+        </in-parameters>
         <out-parameters>
             <parameter name="settlementList" type="List"><parameter name="settlement" type="Map"/></parameter>
+            <parameter name="settlementCount" type="Integer"/>
+            <parameter name="pageIndex" type="Integer"/>
+            <parameter name="pageSize" type="Integer"/>
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
-            <entity-find entity-name="trade.importlc.ImportLcSettlement" list="settlementList">
+            <script>
+                context.offset = (pageIndex ?: 0) * (pageSize ?: 20)
+                if (instrumentSearch) {
+                    instrumentSearchLike = '%' + instrumentSearch.replace('*', '%') + '%'
+                }
+            </script>
+            <entity-find-count entity-name="trade.importlc.ImportLcSettlementView" count-field="settlementCount">
+                <econdition field-name="instrumentRef" operator="like" from="instrumentSearchLike" ignore-if-empty="true"/>
+                <econdition field-name="settlementStatusId" from="settlementStatusId" ignore-if-empty="true"/>
+            </entity-find-count>
+            <entity-find entity-name="trade.importlc.ImportLcSettlementView" list="settlementList" offset="offset" limit="pageSize">
+                <econdition field-name="instrumentRef" operator="like" from="instrumentSearchLike" ignore-if-empty="true"/>
+                <econdition field-name="settlementStatusId" from="settlementStatusId" ignore-if-empty="true"/>
                 <order-by field-name="-valueDate"/>
             </entity-find>
         </actions>
     </service>
     <service verb="get" noun="ShippingGuaranteeList" authenticate="false">
+        <in-parameters>
+            <parameter name="instrumentSearch"/>
+            <parameter name="sgStatusId"/>
+            <parameter name="pageIndex" type="Integer" default="0"/>
+            <parameter name="pageSize" type="Integer" default="20"/>
+        </in-parameters>
         <out-parameters>
             <parameter name="guaranteeList" type="List"><parameter name="guarantee" type="Map"/></parameter>
+            <parameter name="guaranteeCount" type="Integer"/>
+            <parameter name="pageIndex" type="Integer"/>
+            <parameter name="pageSize" type="Integer"/>
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
-            <entity-find entity-name="trade.importlc.ImportLcShippingGuarantee" list="guaranteeList">
+            <script>
+                context.offset = (pageIndex ?: 0) * (pageSize ?: 20)
+                if (instrumentSearch) {
+                    instrumentSearchLike = '%' + instrumentSearch.replace('*', '%') + '%'
+                }
+            </script>
+            <entity-find-count entity-name="trade.importlc.ImportLcShippingGuaranteeView" count-field="guaranteeCount">
+                <econdition field-name="instrumentRef" operator="like" from="instrumentSearchLike" ignore-if-empty="true"/>
+                <econdition field-name="sgStatusId" from="sgStatusId" ignore-if-empty="true"/>
+            </entity-find-count>
+            <entity-find entity-name="trade.importlc.ImportLcShippingGuaranteeView" list="guaranteeList" offset="offset" limit="pageSize">
+                <econdition field-name="instrumentRef" operator="like" from="instrumentSearchLike" ignore-if-empty="true"/>
+                <econdition field-name="sgStatusId" from="sgStatusId" ignore-if-empty="true"/>
                 <order-by field-name="-guaranteeId"/>
             </entity-find>
         </actions>

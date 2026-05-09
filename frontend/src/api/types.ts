@@ -281,3 +281,12 @@ export interface NostroReconciliation {
     remarks?: string;
 }
 
+export interface SwiftMessage {
+  swiftMessageId: string;
+  instrumentId: string;
+  messageType: string;
+  messageStatusId: string;
+  messageContent: string;
+  generatedDate: string;
+}
+

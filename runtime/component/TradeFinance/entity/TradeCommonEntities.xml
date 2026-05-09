@@ -26,6 +26,7 @@
         <field name="makerUserId" type="id"/>
         <field name="priorityEnumId" type="id"/>
         <field name="latestTransactionId" type="id"/>
+        <field name="versionNumber" type="number-integer" default="1"/>
         
         <relationship type="one" related="trade.TradeTransaction">
             <key-map field-name="latestTransactionId" related="transactionId"/>

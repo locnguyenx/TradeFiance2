@@ -39,7 +39,7 @@ This guide provides exhaustive, step-by-step instructions for Administrative and
 | **SWIFT BIC** | Bank Only | **Mandatory** | 8 or 11 character standard Bank Identifier Code. |
 | **Clearing Code**| Bank Only | Optional | National routing code (used in SWIFT Option C). |
 | **Active RMA** | Bank Only | **Mandatory** | `Y/N`. Required for Advising/Confirming roles. |
-| **Nostro Ref** | Bank Only | Conditional | Our Nostro account identifier (required for Reimbursing/Drawee roles). |
+| **Nostro Ref** | Bank Only | Conditional | Our Nostro account identifier (required for Reimbursing/Drawee roles). Used in **MT 740 Tag 25**. |
 | **FI Limit** | Bank Only | Conditional | Approved limit amount for counterparty risk (required for Confirming). |
 | **FI Limit CCY**| Bank Only | Conditional | Currency of the FI Limit. |
 
@@ -143,6 +143,23 @@ This guide provides exhaustive, step-by-step instructions for Administrative and
     - For financial changes, the system calculates the **Net Delta Amount** (Increase - Decrease) and validates it against the user's approval limit.
     - Self-authorization is blocked; the system validates `makerUserId != approverUserId` during the authorization call.
 - **Narrative Traceability**: The platform maintains a persistent, chronological record of every touchpoint on an instrument via the unified timeline.
+
+---
+
+## 5. Nostro Reconciliation Operations
+**Goal**: Monitor and reconcile reimbursement flows triggered by MT 740/747.
+
+1.  **Reconciliation Monitoring**:
+    - Access **IMPORT LC > Nostro Reconciliation**.
+    - The dashboard shows all outstanding reimbursement authorizations.
+2.  **Matching Logic**:
+    - **Expected**: Data derived from the authorized LC or Amendment (Amount, Currency, Reimbursing Bank).
+    - **Actual**: Data entered by the Backoffice user from the Nostro statement.
+3.  **Exception Management**:
+    - **Status: RECON_PENDING**: Awaiting bank statement.
+    - **Status: RECON_MATCHED**: Successfully matched with zero or negligible variance.
+    - **Status: RECON_UNMATCHED**: High variance or rejected by bank.
+4.  **Audit Trail**: Every match action logs the `matchedByUserId` and `matchedDate` for SOX compliance.
 
 ---
 

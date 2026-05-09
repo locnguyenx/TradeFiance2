@@ -58,6 +58,10 @@ class TradeTransactionViewSpec extends Specification {
         cleanup:
         ec.artifactExecution.disableAuthz()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", instId).updateAll([latestTransactionId: null])
+        ec.entity.find("trade.importlc.NostroReconciliation").condition("instrumentId", instId).deleteAll()
+        ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", instId).deleteAll()
+        ec.entity.find("trade.TradeTransactionAudit").condition("transactionId", txId).deleteAll()
+        ec.entity.find("trade.TradeApprovalRecord").condition("transactionId", txId).deleteAll()
         ec.entity.find("trade.TradeTransaction").condition("transactionId", txId).deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", instId).deleteAll()
     }
@@ -87,7 +91,7 @@ class TradeTransactionViewSpec extends Specification {
 
         when:
         def result = ec.service.sync().name("trade.TradeCommonServices.get#TradeTransactions")
-            .parameters([transactionStatusId: "TX_DRAFT"]).call()
+            .parameters([transactionStatusId: "TX_DRAFT", pageSize: 100]).call()
         def txn = result.transactionList.find { it.transactionId == txId }
 
         then:
@@ -98,6 +102,10 @@ class TradeTransactionViewSpec extends Specification {
         cleanup:
         ec.artifactExecution.disableAuthz()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", instId).updateAll([latestTransactionId: null])
+        ec.entity.find("trade.importlc.NostroReconciliation").condition("instrumentId", instId).deleteAll()
+        ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", instId).deleteAll()
+        ec.entity.find("trade.TradeTransactionAudit").condition("transactionId", txId).deleteAll()
+        ec.entity.find("trade.TradeApprovalRecord").condition("transactionId", txId).deleteAll()
         ec.entity.find("trade.TradeTransaction").condition("transactionId", txId).deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", instId).deleteAll()
     }
@@ -158,8 +166,11 @@ class TradeTransactionViewSpec extends Specification {
         ec.entity.find("trade.TradePartyBank").condition("partyId", bankPartyId).deleteAll()
         ec.entity.find("trade.TradeParty").condition("partyId", bankPartyId).deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", instId).updateAll([latestTransactionId: null])
+        ec.entity.find("trade.importlc.NostroReconciliation").condition("instrumentId", instId).deleteAll()
         ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", instId).deleteAll()
         ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instId).deleteAll()
+        ec.entity.find("trade.TradeTransactionAudit").condition("transactionId", txId).deleteAll()
+        ec.entity.find("trade.TradeApprovalRecord").condition("transactionId", txId).deleteAll()
         ec.entity.find("trade.TradeTransaction").condition("transactionId", txId).deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", instId).deleteAll()
     }
@@ -196,7 +207,10 @@ class TradeTransactionViewSpec extends Specification {
         cleanup:
         ec.artifactExecution.disableAuthz()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", instId).updateAll([latestTransactionId: null])
+        ec.entity.find("trade.importlc.NostroReconciliation").condition("instrumentId", instId).deleteAll()
         ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", instId).deleteAll()
+        ec.entity.find("trade.TradeTransactionAudit").condition("transactionId", txId).deleteAll()
+        ec.entity.find("trade.TradeApprovalRecord").condition("transactionId", txId).deleteAll()
         ec.entity.find("trade.TradeTransaction").condition("transactionId", txId).deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", instId).deleteAll()
     }
@@ -233,8 +247,67 @@ class TradeTransactionViewSpec extends Specification {
         cleanup:
         ec.artifactExecution.disableAuthz()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", instId).updateAll([latestTransactionId: null])
+        ec.entity.find("trade.importlc.NostroReconciliation").condition("instrumentId", instId).deleteAll()
         ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", instId).deleteAll()
+        ec.entity.find("trade.TradeTransactionAudit").condition("transactionId", txId).deleteAll()
+        ec.entity.find("trade.TradeApprovalRecord").condition("transactionId", txId).deleteAll()
         ec.entity.find("trade.TradeTransaction").condition("transactionId", txId).deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", instId).deleteAll()
+    }
+    def "get#TradeTransactions supports pagination"() {
+        setup:
+        ec.artifactExecution.disableAuthz()
+        def testMaker = "pagination.test.user"
+        def testInstId = "INST-PAG"
+        // Ensure no leftover data
+        ec.entity.find("trade.TradeInstrument").condition("instrumentId", testInstId).updateAll([latestTransactionId: null])
+        ec.entity.find("trade.TradeTransaction").condition("makerUserId", testMaker).deleteAll()
+        ec.entity.find("trade.TradeInstrument").condition("instrumentId", testInstId).deleteAll()
+
+        ec.entity.makeValue("trade.TradeInstrument").setAll([
+            instrumentId: testInstId, instrumentTypeEnumId: "IMPORT_LC"
+        ]).createOrUpdate()
+        
+        6.times { i ->
+            ec.entity.makeValue("trade.TradeTransaction").setAll([
+                transactionId: "PAG-TX-${i}", instrumentId: testInstId, 
+                transactionTypeEnumId: "IMP_NEW", transactionStatusId: "TX_DRAFT",
+                transactionDate: ec.user.nowTimestamp, makerUserId: testMaker
+            ]).createOrUpdate()
+        }
+
+        when: "Request first page with size 2"
+        def result = ec.service.sync().name("trade.TradeCommonServices.get#TradeTransactions")
+            .parameters([pageSize: 2, pageIndex: 0, makerUserId: testMaker]).call()
+
+        then: "Page 1 should have 2 records and correct total"
+        result.transactionList.size() == 2
+        result.transactionCount == 6
+        result.pageIndex == 0
+        result.pageSize == 2
+
+        when: "Request second page"
+        def res2 = ec.service.sync().name("trade.TradeCommonServices.get#TradeTransactions")
+            .parameters([pageSize: 2, pageIndex: 1, makerUserId: testMaker]).call()
+
+        then: "Page 2 should have 2 records and correct total"
+        res2.transactionList.size() == 2
+        res2.transactionCount == 6
+        res2.pageIndex == 1
+        res2.pageSize == 2
+
+        when: "Request third page"
+        def result2 = ec.service.sync().name("trade.TradeCommonServices.get#TradeTransactions")
+            .parameters([pageSize: 2, pageIndex: 2, makerUserId: testMaker]).call()
+
+        then: "Page 3 should have 2 records and correct total"
+        result2.transactionList.size() == 2
+        result2.transactionCount == 6
+
+        cleanup:
+        ec.artifactExecution.disableAuthz()
+        ec.entity.find("trade.TradeInstrument").condition("instrumentId", testInstId).updateAll([latestTransactionId: null])
+        ec.entity.find("trade.TradeTransaction").condition("makerUserId", testMaker).deleteAll()
+        ec.entity.find("trade.TradeInstrument").condition("instrumentId", testInstId).deleteAll()
     }
 }

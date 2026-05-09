@@ -227,4 +227,12 @@
             <method type="post"><service name="trade.TradeCommonServices.load#MasterData"/></method>
         </resource>
     </resource>
+    <resource name="nostro-reconciliations">
+        <method type="get"><service name="trade.TradeAccountingServices.get#NostroReconciliationList"/></method>
+        <id name="reconciliationId">
+            <resource name="match">
+                <method type="put"><service name="trade.TradeAccountingServices.match#NostroReconciliation"/></method>
+            </resource>
+        </id>
+    </resource>
 </resource>

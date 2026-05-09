@@ -46,12 +46,18 @@ class RestApiEndpointsSpec extends Specification {
         return json.instrumentId
     }
 
-    String createTestPresentation(String instrumentId) {
-        // Find the issuance transaction
+    void approveIssuance(String instrumentId) {
         def tx = ec.entity.find("trade.TradeTransaction").condition([instrumentId: instrumentId, transactionTypeEnumId: 'IMP_NEW']).disableAuthz().one()
-        ec.user.internalLoginUser("trade.checker")
-        screenTest.render("s1/trade/authorize", [transactionId: tx.transactionId, skipFourEyes: true], "post")
-        ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).updateAll([businessStateId: "LC_ISSUED"])
+        if (tx && tx.transactionStatusId != 'TX_APPROVED') {
+            ec.user.internalLoginUser("trade.checker")
+            screenTest.render("s1/trade/authorize", [transactionId: tx.transactionId, skipFourEyes: true], "post")
+            ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).updateAll([businessStateId: "LC_ISSUED"])
+            ec.user.internalLoginUser("trade.maker")
+        }
+    }
+
+    String createTestPresentation(String instrumentId) {
+        approveIssuance(instrumentId)
         ec.user.internalLoginUser("trade.maker")
         ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/presentation",
             [instrumentId: instrumentId, claimAmount: 1000.0, claimCurrency: "USD"], "post")
@@ -59,6 +65,18 @@ class RestApiEndpointsSpec extends Specification {
             throw new Exception("Failed to create presentation: ${str.errorMessages}")
         }
         def json = new groovy.json.JsonSlurper().parseText(str.output)
+        
+        // Also approve the presentation transaction to allow settlement
+        def txPres = ec.entity.find("trade.TradeTransaction")
+            .condition([instrumentId: instrumentId, transactionTypeEnumId: 'IMP_PRESENTATION', transactionStatusId: 'TX_DRAFT'])
+            .disableAuthz().one()
+            
+        if (txPres) {
+            ec.user.internalLoginUser("trade.checker")
+            screenTest.render("s1/trade/authorize", [transactionId: txPres.transactionId, skipFourEyes: true], "post")
+        }
+        ec.user.internalLoginUser("trade.maker")
+        
         return json.presentationId
     }
 
@@ -221,7 +239,7 @@ class RestApiEndpointsSpec extends Specification {
     def "Test POST /trade/import-lc amendments (Internal)"() {
         given:
         String instrumentId = createTestLc("REST-INT-AMEND")
-        ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).updateAll([businessStateId: "LC_ISSUED"])
+        approveIssuance(instrumentId)
         
         Map params = [
             instrumentId: instrumentId,
@@ -280,6 +298,9 @@ class RestApiEndpointsSpec extends Specification {
         
         // Move to LC_ACCEPTED to allow settlement
         ec.service.sync().name("update#trade.TradeInstrument").parameters([instrumentId: instrumentId, businessStateId: 'LC_ACCEPTED']).call()
+        
+        def txs = ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).list()
+        ec.logger.info("PRE-SETTLE Transactions for ${instrumentId}: " + txs.collect { "${it.transactionId}:${it.transactionTypeEnumId}:${it.transactionStatusId}" })
 
         when:
         ec.user.internalLoginUser("trade.maker")
@@ -288,6 +309,7 @@ class RestApiEndpointsSpec extends Specification {
              settlementTypeEnumId: 'SETTLE_SIGHT', debitAccountId: "TRADE-USD-001"], "post")
 
         then:
+        if (str.errorMessages) { ec.logger.error("Settlement Errors for ${instrumentId}: " + str.errorMessages) }
         !str.errorMessages
         str.output != null
     }
@@ -295,6 +317,7 @@ class RestApiEndpointsSpec extends Specification {
     def "Test POST /trade/import-lc shipping-guarantee"() {
         given:
         String instrumentId = createTestLc("REST-SG")
+        approveIssuance(instrumentId)
 
         when:
         ec.user.internalLoginUser("trade.maker")
@@ -310,6 +333,8 @@ class RestApiEndpointsSpec extends Specification {
     def "Test POST /trade/import-lc cancellation"() {
         given:
         String instrumentId = createTestLc("REST-CANCEL")
+        approveIssuance(instrumentId)
+        
         // Move to LC_ISSUED to simulate a more realistic cancellation
         ec.user.internalLoginUser("trade.checker")
         screenTest.render("s1/trade/authorize", [instrumentId: instrumentId], "post")

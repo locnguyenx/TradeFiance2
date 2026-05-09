@@ -75,6 +75,8 @@ class TradeSwiftTriggerSpec extends Specification {
         def authRes = ec.service.sync().name("trade.AuthorizationServices.authorize#Instrument")
             .parameters([transactionId: tx.transactionId]).call()
         assert authRes.isAuthorized == true
+        tx.refresh()
+        assert tx.transactionStatusId == 'TX_APPROVED'
 
         then: "An MT700 SWIFT message should exist in ACTIVE status"
         def txR = ec.entity.find("trade.TradeTransaction").condition("transactionId", tx.transactionId).disableAuthz().one()
@@ -107,7 +109,11 @@ class TradeSwiftTriggerSpec extends Specification {
         def txIss = ec.entity.find("trade.TradeTransaction").condition([instrumentId: instrumentId, transactionTypeEnumId: 'IMP_NEW']).disableAuthz().one()
         ec.service.sync().name("update#trade.TradeTransaction")
             .parameters([transactionId: txIss.transactionId, transactionStatusId: "TX_PENDING"]).call()
-        ec.service.sync().name("trade.AuthorizationServices.authorize#Instrument").parameters([transactionId: txIss.transactionId]).call()
+        ec.user.internalLoginUser("trade.checker")
+        ec.service.sync().name("trade.AuthorizationServices.authorize#Instrument")
+            .parameters([transactionId: txIss.transactionId, skipFourEyes: true]).call()
+        txIss.refresh()
+        assert txIss.transactionStatusId == 'TX_APPROVED'
         
         // Ensure LC is in LC_ISSUED state to allow amendment
         ec.service.sync().name("update#trade.importlc.ImportLetterOfCredit")

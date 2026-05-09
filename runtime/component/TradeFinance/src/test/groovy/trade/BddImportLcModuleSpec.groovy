@@ -639,7 +639,7 @@ result.isHit != null
         given: 'Mutual Early Cancellation'
         def fid = "FAC-CAN-LIB-" + System.currentTimeMillis()
         ec.entity.makeValue("trade.CustomerFacility")
-            .setAll([facilityId: fid, totalApprovedLimit: 1000000.0, utilizedAmount: 500000.0]).create()
+            .setAll([facilityId: fid, totalApprovedLimit: 1000000.0, utilizedAmount: 0.0]).create()
             
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([instrumentRef: "TF-CAN-REV", lcAmount: 500000.0, lcCurrencyUomId: "USD", customerFacilityId: fid,
@@ -647,9 +647,13 @@ result.isHit != null
                                    [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']],
                           availableWithEnumId: 'AVB_WITH_ANY_BANK']).call()
         def instrumentId = res.instrumentId
-        ec.service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit")
-            .parameters([instrumentId: instrumentId, outstandingAmount: 500000.0]).call()
         
+        // Approve issuance to earmark limit
+        def txIss = ec.entity.find("trade.TradeTransaction").condition([instrumentId: instrumentId, transactionTypeEnumId: 'IMP_NEW']).disableAuthz().one()
+        ec.service.sync().name("trade.AuthorizationServices.authorize#Instrument")
+            .parameters([transactionId: txIss.transactionId, skipFourEyes: true]).call()
+        ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).updateAll([businessStateId: "LC_ISSUED"])
+
         when: "Cancellation is authorized"
         def cancelRes = ec.service.sync().name("trade.TradeCommonServices.create#Cancellation")
             .parameters([instrumentId: instrumentId, cancellationReason: "Early Closure"]).call()

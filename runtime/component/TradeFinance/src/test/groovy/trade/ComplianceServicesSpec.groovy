@@ -22,7 +22,9 @@ class ComplianceServicesSpec extends Specification {
         // Clean up before each test
         String lcId = "COMP-HOLD-LC-01"
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", lcId).updateAll([latestTransactionId: null])
+        ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", lcId).deleteAll()
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", lcId).deleteAll()
+        ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", lcId).deleteAll()
         ec.entity.find("trade.TradeTransaction").condition("instrumentId", lcId).deleteAll()
         ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", lcId).deleteAll()
         ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", lcId).deleteAll()
@@ -48,8 +50,14 @@ class ComplianceServicesSpec extends Specification {
         ec.service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit")
                 .parameters([instrumentId: lcId, businessStateId: 'LC_ISSUED']).call()
 
+        // Approve issuance to clear concurrent transaction block
+        def txIss = ec.entity.find("trade.TradeTransaction").condition([instrumentId: lcId, transactionTypeEnumId: 'IMP_NEW']).disableAuthz().one()
+        ec.service.sync().name("trade.AuthorizationServices.authorize#Instrument")
+            .parameters([transactionId: txIss.transactionId, skipFourEyes: true]).call()
+        
         ec.service.sync().name("create#trade.TradeTransaction")
                 .parameters([transactionId: "TX-COMP-HOLD-01", instrumentId: lcId, 
+                             transactionTypeEnumId: 'IMP_AMENDMENT',
                              transactionStatusId: 'TX_DRAFT', versionNumber: 1]).call()
 
         when: "Apply Compliance Hold"

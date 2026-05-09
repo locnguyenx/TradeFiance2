@@ -18,13 +18,31 @@ function SettlementContent() {
     const [settlements, setSettlements] = useState<any[]>([]);
     const [selectedSettlement, setSelectedSettlement] = useState<any | null>(null);
     const [loading, setLoading] = useState(true);
+    
+    const [pageIndex, setPageIndex] = useState(0);
+    const [pageSize] = useState(20);
+    const [totalCount, setTotalCount] = useState(0);
+    const [instrumentSearch, setInstrumentSearch] = useState('');
+    const [statusFilter, setStatusFilter] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearch(instrumentSearch), 500);
+        return () => clearTimeout(timer);
+    }, [instrumentSearch]);
 
     useEffect(() => {
         if (!id && !settlementId) {
             setLoading(true);
-            tradeApi.getSettlements()
+            tradeApi.getSettlements({ 
+                pageIndex, 
+                pageSize, 
+                instrumentSearch: debouncedSearch,
+                settlementStatusId: statusFilter
+            })
                 .then(data => {
                     setSettlements(data.settlementList || []);
+                    setTotalCount(data.settlementCount || 0);
                     setLoading(false);
                 })
                 .catch(err => {
@@ -45,7 +63,12 @@ function SettlementContent() {
         } else {
           setLoading(false);
         }
-    }, [id, settlementId]);
+    }, [id, settlementId, pageIndex, pageSize, debouncedSearch, statusFilter]);
+
+    // Reset page index on search or filter change
+    useEffect(() => {
+        setPageIndex(0);
+    }, [debouncedSearch, statusFilter]);
 
     if (settlementId && selectedSettlement) {
         return (
@@ -99,6 +122,19 @@ function SettlementContent() {
                 columns={columns}
                 loading={loading}
                 onRowClick={(rec) => window.location.href = `/import-lc/settlement?id=${rec.instrumentId}&settlementId=${rec.settlementId}`}
+                totalCount={totalCount}
+                pageIndex={pageIndex}
+                pageSize={pageSize}
+                onPageChange={setPageIndex}
+                onSearchChange={setInstrumentSearch}
+                searchValue={instrumentSearch}
+                statusOptions={[
+                    { value: 'SETTLE_PENDING', label: 'Pending' },
+                    { value: 'SETTLE_EXECUTED', label: 'Executed' },
+                    { value: 'SETTLE_FAILED', label: 'Failed' }
+                ]}
+                statusValue={statusFilter}
+                onStatusChange={setStatusFilter}
             />
             <style jsx>{`
                 .status-tag { padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }

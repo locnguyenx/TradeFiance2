@@ -1,6 +1,8 @@
-import { TradeInstrument, TradeTransaction, ImportLetterOfCredit, TradeParty, TradeProductCatalog, FeeConfiguration, UserAuthorityProfile, QueueItem, ExposureData, SwiftMessage } from './types';
+import { TradeInstrument, TradeTransaction, ImportLetterOfCredit, TradeParty, TradeProductCatalog, FeeConfiguration, UserAuthorityProfile, QueueItem, ExposureData, SwiftMessage, NostroReconciliation } from './types';
 
-const API_BASE = '/rest/s1/trade';
+export const API_BASE = '/rest/s1/trade';
+export const COMMON_API_BASE = `${API_BASE}/common`;
+const DEBUG_API = false; // Set to true for verbose API logging in console
 
 export interface Kpis {
   pendingDrafts: number;
@@ -111,15 +113,20 @@ export const tradeApi = {
       throw new ApiError(res.status, res.statusText, errorBody);
     }
 
-    const resClone = res.clone();
-    try {
-      const json = await resClone.json();
-      console.log(`DEBUG: fetch ${init?.method || 'GET'} ${url} -> ${res.status}`, { 
-        requestBody: init?.body, 
-        responseBody: json 
-      });
-    } catch (e) {
-      console.log(`DEBUG: fetch ${init?.method || 'GET'} ${url} -> ${res.status} (no json body)`);
+    if (DEBUG_API) {
+      const resClone = res.clone();
+      try {
+        const json = await resClone.json();
+        console.log(`DEBUG: fetch ${init?.method || 'GET'} ${url} -> ${res.status}`, { 
+          requestBody: init?.body, 
+          responseBody: json 
+        });
+      } catch (e) {
+        console.log(`DEBUG: fetch ${init?.method || 'GET'} ${url} -> ${res.status} (no json body)`);
+      }
+    } else {
+      // Standard minimal logging
+      console.log(`API: ${init?.method || 'GET'} ${url} -> ${res.status}`);
     }
     return res;
   },
@@ -176,18 +183,18 @@ export const tradeApi = {
   async getAmendment(lcId: string, amendmentId: string): Promise<any> {
     const path = (lcId && lcId !== 'DUMMY') 
       ? `${API_BASE}/import-lc/${lcId}/amendment/${amendmentId}`
-      : `${API_BASE}/common/amendment/${amendmentId}`;
+      : `${COMMON_API_BASE}/amendment/${amendmentId}`;
     const res = await this._fetch(path);
     return res.json();
   },
   
   async getExternalAmendment(amendmentId: string): Promise<any> {
-    const res = await this._fetch(`${API_BASE}/common/amendment/${amendmentId}`);
+    const res = await this._fetch(`${COMMON_API_BASE}/amendment/${amendmentId}`);
     return res.json();
   },
 
   async getInternalAmendment(amendmentId: string): Promise<any> {
-    const res = await this._fetch(`${API_BASE}/common/internal-amendment/${amendmentId}`);
+    const res = await this._fetch(`${COMMON_API_BASE}/internal-amendment/${amendmentId}`);
     return res.json();
   },
 
@@ -465,12 +472,12 @@ export const tradeApi = {
   },
 
   async getTransaction(transactionId: string): Promise<TradeTransaction> {
-    const res = await this._fetch(`${API_BASE}/common/transactions/${transactionId}`);
+    const res = await this._fetch(`${COMMON_API_BASE}/transactions/${transactionId}`);
     return res.json();
   },
 
   async updateTransactionStatus(id: string, statusId: string): Promise<any> {
-    const res = await this._fetch(`${API_BASE}/common/transactions/${id}`, {
+    const res = await this._fetch(`${COMMON_API_BASE}/transactions/${id}`, {
       method: 'PATCH',
       body: JSON.stringify({ transactionStatusId: statusId })
     });
@@ -496,11 +503,11 @@ export const tradeApi = {
     const params = new URLSearchParams();
     if (priorityEnumId) params.append('priorityEnumId', priorityEnumId);
     const query = params.toString() ? `?${params.toString()}` : '';
-    const res = await this._fetch(`${API_BASE}/common/audit-logs${query}`);
+    const res = await this._fetch(`${COMMON_API_BASE}/audit-logs${query}`);
     return res.json();
   },
 
-  async getTransactions(statusId?: string, priorityId?: string, makerId?: string, typeId?: string, instrumentSearch?: string, transactionSearch?: string): Promise<{ transactionList: any[] }> {
+  async getTransactions(statusId?: string, priorityId?: string, makerId?: string, typeId?: string, instrumentSearch?: string, transactionSearch?: string, pageIndex: number = 0, pageSize: number = 20): Promise<{ transactionList: any[], transactionCount: number, pageIndex: number, pageSize: number }> {
     const params = new URLSearchParams();
     if (statusId) params.append('transactionStatusId', statusId);
     if (priorityId) params.append('priorityEnumId', priorityId);
@@ -508,53 +515,61 @@ export const tradeApi = {
     if (typeId) params.append('transactionTypeEnumId', typeId);
     if (instrumentSearch) params.append('instrumentSearch', instrumentSearch);
     if (transactionSearch) params.append('transactionSearch', transactionSearch);
-    const query = params.toString() ? `?${params.toString()}` : '';
-    const res = await this._fetch(`${API_BASE}/common/transactions${query}`);
+    params.append('pageIndex', pageIndex.toString());
+    params.append('pageSize', pageSize.toString());
+
+    const res = await this._fetch(`${COMMON_API_BASE}/transactions?${params.toString()}`);
     return res.json();
   },
 
-  async getAmendments(): Promise<{ amendmentList: any[] }> {
-    const res = await this._fetch(`${API_BASE}/common/amendments`);
+  async getAmendments(params?: Record<string, any>): Promise<{ amendmentList: any[], amendmentCount: number }> {
+    const query = params ? '?' + new URLSearchParams(params).toString() : '';
+    const res = await this._fetch(`${COMMON_API_BASE}/amendments${query}`);
     return res.json();
   },
 
-  async getExternalAmendments(): Promise<{ amendmentList: any[] }> {
-    const res = await this._fetch(`${API_BASE}/common/amendments`);
+  async getExternalAmendments(params?: Record<string, any>): Promise<{ amendmentList: any[], amendmentCount: number }> {
+    const query = params ? '?' + new URLSearchParams(params).toString() : '';
+    const res = await this._fetch(`${COMMON_API_BASE}/amendments${query}`);
     return res.json();
   },
 
-  async getInternalAmendments(): Promise<{ amendmentList: any[] }> {
-    const res = await this._fetch(`${API_BASE}/common/internal-amendments`);
+  async getInternalAmendments(params?: Record<string, any>): Promise<{ amendmentList: any[], amendmentCount: number }> {
+    const query = params ? '?' + new URLSearchParams(params).toString() : '';
+    const res = await this._fetch(`${COMMON_API_BASE}/internal-amendments${query}`);
     return res.json();
   },
 
-  async getPresentations(): Promise<{ presentationList: any[] }> {
-    const res = await this._fetch(`${API_BASE}/common/presentations`);
+  async getPresentations(params?: Record<string, any>): Promise<{ presentationList: any[], presentationCount: number }> {
+    const query = params ? '?' + new URLSearchParams(params).toString() : '';
+    const res = await this._fetch(`${COMMON_API_BASE}/presentations${query}`);
     return res.json();
   },
 
   async getPresentation(presentationId: string): Promise<any> {
-    const res = await this._fetch(`${API_BASE}/common/presentation/${presentationId}`);
+    const res = await this._fetch(`${COMMON_API_BASE}/presentation/${presentationId}`);
     return res.json();
   },
 
-  async getSettlements(): Promise<{ settlementList: any[] }> {
-    const res = await this._fetch(`${API_BASE}/common/settlements`);
+  async getSettlements(params?: Record<string, any>): Promise<{ settlementList: any[], settlementCount: number }> {
+    const query = params ? '?' + new URLSearchParams(params).toString() : '';
+    const res = await this._fetch(`${COMMON_API_BASE}/settlements${query}`);
     return res.json();
   },
 
   async getSettlement(settlementId: string): Promise<any> {
-    const res = await this._fetch(`${API_BASE}/common/settlement/${settlementId}`);
+    const res = await this._fetch(`${COMMON_API_BASE}/settlement/${settlementId}`);
     return res.json();
   },
 
-  async getShippingGuarantees(): Promise<{ guaranteeList: any[] }> {
-    const res = await this._fetch(`${API_BASE}/common/shipping-guarantees`);
+  async getShippingGuarantees(params?: Record<string, any>): Promise<{ guaranteeList: any[], guaranteeCount: number }> {
+    const query = params ? '?' + new URLSearchParams(params).toString() : '';
+    const res = await this._fetch(`${COMMON_API_BASE}/shipping-guarantees${query}`);
     return res.json();
   },
 
   async getShippingGuarantee(guaranteeId: string): Promise<any> {
-    const res = await this._fetch(`${API_BASE}/common/shipping-guarantee/${guaranteeId}`);
+    const res = await this._fetch(`${COMMON_API_BASE}/shipping-guarantee/${guaranteeId}`);
     return res.json();
   },
   

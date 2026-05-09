@@ -35,16 +35,25 @@ export const DocumentExamination: React.FC<{ instrument?: any, presentationDate?
     const [detail, setDetail] = useState('');
     const [lineCount, setLineCount] = useState(0);
     const [charViolation, setCharViolation] = useState(false);
+    const MAX_77J_LINES = 70;
+    const CHARS_PER_LINE = 50;
+
+    const calculateLines = (text: string) => {
+        if (!text) return 0;
+        return text.split('\n').reduce((total, line) => 
+            total + Math.max(1, Math.ceil(line.length / CHARS_PER_LINE)), 0);
+    };
 
     useEffect(() => {
-        const lines = detail.split('\n');
-        setLineCount(lines.length);
-        setCharViolation(lines.some(l => l.length > 50));
-    }, [detail]);
+        const currentText = discrepancies.map(d => `${d.code}: ${d.description}`).join('\n') + 
+                           (detail ? (discrepancies.length > 0 ? '\n' : '') + `NEW: ${detail}` : '');
+        setLineCount(calculateLines(currentText));
+        setCharViolation(detail.split('\n').some(l => l.length > CHARS_PER_LINE));
+    }, [detail, discrepancies]);
 
 
     const logDiscrepancy = () => {
-        if (!selectedCode) return;
+        if (!selectedCode || lineCount > MAX_77J_LINES || charViolation) return;
         const newDisc: Discrepancy = {
             id: Math.random().toString(36).substr(2, 9),
             code: selectedCode,
@@ -93,6 +102,7 @@ export const DocumentExamination: React.FC<{ instrument?: any, presentationDate?
                         <div className="ctx-content">
                             <p>1. Commercial Invoice in 3 originals and 3 copies.</p>
                             <p>2. Full set of on-board Bill of Lading.</p>
+                            <p>3. Packing List in 1 original and 2 copies.</p>
                         </div>
                     </details>
                     <details>
@@ -130,8 +140,13 @@ export const DocumentExamination: React.FC<{ instrument?: any, presentationDate?
                 </section>
 
                 <section className="discrepancy-logger">
-                    <header className="pane-header">
+                    <header className="pane-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <h3>Discrepancy Logger (ISBP-745)</h3>
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                            lineCount > 60 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'
+                        } ${lineCount > MAX_77J_LINES ? 'bg-red-100 text-red-700' : ''}`}>
+                            {lineCount}/{MAX_77J_LINES} Tag 77J lines used
+                        </span>
                     </header>
                     <div className="logger-entry">
                         <select 
@@ -149,18 +164,18 @@ export const DocumentExamination: React.FC<{ instrument?: any, presentationDate?
                             value={detail}
                             onChange={(e) => setDetail(e.target.value)}
                             placeholder="Specific discrepancy detail..."
-                            className={(lineCount > 70 || charViolation) ? 'border-red-500' : ''}
+                            className={(lineCount > MAX_77J_LINES || charViolation) ? 'border-red-500 ring-1 ring-red-500' : ''}
                         />
                         <div className="text-xs flex justify-between mt-1">
-                            <span className={lineCount > 70 ? 'text-red-600 font-bold' : 'text-slate-500'}>
-                                Tag 77J Lines: {lineCount}/70
+                            <span className={lineCount > MAX_77J_LINES ? 'text-red-600 font-bold' : 'text-slate-500'}>
+                                {lineCount > MAX_77J_LINES ? '⚠️ Total limit exceeded' : 'SWIFT 70x50 line limit applies'}
                             </span>
-                            {charViolation && <span className="text-red-600 font-bold">Line exceeds 50 chars</span>}
+                            {charViolation && <span className="text-red-600 font-bold">⚠️ Line exceeds 50 chars</span>}
                         </div>
                         <button 
                             className="log-btn" 
                             onClick={logDiscrepancy}
-                            disabled={lineCount > 70 || charViolation}
+                            disabled={!selectedCode || lineCount > MAX_77J_LINES || charViolation}
                         >
                             Log Discrepancy
                         </button>

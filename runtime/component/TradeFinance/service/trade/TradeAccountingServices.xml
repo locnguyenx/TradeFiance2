@@ -162,4 +162,34 @@
             <!-- NOTE: Actual LC balance update and state change moved to Authorization flow -->
         </actions>
     </service>
+    <service verb="get" noun="NostroReconciliationList" authenticate="false">
+        <out-parameters>
+            <parameter name="reconciliationList" type="List"><parameter name="reconciliation" type="Map"/></parameter>
+        </out-parameters>
+        <actions>
+            <entity-find entity-name="trade.importlc.NostroReconciliation" list="reconciliationList">
+                <order-by field-name="-reconciliationId"/>
+            </entity-find>
+        </actions>
+    </service>
+
+    <service verb="match" noun="NostroReconciliation" authenticate="false">
+        <in-parameters>
+            <parameter name="reconciliationId" required="true"/>
+            <parameter name="nostroDebitDate" type="Date" required="true"/>
+            <parameter name="nostroDebitAmount" type="BigDecimal" required="true"/>
+            <parameter name="nostroStatementRef" required="true"/>
+            <parameter name="matchStatusEnumId" default-value="RECON_MATCHED"/>
+            <parameter name="remarks"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="trade.importlc.NostroReconciliation" value-field="reconciliation" for-update="true"/>
+            <if condition="!reconciliation"><return error="true" message="Nostro Reconciliation record ${reconciliationId} not found"/></if>
+            
+            <entity-set value-field="reconciliation" include="nonpk" map="context"/>
+            <set field="reconciliation.matchedByUserId" from="ec.user.userId"/>
+            <set field="reconciliation.matchedDate" from="ec.user.nowTimestamp"/>
+            <entity-update value-field="reconciliation"/>
+        </actions>
+    </service>
 </services>

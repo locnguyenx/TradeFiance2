@@ -9,7 +9,9 @@ import {
     FileText, 
     ArrowRight,
     Search,
-    Filter
+    Filter,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -26,6 +28,21 @@ export const TransactionDashboard: React.FC = () => {
     const [filterInstSearch, setFilterInstSearch] = useState('');
     const [filterTxnSearch, setFilterTxnSearch] = useState('');
     const [makers, setMakers] = useState<string[]>([]);
+
+    const [pageIndex, setPageIndex] = useState(0);
+    const [pageSize, setPageSize] = useState(20);
+    const [totalCount, setTotalCount] = useState(0);
+    const [debouncedInstSearch, setDebouncedInstSearch] = useState(filterInstSearch);
+    const [debouncedTxnSearch, setDebouncedTxnSearch] = useState(filterTxnSearch);
+
+    // Debounce search terms
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedInstSearch(filterInstSearch);
+            setDebouncedTxnSearch(filterTxnSearch);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [filterInstSearch, filterTxnSearch]);
 
     useEffect(() => {
         const loadMakers = async () => {
@@ -44,8 +61,18 @@ export const TransactionDashboard: React.FC = () => {
         const loadTransactions = async () => {
             setLoading(true);
             try {
-                const txnData = await tradeApi.getTransactions(filterStatus, filterPriority, filterMaker, filterType, filterInstSearch, filterTxnSearch);
+                const txnData = await tradeApi.getTransactions(
+                    filterStatus, 
+                    filterPriority, 
+                    filterMaker, 
+                    filterType, 
+                    debouncedInstSearch, 
+                    debouncedTxnSearch, 
+                    pageIndex, 
+                    pageSize
+                );
                 setTransactions(txnData.transactionList || []);
+                setTotalCount(txnData.transactionCount || 0);
             } catch (error) {
                 console.error('Failed to load transactions:', error);
             } finally {
@@ -53,7 +80,12 @@ export const TransactionDashboard: React.FC = () => {
             }
         };
         loadTransactions();
-    }, [filterStatus, filterPriority, filterMaker, filterType, filterInstSearch, filterTxnSearch]);
+    }, [filterStatus, filterPriority, filterMaker, filterType, debouncedInstSearch, debouncedTxnSearch, pageIndex, pageSize]);
+
+    // Reset pageIndex when filters change
+    useEffect(() => {
+        setPageIndex(0);
+    }, [filterStatus, filterPriority, filterMaker, filterType, debouncedInstSearch, debouncedTxnSearch]);
 
     const typeLabels: Record<string, string> = {
         'IMP_NEW': 'Issuance',
@@ -106,9 +138,9 @@ export const TransactionDashboard: React.FC = () => {
             </header>
 
             <div className="filter-bar premium-card">
-                <div className="search-group">
-                    <div className="search-input-wrapper">
-                        <Search size={18} className="search-icon" />
+                <div className="filter-row search-row">
+                    <div className="filter-search">
+                        <Search size={16} />
                         <input 
                             type="text" 
                             placeholder="Instrument (Ref / ID)..." 
@@ -116,8 +148,8 @@ export const TransactionDashboard: React.FC = () => {
                             onChange={(e) => setFilterInstSearch(e.target.value)}
                         />
                     </div>
-                    <div className="search-input-wrapper">
-                        <Search size={18} className="search-icon" />
+                    <div className="filter-search">
+                        <Search size={16} />
                         <input 
                             type="text" 
                             placeholder="Transaction (Ref / ID)..." 
@@ -126,7 +158,7 @@ export const TransactionDashboard: React.FC = () => {
                         />
                     </div>
                 </div>
-                <div className="filter-actions">
+                <div className="filter-row action-row">
                     <div className="filter-select">
                         <Filter size={14} />
                         <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
@@ -164,73 +196,109 @@ export const TransactionDashboard: React.FC = () => {
                             <option value="IMP_AMENDMENT">Amendment</option>
                             <option value="IMP_PRESENTATION">Presentation</option>
                             <option value="IMP_SETTLEMENT">Settlement</option>
-                            <option value="IMP_CANCEL">Cancellation</option>
+                            <option value="IMP_CANCELLATION">Cancellation</option>
+                            <option value="IMP_SG_ISSUANCE">Shipping Guarantee</option>
                         </select>
                     </div>
                 </div>
             </div>
 
             <div className="transaction-list premium-card">
-                <table className="txn-table">
-                    <thead>
-                        <tr>
-                            <th>Priority</th>
-                            <th>Instrument (Ref / ID)</th>
-                            <th>Transaction (Ref / ID)</th>
-                            <th>Type</th>
-                            <th>Maker / Date</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {loading ? (
-                            <tr><td colSpan={7} style={{ textAlign: 'center', padding: '3rem' }}>Fetching real-time transaction data...</td></tr>
-                        ) : transactions.length === 0 ? (
-                            <tr><td colSpan={7} style={{ textAlign: 'center', padding: '3rem' }}>No transactions found matching the filters.</td></tr>
-                        ) : transactions.map(txn => (
-                            <tr key={txn.transactionId}>
-                                <td>
-                                    <span className="priority-badge" style={{ backgroundColor: getPriorityColor(txn.priorityEnumId) }}>
-                                        {txn.priorityEnumId?.replace('TX_PRIO_', '') || 'LOW'}
-                                    </span>
-                                </td>
-                                <td>
-                                    <div className="ref-cell">
-                                        <span className="instrument-ref-text">{txn.instrumentRef}</span>
-                                        <span className="instrument-id" title="Instrument ID">{txn.instrumentId}</span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div className="ref-cell">
-                                        <span className="transaction-ref-text">{txn.transactionRef || 'N/A'}</span>
-                                        <span className="txn-id" title="Transaction ID">{txn.transactionId}</span>
-                                    </div>
-                                </td>
-                                <td className="type-cell">
-                                    {typeLabels[txn.transactionTypeEnumId] || txn.transactionTypeEnumId?.replace('IMP_', '').replace('_', ' ')}
-                                </td>
-                                <td>
-                                    <div className="maker-info">
-                                        <span className="maker-id">{txn.makerUserId}</span>
-                                        <span className="txn-date">{new Date(txn.transactionDate).toLocaleDateString()}</span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div className="status-cell">
-                                        {getStatusIcon(txn.transactionStatusId)}
-                                        <span>{statusLabels[txn.transactionStatusId] || txn.transactionStatusId?.replace('TX_', '')}</span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <Link href={`/transactions/details?id=${txn.transactionId}`} className="view-link">
-                                        View Detail <ArrowRight size={14} />
-                                    </Link>
-                                </td>
+                <div className="table-responsive">
+                    <table className="txn-table">
+                        <thead>
+                            <tr>
+                                <th>Priority</th>
+                                <th>Instrument (Ref / ID)</th>
+                                <th>Transaction (Ref / ID)</th>
+                                <th>Type</th>
+                                <th>Maker / Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {loading ? (
+                                <tr><td colSpan={7} style={{ textAlign: 'center', padding: '3rem' }}>Fetching real-time transaction data...</td></tr>
+                            ) : transactions.length === 0 ? (
+                                <tr><td colSpan={7} style={{ textAlign: 'center', padding: '3rem' }}>No transactions found matching the filters.</td></tr>
+                            ) : transactions.map(txn => (
+                                <tr key={txn.transactionId}>
+                                    <td>
+                                        <span className="priority-badge" style={{ backgroundColor: getPriorityColor(txn.priorityEnumId) }}>
+                                            {txn.priorityEnumId?.replace('TX_PRIO_', '') || 'LOW'}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div className="ref-cell">
+                                            <span className="instrument-ref-text">{txn.instrumentRef}</span>
+                                            <span className="instrument-id" title="Instrument ID">{txn.instrumentId}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div className="ref-cell">
+                                            <span className="transaction-ref-text">{txn.transactionRef || 'N/A'}</span>
+                                            <span className="txn-id" title="Transaction ID">{txn.transactionId}</span>
+                                        </div>
+                                    </td>
+                                    <td className="type-cell">
+                                        {typeLabels[txn.transactionTypeEnumId] || txn.transactionTypeEnumId?.replace('IMP_', '').replace('_', ' ')}
+                                    </td>
+                                    <td>
+                                        <div className="maker-info">
+                                            <span className="maker-id">{txn.makerUserId}</span>
+                                            <span className="txn-date">{new Date(txn.transactionDate).toLocaleDateString()}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div className="status-cell">
+                                            {getStatusIcon(txn.transactionStatusId)}
+                                            <span>{statusLabels[txn.transactionStatusId] || txn.transactionStatusId?.replace('TX_', '')}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <Link href={`/transactions/details?id=${txn.transactionId}`} className="view-link">
+                                            View Detail <ArrowRight size={14} />
+                                        </Link>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div className="pagination-bar">
+                    <div className="pagination-info">
+                        Showing <span>{Math.min(totalCount, pageIndex * pageSize + 1)}</span> to <span>{Math.min(totalCount, (pageIndex + 1) * pageSize)}</span> of <span>{totalCount}</span> transactions
+                    </div>
+                    <div className="pagination-controls">
+                        <button 
+                            className="page-btn" 
+                            onClick={() => setPageIndex(p => Math.max(0, p - 1))}
+                            disabled={pageIndex === 0}
+                        >
+                            <ChevronLeft size={16} /> Previous
+                        </button>
+                        <div className="page-numbers">
+                            {Array.from({ length: Math.ceil(totalCount / pageSize) }).map((_, i) => (
+                                <button 
+                                    key={i} 
+                                    className={`page-num ${pageIndex === i ? 'active' : ''}`}
+                                    onClick={() => setPageIndex(i)}
+                                >
+                                    {i + 1}
+                                </button>
+                            )).slice(Math.max(0, pageIndex - 2), Math.min(Math.ceil(totalCount / pageSize), pageIndex + 3))}
+                        </div>
+                        <button 
+                            className="page-btn" 
+                            onClick={() => setPageIndex(p => Math.min(Math.ceil(totalCount / pageSize) - 1, p + 1))}
+                            disabled={pageIndex >= Math.ceil(totalCount / pageSize) - 1}
+                        >
+                            Next <ChevronRight size={16} />
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <style jsx>{`
@@ -243,22 +311,34 @@ export const TransactionDashboard: React.FC = () => {
                 .stat-label { font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
                 .stat-value { font-size: 1.5rem; font-weight: 800; color: #2563eb; }
 
-                .filter-bar { background: white; padding: 0.75rem 1.25rem; display: flex; flex-direction: column; gap: 1rem; }
-                @media (min-width: 1024px) {
-                    .filter-bar { flex-direction: row; justify-content: space-between; align-items: center; }
-                }
-                .search-group { display: flex; gap: 0.75rem; flex: 1; max-width: 650px; }
-                .search-input-wrapper { position: relative; flex: 1; }
-                .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
-                .search-input-wrapper input { width: 100%; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.5rem 1rem 0.5rem 2.5rem; font-size: 0.875rem; outline: none; transition: all 0.2s; }
-                .search-input-wrapper input:focus { border-color: #2563eb; background: white; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
+                .pagination-bar { padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+                .pagination-info { font-size: 0.8125rem; color: #64748b; }
+                .pagination-info span { font-weight: 700; color: #1e293b; }
+                .pagination-controls { display: flex; align-items: center; gap: 0.75rem; }
+                .page-btn { display: flex; align-items: center; gap: 0.25rem; padding: 0.5rem 0.75rem; background: white; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.8125rem; font-weight: 600; color: #475569; cursor: pointer; transition: all 0.2s; }
+                .page-btn:hover:not(:disabled) { border-color: #cbd5e1; background: #f1f5f9; }
+                .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+                .page-numbers { display: flex; gap: 0.25rem; }
+                .page-num { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: white; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.8125rem; font-weight: 600; color: #475569; cursor: pointer; transition: all 0.2s; }
+                .page-num:hover { border-color: #cbd5e1; background: #f1f5f9; }
+                .page-num.active { background: #2563eb; color: white; border-color: #2563eb; }
+
+                .filter-bar { background: white; padding: 1.25rem; display: flex; flex-direction: column; gap: 1.25rem; }
+                .filter-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+                .search-row { max-width: 800px; }
                 
-                .filter-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
-                .filter-select { display: flex; align-items: center; gap: 0.5rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.25rem 0.75rem; color: #64748b; }
-                .filter-select select { background: transparent; border: none; font-size: 0.8125rem; font-weight: 600; color: #1e293b; outline: none; cursor: pointer; }
+                .filter-search { display: flex; align-items: center; gap: 0.5rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.5rem 1rem; color: #64748b; flex: 1; min-width: 250px; transition: all 0.2s; }
+                .filter-search:focus-within { border-color: #2563eb; background: white; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
+                .filter-search input { width: 100%; background: transparent; border: none; font-size: 0.875rem; outline: none; color: #1e293b; }
+                .filter-search input::placeholder { color: #94a3b8; }
+                
+                .filter-select { display: flex; align-items: center; gap: 0.5rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.5rem 1rem; color: #64748b; min-width: 160px; transition: all 0.2s; }
+                .filter-select:focus-within { border-color: #2563eb; background: white; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
+                .filter-select select { background: transparent; border: none; font-size: 0.8125rem; font-weight: 600; color: #1e293b; outline: none; cursor: pointer; width: 100%; }
 
                 .transaction-list { background: white; overflow: hidden; }
-                .txn-table { width: 100%; border-collapse: collapse; }
+                .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+                .txn-table { width: 100%; border-collapse: collapse; min-width: 1000px; }
                 .txn-table th { text-align: left; padding: 1rem 1.5rem; background: #f8fafc; font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e2e8f0; }
                 .txn-table td { padding: 1.25rem 1.5rem; border-bottom: 1px solid #f1f5f9; font-size: 0.875rem; vertical-align: middle; }
                 
@@ -279,7 +359,6 @@ export const TransactionDashboard: React.FC = () => {
                 
                 .view-link { display: flex; align-items: center; gap: 0.5rem; color: #2563eb; font-weight: 600; text-decoration: none; font-size: 0.8125rem; transition: color 0.1s; }
                 .view-link:hover { color: #1d4ed8; }
-
                 .premium-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
             `}</style>
         </div>

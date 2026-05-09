@@ -18,13 +18,31 @@ export default function PresentationsPage() {
     const [presentations, setPresentations] = useState<any[]>([]);
     const [selectedPresentation, setSelectedPresentation] = useState<any | null>(null);
     const [loading, setLoading] = useState(true);
+    
+    const [pageIndex, setPageIndex] = useState(0);
+    const [pageSize] = useState(20);
+    const [totalCount, setTotalCount] = useState(0);
+    const [instrumentSearch, setInstrumentSearch] = useState('');
+    const [statusFilter, setStatusFilter] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearch(instrumentSearch), 500);
+        return () => clearTimeout(timer);
+    }, [instrumentSearch]);
 
     useEffect(() => {
         if (!id && !presentationId) {
             setLoading(true);
-            tradeApi.getPresentations()
+            tradeApi.getPresentations({ 
+                pageIndex, 
+                pageSize, 
+                instrumentSearch: debouncedSearch,
+                isDiscrepant: statusFilter
+            })
                 .then(data => {
                     setPresentations(data.presentationList || []);
+                    setTotalCount(data.presentationCount || 0);
                     setLoading(false);
                 })
                 .catch(err => {
@@ -43,7 +61,12 @@ export default function PresentationsPage() {
                     setLoading(false);
                 });
         }
-    }, [id, presentationId]);
+    }, [id, presentationId, pageIndex, pageSize, debouncedSearch, statusFilter]);
+
+    // Reset page index on search or filter change
+    useEffect(() => {
+        setPageIndex(0);
+    }, [debouncedSearch, statusFilter]);
 
     if (presentationId && selectedPresentation) {
         return (
@@ -97,6 +120,18 @@ export default function PresentationsPage() {
                 columns={columns}
                 loading={loading}
                 onRowClick={(rec) => window.location.href = `/import-lc/presentations?id=${rec.instrumentId}&presentationId=${rec.presentationId}`}
+                totalCount={totalCount}
+                pageIndex={pageIndex}
+                pageSize={pageSize}
+                onPageChange={setPageIndex}
+                onSearchChange={setInstrumentSearch}
+                searchValue={instrumentSearch}
+                statusOptions={[
+                    { value: 'N', label: 'Clean' },
+                    { value: 'Y', label: 'Discrepant' }
+                ]}
+                statusValue={statusFilter}
+                onStatusChange={setStatusFilter}
             />
             <style jsx>{`
                 .status-tag { padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }

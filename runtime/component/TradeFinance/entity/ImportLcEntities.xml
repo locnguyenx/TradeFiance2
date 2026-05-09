@@ -350,6 +350,61 @@
         <alias entity-alias="draweeparty" name="draweeBankPartyId" field="partyId"/>
     </view-entity>
 
+    <view-entity entity-name="ImportLcAmendmentView" package="trade.importlc">
+        <member-entity entity-alias="amd" entity-name="trade.importlc.ImportLcAmendment"/>
+        <member-entity entity-alias="inst" entity-name="trade.TradeInstrument" join-from-alias="amd">
+            <key-map field-name="instrumentId"/>
+        </member-entity>
+        <alias-all entity-alias="amd"/>
+        <alias-all entity-alias="inst">
+            <exclude field="instrumentId"/>
+        </alias-all>
+    </view-entity>
+
+    <view-entity entity-name="ImportLcInternalAmendmentView" package="trade.importlc">
+        <member-entity entity-alias="amd" entity-name="trade.importlc.ImportLcInternalAmendment"/>
+        <member-entity entity-alias="inst" entity-name="trade.TradeInstrument" join-from-alias="amd">
+            <key-map field-name="instrumentId"/>
+        </member-entity>
+        <alias-all entity-alias="amd"/>
+        <alias-all entity-alias="inst">
+            <exclude field="instrumentId"/>
+        </alias-all>
+    </view-entity>
+
+    <view-entity entity-name="TradeDocumentPresentationView" package="trade.importlc">
+        <member-entity entity-alias="pres" entity-name="trade.importlc.TradeDocumentPresentation"/>
+        <member-entity entity-alias="inst" entity-name="trade.TradeInstrument" join-from-alias="pres">
+            <key-map field-name="instrumentId"/>
+        </member-entity>
+        <alias-all entity-alias="pres"/>
+        <alias-all entity-alias="inst">
+            <exclude field="instrumentId"/>
+        </alias-all>
+    </view-entity>
+
+    <view-entity entity-name="ImportLcSettlementView" package="trade.importlc">
+        <member-entity entity-alias="settl" entity-name="trade.importlc.ImportLcSettlement"/>
+        <member-entity entity-alias="inst" entity-name="trade.TradeInstrument" join-from-alias="settl">
+            <key-map field-name="instrumentId"/>
+        </member-entity>
+        <alias-all entity-alias="settl"/>
+        <alias-all entity-alias="inst">
+            <exclude field="instrumentId"/>
+        </alias-all>
+    </view-entity>
+
+    <view-entity entity-name="ImportLcShippingGuaranteeView" package="trade.importlc">
+        <member-entity entity-alias="sg" entity-name="trade.importlc.ImportLcShippingGuarantee"/>
+        <member-entity entity-alias="inst" entity-name="trade.TradeInstrument" join-from-alias="sg">
+            <key-map field-name="instrumentId"/>
+        </member-entity>
+        <alias-all entity-alias="sg"/>
+        <alias-all entity-alias="inst">
+            <exclude field="instrumentId"/>
+        </alias-all>
+    </view-entity>
+
     <entity entity-name="DummyTestEntity" package="trade.importlc">
         <field name="dummyId" type="id" is-pk="true"/>
     </entity>
