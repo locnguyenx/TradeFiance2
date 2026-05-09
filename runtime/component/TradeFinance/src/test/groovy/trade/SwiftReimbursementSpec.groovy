@@ -39,7 +39,7 @@ class SwiftReimbursementSpec extends Specification {
         // Create reimbursing bank party
         ec.service.sync().name("create#trade.TradeParty").parameters([
             partyId: "RBANK_" + testId, partyName: "CITIBANK NEW YORK " + testId,
-            partyTypeEnumId: "TP_TYPE_BANK"
+            partyTypeEnumId: "PARTY_BANK"
         ]).call()
         ec.service.sync().name("create#trade.TradePartyBank").parameters([
             partyId: "RBANK_" + testId, swiftBic: "CITIUS33",
@@ -53,7 +53,7 @@ class SwiftReimbursementSpec extends Specification {
         // Create advising bank, beneficiary (required for MT 740 tags)
         ec.service.sync().name("create#trade.TradeParty").parameters([
             partyId: "ADVBANK_" + testId, partyName: "HSBC HONG KONG " + testId,
-            partyTypeEnumId: "TP_TYPE_BANK"
+            partyTypeEnumId: "PARTY_BANK"
         ]).call()
         ec.service.sync().name("create#trade.TradePartyBank").parameters([
             partyId: "ADVBANK_" + testId, swiftBic: "HSBCHKHH"

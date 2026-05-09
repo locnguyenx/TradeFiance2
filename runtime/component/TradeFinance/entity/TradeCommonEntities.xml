@@ -4,20 +4,20 @@
           xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/entity-definition-3.0.xsd">
 
 
-    <entity entity-name="TradeInstrument" package="trade">
+    <entity entity-name="TradeInstrument" package="trade" short-alias="tradeInstruments" optimistic-lock="true">
         <field name="instrumentId" type="id" is-pk="true"/>
         <field name="instrumentRef" type="text-short"/>
 
-        <field name="businessStateId" type="id"/>
+        <field name="businessStateId" type="id" enable-audit-log="true"/>
         <field name="previousBusinessStateId" type="id"/>
         <field name="instrumentTypeEnumId" type="id"/>
         <field name="productEnumId" type="id"/>
-        <field name="amount" type="number-decimal"/>
+        <field name="amount" type="number-decimal" enable-audit-log="update"/>
         <field name="currencyUomId" type="id"/>
-        <field name="outstandingAmount" type="number-decimal"/>
+        <field name="outstandingAmount" type="number-decimal" enable-audit-log="update"/>
         <field name="baseEquivalentAmount" type="number-decimal"/>
         <field name="issueDate" type="date"/>
-        <field name="expiryDate" type="date"/>
+        <field name="expiryDate" type="date" enable-audit-log="update"/>
         <field name="customerFacilityId" type="id"/>
         
         <field name="preAdviceRef" type="text-short"/> <!-- Tag 23: max 16, X charset, slash rules -->
@@ -28,12 +28,51 @@
         <field name="latestTransactionId" type="id"/>
         <field name="versionNumber" type="number-integer" default="1"/>
         
-        <relationship type="one" related="trade.TradeTransaction">
+        <relationship type="one" title="TradeLcBusinessState" related="moqui.basic.StatusItem" short-alias="businessState">
+            <key-map field-name="businessStateId"/>
+        </relationship>
+        <relationship type="one-nofk" title="PreviousBusinessState" related="moqui.basic.StatusItem" short-alias="previousState">
+            <key-map field-name="previousBusinessStateId" related="statusId"/>
+        </relationship>
+        <relationship type="one" title="TradeInstrumentType" related="moqui.basic.Enumeration" short-alias="instrumentType">
+            <key-map field-name="instrumentTypeEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" title="TradeProductType" related="moqui.basic.Enumeration" short-alias="productType">
+            <key-map field-name="productEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" title="Currency" related="moqui.basic.Uom" short-alias="currencyUom">
+            <key-map field-name="currencyUomId" related="uomId"/>
+        </relationship>
+        <relationship type="one" related="trade.CustomerFacility" short-alias="facility">
+            <key-map field-name="customerFacilityId" related="facilityId"/>
+        </relationship>
+        <relationship type="one-nofk" title="Maker" related="moqui.security.UserAccount" short-alias="maker">
+            <key-map field-name="makerUserId" related="userId"/>
+        </relationship>
+        <relationship type="one" title="TradePriority" related="moqui.basic.Enumeration" short-alias="priority">
+            <key-map field-name="priorityEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" related="trade.TradeTransaction" short-alias="latestTransaction">
             <key-map field-name="latestTransactionId" related="transactionId"/>
         </relationship>
+        <relationship type="many" related="trade.TradeInstrumentParty" short-alias="parties">
+            <key-map field-name="instrumentId"/>
+        </relationship>
+        <relationship type="many" related="trade.TradeTransaction" short-alias="transactions">
+            <key-map field-name="instrumentId"/>
+        </relationship>
+
+        <master>
+            <detail relationship="businessState"/>
+            <detail relationship="instrumentType"/>
+            <detail relationship="currencyUom"/>
+            <detail relationship="facility"/>
+            <detail relationship="priority"/>
+            <detail relationship="parties"><detail relationship="party"/></detail>
+        </master>
     </entity>
 
-    <entity entity-name="CustomerFacility" package="trade">
+    <entity entity-name="CustomerFacility" package="trade" short-alias="customerFacilities">
         <field name="facilityId" type="id" is-pk="true"/>
         <field name="ownerPartyId" type="id"/>
         <field name="description" type="text-medium"/>
@@ -41,6 +80,13 @@
         <field name="utilizedAmount" type="number-decimal"/>
         <field name="currencyUomId" type="id"/>
         <field name="facilityExpiryDate" type="date"/>
+
+        <relationship type="one" title="Owner" related="trade.TradeParty" short-alias="owner">
+            <key-map field-name="ownerPartyId" related="partyId"/>
+        </relationship>
+        <relationship type="one" title="Currency" related="moqui.basic.Uom" short-alias="currencyUom">
+            <key-map field-name="currencyUomId" related="uomId"/>
+        </relationship>
     </entity>
 
     <entity entity-name="TradeTransactionAudit" package="trade">
@@ -56,13 +102,30 @@
         <field name="newValue" type="text-long"/>
         <field name="justificationRootText" type="text-long"/>
         <field name="snapshotDeltaJSON" type="text-very-long"/>
+
+        <relationship type="one-nofk" related="moqui.security.UserAccount" short-alias="user">
+            <key-map field-name="userId"/>
+        </relationship>
+        <relationship type="one" title="TradeLaunchAction" related="moqui.basic.Enumeration" short-alias="action">
+            <key-map field-name="actionEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" related="trade.TradeTransaction" short-alias="transaction">
+            <key-map field-name="transactionId"/>
+        </relationship>
+        <relationship type="one" related="trade.TradeInstrument" short-alias="instrument">
+            <key-map field-name="instrumentId"/>
+        </relationship>
     </entity>
 
-    <entity entity-name="TradeStandardClause" package="trade.common">
+    <entity entity-name="TradeStandardClause" package="trade.common" cache="true">
         <field name="clauseId" type="id" is-pk="true"/>
         <field name="clauseTypeEnumId" type="id"/>
         <field name="clauseName" type="text-medium"/>
         <field name="clauseText" type="text-very-long"/>
+
+        <relationship type="one-nofk" title="ClauseType" related="moqui.basic.Enumeration" short-alias="clauseType">
+            <key-map field-name="clauseTypeEnumId" related="enumId"/>
+        </relationship>
     </entity>
 
     <entity entity-name="TradeConfig" package="trade.common">
@@ -80,9 +143,9 @@
         <field name="deltaJson" type="text-very-long"/>
         <field name="transactionRef" type="text-medium"/>
     </entity>
-    <entity entity-name="TradeParty" package="trade">
+    <entity entity-name="TradeParty" package="trade" short-alias="tradeParties">
         <field name="partyId" type="id" is-pk="true"/>
-        <field name="partyTypeEnumId" type="id"/> <!-- PARTY_COMMERCIAL or PARTY_BANK -->
+        <field name="partyTypeEnumId" type="id" enable-audit-log="true"/> <!-- PARTY_COMMERCIAL or PARTY_BANK -->
         <field name="partyName" type="text-medium"/>
         <field name="accountNumber" type="text-short"/> <!-- IBAN or domestic account. See requirements §accountNumber -->
         <field name="registeredAddress" type="text-long"/> <!-- 4x35 SWIFT format -->
@@ -90,9 +153,16 @@
         <field name="kycExpiryDate" type="date"/>
         <field name="sanctionsStatus" type="text-short"/> <!-- SANCTION_CLEAR, SANCTION_PENDING, SANCTION_BLOCKED -->
         <field name="countryOfRisk" type="id"/> <!-- ISO Country Code -->
+
+        <relationship type="one" title="TradePartyType" related="moqui.basic.Enumeration" short-alias="partyType">
+            <key-map field-name="partyTypeEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one-nofk" title="CountryOfRisk" related="moqui.basic.Geo" short-alias="country">
+            <key-map field-name="countryOfRisk" related="geoId"/>
+        </relationship>
     </entity>
 
-    <entity entity-name="TradePartyBank" package="trade">
+    <entity entity-name="TradePartyBank" package="trade" short-alias="tradePartyBanks">
         <field name="partyId" type="id" is-pk="true"/>
         <field name="swiftBic" type="text-short"/> <!-- Valid 8/11 char SWIFT BIC -->
         <field name="clearingCode" type="text-short"/> <!-- National routing code for Option C -->
@@ -100,8 +170,12 @@
         <field name="nostroAccountRef" type="text-medium"/> <!-- Our Nostro account at this bank -->
         <field name="fiLimitAvailable" type="number-decimal"/>
         <field name="fiLimitCurrencyUomId" type="id"/>
-        <relationship type="one" related="trade.TradeParty">
+
+        <relationship type="one" related="trade.TradeParty" short-alias="party">
             <key-map field-name="partyId"/>
+        </relationship>
+        <relationship type="one" title="Currency" related="moqui.basic.Uom" short-alias="limitCurrency">
+            <key-map field-name="fiLimitCurrencyUomId" related="uomId"/>
         </relationship>
     </entity>
 
@@ -120,10 +194,14 @@
         <field name="instrumentId" type="id" is-pk="true"/>
         <field name="roleEnumId" type="id" is-pk="true"/>
         <field name="partyId" type="id"/>
-        <relationship type="one" related="trade.TradeInstrument">
+
+        <relationship type="one" related="trade.TradeInstrument" short-alias="instrument">
             <key-map field-name="instrumentId"/>
         </relationship>
-        <relationship type="one" related="trade.TradeParty">
+        <relationship type="one" title="TradePartyRole" related="moqui.basic.Enumeration" short-alias="role">
+            <key-map field-name="roleEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" related="trade.TradeParty" short-alias="party">
             <key-map field-name="partyId"/>
         </relationship>
     </entity>
@@ -145,7 +223,7 @@
         </alias-all>
     </view-entity>
 
-    <entity entity-name="FeeConfiguration" package="trade">
+    <entity entity-name="FeeConfiguration" package="trade" short-alias="feeConfigurations">
         <field name="feeConfigurationId" type="id" is-pk="true"/>
         <field name="feeEventEnumId" type="id"/> <!-- ISSUANCE_FEE, AMENDMENT_FEE, etc. -->
         <field name="calculationTypeEnumId" type="id"/> <!-- FLAT, PERCENTAGE, TIERED -->
@@ -158,20 +236,36 @@
         <field name="frequencyEnumId" type="id"/> <!-- ONCE, MONTHLY, QUARTERLY -->
         <field name="effectiveDate" type="date"/>
         <field name="partyId" type="id"/> <!-- Customer-specific override (null = standard rate) -->
-        <field name="statusId" type="id" default="'FEE_ACTIVE'"/> <!-- FEE_DRAFT, FEE_ACTIVE -->
+        <field name="statusId" type="id" default="'FEE_ACTIVE'" enable-audit-log="true"/> <!-- FEE_DRAFT, FEE_ACTIVE -->
         <field name="isActive" type="text-indicator" default="'Y'"/>
-        <relationship type="one" related-entity-name="mantle.party.Party">
+
+        <relationship type="one" title="TradeFeeType" related="moqui.basic.Enumeration" short-alias="feeEvent">
+            <key-map field-name="feeEventEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" title="TradeFeeCalcMethod" related="moqui.basic.Enumeration" short-alias="calcMethod">
+            <key-map field-name="calculationTypeEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" title="Currency" related="moqui.basic.Uom" short-alias="currencyUom">
+            <key-map field-name="currencyUomId" related="uomId"/>
+        </relationship>
+        <relationship type="one" title="TradeFeeFrequency" related="moqui.basic.Enumeration" short-alias="frequency">
+            <key-map field-name="frequencyEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" title="TradeFeeStatus" related="moqui.basic.StatusItem" short-alias="status">
+            <key-map field-name="statusId"/>
+        </relationship>
+        <relationship type="one" related="trade.TradeParty" short-alias="party">
             <key-map field-name="partyId"/>
         </relationship>
     </entity>
 
-    <entity entity-name="TradeProductCatalog" package="trade">
+    <entity entity-name="TradeProductCatalog" package="trade" short-alias="tradeProductCatalogs" cache="true">
         <field name="productId" type="id" is-pk="true"/>
         <field name="productTypeEnumId" type="id"/> <!-- IMP_LC, EXP_LC, etc. -->
         <field name="productName" type="text-medium"/>
         <field name="productDescription" type="text-long"/>
         <field name="isActive" type="text-indicator" default="'Y'"/>
-        <field name="statusId" type="id" default="'PROD_ACTIVE'"/>
+        <field name="statusId" type="id" default="'PROD_ACTIVE'" enable-audit-log="true"/>
         <!-- Common Constraints -->
         <field name="allowedTenorEnumId" type="id"/>
         <field name="maxToleranceLimit" type="number-integer"/> <!-- Percentage e.g. 10 for 10% -->
@@ -184,9 +278,25 @@
         <field name="mandatoryMarginPercent" type="number-integer"/>
         <field name="documentExamSlaDays" type="number-integer" default="5"/>
         <field name="defaultSwiftFormatEnumId" type="id"/>
+
+        <relationship type="one" title="TradeProductType" related="moqui.basic.Enumeration" short-alias="productType">
+            <key-map field-name="productTypeEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" title="TradeProductStatus" related="moqui.basic.StatusItem" short-alias="status">
+            <key-map field-name="statusId"/>
+        </relationship>
+        <relationship type="one-nofk" title="AllowedTenor" related="moqui.basic.Enumeration" short-alias="allowedTenor">
+            <key-map field-name="allowedTenorEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one-nofk" title="AccountingFramework" related="moqui.basic.Enumeration" short-alias="accountingFramework">
+            <key-map field-name="accountingFrameworkEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one-nofk" title="DefaultSwiftFormat" related="moqui.basic.Enumeration" short-alias="defaultSwiftFormat">
+            <key-map field-name="defaultSwiftFormatEnumId" related="enumId"/>
+        </relationship>
     </entity>
 
-    <entity entity-name="UserAuthorityProfile" package="trade">
+    <entity entity-name="UserAuthorityProfile" package="trade" short-alias="userAuthorityProfiles">
         <field name="userAuthorityId" type="id" is-pk="true"/>
         <field name="userId" type="id"/>
         <field name="makerCheckerFlag" type="id" default="'MAKER_CHECKER'"/> <!-- MAKER, CHECKER, DUAL -->
@@ -195,6 +305,19 @@
         <field name="currencyUomId" type="id"/>
         <field name="branchAccessList" type="text-long"/> <!-- JSON or CSV of allowed branch IDs -->
         <field name="isSuspended" type="text-indicator" default="'N'"/>
+
+        <relationship type="one-nofk" related="moqui.security.UserAccount" short-alias="user">
+            <key-map field-name="userId"/>
+        </relationship>
+        <relationship type="one" title="TradeMakerCheckerFlag" related="moqui.basic.Enumeration" short-alias="makerCheckerType">
+            <key-map field-name="makerCheckerFlag" related="enumId"/>
+        </relationship>
+        <relationship type="one" title="TradeAuthorityTier" related="moqui.basic.Enumeration" short-alias="delegationTier">
+            <key-map field-name="delegationTierId" related="enumId"/>
+        </relationship>
+        <relationship type="one" title="Currency" related="moqui.basic.Uom" short-alias="currencyUom">
+            <key-map field-name="currencyUomId" related="uomId"/>
+        </relationship>
     </entity>
 
     <entity entity-name="TradeApprovalRecord" package="trade">
@@ -206,11 +329,15 @@
         <field name="approvalComments" type="text-long"/>
         <field name="versionSnapshot" type="number-integer"/>
         <field name="approvalDecision" type="id"/>
-        <relationship type="one" related="trade.TradeTransaction" title="Transaction">
+
+        <relationship type="one" related="trade.TradeTransaction" short-alias="transaction">
             <key-map field-name="transactionId"/>
         </relationship>
-        <relationship type="one" related="trade.TradeInstrument" title="Instrument">
+        <relationship type="one" related="trade.TradeInstrument" short-alias="instrument">
             <key-map field-name="instrumentId"/>
+        </relationship>
+        <relationship type="one-nofk" title="Approver" related="moqui.security.UserAccount" short-alias="approver">
+            <key-map field-name="approverUserId" related="userId"/>
         </relationship>
     </entity>
 
@@ -220,13 +347,12 @@
         <field name="lastNumber" type="number-integer" default="0"/>
         <field name="description" type="text-medium"/>
     </entity>
-
-    <entity entity-name="TradeTransaction" package="trade">
+    <entity entity-name="TradeTransaction" package="trade" short-alias="tradeTransactions">
         <field name="transactionId" type="id" is-pk="true"/>
         <field name="instrumentId" type="id"/>
         <field name="transactionRef" type="text-short"/>
         <field name="transactionTypeEnumId" type="id"/>
-        <field name="transactionStatusId" type="id"/>
+        <field name="transactionStatusId" type="id" enable-audit-log="true"/>
         <field name="transactionDate" type="date"/>
         
         <!-- Maker Info -->
@@ -247,14 +373,25 @@
         <field name="relatedRecordId" type="id"/>
         <field name="relatedRecordType" type="id"/>
         
-        <relationship type="one" related="trade.TradeInstrument">
+        <relationship type="one" related="trade.TradeInstrument" short-alias="instrument">
             <key-map field-name="instrumentId"/>
         </relationship>
-
-        <seed-data>
-            <!-- No seed data needed for sync, but hook for future -->
-        </seed-data>
-    </entity>
+        <relationship type="one" title="TradeTransactionType" related="moqui.basic.Enumeration" short-alias="transactionType">
+            <key-map field-name="transactionTypeEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" title="TradeTransactionStatus" related="moqui.basic.StatusItem" short-alias="transactionStatus">
+            <key-map field-name="transactionStatusId"/>
+        </relationship>
+        <relationship type="one-nofk" title="Maker" related="moqui.security.UserAccount" short-alias="maker">
+            <key-map field-name="makerUserId" related="userId"/>
+        </relationship>
+        <relationship type="one-nofk" title="Checker" related="moqui.security.UserAccount" short-alias="checker">
+            <key-map field-name="checkerUserId" related="userId"/>
+        </relationship>
+        <relationship type="one" title="TradePriority" related="moqui.basic.Enumeration" short-alias="priority">
+            <key-map field-name="priorityEnumId" related="enumId"/>
+        </relationship>
+    </entity>>
 
     <entity entity-name="PublicHoliday" package="trade">
         <field name="holidayDate" type="date" is-pk="true"/>

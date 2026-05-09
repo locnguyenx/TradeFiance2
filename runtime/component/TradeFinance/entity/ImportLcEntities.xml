@@ -3,9 +3,9 @@
 <entities xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/entity-definition-3.0.xsd">
 
-    <entity entity-name="ImportLetterOfCredit" package="trade.importlc">
+    <entity entity-name="ImportLetterOfCredit" package="trade.importlc" short-alias="importLcs" optimistic-lock="true">
         <field name="instrumentId" type="id" is-pk="true"/>
-        <field name="businessStateId" type="id" default="'LC_DRAFT'"/>
+        <field name="businessStateId" type="id" default="'LC_DRAFT'" enable-audit-log="true"/>
         <field name="tolerancePositive" type="number-decimal"/>
         <field name="toleranceNegative" type="number-decimal"/>
         <field name="tenorTypeId" type="id"/>
@@ -26,17 +26,17 @@
         <field name="lcTypeEnumId" type="id"/>
         <field name="availableByEnumId" type="id"/> <!-- Tag 41a Payment Method (BY_PAYMENT, BY_NEGOTIATION, etc.) -->
         <field name="availableWithEnumId" type="id"/> <!-- Tag 41a/d: AVAIL_ANY_BANK (Tag 41D) or AVAIL_SPECIFIC_BANK (Tag 41A). 
-                                                           If SPECIFIC, requires BIC via role TP_NEGOTIATING_BANK. -->
+                                                            If SPECIFIC, requires BIC via role TP_NEGOTIATING_BANK. -->
         <field name="productCatalogId" type="id"/>
 
         <!-- Effective Values (Snapshot vs Last Effective Pattern) -->
-        <field name="effectiveAmount" type="number-decimal"/>
+        <field name="effectiveAmount" type="number-decimal" enable-audit-log="update"/>
         <field name="effectiveCurrencyUomId" type="id"/>
-        <field name="effectiveExpiryDate" type="date"/>
-        <field name="effectiveShipmentDate" type="date"/>
+        <field name="effectiveExpiryDate" type="date" enable-audit-log="update"/>
+        <field name="effectiveShipmentDate" type="date" enable-audit-log="update"/>
         <field name="effectiveTolerancePositive" type="number-decimal"/>
         <field name="effectiveToleranceNegative" type="number-decimal"/>
-        <field name="effectiveOutstandingAmount" type="number-decimal"/>
+        <field name="effectiveOutstandingAmount" type="number-decimal" enable-audit-log="update"/>
         <field name="isRevolving" type="text-indicator" default="'N'"/>
         <field name="cumulativeDrawnAmount" type="number-decimal" default="0"/>
         <field name="totalAmendmentCount" type="number-integer" default="0"/>
@@ -62,19 +62,65 @@
         <field name="reimbursingChargesEnumId" type="id"/> <!-- Tag 71D (MT740): REIMB_OUR, REIMB_BEN -->
         <field name="applicableReimbRulesText" type="text-medium"/> <!-- Tag 40F (MT740): default URR LATEST VERSION -->
 
-        
         <field name="marginType" type="id"/>
         <field name="marginPercentage" type="number-decimal"/>
         <field name="marginAmount" type="number-decimal"/>
         <field name="marginDebitAccount" type="text-medium"/>
         <field name="feeDebitAccountId" type="text-medium"/>
 
-        <relationship type="one" related="trade.TradeInstrument">
+        <relationship type="one" related="trade.TradeInstrument" short-alias="instrument">
             <key-map field-name="instrumentId"/>
         </relationship>
-        <relationship type="one" related="trade.TradeProductCatalog">
+        <relationship type="one" title="TradeLcBusinessState" related="moqui.basic.StatusItem" short-alias="businessState">
+            <key-map field-name="businessStateId"/>
+        </relationship>
+        <relationship type="one" title="TradeTenorType" related="moqui.basic.Enumeration" short-alias="tenorType">
+            <key-map field-name="tenorTypeId" related="enumId"/>
+        </relationship>
+        <relationship type="one" title="TradeChargeAllocation" related="moqui.basic.Enumeration" short-alias="chargeAllocation">
+            <key-map field-name="chargeAllocationEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" title="TradeShipmentType" related="moqui.basic.Enumeration" short-alias="partialShipment">
+            <key-map field-name="partialShipmentEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" title="TradeShipmentType" related="moqui.basic.Enumeration" short-alias="transhipment">
+            <key-map field-name="transhipmentEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" title="TradeConfirmationType" related="moqui.basic.Enumeration" short-alias="confirmation">
+            <key-map field-name="confirmationEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" title="TradeLcType" related="moqui.basic.Enumeration" short-alias="lcType">
+            <key-map field-name="lcTypeEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" title="TradeLcPayMethod" related="moqui.basic.Enumeration" short-alias="availableBy">
+            <key-map field-name="availableByEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" title="TradeLcAvailWith" related="moqui.basic.Enumeration" short-alias="availableWith">
+            <key-map field-name="availableWithEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" related="trade.TradeProductCatalog" short-alias="productCatalog">
             <key-map field-name="productCatalogId" related="productId"/>
         </relationship>
+        <relationship type="one" title="Currency" related="moqui.basic.Uom" short-alias="effectiveCurrency">
+            <key-map field-name="effectiveCurrencyUomId" related="uomId"/>
+        </relationship>
+        <relationship type="one" title="TradeApplicableRules" related="moqui.basic.Enumeration" short-alias="applicableRules">
+            <key-map field-name="applicableRulesEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" title="TradeReimbCharges" related="moqui.basic.Enumeration" short-alias="reimbursingCharges">
+            <key-map field-name="reimbursingChargesEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" title="TradeMarginType" related="moqui.basic.Enumeration" short-alias="marginTypeEnum">
+            <key-map field-name="marginType" related="enumId"/>
+        </relationship>
+
+        <master>
+            <detail relationship="instrument"/>
+            <detail relationship="businessState"/>
+            <detail relationship="tenorType"/>
+            <detail relationship="productCatalog"/>
+            <detail relationship="effectiveCurrency"/>
+        </master>
     </entity>
 
     <entity entity-name="SwiftMessage" package="trade.importlc">
@@ -85,8 +131,11 @@
         <field name="generatedDate" type="date-time" default="ec.user.nowTimestamp"/>
         <field name="messageStatusId" type="id"/> <!-- SWIFT_MSG_DRAFT or SWIFT_MSG_ACTIVE -->
         
-        <relationship type="one" related="trade.TradeInstrument">
+        <relationship type="one" related="trade.TradeInstrument" short-alias="instrument">
             <key-map field-name="instrumentId"/>
+        </relationship>
+        <relationship type="one" title="TradeSwiftStatus" related="moqui.basic.StatusItem" short-alias="status">
+            <key-map field-name="messageStatusId"/>
         </relationship>
     </entity>
 
@@ -97,25 +146,27 @@
         <field name="liabilityMultiplierRequired" type="number-integer" default="110"/> <!-- 110% per BRD -->
         <field name="earmarkAmount" type="number-decimal"/>
         <field name="transportDocReference" type="text-medium"/>
-        <field name="guaranteeStatusId" type="id"/>
-        <field name="sgStatusId" type="id"/>
+        <field name="sgStatusId" type="id" enable-audit-log="true"/>
         <field name="waiverLockFlag" type="text-indicator" default="'Y'"/>
         <field name="redemptionDate" type="date"/>
         <field name="issuanceFee" type="number-decimal"/>
         
-        <relationship type="one" related="trade.importlc.ImportLetterOfCredit">
+        <relationship type="one" related="trade.importlc.ImportLetterOfCredit" short-alias="importLc">
             <key-map field-name="instrumentId"/>
+        </relationship>
+        <relationship type="one" title="TradeSgStatus" related="moqui.basic.StatusItem" short-alias="status">
+            <key-map field-name="sgStatusId" related="statusId"/>
         </relationship>
     </entity>
 
-    <entity entity-name="TradeDocumentPresentation" package="trade.importlc">
+    <entity entity-name="TradeDocumentPresentation" package="trade.importlc" short-alias="presentations">
         <field name="presentationId" type="id" is-pk="true"/>
         <field name="instrumentId" type="id"/>
         <field name="presentationDate" type="date" default="ec.user.nowTimestamp"/>
         <field name="claimAmount" type="number-decimal"/>
         <field name="isDiscrepant" type="text-indicator"/>
         <field name="applicantDecisionEnumId" type="id"/> <!-- PENDING, WAIVED, REFUSED -->
-        <field name="presentationStatusId" type="id"/>
+        <field name="presentationStatusId" type="id" enable-audit-log="true"/>
         <field name="presentingBankRef" type="text-medium"/>
         <field name="claimCurrency" type="id"/>
         <field name="regulatoryDeadline" type="date"/>
@@ -123,8 +174,26 @@
         <field name="chargesDeducted" type="text-long"/> <!-- Tag 73 -->
         <field name="senderToReceiverPresentationInfo" type="text-long"/> <!-- Tag 72Z -->
         
-        <relationship type="one" related="trade.importlc.ImportLetterOfCredit">
+        <relationship type="one" related="trade.importlc.ImportLetterOfCredit" short-alias="importLc">
             <key-map field-name="instrumentId"/>
+        </relationship>
+        <relationship type="one" title="TradePresentationStatus" related="moqui.basic.StatusItem" short-alias="status">
+            <key-map field-name="presentationStatusId"/>
+        </relationship>
+        <relationship type="one" title="TradeBeneDecision" related="moqui.basic.Enumeration" short-alias="applicantDecision">
+            <key-map field-name="applicantDecisionEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" title="Currency" related="moqui.basic.Uom" short-alias="claimCurrencyUom">
+            <key-map field-name="claimCurrency" related="uomId"/>
+        </relationship>
+        <relationship type="one" title="TradeDocDisposal" related="moqui.basic.Enumeration" short-alias="disposal">
+            <key-map field-name="documentDisposalEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="many" related="trade.importlc.TradeDocumentPresentationItem" short-alias="items">
+            <key-map field-name="presentationId"/>
+        </relationship>
+        <relationship type="many" related="trade.importlc.PresentationDiscrepancy" short-alias="discrepancies">
+            <key-map field-name="presentationId"/>
         </relationship>
     </entity>
 
@@ -134,12 +203,15 @@
         <field name="originalsCount" type="number-integer"/>
         <field name="copiesCount" type="number-integer"/>
         
-        <relationship type="one" related="trade.importlc.TradeDocumentPresentation">
+        <relationship type="one" related="trade.importlc.TradeDocumentPresentation" short-alias="presentation">
             <key-map field-name="presentationId"/>
+        </relationship>
+        <relationship type="one" title="TradeDocumentType" related="moqui.basic.Enumeration" short-alias="documentType">
+            <key-map field-name="documentTypeEnumId" related="enumId"/>
         </relationship>
     </entity>
 
-    <entity entity-name="ImportLcAmendment" package="trade.importlc">
+    <entity entity-name="ImportLcAmendment" package="trade.importlc" short-alias="amendments">
         <field name="amendmentId" type="id" is-pk="true"/>
         <field name="instrumentId" type="id"/>
         <field name="amendmentDate" type="date" default="ec.user.nowTimestamp"/>
@@ -184,8 +256,8 @@
         <field name="newBankToBankInstructions" type="text-very-long"/>
         <field name="senderToReceiverInfo" type="text-very-long"/>
         
-        <field name="beneficiaryConsentStatusId" type="id"/> <!-- PENDING, ACCEPTED, REJECTED -->
-        <field name="amendmentBusinessStateId" type="id"/>
+        <field name="beneficiaryConsentStatusId" type="id" enable-audit-log="true"/> <!-- PENDING, ACCEPTED, REJECTED -->
+        <field name="amendmentBusinessStateId" type="id" enable-audit-log="true"/>
         <field name="amendmentTypeEnumId" type="id"/>
         <field name="amendmentNumber" type="number-integer"/>
         <field name="newTolerance" type="number-decimal"/>
@@ -194,9 +266,47 @@
         <field name="isCancellationRequest" type="text-indicator" default="'N'"/> <!-- Tag 23S: Y triggers CANCEL -->
         <field name="newAuthExpiryDate" type="date"/> <!-- Tag 31E (MT747): New reimbursement expiry -->
 
-        
-        <relationship type="one" related="trade.importlc.ImportLetterOfCredit">
+        <relationship type="one" related="trade.importlc.ImportLetterOfCredit" short-alias="importLc">
             <key-map field-name="instrumentId"/>
+        </relationship>
+        <relationship type="one" title="TradeBeneDecision" related="moqui.basic.Enumeration" short-alias="beneficiaryDecision">
+            <key-map field-name="beneficiaryDecisionEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" title="TradeAmendmentAction" related="moqui.basic.Enumeration" short-alias="goodsAction">
+            <key-map field-name="goodsActionEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" title="TradeAmendmentAction" related="moqui.basic.Enumeration" short-alias="docsAction">
+            <key-map field-name="docsActionEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" title="TradeAmendmentAction" related="moqui.basic.Enumeration" short-alias="conditionsAction">
+            <key-map field-name="conditionsActionEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" related="trade.TradeParty" short-alias="newBeneficiary">
+            <key-map field-name="newBeneficiaryPartyId" related="partyId"/>
+        </relationship>
+        <relationship type="one" title="TradeTenorType" related="moqui.basic.Enumeration" short-alias="newTenorType">
+            <key-map field-name="newTenorTypeEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" title="TradeShipmentType" related="moqui.basic.Enumeration" short-alias="newPartialShipment">
+            <key-map field-name="newPartialShipmentEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" title="TradeShipmentType" related="moqui.basic.Enumeration" short-alias="newTranshipment">
+            <key-map field-name="newTranshipmentEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" title="TradeConfirmationType" related="moqui.basic.Enumeration" short-alias="newConfirmation">
+            <key-map field-name="newConfirmationEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" title="TradeConsentStatus" related="moqui.basic.StatusItem" short-alias="consentStatus">
+            <key-map field-name="beneficiaryConsentStatusId"/>
+        </relationship>
+        <relationship type="one" title="TradeLcBusinessState" related="moqui.basic.StatusItem" short-alias="businessState">
+            <key-map field-name="amendmentBusinessStateId"/>
+        </relationship>
+        <relationship type="one" title="TradeAmendmentType" related="moqui.basic.Enumeration" short-alias="amendmentType">
+            <key-map field-name="amendmentTypeEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" title="TradeChargeAllocation" related="moqui.basic.Enumeration" short-alias="chargeAllocation">
+            <key-map field-name="chargeAllocationEnumId" related="enumId"/>
         </relationship>
     </entity>
 
@@ -215,7 +325,7 @@
         </relationship>
     </entity>
 
-    <entity entity-name="PresentationDiscrepancy" package="trade.importlc">
+    <entity entity-name="PresentationDiscrepancy" package="trade.importlc" short-alias="discrepancies">
         <field name="discrepancyId" type="id" is-pk="true"/>
         <field name="presentationId" type="id"/>
         <field name="discrepancyCode" type="text-short"/> <!-- ISBP standard code -->
@@ -224,12 +334,15 @@
         <field name="waivedByUserId" type="id"/>
         <field name="waivedTimestamp" type="date-time"/>
         
-        <relationship type="one" related="trade.importlc.TradeDocumentPresentation">
+        <relationship type="one" related="trade.importlc.TradeDocumentPresentation" short-alias="presentation">
             <key-map field-name="presentationId"/>
+        </relationship>
+        <relationship type="one-nofk" title="WaivedBy" related="moqui.security.UserAccount" short-alias="waivedBy">
+            <key-map field-name="waivedByUserId" related="userId"/>
         </relationship>
     </entity>
 
-    <entity entity-name="ImportLcSettlement" package="trade.importlc">
+    <entity entity-name="ImportLcSettlement" package="trade.importlc" short-alias="settlements">
         <field name="settlementId" type="id" is-pk="true"/>
         <field name="presentationId" type="id"/>
         <field name="instrumentId" type="id"/>
@@ -245,17 +358,29 @@
         <field name="maturityDate" type="date"/> <!-- For Usance LCs -->
         <field name="settlementTypeEnumId" type="id"/> <!-- SIGHT, DEFERRED, ACCEPTANCE -->
         <field name="forwardContractRef" type="text-medium"/>
-        <field name="settlementStatusId" type="id" default="'SETTLE_PENDING'"/>
+        <field name="settlementStatusId" type="id" default="'SETTLE_PENDING'" enable-audit-log="true"/>
         
-        <relationship type="one" related="trade.importlc.TradeDocumentPresentation">
+        <relationship type="one" related="trade.importlc.TradeDocumentPresentation" short-alias="presentation">
             <key-map field-name="presentationId"/>
         </relationship>
-        <relationship type="one" related="trade.importlc.ImportLetterOfCredit">
+        <relationship type="one" related="trade.importlc.ImportLetterOfCredit" short-alias="importLc">
             <key-map field-name="instrumentId"/>
+        </relationship>
+        <relationship type="one" title="Currency" related="moqui.basic.Uom" short-alias="currencyUom">
+            <key-map field-name="remittanceCurrency" related="uomId"/>
+        </relationship>
+        <relationship type="one" title="TradeChargeDetail" related="moqui.basic.Enumeration" short-alias="chargeDetail">
+            <key-map field-name="chargesDetailEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" title="TradeSettlementType" related="moqui.basic.Enumeration" short-alias="settlementType">
+            <key-map field-name="settlementTypeEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" title="TradeSettlementStatus" related="moqui.basic.StatusItem" short-alias="status">
+            <key-map field-name="settlementStatusId"/>
         </relationship>
     </entity>
 
-    <entity entity-name="NostroReconciliation" package="trade.importlc">
+    <entity entity-name="NostroReconciliation" package="trade.importlc" short-alias="nostroReconciliations">
         <field name="reconciliationId" type="id" is-pk="true"/>
         <field name="instrumentId" type="id"/>
         <field name="reimbursingBankPartyId" type="id"/>
@@ -264,12 +389,25 @@
         <field name="nostroDebitDate" type="date"/>
         <field name="nostroDebitAmount" type="number-decimal"/>
         <field name="nostroStatementRef" type="text-short"/>
-        <field name="matchStatusEnumId" type="id" default="'RECON_PENDING'"/>
+        <field name="matchStatusEnumId" type="id" default="'RECON_PENDING'" enable-audit-log="true"/>
         <field name="matchedByUserId" type="id"/>
         <field name="matchedDate" type="date"/>
         <field name="remarks" type="text-long"/>
-        <relationship type="one" related="trade.importlc.ImportLetterOfCredit">
+
+        <relationship type="one" related="trade.importlc.ImportLetterOfCredit" short-alias="importLc">
             <key-map field-name="instrumentId"/>
+        </relationship>
+        <relationship type="one" related="trade.TradeParty" short-alias="reimbursingBank">
+            <key-map field-name="reimbursingBankPartyId" related="partyId"/>
+        </relationship>
+        <relationship type="one" title="Currency" related="moqui.basic.Uom" short-alias="currencyUom">
+            <key-map field-name="expectedCurrency" related="uomId"/>
+        </relationship>
+        <relationship type="one" title="TradeReconStatus" related="moqui.basic.Enumeration" short-alias="matchStatus">
+            <key-map field-name="matchStatusEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one-nofk" title="MatchedBy" related="moqui.security.UserAccount" short-alias="matchedBy">
+            <key-map field-name="matchedByUserId" related="userId"/>
         </relationship>
     </entity>
 

@@ -1064,7 +1064,7 @@
                           in-map="[facilityId: instrument.customerFacilityId, amountDelta: earmarkAmount]"/>
             
             <service-call name="create#trade.importlc.ImportLcShippingGuarantee" out-map="sgOut"
-                          in-map="context + [earmarkAmount: earmarkAmount, guaranteeStatusId: 'SG_ISSUED']"/>
+                          in-map="context + [earmarkAmount: earmarkAmount, sgStatusId: 'SG_ISSUED']"/>
             <set field="guaranteeId" from="sgOut.guaranteeId"/>
         </actions>
     </service>

@@ -252,7 +252,7 @@ class ImportLcEntitiesSpec extends Specification {
         ec.service.sync().name("create#trade.importlc.ImportLcShippingGuarantee").parameters([
             guaranteeId: "SG_01",
             instrumentId: "LC-SG-TEST",
-            guaranteeStatusId: "SG_DRAFT",
+            sgStatusId: "SG_DRAFT",
             invoiceAmount: 20000
         ]).call()
         def sg = ec.entity.find("trade.importlc.ImportLcShippingGuarantee")
@@ -260,7 +260,7 @@ class ImportLcEntitiesSpec extends Specification {
 
         then:
         sg != null
-        sg.guaranteeStatusId == "SG_DRAFT"
+        sg.sgStatusId == "SG_DRAFT"
 
         cleanup:
         ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", "LC-SG-TEST").deleteAll()
