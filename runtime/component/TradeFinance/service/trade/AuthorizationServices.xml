@@ -229,13 +229,28 @@
                         ]"/>
                     </if>
                     
+                    <!-- Calculate target state before update -->
+                    <if condition="!targetState">
+                        <if condition="tx.transactionTypeEnumId == 'IMP_NEW'"><set field="targetState" value="LC_ISSUED"/></if>
+                        <if condition="tx.transactionTypeEnumId == 'IMP_AMENDMENT'"><set field="targetState" value="LC_AMENDED"/></if>
+                        <if condition="tx.transactionTypeEnumId == 'IMP_PRESENTATION'"><set field="targetState" value="LC_DOC_RECEIVED"/></if>
+                        <if condition="tx.transactionTypeEnumId == 'IMP_CANCELLATION'"><set field="targetState" value="LC_CANCELLED"/></if>
+                        <!-- Default to current state if unknown -->
+                        <if condition="!targetState"><set field="targetState" from="inst.businessStateId"/></if>
+                    </if>
+
                     <!-- Commit to Master Data -->
                     <service-call name="update#trade.TradeInstrument" in-map="[
                         instrumentId: tx.instrumentId,
-                        businessStateId: 'INST_AUTHORIZED',
+                        businessStateId: targetState,
                         amount: targetAmount,
                         expiryDate: targetExpiry
                     ]"/>
+
+                    <service-call name="create#trade.TradeApprovalRecord"
+                        in-map="[transactionId: transactionId, instrumentId: tx.instrumentId,
+                                 approverUserId: userId, approvalTimestamp: ec.user.nowTimestamp,
+                                 approvalDecision: 'APPROVED', versionSnapshot: tx.versionNumber]"/>
 
                     <service-call name="update#trade.TradeTransaction" in-map="[
                         transactionId: transactionId,
@@ -246,14 +261,6 @@
 
                     <!-- Update Import LC Specifics -->
                     <if condition="lc">
-                        <if condition="!targetState">
-                            <if condition="tx.transactionTypeEnumId == 'IMP_NEW'"><set field="targetState" value="LC_ISSUED"/></if>
-                            <if condition="tx.transactionTypeEnumId == 'IMP_AMENDMENT'"><set field="targetState" value="LC_AMENDED"/></if>
-                            <if condition="tx.transactionTypeEnumId == 'IMP_PRESENTATION'"><set field="targetState" value="LC_DOC_RECEIVED"/></if>
-                            <!-- If still not set, default to current state to avoid accidental transition to LC_ISSUED -->
-                            <if condition="!targetState"><set field="targetState" from="lc.businessStateId"/></if>
-                        </if>
-                        
                         <set field="lcUpdateInMap" from="[instrumentId: tx.instrumentId, businessStateId: targetState, lcAmount: targetAmount, expiryDate: targetExpiry, skipImmutabilityGuard: true, transactionId: transactionId]"/>
                         <if condition="tx.transactionTypeEnumId == 'IMP_AMENDMENT' &amp;&amp; amd">
                             <!-- Narrative merging is handled upon Beneficiary Consent (ACCEPTED) 
@@ -318,7 +325,7 @@
                     makerUserId: tx.makerUserId,
                     baseEquivalentAmount: inst?.baseEquivalentAmount,
                     transactionAmount: transactionAmount,
-                    priorityEnumId: tx.priorityEnumId ?: 'NORMAL',
+                    priorityEnumId: tx.priorityEnumId ?: 'PRIO_NORMAL',
                     transactionStatusId: tx.transactionStatusId,
                     transactionTypeEnumId: tx.transactionTypeEnumId,
                     timeInQueue: '0h'

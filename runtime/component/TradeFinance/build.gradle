@@ -23,6 +23,7 @@ dependencies {
 
 test {
     useJUnitPlatform()
+    maxParallelForks = 1
     testLogging { events "passed", "skipped", "failed" }
     
     systemProperty 'moqui.runtime', projectDir.parentFile.parentFile.absolutePath

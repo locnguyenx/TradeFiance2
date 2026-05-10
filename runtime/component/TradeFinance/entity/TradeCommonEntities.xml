@@ -70,6 +70,20 @@
             <detail relationship="priority"/>
             <detail relationship="parties"><detail relationship="party"/></detail>
         </master>
+        <seed-data>
+            <!-- TradeInstrumentType -->
+            <moqui.basic.EnumerationType enumTypeId="TradeInstrumentType" description="Trade Instrument Types"/>
+            <moqui.basic.Enumeration enumId="IMPORT_LC" enumTypeId="TradeInstrumentType" description="Import Letter of Credit" sequenceNum="1"/>
+            <moqui.basic.Enumeration enumId="EXPORT_LC" enumTypeId="TradeInstrumentType" description="Export Letter of Credit" sequenceNum="2"/>
+            <moqui.basic.Enumeration enumId="SHIPPING_GUARANTEE" enumTypeId="TradeInstrumentType" description="Shipping Guarantee" sequenceNum="3"/>
+            <moqui.basic.Enumeration enumId="BILL_COLLECTION" enumTypeId="TradeInstrumentType" description="Bill Collection" sequenceNum="4"/>
+            <!-- TradePriority -->
+            <moqui.basic.EnumerationType enumTypeId="TradePriority" description="Trade Instrument Priority Levels"/>
+            <moqui.basic.Enumeration enumId="PRIO_URGENT" enumTypeId="TradePriority" description="Urgent (T+0)" sequenceNum="1"/>
+            <moqui.basic.Enumeration enumId="PRIO_HIGH" enumTypeId="TradePriority" description="High (T+1)" sequenceNum="2"/>
+            <moqui.basic.Enumeration enumId="PRIO_NORMAL" enumTypeId="TradePriority" description="Normal (T+2)" sequenceNum="3"/>
+            <moqui.basic.Enumeration enumId="PRIO_LOW" enumTypeId="TradePriority" description="Low (T+3)" sequenceNum="4"/>
+        </seed-data>
     </entity>
 
     <entity entity-name="CustomerFacility" package="trade" short-alias="customerFacilities">
@@ -149,13 +163,19 @@
         <field name="partyName" type="text-medium"/>
         <field name="accountNumber" type="text-short"/> <!-- IBAN or domestic account. See requirements §accountNumber -->
         <field name="registeredAddress" type="text-long"/> <!-- 4x35 SWIFT format -->
-        <field name="kycStatus" type="text-short"/> <!-- Active, Expired -->
+        <field name="kycStatus" type="id"/> <!-- KYC_ACTIVE, KYC_EXPIRED -->
         <field name="kycExpiryDate" type="date"/>
-        <field name="sanctionsStatus" type="text-short"/> <!-- SANCTION_CLEAR, SANCTION_PENDING, SANCTION_BLOCKED -->
+        <field name="sanctionsStatus" type="id"/> <!-- SNC_CLEAR, SNC_PENDING, SNC_BLOCKED -->
         <field name="countryOfRisk" type="id"/> <!-- ISO Country Code -->
 
         <relationship type="one" title="TradePartyType" related="moqui.basic.Enumeration" short-alias="partyType">
             <key-map field-name="partyTypeEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one-nofk" title="TradePartyKycStatus" related="moqui.basic.StatusItem" short-alias="kycStatusItem">
+            <key-map field-name="kycStatus" related="statusId"/>
+        </relationship>
+        <relationship type="one-nofk" title="TradePartySanctionsStatus" related="moqui.basic.StatusItem" short-alias="sanctionsStatusItem">
+            <key-map field-name="sanctionsStatus" related="statusId"/>
         </relationship>
         <relationship type="one-nofk" title="CountryOfRisk" related="moqui.basic.Geo" short-alias="country">
             <key-map field-name="countryOfRisk" related="geoId"/>
@@ -166,7 +186,7 @@
         <field name="partyId" type="id" is-pk="true"/>
         <field name="swiftBic" type="text-short"/> <!-- Valid 8/11 char SWIFT BIC -->
         <field name="clearingCode" type="text-short"/> <!-- National routing code for Option C -->
-        <field name="hasActiveRMA" type="text-indicator"/> <!-- Y/N -->
+        <field name="hasActiveRMA" type="text-indicator" column-name="HAS_ACTIVE_RMA"/> <!-- Y/N -->
         <field name="nostroAccountRef" type="text-medium"/> <!-- Our Nostro account at this bank -->
         <field name="fiLimitAvailable" type="number-decimal"/>
         <field name="fiLimitCurrencyUomId" type="id"/>
@@ -204,6 +224,26 @@
         <relationship type="one" related="trade.TradeParty" short-alias="party">
             <key-map field-name="partyId"/>
         </relationship>
+        <seed-data>
+        <!-- TradePartyRole -->
+            <moqui.basic.EnumerationType enumTypeId="TradePartyRole" description="Trade Party Roles"/>
+            <moqui.basic.Enumeration enumId="TP_APPLICANT" enumTypeId="TradePartyRole" description="Applicant"/>
+            <moqui.basic.Enumeration enumId="TP_BENEFICIARY" enumTypeId="TradePartyRole" description="Beneficiary"/>
+            <moqui.basic.Enumeration enumId="TP_ADVISING_BANK" enumTypeId="TradePartyRole" description="Advising Bank"/>
+            <moqui.basic.Enumeration enumId="TP_NEGOTIATING_BANK" enumTypeId="TradePartyRole" description="Negotiating Bank"/>
+            <moqui.basic.Enumeration enumId="TP_DRAWEE" enumTypeId="TradePartyRole" description="Drawee"/>
+            <moqui.basic.Enumeration enumId="TP_ISSUING_BANK" enumTypeId="TradePartyRole" description="Issuing Bank"/>
+            <moqui.basic.Enumeration enumId="TP_CONFIRMING_BANK" enumTypeId="TradePartyRole" description="Confirming Bank"/>
+            <moqui.basic.Enumeration enumId="TP_REIMBURSING_BANK" enumTypeId="TradePartyRole" description="Reimbursing Bank"/>
+            <moqui.basic.Enumeration enumId="TP_APPLICANT_BANK" enumTypeId="TradePartyRole" description="Applicant Bank"/>
+            <moqui.basic.Enumeration enumId="TP_ADVISE_THROUGH_BANK" enumTypeId="TradePartyRole" description="Advise Through Bank"/>
+            <moqui.basic.Enumeration enumId="TP_PRESENTING_BANK" enumTypeId="TradePartyRole" description="Presenting Bank"/>
+            <moqui.basic.Enumeration enumId="TP_DRAWEE_BANK" enumTypeId="TradePartyRole" description="Drawee Bank" sequenceNum="17"/>
+            <moqui.basic.Enumeration enumId="TP_INTERMEDIARY_BANK" enumTypeId="TradePartyRole" description="Intermediary Bank" sequenceNum="30"/>
+            <moqui.basic.Enumeration enumId="TP_SENDERS_CORRESPONDENT" enumTypeId="TradePartyRole" description="Sender Correspondent" sequenceNum="31"/>
+            <moqui.basic.Enumeration enumId="TP_RECEIVERS_CORRESPONDENT" enumTypeId="TradePartyRole" description="Receiver Correspondent" sequenceNum="32"/>
+            
+        </seed-data>
     </entity>
     
     <view-entity entity-name="TradeInstrumentPartyView" package="trade">
@@ -257,6 +297,28 @@
         <relationship type="one" related="trade.TradeParty" short-alias="party">
             <key-map field-name="partyId"/>
         </relationship>
+        <seed-data>
+            <!-- TradeFeeType -->
+            <moqui.basic.EnumerationType enumTypeId="TradeFeeType" description="Trade Fee Types"/>
+            <moqui.basic.Enumeration enumId="ISSUANCE_FEE" enumTypeId="TradeFeeType" description="Issuance Fee"/>
+            <moqui.basic.Enumeration enumId="AMENDMENT_FEE" enumTypeId="TradeFeeType" description="Amendment Fee"/>
+            <moqui.basic.Enumeration enumId="NEGOTIATION_FEE" enumTypeId="TradeFeeType" description="Negotiation/Payment Fee"/>
+            <moqui.basic.Enumeration enumId="SWIFT_FEE" enumTypeId="TradeFeeType" description="SWIFT Transmission Fee"/>
+            <!-- TradeFeeCalcMethod -->
+            <moqui.basic.EnumerationType enumTypeId="TradeFeeCalcMethod" description="Fee Calculation Methods"/>
+            <moqui.basic.Enumeration enumId="PERCENTAGE" enumTypeId="TradeFeeCalcMethod" description="Percentage of Amount"/>
+            <moqui.basic.Enumeration enumId="FLAT_RATE" enumTypeId="TradeFeeCalcMethod" description="Flat Rate per Transaction"/>
+            <!-- TradeFeeFrequency -->
+            <moqui.basic.EnumerationType enumTypeId="TradeFeeFrequency" description="Fee Calculation Frequencies"/>
+            <moqui.basic.Enumeration enumId="FEE_ONCE" enumTypeId="TradeFeeFrequency" description="One-time Fee"/>
+            <moqui.basic.Enumeration enumId="FEE_MONTHLY" enumTypeId="TradeFeeFrequency" description="Monthly Recurring"/>
+            <moqui.basic.Enumeration enumId="FEE_QUARTERLY" enumTypeId="TradeFeeFrequency" description="Quarterly Recurring"/>
+            <!-- TradeFeeStatus -->
+            <moqui.basic.StatusType statusTypeId="TradeFeeStatus" description="Fee Configuration Statuses"/>
+            <moqui.basic.StatusItem statusId="FEE_DRAFT" statusTypeId="TradeFeeStatus" description="Draft"/>
+            <moqui.basic.StatusItem statusId="FEE_ACTIVE" statusTypeId="TradeFeeStatus" description="Active"/>
+            <moqui.basic.StatusItem statusId="FEE_INACTIVE" statusTypeId="TradeFeeStatus" description="Inactive"/>
+        </seed-data>
     </entity>
 
     <entity entity-name="TradeProductCatalog" package="trade" short-alias="tradeProductCatalogs" cache="true">
@@ -294,6 +356,22 @@
         <relationship type="one-nofk" title="DefaultSwiftFormat" related="moqui.basic.Enumeration" short-alias="defaultSwiftFormat">
             <key-map field-name="defaultSwiftFormatEnumId" related="enumId"/>
         </relationship>
+        <seed-data>
+            <!-- TradeProductType -->
+            <moqui.basic.EnumerationType enumTypeId="TradeProductType" description="Trade Product Types"/>
+            <moqui.basic.Enumeration enumId="PROD_IMP_LC" enumTypeId="TradeProductType" description="Import Letter of Credit" sequenceNum="1"/>
+            <moqui.basic.Enumeration enumId="PROD_EXP_LC" enumTypeId="TradeProductType" description="Export Letter of Credit" sequenceNum="2"/>
+            <moqui.basic.Enumeration enumId="PROD_SG" enumTypeId="TradeProductType" description="Shipping Guarantee" sequenceNum="3"/>
+            <!-- TradeProductStatus -->
+            <moqui.basic.StatusType statusTypeId="TradeProductStatus" description="Product Configuration Statuses"/>
+            <moqui.basic.StatusItem statusId="PROD_DRAFT" statusTypeId="TradeProductStatus" description="Draft"/>
+            <moqui.basic.StatusItem statusId="PROD_ACTIVE" statusTypeId="TradeProductStatus" description="Active"/>
+            <moqui.basic.StatusItem statusId="PROD_INACTIVE" statusTypeId="TradeProductStatus" description="Inactive"/>
+            <!-- Product Catalog Records -->
+            <trade.TradeProductCatalog productId="PROD_IMP_LC" productTypeEnumId="PROD_IMP_LC" productName="Standard Import LC" isActive="Y" statusId="PROD_ACTIVE" allowRevolving="N" isStandby="N" documentExamSlaDays="5" maxToleranceLimit="10" mandatoryMarginPercent="0"/>
+            <trade.TradeProductCatalog productId="PROD_STBY_LC" productTypeEnumId="PROD_IMP_LC" productName="Standby LC (Performance)" isActive="Y" statusId="PROD_ACTIVE" allowRevolving="Y" isStandby="Y" documentExamSlaDays="3" maxToleranceLimit="5" mandatoryMarginPercent="10"/>
+            <trade.TradeProductCatalog productId="PROD_REV_LC" productTypeEnumId="PROD_IMP_LC" productName="Revolving Import LC" isActive="Y" statusId="PROD_ACTIVE" allowRevolving="Y" isStandby="N" documentExamSlaDays="5" maxToleranceLimit="10" mandatoryMarginPercent="5"/>
+        </seed-data>
     </entity>
 
     <entity entity-name="UserAuthorityProfile" package="trade" short-alias="userAuthorityProfiles">
@@ -318,6 +396,20 @@
         <relationship type="one" title="Currency" related="moqui.basic.Uom" short-alias="currencyUom">
             <key-map field-name="currencyUomId" related="uomId"/>
         </relationship>
+        <seed-data>
+            <!-- TradeMakerCheckerFlag -->
+            <moqui.basic.EnumerationType enumTypeId="TradeMakerCheckerFlag" description="Authority Profile Maker/Checker Flags"/>
+            <moqui.basic.Enumeration enumId="MAKER" enumTypeId="TradeMakerCheckerFlag" description="Maker Only"/>
+            <moqui.basic.Enumeration enumId="CHECKER" enumTypeId="TradeMakerCheckerFlag" description="Checker Only"/>
+            <moqui.basic.Enumeration enumId="MAKER_CHECKER" enumTypeId="TradeMakerCheckerFlag" description="Both Maker and Checker"/>
+            <moqui.basic.Enumeration enumId="DUAL_CHECKER" enumTypeId="TradeMakerCheckerFlag" description="Dual Checker Required"/>
+            <!-- TradeAuthorityTier -->
+            <moqui.basic.EnumerationType enumTypeId="TradeAuthorityTier" description="Authority Approval Tiers"/>
+            <moqui.basic.Enumeration enumId="TIER_1" enumTypeId="TradeAuthorityTier" description="Tier 1 - Maker/Junior"/>
+            <moqui.basic.Enumeration enumId="TIER_2" enumTypeId="TradeAuthorityTier" description="Tier 2 - Senior Officer"/>
+            <moqui.basic.Enumeration enumId="TIER_3" enumTypeId="TradeAuthorityTier" description="Tier 3 - Manager"/>
+            <moqui.basic.Enumeration enumId="TIER_4" enumTypeId="TradeAuthorityTier" description="Tier 4 - Director/Executive"/>
+        </seed-data>
     </entity>
 
     <entity entity-name="TradeApprovalRecord" package="trade">
@@ -391,7 +483,28 @@
         <relationship type="one" title="TradePriority" related="moqui.basic.Enumeration" short-alias="priority">
             <key-map field-name="priorityEnumId" related="enumId"/>
         </relationship>
-    </entity>>
+        <seed-data>
+            <!-- TradeTransactionType -->
+            <moqui.basic.EnumerationType enumTypeId="TradeTransactionType" description="Type of Trade Transaction"/>
+            <moqui.basic.Enumeration enumId="IMP_NEW" enumTypeId="TradeTransactionType" description="Import LC Issuance" sequenceNum="1"/>
+            <moqui.basic.Enumeration enumId="IMP_AMENDMENT" enumTypeId="TradeTransactionType" description="Import LC Amendment" sequenceNum="2"/>
+            <moqui.basic.Enumeration enumId="IMP_PRESENTATION" enumTypeId="TradeTransactionType" description="Import LC Document Presentation" sequenceNum="3"/>
+            <moqui.basic.Enumeration enumId="IMP_SETTLEMENT" enumTypeId="TradeTransactionType" description="Import LC Settlement" sequenceNum="4"/>
+            <moqui.basic.Enumeration enumId="IMP_CANCELLATION" enumTypeId="TradeTransactionType" description="Import LC Cancellation" sequenceNum="5"/>
+            <moqui.basic.Enumeration enumId="IMP_SG_ISSUANCE" enumTypeId="TradeTransactionType" description="Shipping Guarantee Issuance" sequenceNum="6"/>
+            <moqui.basic.Enumeration enumId="IMP_SG_RELEASE" enumTypeId="TradeTransactionType" description="Shipping Guarantee Release" sequenceNum="7"/>
+            <moqui.basic.Enumeration enumId="EXP_NEW" enumTypeId="TradeTransactionType" description="Export LC Issuance" sequenceNum="11"/>
+            <moqui.basic.Enumeration enumId="EXP_AMENDMENT" enumTypeId="TradeTransactionType" description="Export LC Amendment" sequenceNum="12"/>
+            <moqui.basic.Enumeration enumId="COL_IMP_NEW" enumTypeId="TradeTransactionType" description="Import Collection" sequenceNum="21"/>
+            <moqui.basic.Enumeration enumId="COL_EXP_NEW" enumTypeId="TradeTransactionType" description="Export Collection" sequenceNum="22"/>
+            <!-- TradeTransactionStatus -->
+            <moqui.basic.StatusType statusTypeId="TradeTransactionStatus" description="System/Transaction Processing States"/>
+            <moqui.basic.StatusItem statusId="TX_DRAFT" statusTypeId="TradeTransactionStatus" description="Transaction Draft"/>
+            <moqui.basic.StatusItem statusId="TX_PENDING" statusTypeId="TradeTransactionStatus" description="Pending Approval"/>
+            <moqui.basic.StatusItem statusId="TX_APPROVED" statusTypeId="TradeTransactionStatus" description="Approved/Committed"/>
+            <moqui.basic.StatusItem statusId="TX_REJECTED" statusTypeId="TradeTransactionStatus" description="Rejected/Sent Back"/>
+        </seed-data>
+    </entity>
 
     <entity entity-name="PublicHoliday" package="trade">
         <field name="holidayDate" type="date" is-pk="true"/>

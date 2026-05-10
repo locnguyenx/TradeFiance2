@@ -402,6 +402,7 @@ Comprehensive refactoring of `TradeCommonEntities.xml` and `ImportLcEntities.xml
 
 > [!WARNING]
 > **Pre-existing issue found:** [SwiftReimbursementSpec.groovy](file:///Users/me/myprojects/moqui-trade/runtime/component/TradeFinance/src/test/groovy/trade/SwiftReimbursementSpec.groovy) uses `partyTypeEnumId: "TP_TYPE_BANK"` and `"TP_TYPE_COMMERCIAL"` (lines 42, 56, 68) instead of the correct seed data values `PARTY_BANK` and `PARTY_COMMERCIAL`. Once we add the FK-enforced relationship for `partyTypeEnumId`, this test will fail on FK constraint. We must fix these values.
+> **enumId naming convention**: in this factoring, we've changed the way of naming enumId to use a Prefix which is abbr of enumtype to prevent id duplication. As a result, we must change the way of usaging enum in printing/displaying values that use enum's description instead of enum's id: for example, in  runtime/component/TradeFinance/service/trade/SwiftGenerationServices.xml (line 99), change from`lc.lcTypeEnumId ?: "IRREVOCABLE"` -> `lc.lcType?.description ?: "IRREVOCABLE"`
 
 ---
 

@@ -4,38 +4,71 @@ import org.moqui.Moqui
 import org.moqui.context.ExecutionContext
 import spock.lang.Specification
 import spock.lang.Shared
+import org.moqui.entity.EntityCondition
 
 // ABOUTME: InstrumentDataIntegritySpec verifies that instrument-level data retrieval is correctly isolated.
 // ABOUTME: Specifically validates that party records from different instruments do not leak into each other.
 
 class InstrumentDataIntegritySpec extends Specification {
-    @Shared
-    ExecutionContext ec
+    @Shared protected ExecutionContext ec
+    @Shared String testPrefix
 
     def setupSpec() {
         ec = Moqui.getExecutionContext()
-        ec.user.internalLoginUser("trade.maker")
+        ec.artifactExecution.disableAuthz()
+        ec.user.loginUser("trade.admin", "trade123")
+        testPrefix = "INST-INT-" + System.currentTimeMillis()
+        cleanData()
     }
 
     def cleanupSpec() {
-        ec.destroy()
+        try {
+            if (ec != null) cleanData()
+        } finally {
+            if (ec != null) ec.destroy()
+        }
+    }
+
+    private void cleanData() {
+        boolean begun = ec.transaction.begin(60)
+        try {
+            ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").updateAll([latestTransactionId: null])
+            ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+            ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+            ec.transaction.commit(begun)
+        } catch (Exception e) {
+            ec.transaction.rollback(begun, "Error in cleanData", e)
+        }
+    }
+
+    def setup() {
+        ec.message.clearAll()
+        ec.artifactExecution.disableAuthz()
+    }
+
+    def cleanup() {
+        ec.message.clearAll()
     }
 
     def "Verify Party Record Isolation between Instruments"() {
         given:
+        def idA = testPrefix + "_ID_A"
+        def idB = testPrefix + "_ID_B"
+
         // 1. Create Instrument A with both mandatory parties
-        def resA = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([instrumentRef: "ISO-A-" + System.currentTimeMillis(), lcAmount: 1000.0, lcCurrencyUomId: "USD",
+        ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
+            .parameters([instrumentId: idA, instrumentRef: idA + "_REF", lcAmount: 1000.0, lcCurrencyUomId: "USD",
                          instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
                                              [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
-        String idA = resA.instrumentId
+        assert !ec.message.hasError()
 
         // 2. Create Instrument B with different parties
-        def resB = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([instrumentRef: "ISO-B-" + System.currentTimeMillis(), lcAmount: 2000.0, lcCurrencyUomId: "USD",
+        ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
+            .parameters([instrumentId: idB, instrumentRef: idB + "_REF", lcAmount: 2000.0, lcCurrencyUomId: "USD",
                          instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'GLOBAL_EXP_002'],
                                              [roleEnumId: 'TP_BENEFICIARY', partyId: 'ACME_CORP_001']]]).call()
-        String idB = resB.instrumentId
+        assert !ec.message.hasError()
 
         when:
         // 3. Fetch Instrument A
@@ -60,17 +93,20 @@ class InstrumentDataIntegritySpec extends Specification {
 
     def "Verify Instrument View handles Alphanumeric IDs"() {
         given:
-        String testId = "LC240003" // Standard test ID from seed
+        String testId = testPrefix + "_ALPHA_123"
+        ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
+            .parameters([instrumentId: testId, instrumentRef: testPrefix + "_ALPHA_REF", lcAmount: 5000.0, lcCurrencyUomId: "USD",
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
+                                             [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
+        assert !ec.message.hasError()
 
         when:
         def out = ec.service.sync().name("trade.importlc.ImportLcServices.get#ImportLetterOfCredit")
             .parameters([instrumentId: testId]).call()
 
         then:
-        println "DEBUG: out fields for ${testId}: " + out.keySet()
-        println "DEBUG: out instrumentRef: " + out.instrumentRef
         out != null
         out.instrumentId == testId
-        out.instrumentRef != null || out.instrumentRef == null // Just to see what it is
+        out.instrumentRef == testPrefix + "_ALPHA_REF"
     }
 }

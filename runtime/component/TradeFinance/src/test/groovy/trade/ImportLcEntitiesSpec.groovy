@@ -13,6 +13,17 @@ class ImportLcEntitiesSpec extends Specification {
     def setupSpec() {
         ExecutionContext ec = Moqui.getExecutionContext()
         ec.artifactExecution.disableAuthz()
+        // Ensure mandatory seed data is loaded for entity tests
+        long count1 = ec.entity.makeDataLoader().location("component://TradeFinance/data/TradeFinanceSeedData.xml").load()
+        long count2 = ec.entity.makeDataLoader().location("component://TradeFinance/data/TradeClauseSeedData.xml").load()
+        println "DEBUG_SEED: Loaded ${count1} records from TradeFinanceSeedData.xml"
+        println "DEBUG_SEED: Loaded ${count2} records from TradeClauseSeedData.xml"
+        // Load inline entity seed-data (moved from TradeFinanceSeedData.xml)
+        long count3 = ec.entity.makeDataLoader().location("component://TradeFinance/entity/TradeCommonEntities.xml").load()
+        long count4 = ec.entity.makeDataLoader().location("component://TradeFinance/entity/ImportLcEntities.xml").load()
+        println "DEBUG_SEED: Loaded ${count3} records from TradeCommonEntities.xml"
+        println "DEBUG_SEED: Loaded ${count4} records from ImportLcEntities.xml"
+        
         def ids = ["LC-ENT-1", "LC-ENT-PERSIST", "LC-AMEND-TEST", "LC-PRES-TEST", "LC-SG-TEST", "LC-AMEND-EXT", "LC-PRES-EXT", "LC-SG-EXT", "LC_AMD_DELTA", "LC_INT_AMD"]
         for (id in ids) {
             ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", id).deleteAll()
@@ -78,12 +89,12 @@ class ImportLcEntitiesSpec extends Specification {
             effectiveOutstandingAmount: 500000,
             cumulativeDrawnAmount: 0,
             totalAmendmentCount: 0,
-            chargeAllocationEnumId: "SHA",
+            chargeAllocationEnumId: "CHG_SHARED",
             partialShipmentEnumId: "ALLOWED",
             transhipmentEnumId: "NOT_ALLOWED",
             latestShipmentDate: "2026-12-15",
-            confirmationEnumId: "CONFIRMED",
-            lcTypeEnumId: "IRREVOCABLE",
+            confirmationEnumId: "CONF_CONFIRMED",
+            lcTypeEnumId: "LCT_IRREVOCABLE",
             productCatalogId: "PROD_IMP_LC"
         ]).call()
         if (ec.message.hasError()) ec.logger.info("TEST ERRORS: " + ec.message.getErrorsString())
@@ -96,7 +107,7 @@ class ImportLcEntitiesSpec extends Specification {
         lc.effectiveOutstandingAmount == 500000
         lc.cumulativeDrawnAmount == 0
         lc.totalAmendmentCount == 0
-        lc.chargeAllocationEnumId == "SHA"
+        lc.chargeAllocationEnumId == "CHG_SHARED"
         lc.latestShipmentDate == java.sql.Date.valueOf("2026-12-15")
 
         cleanup:
@@ -192,7 +203,7 @@ class ImportLcEntitiesSpec extends Specification {
             instrumentId: "LC-AMEND-TEST",
             amendmentBusinessStateId: "AMEND_DRAFT",
             amendmentTypeEnumId: "AMEND_INCREASE",
-            beneficiaryConsentStatusId: "PENDING"
+            beneficiaryConsentStatusId: "BENE_PENDING"
         ]).create()
         def am = ec.entity.find("trade.importlc.ImportLcAmendment")
                 .condition("amendmentId", "AMEND_01").one()
@@ -200,7 +211,7 @@ class ImportLcEntitiesSpec extends Specification {
         then:
         am != null
         am.amendmentBusinessStateId == "AMEND_DRAFT"
-        am.beneficiaryConsentStatusId == "PENDING"
+        am.beneficiaryConsentStatusId == "BENE_PENDING"
 
         cleanup:
         ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", "LC-AMEND-TEST").deleteAll()
@@ -282,7 +293,7 @@ class ImportLcEntitiesSpec extends Specification {
             instrumentId: "LC-AMEND-EXT",
             amendmentNumber: 2,
             newTolerance: 5.0,
-            chargeAllocationEnumId: "SHA"
+            chargeAllocationEnumId: "CHG_SHARED"
         ]).create()
         def am = ec.entity.find("trade.importlc.ImportLcAmendment")
                 .condition("amendmentId", "AMEND_EXT_01").one()
@@ -291,7 +302,7 @@ class ImportLcEntitiesSpec extends Specification {
         am != null
         am.amendmentNumber == 2
         am.newTolerance == 5.0
-        am.chargeAllocationEnumId == "SHA"
+        am.chargeAllocationEnumId == "CHG_SHARED"
 
         cleanup:
         ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", "LC-AMEND-EXT").deleteAll()
@@ -311,8 +322,8 @@ class ImportLcEntitiesSpec extends Specification {
         
         // Setup presenting bank junction
         ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
-                .parameters([partyId: "PRES_BANK_1", partyName: "Presenting Bank", partyTypeEnumId: 'PARTY_BANK', 
-                             swiftBic: "PRESBANK", hasActiveRMA: true, kycStatus: 'Active']).call()
+                .parameters([partyId: "PRES_BANK_1", partyName: "Presenting Bank", partyTypeEnumId: 'PTY_BANK', 
+                             swiftBic: "PRESBANK", hasActiveRMA: true, kycStatus: 'KYC_ACTIVE']).call()
         ec.service.sync().name("trade.TradeCommonServices.assign#InstrumentParty")
                 .parameters([instrumentId: "LC-PRES-EXT", roleEnumId: "TP_PRESENTING_BANK", partyId: "PRES_BANK_1"]).call()
 
@@ -395,7 +406,7 @@ class ImportLcEntitiesSpec extends Specification {
         amd.setAll([
             amendmentId: 'AMD_TEST_01', instrumentId: 'LC_AMD_DELTA', amendmentNumber: 1, 
             amendmentDate: ec.user.nowTimestamp, transactionRef: 'TX_1',
-            amountIncrease: 50000.0, goodsActionEnumId: 'ADD', goodsDeltaText: 'Cert required',
+            amountIncrease: 50000.0, goodsActionEnumId: 'AMA_ADD', goodsDeltaText: 'Cert required',
             amendmentBusinessStateId: 'AMEND_DRAFT'
         ])
         amd.create()
@@ -403,7 +414,7 @@ class ImportLcEntitiesSpec extends Specification {
 
         then:
         fetched != null
-        fetched.goodsActionEnumId == 'ADD'
+        fetched.goodsActionEnumId == 'AMA_ADD'
         fetched.amountIncrease == 50000.0
 
         cleanup:

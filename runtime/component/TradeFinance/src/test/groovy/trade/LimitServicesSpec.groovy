@@ -34,6 +34,7 @@ class LimitServicesSpec extends Specification {
 
     def "Test GET CustomerFacilities returns list for owner"() {
         setup:
+        ec.entity.makeValue("trade.TradeParty").setAll([partyId: "PARTY-1", partyName: "Test Party", partyTypeEnumId: "PTY_COMMERCIAL"]).create()
         ec.entity.makeValue("trade.CustomerFacility")
             .setAll([facilityId:"FAC-OWN-1", ownerPartyId: "PARTY-1", totalApprovedLimit: 5000.0, utilizedAmount: 1000.0]).create()
             
@@ -50,5 +51,6 @@ class LimitServicesSpec extends Specification {
         
         cleanup:
         ec.entity.find("trade.CustomerFacility").condition("facilityId", "FAC-OWN-1").deleteAll()
+        ec.entity.find("trade.TradeParty").condition("partyId", "PARTY-1").deleteAll()
     }
 }

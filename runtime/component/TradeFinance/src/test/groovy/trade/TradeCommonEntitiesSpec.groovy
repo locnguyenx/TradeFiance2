@@ -42,7 +42,7 @@ class TradeCommonEntitiesSpec extends Specification {
         ec.service.sync().name("create#trade.TradeParty").parameters([
             partyId: "PARTY_TEST",
             partyName: "Test Party Ltd",
-            kycStatus: "Active",
+            kycStatus: "KYC_ACTIVE",
             kycExpiryDate: "2027-01-01",
             sanctionsStatus: "CLEAR",
             countryOfRisk: "SGP",
@@ -65,7 +65,7 @@ class TradeCommonEntitiesSpec extends Specification {
     def "CustomerFacility persists owner and currency fields"() {
         when:
         ec.service.sync().name("create#trade.CustomerFacility").parameters([
-            facilityId: "FAC_TEST_001",
+            facilityId: "FAC_ENT_TEST_001",
             ownerPartyId: "ACME_CORP_001",
             totalApprovedLimit: 1000000,
             utilizedAmount: 0,
@@ -73,7 +73,7 @@ class TradeCommonEntitiesSpec extends Specification {
             facilityExpiryDate: "2027-12-31"
         ]).call()
         def fac = ec.entity.find("trade.CustomerFacility")
-                .condition("facilityId", "FAC_TEST_001").one()
+                .condition("facilityId", "FAC_ENT_TEST_001").one()
 
         then:
         fac != null
@@ -83,17 +83,21 @@ class TradeCommonEntitiesSpec extends Specification {
 
         cleanup:
         ec.entity.find("trade.CustomerFacility")
-            .condition("facilityId", "FAC_TEST_001").deleteAll()
+            .condition("facilityId", "FAC_ENT_TEST_001").deleteAll()
     }
 
     def "TradeTransactionAudit persists additional tracking fields"() {
+        given: "A parent instrument and transaction"
+        ec.service.sync().name("create#trade.TradeInstrument").parameters([instrumentId: "AUDIT-TEST", instrumentRef: "REF-01"]).call()
+        ec.service.sync().name("create#trade.TradeTransaction").parameters([transactionId: "TX-AUDIT-TEST", instrumentId: "AUDIT-TEST", transactionTypeEnumId: "IMP_NEW"]).call()
+
         when:
         ec.service.sync().name("create#trade.TradeTransactionAudit").parameters([
             instrumentId: "AUDIT-TEST",
             transactionId: "TX-AUDIT-TEST",
             auditId: "1",
             userId: "USER_001",
-            actionEnumId: "UPDATE",
+            actionEnumId: "MAKER_UPDATE",
             requestIpAddress: "192.168.1.1",
             changedFieldName: "amount",
             oldValue: "400000",
@@ -111,6 +115,7 @@ class TradeCommonEntitiesSpec extends Specification {
         audit.newValue == "500000"
 
         cleanup:
+        ec.entity.find("trade.TradeInstrument").condition("instrumentId", "AUDIT-TEST").updateAll([latestTransactionId: null])
         ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", "AUDIT-TEST").deleteAll()
         ec.entity.find("trade.TradeTransaction").condition("instrumentId", "AUDIT-TEST").deleteAll()
         ec.entity.find("trade.TradeInstrument").condition("instrumentId", "AUDIT-TEST").deleteAll()

@@ -117,7 +117,7 @@
                     transactionDate: ec.user.nowTimestamp,
                     makerUserId: ec.user.userId,
                     makerTimestamp: ec.user.nowTimestamp,
-                    priorityEnumId: priorityEnumId ?: 'NORMAL',
+                    priorityEnumId: priorityEnumId ?: 'PRIO_NORMAL',
                     versionNumber: 1,
                     relatedRecordId: settlementId,
                     relatedRecordType: 'SETTLEMENT'

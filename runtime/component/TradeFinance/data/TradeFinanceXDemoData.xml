@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-facade-xml>
+    <!-- Authority Profiles for Testing -->
+    <!-- Authority Profiles for Testing -->
+    <trade.UserAuthorityProfile userAuthorityId="T1-01" userId="trade.admin" delegationTierId="TIER_1" customLimit="10000000.00" currencyUomId="USD" isSuspended="N" makerCheckerFlag="MAKER_CHECKER"/>
+    <trade.UserAuthorityProfile userAuthorityId="T1-E2E" userId="trade.maker" delegationTierId="TIER_1" customLimit="1000000.00" currencyUomId="USD" isSuspended="N" makerCheckerFlag="MAKER"/>
+    <trade.UserAuthorityProfile userAuthorityId="T2-01" userId="trade.checker" delegationTierId="TIER_2" customLimit="1000000.00" currencyUomId="USD" isSuspended="N" makerCheckerFlag="CHECKER"/>
+    
+    <!-- Master Data: Trade Parties -->
+    <!-- Commercial Parties -->
+    <trade.TradeParty partyId="ACME_CORP_001" partyTypeEnumId="PTY_COMMERCIAL" partyName="Acme Corporation Ltd" kycStatus="KYC_ACTIVE" kycExpiryDate="2027-12-31" sanctionsStatus="SNC_CLEAR" countryOfRisk="USA" registeredAddress="123 Acme Way, New York, NY"/>
+    <trade.TradeParty partyId="GLOBAL_EXP_002" partyTypeEnumId="PTY_COMMERCIAL" partyName="Global Exports Inc" kycStatus="KYC_ACTIVE" kycExpiryDate="2027-06-30" sanctionsStatus="SNC_CLEAR" countryOfRisk="GBR" registeredAddress="45 Export St, London, UK"/>
+    <trade.TradeParty partyId="RISKY_BIZ_003" partyTypeEnumId="PTY_COMMERCIAL" partyName="Risky Business Trading" kycStatus="KYC_EXPIRED" kycExpiryDate="2024-01-01" sanctionsStatus="SNC_PENDING" countryOfRisk="PAN" registeredAddress="99 Shadow Alley, Panama City"/>
+    <trade.TradeParty partyId="BANNED_ENTITY_004" partyTypeEnumId="PTY_COMMERCIAL" partyName="Banned Corp" kycStatus="KYC_ACTIVE" kycExpiryDate="2028-01-01" sanctionsStatus="SNC_BLOCKED" countryOfRisk="NK" registeredAddress="1 Terminal Rd, Pyongyang"/>
+    <trade.TradeParty partyId="ORG_ZIZI_CORP" partyTypeEnumId="PTY_COMMERCIAL" partyName="Zizi Corp" kycStatus="KYC_ACTIVE" sanctionsStatus="SNC_CLEAR" countryOfRisk="VNM"/>
+
+    <!-- Bank Parties -->
+    <trade.TradeParty partyId="ISSUING_BANK_001" partyTypeEnumId="PTY_BANK" partyName="Trade Finance Bank" kycStatus="KYC_ACTIVE" sanctionsStatus="SNC_CLEAR" countryOfRisk="VNM"/>
+    <trade.TradePartyBank partyId="ISSUING_BANK_001" swiftBic="TFBKVNVX" hasActiveRMA="Y" nostroAccountRef="NOSTRO-USD-TFB-001"/>
+
+    <trade.TradeParty partyId="ADVISING_BANK_001" partyTypeEnumId="PTY_BANK" partyName="Overseas Banking Corp" kycStatus="KYC_ACTIVE" sanctionsStatus="SNC_CLEAR" countryOfRisk="SGP"/>
+    <trade.TradePartyBank partyId="ADVISING_BANK_001" swiftBic="OBCSGSGX" hasActiveRMA="Y" nostroAccountRef="NOSTRO-USD-OBC-001" fiLimitAvailable="10000000.00" fiLimitCurrencyUomId="USD"/>
+
+    <!-- Master Data: Customer Facilities -->
+    <trade.CustomerFacility facilityId="FAC-ACME-001" ownerPartyId="ACME_CORP_001" totalApprovedLimit="10000000.00" utilizedAmount="2500000.00" facilityExpiryDate="2027-12-31" description="Core Working Capital Line"/>
+    <trade.CustomerFacility facilityId="FAC-GLOBAL-002" ownerPartyId="GLOBAL_EXP_002" totalApprovedLimit="5000000.00" utilizedAmount="4800000.00" facilityExpiryDate="2027-01-01" description="Trade Export Line"/>
+    <trade.CustomerFacility facilityId="FAC-EXPIRED-003" ownerPartyId="ACME_CORP_001" totalApprovedLimit="1000000.00" utilizedAmount="0.00" facilityExpiryDate="2024-12-31" description="Old Line"/>
+    <trade.CustomerFacility facilityId="FAC-ZIZI-001" ownerPartyId="ORG_ZIZI_CORP" totalApprovedLimit="1000000.00" utilizedAmount="0.00" facilityExpiryDate="2027-12-31" description="Working Capital Line"/>
+
+    <!-- Master Data: Product Configurations -->
+    <trade.common.TradeConfig configId="CFG_TOL_VAL" configKey="MAX_TOLERANCE" configValue="0.10" description="Maximum drawing tolerance multiplier (e.g. 0.10 for 10%)"/>
+    <trade.common.TradeConfig configId="CFG_SLA_EXAM" configKey="DOC_EXAM_SLA_DAYS" configValue="5" description="Standard banking days for document examination (UCP 600)"/>
+    <trade.common.TradeConfig configId="CFG_SG_MULT" configKey="SG_LIABILITY_MULT" configValue="1.10" description="Liability multiplier for Shipping Guarantees (e.g. 1.10 for 110%)"/>
+    <trade.common.TradeConfig configId="CFG_TEN_REST" configKey="TENOR_RESTRICTION" configValue="Sight Only" description="Allowed LC Tenors for standard products"/>
+
+    <!-- Master Data: Fee Configurations -->
+    <trade.FeeConfiguration feeConfigurationId="FEE_ISS_001" feeEventEnumId="ISSUANCE_FEE" calculationTypeEnumId="PERCENTAGE" baseValue="0.25" ratePercent="0.25" minFloorAmount="100.00" currencyUomId="USD" isActive="Y" statusId="FEE_ACTIVE"/>
+    <trade.FeeConfiguration feeConfigurationId="FEE_AMD_002" feeEventEnumId="AMENDMENT_FEE" calculationTypeEnumId="FLAT_RATE" baseValue="50.00" flatAmount="50.00" currencyUomId="USD" isActive="Y" statusId="FEE_ACTIVE"/>
+    <trade.FeeConfiguration feeConfigurationId="FEE_SWIFT_003" feeEventEnumId="SWIFT_FEE" calculationTypeEnumId="FLAT_RATE" baseValue="25.00" flatAmount="25.00" currencyUomId="USD" isActive="Y" statusId="FEE_ACTIVE"/>
+
+    <!-- Master Data: Product Catalog -->
+    <!-- Removed duplicate TradeProductCatalog records (defined in SeedData) -->
+
+    <!-- Internal Organization Setup -->
+    <mantle.party.Party partyId="InternalOrganization" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="InternalOrganization" organizationName="Trade Finance Digital Bank"/>
+    
+
+    <!-- Sample Utilization Data for Dashboard -->
+    <trade.TradeInstrument instrumentId="LC240001" instrumentRef="TF-ACME-100" baseEquivalentAmount="2000000.00" customerFacilityId="FAC-ACME-001" instrumentTypeEnumId="IMPORT_LC" issueDate="2026-04-20"/>
+    <trade.TradeInstrumentParty instrumentId="LC240001" roleEnumId="TP_APPLICANT" partyId="ACME_CORP_001"/>
+    <trade.TradeInstrumentParty instrumentId="LC240001" roleEnumId="TP_BENEFICIARY" partyId="GLOBAL_EXP_002"/>
+    <trade.TradeInstrumentParty instrumentId="LC240001" roleEnumId="TP_ISSUING_BANK" partyId="ISSUING_BANK_001"/>
+    <trade.TradeInstrumentParty instrumentId="LC240001" roleEnumId="TP_ADVISING_BANK" partyId="ADVISING_BANK_001"/>
+    <trade.importlc.ImportLetterOfCredit instrumentId="LC240001" effectiveAmount="2000000.00" effectiveOutstandingAmount="2000000.00" businessStateId="LC_ISSUED"/>
+    <trade.TradeTransaction transactionId="TXN240001" instrumentId="LC240001" transactionDate="2026-04-20" transactionStatusId="TX_APPROVED" transactionTypeEnumId="IMP_NEW" makerUserId="trade.maker" makerTimestamp="2026-04-20 09:00:00.000" checkerUserId="trade.checker" checkerTimestamp="2026-04-20 11:00:00.000"/>
+
+    <trade.TradeInstrument instrumentId="LC240002" instrumentRef="TF-ACME-101" baseEquivalentAmount="500000.00" customerFacilityId="FAC-ACME-001" instrumentTypeEnumId="IMPORT_LC" issueDate="2026-04-21"/>
+    <trade.TradeInstrumentParty instrumentId="LC240002" roleEnumId="TP_APPLICANT" partyId="ACME_CORP_001"/>
+    <trade.TradeInstrumentParty instrumentId="LC240002" roleEnumId="TP_BENEFICIARY" partyId="GLOBAL_EXP_002"/>
+    <trade.importlc.ImportLetterOfCredit instrumentId="LC240002" effectiveAmount="500000.00" effectiveOutstandingAmount="500000.00" businessStateId="LC_DRAFT"/>
+    <trade.TradeTransaction transactionId="TXN240002" instrumentId="LC240002" transactionDate="2026-04-21" transactionStatusId="TX_PENDING" transactionTypeEnumId="IMP_NEW" makerUserId="trade.maker" makerTimestamp="2026-04-21 10:00:00.000"/>
+
+    <trade.TradeInstrument instrumentId="LC240003" instrumentRef="TF-GLBL-200" baseEquivalentAmount="4800000.00" customerFacilityId="FAC-GLOBAL-002" instrumentTypeEnumId="IMPORT_LC" issueDate="2026-04-22"/>
+    <trade.TradeInstrumentParty instrumentId="LC240003" roleEnumId="TP_APPLICANT" partyId="GLOBAL_EXP_002"/>
+    <trade.TradeInstrumentParty instrumentId="LC240003" roleEnumId="TP_BENEFICIARY" partyId="ACME_CORP_001"/>
+    <trade.importlc.ImportLetterOfCredit instrumentId="LC240003" effectiveAmount="4800000.00" effectiveOutstandingAmount="4800000.00" businessStateId="LC_ISSUED"/>
+    <trade.TradeTransaction transactionId="TXN240003" instrumentId="LC240003" transactionDate="2026-04-22" transactionStatusId="TX_APPROVED" transactionTypeEnumId="IMP_NEW" makerUserId="trade.maker" makerTimestamp="2026-04-22 14:00:00.000" checkerUserId="trade.checker" checkerTimestamp="2026-04-22 16:00:00.000"/>
+
+</entity-facade-xml>

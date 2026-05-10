@@ -11,7 +11,7 @@
             <parameter name="forceRegenerate" type="Boolean" default="false"/>
         </in-parameters>
         <out-parameters>
-            <parameter name="swiftMessageId" type="id"/>
+            <parameter name="swiftMessageId" type="String"/>
             <parameter name="messageContent"/>
         </out-parameters>
         <actions>
@@ -96,12 +96,10 @@
 
                 def fields = [:]
                 fields["27"] = "1/1"
-                fields["40A"] = lc.lcTypeEnumId ?: "IRREVOCABLE"
+                fields["40A"] = lc.lcType?.description ?: "IRREVOCABLE"
                 fields["31C"] = instrument.issueDate?.format("yyMMdd") ?: ec.user.nowTimestamp.format("yyMMdd")
                 if (lc.applicableRulesEnumId) {
-                    def rulesMap = [UCP_LATEST:"UCP LATEST VERSION", EUCP_LATEST:"EUCP LATEST VERSION",
-                                    UCPDC_600:"UCP 600", ISP_LATEST:"ISP LATEST VERSION"]
-                    fields["40E"] = rulesMap[lc.applicableRulesEnumId] ?: "UCP LATEST VERSION"
+                    fields["40E"] = lc.applicableRules?.description ?: "UCP LATEST VERSION"
                 } else {
                     fields["40E"] = "UCP LATEST VERSION"
                 }
@@ -133,20 +131,22 @@
                 }
                 
                 // FR-SGC-04: Available With... By... (Tag 41a)
-                def availableBy = lc.availableByEnumId ?: "SIGHT"
-                if (lc.availableWithEnumId == 'AVAIL_ANY_BANK') {
-                    fields["41D"] = "ANY BANK\r\nBY " + availableBy
+                def availableBy = lc.availableBy?.description ?: "SIGHT"
+                if (!availableBy.toUpperCase().startsWith("BY ")) availableBy = "BY " + availableBy
+                
+                if (lc.availableWithEnumId == 'AW_ANY_BANK') {
+                    fields["41D"] = "ANY BANK\r\n" + availableBy
                 } else {
                     def negBic = negotiatingBank.bic ?: advisingBank.bic ?: "NEGOTXXX"
-                    fields["41A"] = negBic + "\r\nBY " + availableBy
+                    fields["41A"] = negBic + "\r\n" + availableBy
                 }
                 
-                if (lc.tenorTypeId == 'SIGHT') fields["42C"] = "AT SIGHT"
+                if (lc.tenorTypeId == 'LCT_SIGHT') fields["42C"] = "AT SIGHT"
                 else if (lc.usanceBaseDate) fields["42C"] = formatValue(lc.usanceBaseDate, 3, 35)
                 
                 fields["42a"] = draweeBank.bic ?: advisingBank.bic ?: "DRAWEEXX"
-                fields["43P"] = lc.partialShipmentEnumId ?: "ALLOWED"
-                fields["43T"] = lc.transhipmentEnumId ?: "ALLOWED"
+                fields["43P"] = lc.partialShipment?.description ?: "ALLOWED"
+                fields["43T"] = lc.transhipment?.description ?: "ALLOWED"
                 
                 fields["44A"] = formatValue(lc.receiptPlace, 1, 65)
                 fields["44E"] = formatValue(lc.portOfLoading, 1, 65)
@@ -204,7 +204,7 @@
             <parameter name="messageStatusId" default="SWIFT_MSG_DRAFT"/>
         </in-parameters>
         <out-parameters>
-            <parameter name="swiftMessageId" type="id"/>
+            <parameter name="swiftMessageId" type="String"/>
             <parameter name="messageContent"/>
         </out-parameters>
         <actions>
@@ -256,7 +256,7 @@
             <parameter name="forceRegenerate" type="Boolean" default="false"/>
         </in-parameters>
         <out-parameters>
-            <parameter name="swiftMessageId" type="id"/>
+            <parameter name="swiftMessageId" type="String"/>
             <parameter name="messageContent"/>
         </out-parameters>
         <actions>
@@ -324,7 +324,7 @@
                 fields["26E"] = amendment.amendmentNumber ?: "1"
                 
                 // Tag 22A: Purpose of Message (Mandatory)
-                fields["22A"] = (lc?.confirmationEnumId == 'CONFIRM' || lc?.confirmationEnumId == 'MAY_ADD') ? "ACNF" : "ADVI"
+                fields["22A"] = (lc?.confirmationEnumId == 'CONF_CONFIRMED' || lc?.confirmationEnumId == 'CONF_MAY_ADD') ? "ACNF" : "ADVI"
                 
                 // FR-CAN-04: Cancellation Request
                 if (amendment.isCancellationRequest == "Y") fields["23S"] = "CANCEL"
@@ -354,9 +354,9 @@
                 }
 
                 // SRG 2024 Narrative Deltas
-                if (amendment.goodsDeltaText) fields["45B"] = "/" + (amendment.goodsActionEnumId ?: "REP") + "/" + formatValue(amendment.goodsDeltaText, 100, 65)
-                if (amendment.docsDeltaText) fields["46B"] = "/" + (amendment.docsActionEnumId ?: "REP") + "/" + formatValue(amendment.docsDeltaText, 100, 65)
-                if (amendment.conditionsDeltaText) fields["47B"] = "/" + (amendment.conditionsActionEnumId ?: "REP") + "/" + formatValue(amendment.conditionsDeltaText, 100, 65)
+                if (amendment.goodsDeltaText) fields["45B"] = "/" + (amendment.goodsAction?.description ?: "REP") + "/" + formatValue(amendment.goodsDeltaText, 100, 65)
+                if (amendment.docsDeltaText) fields["46B"] = "/" + (amendment.docsAction?.description ?: "REP") + "/" + formatValue(amendment.docsDeltaText, 100, 65)
+                if (amendment.conditionsDeltaText) fields["47B"] = "/" + (amendment.conditionsAction?.description ?: "REP") + "/" + formatValue(amendment.conditionsDeltaText, 100, 65)
                 
                 def renderRes = ec.service.sync().name("trade.SwiftUtilsServices.render#SwiftMessage")
                     .parameters([messageType:"707", senderBic:issuerBic, receiverBic:advisingBankBic ?: "ADVISINGXX", 
@@ -389,7 +389,7 @@
         <description>Advice of Discrepancy. Implements FR-SWG-10 lifecycle.</description>
         <in-parameters><parameter name="presentationId" required="true"/></in-parameters>
         <out-parameters>
-            <parameter name="swiftMessageId" type="id"/>
+            <parameter name="swiftMessageId" type="String"/>
             <parameter name="messageContent"/>
         </out-parameters>
         <actions>
@@ -450,7 +450,7 @@
         <description>Advice of Refusal. Implements FR-SWG-09 disposal mapping and FR-SWG-10 lifecycle.</description>
         <in-parameters><parameter name="presentationId" required="true"/></in-parameters>
         <out-parameters>
-            <parameter name="swiftMessageId" type="id"/>
+            <parameter name="swiftMessageId" type="String"/>
             <parameter name="messageContent"/>
         </out-parameters>
         <actions>
@@ -519,7 +519,7 @@
         <description>Authorisation to Pay, Accept or Negotiate. Implements FR-SWG-10 lifecycle.</description>
         <in-parameters><parameter name="presentationId" required="true"/></in-parameters>
         <out-parameters>
-            <parameter name="swiftMessageId" type="id"/>
+            <parameter name="swiftMessageId" type="String"/>
             <parameter name="messageContent"/>
         </out-parameters>
         <actions>
@@ -575,7 +575,7 @@
         <description>Advice of Discharge. Implements FR-SWG-11 Maturity Date and FR-SWG-10 lifecycle.</description>
         <in-parameters><parameter name="presentationId" required="true"/></in-parameters>
         <out-parameters>
-            <parameter name="swiftMessageId" type="id"/>
+            <parameter name="swiftMessageId" type="String"/>
             <parameter name="messageContent"/>
         </out-parameters>
         <actions>
@@ -629,7 +629,7 @@
             <parameter name="messageStatusId" default="SWIFT_MSG_DRAFT"/>
         </in-parameters>
         <out-parameters>
-            <parameter name="swiftMessageId" type="id"/>
+            <parameter name="swiftMessageId" type="String"/>
             <parameter name="messageContent"/>
         </out-parameters>
         <actions>
@@ -666,7 +666,7 @@
         <description>Single Customer Credit Transfer (Settlement). Implements FR-SWG-10 lifecycle.</description>
         <in-parameters><parameter name="settlementId" required="true"/></in-parameters>
         <out-parameters>
-            <parameter name="swiftMessageId" type="id"/>
+            <parameter name="swiftMessageId" type="String"/>
             <parameter name="messageContent"/>
         </out-parameters>
         <actions>
@@ -710,7 +710,7 @@
         <description>Financial Institution Transfer. Implements FR-SWG-10 lifecycle.</description>
         <in-parameters><parameter name="settlementId" required="true"/></in-parameters>
         <out-parameters>
-            <parameter name="swiftMessageId" type="id"/>
+            <parameter name="swiftMessageId" type="String"/>
             <parameter name="messageContent"/>
         </out-parameters>
         <actions>
@@ -824,7 +824,7 @@
             <parameter name="instrumentId" required="true"/>
         </in-parameters>
         <out-parameters>
-            <parameter name="swiftMessageId" type="id"/>
+            <parameter name="swiftMessageId" type="String"/>
             <parameter name="messageContent"/>
         </out-parameters>
         <actions>
@@ -884,7 +884,7 @@
                 if (reimbursingBank.nostro) fields["25"] = reimbursingBank.nostro
 
                 // Tag 58a: Negotiating Bank (who can claim)
-                if (lc.availableWithEnumId == 'AVAIL_ANY_BANK') {
+                if (lc.availableWithEnumId == 'AW_ANY_BANK') {
                     fields["58D"] = "ANY BANK"
                 } else {
                     def negBank = getParty("TP_NEGOTIATING_BANK")
@@ -897,7 +897,7 @@
 
                 // Tag 71D: Charges
                 if (lc.reimbursingChargesEnumId) {
-                    def chargeMap = [REIMB_OUR:"OUR", REIMB_BEN:"BEN"]
+                    def chargeMap = [RMB_OUR:"OUR", RMB_BEN:"BEN"]
                     fields["71D"] = chargeMap[lc.reimbursingChargesEnumId] ?: "OUR"
                 }
 
@@ -929,7 +929,7 @@
             <parameter name="amendmentId" required="true"/>
         </in-parameters>
         <out-parameters>
-            <parameter name="swiftMessageId" type="id"/>
+            <parameter name="swiftMessageId" type="String"/>
             <parameter name="messageContent"/>
         </out-parameters>
         <actions>
@@ -977,12 +977,13 @@
                 def fields = [:]
                 fields["21"] = "NONREF" // Ideally we track the bank's ref, but for now use default
 
-                if (amend.authExpiryDate) fields["31E"] = amend.authExpiryDate.format("yyMMdd")
+                if (amend.newAuthExpiryDate) fields["31E"] = amend.newAuthExpiryDate.format("yyMMdd")
                 
-                if (amend.amountChange != null && amend.amountChange != 0) {
+                def amountChange = (amend.amountIncrease ?: 0.0) - (amend.amountDecrease ?: 0.0)
+                if (amountChange != 0) {
                     def currency = instrument.currencyUomId ?: "USD"
-                    def sign = amend.amountChange > 0 ? "" : "-"
-                    fields["34B"] = currency + sign + String.format("%.2f", Math.abs(amend.amountChange)).replace(".", ",")
+                    def sign = amountChange > 0 ? "" : "-"
+                    fields["34B"] = currency + sign + String.format("%.2f", Math.abs(amountChange)).replace(".", ",")
                 }
 
                 def renderRes = ec.service.sync().name("trade.SwiftUtilsServices.render#SwiftMessage")

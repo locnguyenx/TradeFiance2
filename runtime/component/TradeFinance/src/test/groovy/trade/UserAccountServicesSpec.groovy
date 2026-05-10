@@ -29,7 +29,7 @@ class UserAccountServicesSpec extends Specification {
         testEmail = "test." + ts + "@example.com"
         Timestamp pastDate = new Timestamp(ec.l10n.parseTimestamp("2020-01-01 00:00:00", null).getTime())
 
-        boolean suspended = ec.transaction.begin(null)
+        boolean begun = ec.transaction.begin(null)
         try {
             // Ensure UserGroup exists
             def group = ec.entity.find("moqui.security.UserGroup").condition("userGroupId", "TRADE_MAKER").one()
@@ -81,12 +81,10 @@ class UserAccountServicesSpec extends Specification {
             profile.set("currencyUomId", "USD")
             profile.create()
             
-            ec.transaction.commit()
+            ec.transaction.commit(begun)
         } catch (Exception e) {
-            ec.transaction.rollback("Failed to setup test user", e)
+            ec.transaction.rollback(begun, "Failed to setup test user", e)
             throw e
-        } finally {
-            if (suspended) ec.transaction.resume()
         }
         
         ec.artifactExecution.enableAuthz()
@@ -177,12 +175,5 @@ class UserAccountServicesSpec extends Specification {
         ec.user.logoutUser()
         boolean loggedInWithNew = ec.user.loginUser(testUsername, "NewPassword123!")
         assert loggedInWithNew == true
-        
-        // Change back for other tests
-        cleanup:
-        ec.artifactExecution.disableAuthz()
-        ec.service.sync().name("org.moqui.impl.UserServices.update#Password")
-            .parameters([userId: testUserId, oldPassword: "NewPassword123!", newPassword: "Password123!", newPasswordVerify: "Password123!"])
-            .call()
     }
 }

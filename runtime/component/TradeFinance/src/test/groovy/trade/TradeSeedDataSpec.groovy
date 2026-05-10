@@ -17,8 +17,13 @@ class TradeSeedDataSpec extends Specification {
         // Manually load seed data for verification
         long count1 = ec.entity.makeDataLoader().location("component://TradeFinance/data/TradeFinanceSeedData.xml").load()
         long count2 = ec.entity.makeDataLoader().location("component://TradeFinance/data/TradeClauseSeedData.xml").load()
+        // Load inline entity seed-data (moved from TradeFinanceSeedData.xml)
+        long count3 = ec.entity.makeDataLoader().location("component://TradeFinance/entity/TradeCommonEntities.xml").load()
+        long count4 = ec.entity.makeDataLoader().location("component://TradeFinance/entity/ImportLcEntities.xml").load()
         ec.logger.info("DEBUG_SEED: Loaded ${count1} records from TradeFinanceSeedData.xml")
         ec.logger.info("DEBUG_SEED: Loaded ${count2} records from TradeClauseSeedData.xml")
+        ec.logger.info("DEBUG_SEED: Loaded ${count3} records from TradeCommonEntities.xml")
+        ec.logger.info("DEBUG_SEED: Loaded ${count4} records from ImportLcEntities.xml")
     }
     
     def cleanup() {
@@ -30,7 +35,7 @@ class TradeSeedDataSpec extends Specification {
         ec.entity.find("moqui.basic.Enumeration").condition("enumId", "SANCTION_PENDING").one() != null
         ec.entity.find("moqui.basic.Enumeration").condition("enumId", "ALLOWED").one() != null
         ec.entity.find("moqui.basic.Enumeration").condition("enumId", "CONFIRMED").one() != null
-        ec.entity.find("moqui.basic.Enumeration").condition("enumId", "IRREVOCABLE").one() != null
+        ec.entity.find("moqui.basic.Enumeration").condition("enumId", "LCT_IRREVOCABLE").one() != null
         ec.entity.find("moqui.basic.Enumeration").condition("enumId", "AMEND_INCREASE").one() != null
         ec.entity.find("moqui.basic.Enumeration").condition("enumId", "TIER_4").one() != null
         ec.entity.find("moqui.basic.Enumeration").condition("enumId", "ISSUANCE_FEE").one() != null

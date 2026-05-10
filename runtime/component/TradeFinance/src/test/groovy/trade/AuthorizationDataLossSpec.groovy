@@ -5,23 +5,69 @@ import org.moqui.Moqui
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import spock.lang.Specification
+import spock.lang.Shared
+import org.moqui.entity.EntityCondition
+
+// ABOUTME: AuthorizationDataLossSpec verifies that narrative fields are preserved during instrument authorization.
+// ABOUTME: Ensures that authorization triggers do not inadvertently overwrite instrument fields with null values.
 
 class AuthorizationDataLossSpec extends Specification {
-    protected final static Logger logger = LoggerFactory.getLogger(AuthorizationDataLossSpec.class)
+    @Shared protected ExecutionContext ec
+    @Shared String testPrefix
+
+    def setupSpec() {
+        ec = Moqui.getExecutionContext()
+        ec.artifactExecution.disableAuthz()
+        ec.user.loginUser("trade.admin", "trade123")
+        testPrefix = "TEST-AUTH-" + System.currentTimeMillis()
+        cleanData()
+    }
+
+    def cleanupSpec() {
+        try {
+            if (ec != null) cleanData()
+        } finally {
+            if (ec != null) ec.destroy()
+        }
+    }
+
+    private void cleanData() {
+        boolean begun = ec.transaction.begin(60)
+        try {
+            ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").updateAll([latestTransactionId: null])
+            ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+            ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+            ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+            ec.entity.find("trade.TradeTransaction").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+            ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+            ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+            ec.transaction.commit(begun)
+        } catch (Exception e) {
+            ec.transaction.rollback(begun, "Error in cleanData", e)
+        }
+    }
+
+    def setup() {
+        ec.message.clearAll()
+        ec.artifactExecution.disableAuthz()
+    }
+    
+    def cleanup() {
+        ec.message.clearAll()
+    }
 
     def "Verify Narrative Field Preservation during Authorization"() {
-        setup:
-        ExecutionContext ec = Moqui.getExecutionContext()
-        ec.user.internalLoginUser("trade.admin")
-        ec.artifactExecution.disableAuthz()
-
-        String uniqueRef = "TEST-AUTH-" + System.currentTimeMillis()
+        given:
+        def instrumentId = testPrefix + "_ID"
+        def uniqueRef = testPrefix + "_REF"
         
         // 1. Create LC with narrative data
         Map createRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
+            instrumentId: instrumentId,
             lcAmount: 10000.0,
             lcCurrencyUomId: "USD",
-            expiryDate: ec.user.nowTimestamp + 30,
+            expiryDate: new java.sql.Timestamp(System.currentTimeMillis() + 86400000 * 30),
             goodsDescription: "INITIAL GOODS",
             documentsRequired: "INITIAL DOCUMENTS",
             instrumentRef: uniqueRef,
@@ -31,7 +77,7 @@ class AuthorizationDataLossSpec extends Specification {
                 [roleEnumId: "TP_ADVISING_BANK", partyId: "ADVISING_BANK_001"]
             ]
         ]).call()
-        String instrumentId = createRes.instrumentId
+        assert !ec.message.hasError()
         String transactionId = createRes.transactionId
 
         // Verify initial state
@@ -44,35 +90,20 @@ class AuthorizationDataLossSpec extends Specification {
             instrumentId: instrumentId,
             businessStateId: "LC_PENDING"
         ]).call()
+        assert !ec.message.hasError()
 
         // 3. Authorize the Transaction
         ec.service.sync().name("trade.AuthorizationServices.authorize#Instrument").parameters([
-            transactionId: transactionId
+            transactionId: transactionId,
+            skipFourEyes: true
         ]).call()
+        assert !ec.message.hasError()
 
-        // 4. Verify post-authorization state
+        when: "Fetching post-authorization state"
         def lcPost = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).one()
-        
-        logger.info(" POST-AUTH GOODS: ${lcPost?.goodsDescription}")
 
-        expect:
+        then: "Narrative fields must be preserved"
         lcPost.goodsDescription == "INITIAL GOODS"
         lcPost.documentsRequired == "INITIAL DOCUMENTS"
-        
-        cleanup:
-        if (instrumentId) {
-            ec.artifactExecution.disableAuthz()
-            // Null out latestTransactionId on the instrument before deleting transaction to avoid FK constraint violation
-            def inst = ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).one()
-            if (inst) {
-                inst.latestTransactionId = null
-                inst.update()
-            }
-            ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", instrumentId).deleteAll()
-            ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).deleteAll()
-            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", instrumentId).deleteAll()
-            ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).deleteAll()
-            ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).deleteAll()
-        }
     }
 }

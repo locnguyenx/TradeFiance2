@@ -2,61 +2,61 @@ package trade
 
 import org.moqui.context.ExecutionContext
 import org.moqui.Moqui
+import org.moqui.entity.EntityCondition
 import spock.lang.Specification
+import spock.lang.Shared
 
 /*
 ABOUTME: DualApprovalSpec verifies the multi-step approval workflow for Tier 4 transactions.
 It ensures that high-value transactions require two unique checkers before being finalized.
 */
 class DualApprovalSpec extends Specification {
-    ExecutionContext ec
+    @Shared ExecutionContext ec
+    @Shared String testPrefix
+    
+    def setupSpec() {
+        ec = Moqui.getExecutionContext()
+        testPrefix = "DUAL-APP-LC-" + System.currentTimeMillis()
+    }
 
     def setup() {
-        ec = Moqui.getExecutionContext()
         ec.artifactExecution.disableAuthz()
         
-        // Load mandatory seed data
-        ec.entity.makeDataLoader().location("component://TradeFinance/data/TradeFinanceSeedData.xml").load()
-        
-        ec.transaction.begin(null)
+        boolean begun = ec.transaction.begin(null)
         try {
-            // Clean up dependencies
-            String instId = "DUAL-APP-LC-01"
-            ec.entity.find("trade.TradeInstrument").condition("instrumentId", instId).updateAll([latestTransactionId: null])
-            ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", instId).deleteAll()
-            ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instId).deleteAll()
-            ec.entity.find("trade.TradeTransaction").condition("instrumentId", instId).deleteAll()
-            ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instId).deleteAll()
-            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", instId).deleteAll()
-            ec.entity.find("trade.TradeInstrument").condition("instrumentId", instId).deleteAll()
+            // Clean up dependencies using prefix
+            ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").updateAll([latestTransactionId: null])
+            ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+            ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+            ec.entity.find("trade.TradeTransaction").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+            ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+            ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
 
-            // Setup Users and Authority Profiles
-            ec.entity.find("trade.UserAuthorityProfile").condition("userId", "in", ["trade.maker", "trade.checker1", "trade.checker2"]).deleteAll()
-            ec.entity.find("moqui.security.UserAccount").condition("userId", "in", ["trade.maker", "trade.checker1", "trade.checker2"]).deleteAll()
-            
-            ec.entity.makeValue("moqui.security.UserAccount").setAll([userId: "trade.maker", username: "trade.maker"]).create()
-            ec.entity.makeValue("moqui.security.UserAccount").setAll([userId: "trade.checker1", username: "trade.checker1"]).create()
-            ec.entity.makeValue("moqui.security.UserAccount").setAll([userId: "trade.checker2", username: "trade.checker2"]).create()
+            // Setup Users and Authority Profiles (don't delete all, just ensure ours exist)
+            if (ec.entity.find("moqui.security.UserAccount").condition("userId", "trade.checker1").count() == 0) {
+                ec.entity.makeValue("moqui.security.UserAccount").setAll([userId: "trade.checker1", username: "trade.checker1"]).create()
+            }
+            if (ec.entity.find("moqui.security.UserAccount").condition("userId", "trade.checker2").count() == 0) {
+                ec.entity.makeValue("moqui.security.UserAccount").setAll([userId: "trade.checker2", username: "trade.checker2"]).create()
+            }
 
-            ec.entity.makeValue("trade.UserAuthorityProfile").setAll([
-                userAuthorityId: "PROFILE_MAKER", userId: "trade.maker", delegationTierId: "TIER_1", customLimit: 100000.0, makerCheckerFlag: "MAKER"
-            ]).create()
             ec.entity.makeValue("trade.UserAuthorityProfile").setAll([
                 userAuthorityId: "PROFILE_CK1", userId: "trade.checker1", delegationTierId: "TIER_4", customLimit: 10000000.0, makerCheckerFlag: "CHECKER"
-            ]).create()
+            ]).createOrUpdate()
             ec.entity.makeValue("trade.UserAuthorityProfile").setAll([
                 userAuthorityId: "PROFILE_CK2", userId: "trade.checker2", delegationTierId: "TIER_4", customLimit: 10000000.0, makerCheckerFlag: "CHECKER"
-            ]).create()
+            ]).createOrUpdate()
             
-            ec.transaction.commit()
+            ec.transaction.commit(begun)
         } catch (Exception e) {
-            ec.transaction.rollback("Error in setup", e)
+            ec.transaction.rollback(begun, "Error in setup", e)
             throw e
         }
     }
 
-    def cleanup() {
-        ec.destroy()
+    def cleanupSpec() {
+        if (ec != null) ec.destroy()
     }
 
     def "BDD-CMN-AUTH-02: Dual Checker Enforcement for Tier 4"() {

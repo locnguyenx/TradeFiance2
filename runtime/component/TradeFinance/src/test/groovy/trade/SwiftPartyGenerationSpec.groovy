@@ -4,6 +4,7 @@ import org.moqui.entity.EntityCondition
 import org.moqui.context.ExecutionContext
 import spock.lang.Specification
 import spock.lang.Stepwise
+import spock.lang.Shared
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -11,65 +12,82 @@ import org.slf4j.LoggerFactory
 @Stepwise
 class SwiftPartyGenerationSpec extends Specification {
     protected final static Logger logger = LoggerFactory.getLogger(SwiftPartyGenerationSpec.class)
-    private static ExecutionContext ec
+    @Shared ExecutionContext ec
+    @Shared String testPrefix
 
     def setupSpec() {
         ec = org.moqui.Moqui.getExecutionContext()
         ec.user.loginUser("trade.admin", "trade123")
         ec.artifactExecution.disableAuthz()
+        testPrefix = "SWTP-" + System.currentTimeMillis()
         cleanData()
     }
 
     def cleanupSpec() {
-        ec.destroy()
+        if (ec != null) {
+            cleanData()
+            ec.destroy()
+        }
     }
 
-    private static void cleanData() {
-        boolean began = ec.transaction.begin(60)
+    private void cleanData() {
+        boolean begun = ec.transaction.begin(60)
         try {
-            ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", EntityCondition.LIKE, "SWTP_%").deleteAll()
-            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", EntityCondition.LIKE, "SWTP_%").deleteAll()
-            ec.entity.find("trade.TradeInstrumentParty").condition("partyId", EntityCondition.LIKE, "SWTP_%").deleteAll()
-            ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.LIKE, "SWTP_%").deleteAll()
-            ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.LIKE, "SWTP_%").deleteAll()
-            ec.entity.find("trade.TradePartyBank").condition("partyId", EntityCondition.LIKE, "SWTP_%").deleteAll()
-            ec.entity.find("trade.TradeParty").condition("partyId", EntityCondition.LIKE, "SWTP_%").deleteAll()
-            ec.entity.find("mantle.party.Party").condition("partyId", EntityCondition.LIKE, "SWTP_%").deleteAll()
-            ec.transaction.commit(began)
+            ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+            ec.entity.find("trade.importlc.ImportLcAmendment").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+            ec.entity.find("trade.importlc.ImportLcShippingGuarantee").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+            ec.entity.find("trade.TradeSettlement").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+            ec.entity.find("trade.TradeDraft").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+            ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+            ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+            ec.entity.find("trade.TradeTransaction").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+            ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+            
+            ec.entity.find("trade.TradePartyBank").condition("partyId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+            ec.entity.find("trade.TradeParty").condition("partyId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
+            
+            ec.transaction.commit(begun)
         } catch (Exception e) {
-            ec.transaction.rollback(began, "Error in cleanData", e)
-            throw e
+            ec.transaction.rollback(begun, "Error in cleanData", e)
+            logger.warn("Cleanup failed: " + e.message)
         }
     }
 
     def "SWTP-01: MT700 generates correctly with Junction Parties"() {
         given: "Parties and an LC instrument with junction records"
+        String ts = System.currentTimeMillis()
+        String appPartyId = testPrefix + "_APP_" + ts
+        String benPartyId = testPrefix + "_BEN_" + ts
+        String advPartyId = testPrefix + "_ADV_" + ts
+        String instrumentId = testPrefix + "_LC_" + ts
+
         ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
-                .parameters([partyId: 'SWTP_APP_001', partyTypeEnumId: 'PARTY_COMMERCIAL', 
+                .parameters([partyId: appPartyId, partyTypeEnumId: 'PTY_COMMERCIAL', 
                              partyName: 'SWIFT Applicant', registeredAddress: '123 App Lane', 
-                             kycStatus: 'Active']).call()
+                             kycStatus: 'KYC_ACTIVE']).call()
         ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
-                .parameters([partyId: 'SWTP_BEN_001', partyTypeEnumId: 'PARTY_COMMERCIAL', 
+                .parameters([partyId: benPartyId, partyTypeEnumId: 'PTY_COMMERCIAL', 
                              partyName: 'SWIFT Beneficiary', registeredAddress: '456 Ben Blvd', 
-                             kycStatus: 'Active']).call()
+                             kycStatus: 'KYC_ACTIVE']).call()
         ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
-                .parameters([partyId: 'SWTP_ADV_001', partyTypeEnumId: 'PARTY_BANK', 
-                             partyName: 'Advising Bank', kycStatus: 'Active', 
+                .parameters([partyId: advPartyId, partyTypeEnumId: 'PTY_BANK', 
+                             partyName: 'Advising Bank', kycStatus: 'KYC_ACTIVE', 
                              swiftBic: 'ADVISXXX', hasActiveRMA: true]).call()
 
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([
-                instrumentId: 'SWTP_LC_001',
+                instrumentId: instrumentId,
                 lcAmount: 75000.0,
                 lcCurrencyUomId: 'USD',
                 instrumentParties: [
-                    [roleEnumId: 'TP_APPLICANT', partyId: 'SWTP_APP_001'],
-                    [roleEnumId: 'TP_BENEFICIARY', partyId: 'SWTP_BEN_001'],
-                    [roleEnumId: 'TP_ADVISING_BANK', partyId: 'SWTP_ADV_001']
+                    [roleEnumId: 'TP_APPLICANT', partyId: appPartyId],
+                    [roleEnumId: 'TP_BENEFICIARY', partyId: benPartyId],
+                    [roleEnumId: 'TP_ADVISING_BANK', partyId: advPartyId]
                 ]
             ]).call()
         assert !ec.message.hasError()
-        def instrumentId = res.instrumentId
+        def instrumentIdRes = res.instrumentId
 
         when: "MT700 is generated"
         def genRes = ec.service.sync().name("trade.SwiftGenerationServices.generate#Mt700")
@@ -88,31 +106,37 @@ class SwiftPartyGenerationSpec extends Specification {
 
     def "SWTP-02: MT700 Available With Bank (Tag 41A) from junction"() {
         given: "An LC with Negotiating Bank in junction"
+        String ts = System.currentTimeMillis()
+        String appPartyId = testPrefix + "_APP_2_" + ts
+        String benPartyId = testPrefix + "_BEN_2_" + ts
+        String negPartyId = testPrefix + "_NEG_" + ts
+        String instrumentId = testPrefix + "_LC_2_" + ts
+
         ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
-                .parameters([partyId: 'SWTP_APP_002', partyTypeEnumId: 'PARTY_COMMERCIAL', 
-                             partyName: 'App', kycStatus: 'Active']).call()
+                .parameters([partyId: appPartyId, partyTypeEnumId: 'PTY_COMMERCIAL', 
+                             partyName: 'App', kycStatus: 'KYC_ACTIVE']).call()
         ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
-                .parameters([partyId: 'SWTP_BEN_002', partyTypeEnumId: 'PARTY_COMMERCIAL', 
-                             partyName: 'Ben', kycStatus: 'Active']).call()
+                .parameters([partyId: benPartyId, partyTypeEnumId: 'PTY_COMMERCIAL', 
+                             partyName: 'Ben', kycStatus: 'KYC_ACTIVE']).call()
         ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
-                .parameters([partyId: 'SWTP_NEG_001', partyTypeEnumId: 'PARTY_BANK', 
-                             partyName: 'Neg Bank', kycStatus: 'Active', 
+                .parameters([partyId: negPartyId, partyTypeEnumId: 'PTY_BANK', 
+                             partyName: 'Neg Bank', kycStatus: 'KYC_ACTIVE', 
                              swiftBic: 'NEGOTXXX', hasActiveRMA: true]).call()
 
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([
-                instrumentId: 'SWTP_LC_002',
+                instrumentId: instrumentId,
                 lcAmount: 50000.0,
                 lcCurrencyUomId: 'USD',
-                availableWithEnumId: 'BANK',
-                availableByEnumId: 'NEGOTIATION',
+                availableByEnumId: 'AVB_BY_NEGOTIATION',
                 instrumentParties: [
-                    [roleEnumId: 'TP_APPLICANT', partyId: 'SWTP_APP_002'],
-                    [roleEnumId: 'TP_BENEFICIARY', partyId: 'SWTP_BEN_002'],
-                    [roleEnumId: 'TP_NEGOTIATING_BANK', partyId: 'SWTP_NEG_001']
-                ]
+                    [roleEnumId: 'TP_APPLICANT', partyId: appPartyId],
+                    [roleEnumId: 'TP_BENEFICIARY', partyId: benPartyId],
+                    [roleEnumId: 'TP_NEGOTIATING_BANK', partyId: negPartyId]
+                ],
+                availableWithEnumId: 'AW_SPECIFIC_BANK'
             ]).call()
-        def instrumentId = res.instrumentId
+        instrumentId = res.instrumentId
 
         when: "MT700 is generated"
         def genRes = ec.service.sync().name("trade.SwiftGenerationServices.generate#Mt700")
@@ -124,26 +148,31 @@ class SwiftPartyGenerationSpec extends Specification {
 
     def "SWTP-03: MT700 Available With ANY BANK (Tag 41D) logic"() {
         given: "An LC with Available With = ANY_BANK"
+        String ts = System.currentTimeMillis()
+        String appPartyId = testPrefix + "_APP_3_" + ts
+        String benPartyId = testPrefix + "_BEN_3_" + ts
+        String instrumentId = testPrefix + "_LC_3_" + ts
+
         ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
-                .parameters([partyId: 'SWTP_APP_003', partyTypeEnumId: 'PARTY_COMMERCIAL', 
-                             partyName: 'App', kycStatus: 'Active']).call()
+                .parameters([partyId: appPartyId, partyTypeEnumId: 'PTY_COMMERCIAL', 
+                             partyName: 'App', kycStatus: 'KYC_ACTIVE']).call()
         ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
-                .parameters([partyId: 'SWTP_BEN_003', partyTypeEnumId: 'PARTY_COMMERCIAL', 
-                             partyName: 'Ben', kycStatus: 'Active']).call()
+                .parameters([partyId: benPartyId, partyTypeEnumId: 'PTY_COMMERCIAL', 
+                             partyName: 'Ben', kycStatus: 'KYC_ACTIVE']).call()
 
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([
-                instrumentId: 'SWTP_LC_003',
+                instrumentId: instrumentId,
                 lcAmount: 50000.0,
                 lcCurrencyUomId: 'USD',
-                availableWithEnumId: 'AVAIL_ANY_BANK',
-                availableByEnumId: 'NEGOTIATION',
+                availableWithEnumId: 'AW_ANY_BANK',
+                availableByEnumId: 'AVB_BY_NEGOTIATION',
                 instrumentParties: [
-                    [roleEnumId: 'TP_APPLICANT', partyId: 'SWTP_APP_003'],
-                    [roleEnumId: 'TP_BENEFICIARY', partyId: 'SWTP_BEN_003']
+                    [roleEnumId: 'TP_APPLICANT', partyId: appPartyId],
+                    [roleEnumId: 'TP_BENEFICIARY', partyId: benPartyId]
                 ]
             ]).call()
-        def instrumentId = res.instrumentId
+        instrumentId = res.instrumentId
 
         when: "MT700 is generated"
         def genRes = ec.service.sync().name("trade.SwiftGenerationServices.generate#Mt700")

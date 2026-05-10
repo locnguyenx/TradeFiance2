@@ -25,7 +25,7 @@
         <field name="confirmationEnumId" type="id"/>
         <field name="lcTypeEnumId" type="id"/>
         <field name="availableByEnumId" type="id"/> <!-- Tag 41a Payment Method (BY_PAYMENT, BY_NEGOTIATION, etc.) -->
-        <field name="availableWithEnumId" type="id"/> <!-- Tag 41a/d: AVAIL_ANY_BANK (Tag 41D) or AVAIL_SPECIFIC_BANK (Tag 41A). 
+        <field name="availableWithEnumId" type="id"/> <!-- Tag 41a/d: ANY_BANK (Tag 41D) or SPECIFIC_BANK (Tag 41A). 
                                                             If SPECIFIC, requires BIC via role TP_NEGOTIATING_BANK. -->
         <field name="productCatalogId" type="id"/>
 
@@ -39,7 +39,7 @@
         <field name="effectiveOutstandingAmount" type="number-decimal" enable-audit-log="update"/>
         <field name="isRevolving" type="text-indicator" default="'N'"/>
         <field name="cumulativeDrawnAmount" type="number-decimal" default="0"/>
-        <field name="totalAmendmentCount" type="number-integer" default="0"/>
+        <field name="totalAmendmentCount" type="number-integer" default="0" enable-audit-log="update"/>
         
         <field name="receiptPlace" type="text-medium"/> <!-- Tag 44A: max 65, X charset -->
         <field name="finalDeliveryPlace" type="text-medium"/> <!-- Tag 44B: max 65, X charset -->
@@ -77,16 +77,16 @@
         <relationship type="one" title="TradeTenorType" related="moqui.basic.Enumeration" short-alias="tenorType">
             <key-map field-name="tenorTypeId" related="enumId"/>
         </relationship>
-        <relationship type="one" title="TradeChargeAllocation" related="moqui.basic.Enumeration" short-alias="chargeAllocation">
+        <relationship type="one-nofk" title="TradeChargeAllocation" related="moqui.basic.Enumeration" short-alias="chargeAllocation">
             <key-map field-name="chargeAllocationEnumId" related="enumId"/>
         </relationship>
-        <relationship type="one" title="TradeShipmentType" related="moqui.basic.Enumeration" short-alias="partialShipment">
+        <relationship type="one" title="TradeShipmentOption" related="moqui.basic.Enumeration" short-alias="partialShipment">
             <key-map field-name="partialShipmentEnumId" related="enumId"/>
         </relationship>
-        <relationship type="one" title="TradeShipmentType" related="moqui.basic.Enumeration" short-alias="transhipment">
+        <relationship type="one" title="TradeShipmentOption" related="moqui.basic.Enumeration" short-alias="transhipment">
             <key-map field-name="transhipmentEnumId" related="enumId"/>
         </relationship>
-        <relationship type="one" title="TradeConfirmationType" related="moqui.basic.Enumeration" short-alias="confirmation">
+        <relationship type="one" title="TradeConfirmation" related="moqui.basic.Enumeration" short-alias="confirmation">
             <key-map field-name="confirmationEnumId" related="enumId"/>
         </relationship>
         <relationship type="one" title="TradeLcType" related="moqui.basic.Enumeration" short-alias="lcType">
@@ -113,14 +113,103 @@
         <relationship type="one" title="TradeMarginType" related="moqui.basic.Enumeration" short-alias="marginTypeEnum">
             <key-map field-name="marginType" related="enumId"/>
         </relationship>
+        <relationship type="many" related="trade.importlc.ImportLcAmendment" short-alias="amendments">
+            <key-map field-name="instrumentId"/>
+        </relationship>
+        <relationship type="many" related="trade.importlc.TradeDocumentPresentation" short-alias="presentations">
+            <key-map field-name="instrumentId"/>
+        </relationship>
+        <relationship type="many" related="trade.importlc.ImportLcShippingGuarantee" short-alias="shippingGuarantees">
+            <key-map field-name="instrumentId"/>
+        </relationship>
+        <relationship type="many" related="trade.importlc.ImportLcSettlement" short-alias="settlements">
+            <key-map field-name="instrumentId"/>
+        </relationship>
+        <relationship type="many" related="trade.importlc.SwiftMessage" short-alias="swiftMessages">
+            <key-map field-name="instrumentId"/>
+        </relationship>
 
         <master>
-            <detail relationship="instrument"/>
             <detail relationship="businessState"/>
-            <detail relationship="tenorType"/>
-            <detail relationship="productCatalog"/>
-            <detail relationship="effectiveCurrency"/>
+            <detail relationship="lcType"/>
+            <detail relationship="confirmation"/>
+            <detail relationship="instrument"/>
+            <detail relationship="amendments"/>
+            <detail relationship="presentations"/>
+            <detail relationship="settlements"/>
         </master>
+        <seed-data>
+            <!-- TradeLcType -->
+            <moqui.basic.EnumerationType enumTypeId="TradeLcType" description="LC Types"/>
+            <moqui.basic.Enumeration enumId="LCT_IRREVOCABLE" enumTypeId="TradeLcType" description="IRREVOCABLE"/>
+            <moqui.basic.Enumeration enumId="LCT_REVOCABLE" enumTypeId="TradeLcType" description="REVOCABLE"/>
+            <moqui.basic.Enumeration enumId="LCT_STANDBY" enumTypeId="TradeLcType" description="STANDBY"/>
+            <moqui.basic.Enumeration enumId="LCT_IRREVOCABLE_TRANSFERABLE" enumTypeId="TradeLcType" description="IRREVOCABLE TRANSFERABLE"/>
+            <moqui.basic.Enumeration enumId="LCT_REVOCABLE_TRANSFERABLE" enumTypeId="TradeLcType" description="REVOCABLE TRANSFERABLE"/>
+            <moqui.basic.Enumeration enumId="LCT_SIGHT" enumTypeId="TradeLcType" description="SIGHT"/>
+            <moqui.basic.Enumeration enumId="LCT_USANCE" enumTypeId="TradeLcType" description="USANCE"/>
+            <!-- TradeChargeAllocation -->
+            <moqui.basic.EnumerationType enumTypeId="TradeChargeAllocation" description="Charge Allocation Options"/>
+            <moqui.basic.Enumeration enumId="CHG_SHARED" enumTypeId="TradeChargeAllocation" description="Shared (Applicant and Beneficiary)"/>
+            <moqui.basic.Enumeration enumId="CHG_APPLICANT" enumTypeId="TradeChargeAllocation" description="All Charges on Applicant"/>
+            <moqui.basic.Enumeration enumId="CHG_BENEFICIARY" enumTypeId="TradeChargeAllocation" description="All Charges on Beneficiary"/>
+            <!-- TradeAvailableBy -->
+            <moqui.basic.EnumerationType enumTypeId="TradeAvailableBy" description="LC Availability Methods (Tag 41a)"/>
+            <moqui.basic.Enumeration enumId="AVB_BY_PAYMENT" enumTypeId="TradeAvailableBy" description="BY PAYMENT"/>
+            <moqui.basic.Enumeration enumId="AVB_BY_ACCEPTANCE" enumTypeId="TradeAvailableBy" description="BY ACCEPTANCE"/>
+            <moqui.basic.Enumeration enumId="AVB_BY_NEGOTIATION" enumTypeId="TradeAvailableBy" description="BY NEGOTIATION"/>
+            <moqui.basic.Enumeration enumId="AVB_BY_DEF_PAYMENT" enumTypeId="TradeAvailableBy" description="BY DEF PAYMENT"/>
+            <moqui.basic.Enumeration enumId="AVB_BY_MIXED_PAYMENT" enumTypeId="TradeAvailableBy" description="BY MIXED PAYMENT"/>
+            <moqui.basic.Enumeration enumId="AVB_BY_SIGHT_PAYMENT" enumTypeId="TradeAvailableBy" description="BY SIGHT PAYMENT"/>
+            <!-- TradeLcAvailWith -->
+            <moqui.basic.EnumerationType enumTypeId="TradeLcAvailWith" description="Available With Bank Types"/>
+            <moqui.basic.Enumeration enumId="AW_ANY_BANK" enumTypeId="TradeLcAvailWith" description="Any Bank"/>
+            <moqui.basic.Enumeration enumId="AW_SPECIFIC_BANK" enumTypeId="TradeLcAvailWith" description="Specific Bank"/>
+            <!-- ApplicableRules -->
+            <moqui.basic.EnumerationType enumTypeId="ApplicableRules" description="Applicable Rules (Tag 40E/40F)"/>
+            <moqui.basic.Enumeration enumId="APR_UCP_LATEST" enumTypeId="ApplicableRules" description="UCP LATEST VERSION"/>
+            <moqui.basic.Enumeration enumId="APR_EUCP_LATEST" enumTypeId="ApplicableRules" description="EUCP LATEST VERSION"/>
+            <moqui.basic.Enumeration enumId="APR_UCPDC_600" enumTypeId="ApplicableRules" description="UCP 600"/>
+            <moqui.basic.Enumeration enumId="APR_ISP_LATEST" enumTypeId="ApplicableRules" description="ISP LATEST VERSION"/>
+            <moqui.basic.Enumeration enumId="APR_OTHER" enumTypeId="ApplicableRules" description="OTHER"/>
+            <!-- ReimbursingCharges -->
+            <moqui.basic.EnumerationType enumTypeId="TradeReimbCharges" description="Reimbursement Charge Options"/>
+            <moqui.basic.Enumeration enumId="RMB_OUR" enumTypeId="TradeReimbCharges" description="OUR"/>
+            <moqui.basic.Enumeration enumId="RMB_BEN" enumTypeId="TradeReimbCharges" description="BEN"/>
+            <!-- TradeLcBusinessState -->
+            <moqui.basic.StatusType statusTypeId="TradeLcBusinessState" description="Import LC Business Lifecycle States"/>
+            <moqui.basic.StatusItem statusId="LC_DRAFT" statusTypeId="TradeLcBusinessState" description="Draft"/>
+            <moqui.basic.StatusItem statusId="LC_PENDING" statusTypeId="TradeLcBusinessState" description="Pending Approval"/>
+            <moqui.basic.StatusItem statusId="LC_ISSUED" statusTypeId="TradeLcBusinessState" description="Issued/Active"/>
+            <moqui.basic.StatusItem statusId="LC_DOC_RECEIVED" statusTypeId="TradeLcBusinessState" description="Documents Received"/>
+            <moqui.basic.StatusItem statusId="LC_DISCREPANT" statusTypeId="TradeLcBusinessState" description="Discrepant"/>
+            <moqui.basic.StatusItem statusId="LC_ACCEPTED" statusTypeId="TradeLcBusinessState" description="Accepted/Clean"/>
+            <moqui.basic.StatusItem statusId="LC_SETTLED" statusTypeId="TradeLcBusinessState" description="Settled"/>
+            <moqui.basic.StatusItem statusId="LC_EXPIRED" statusTypeId="TradeLcBusinessState" description="Expired"/>
+            <moqui.basic.StatusItem statusId="LC_CLOSED" statusTypeId="TradeLcBusinessState" description="Closed"/>
+            <moqui.basic.StatusItem statusId="LC_CANCELLED" statusTypeId="TradeLcBusinessState" description="Cancelled"/>
+            <moqui.basic.StatusItem statusId="LC_AMENDMENT_PENDING" statusTypeId="TradeLcBusinessState" description="Amendment Pending"/>
+            <moqui.basic.StatusItem statusId="LC_HOLD" statusTypeId="TradeLcBusinessState" description="Compliance Hold"/>
+            <!-- StatusFlow for LC lifecycle -->
+            <moqui.basic.StatusFlow statusFlowId="ImportLcDefault" statusTypeId="TradeLcBusinessState" description="Import LC Default Flow"/>
+            <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_DRAFT" toStatusId="LC_PENDING" transitionName="Submit for Approval"/>
+            <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_PENDING" toStatusId="LC_ISSUED" transitionName="Authorize/Issue"/>
+            <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_PENDING" toStatusId="LC_DRAFT" transitionName="Return to Draft"/>
+            <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_ISSUED" toStatusId="LC_DOC_RECEIVED" transitionName="Receive Documents"/>
+            <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_ISSUED" toStatusId="LC_EXPIRED" transitionName="Expire LC"/>
+            <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_ISSUED" toStatusId="LC_CLOSED" transitionName="Close LC"/>
+            <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_DOC_RECEIVED" toStatusId="LC_DISCREPANT" transitionName="Flag Discrepancy"/>
+            <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_DOC_RECEIVED" toStatusId="LC_ACCEPTED" transitionName="Accept Documents"/>
+            <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_DISCREPANT" toStatusId="LC_ACCEPTED" transitionName="Waive Discrepancy"/>
+            <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_ACCEPTED" toStatusId="LC_SETTLED" transitionName="Settle"/>
+            <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_ACCEPTED" toStatusId="LC_ISSUED" transitionName="Revert to Issued on Partial Settlement"/>
+            <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_SETTLED" toStatusId="LC_CLOSED" transitionName="Close After Settlement"/>
+            <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_SETTLED" toStatusId="LC_ISSUED" transitionName="Reinstate After Partial Settlement"/>
+            <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_ISSUED" toStatusId="LC_AMENDMENT_PENDING" transitionName="Request Amendment"/>
+            <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_ISSUED" toStatusId="LC_CANCELLED" transitionName="Cancel LC"/>
+            <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_DRAFT" toStatusId="LC_CANCELLED" transitionName="Cancel Draft"/>
+            <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="LC_AMENDMENT_PENDING" toStatusId="LC_ISSUED" transitionName="Complete Amendment"/>
+        </seed-data>
     </entity>
 
     <entity entity-name="SwiftMessage" package="trade.importlc">
@@ -134,8 +223,8 @@
         <relationship type="one" related="trade.TradeInstrument" short-alias="instrument">
             <key-map field-name="instrumentId"/>
         </relationship>
-        <relationship type="one" title="TradeSwiftStatus" related="moqui.basic.StatusItem" short-alias="status">
-            <key-map field-name="messageStatusId"/>
+        <relationship type="one" title="SwiftMessageStatus" related="moqui.basic.StatusItem" short-alias="messageStatus">
+            <key-map field-name="messageStatusId" related="statusId"/>
         </relationship>
     </entity>
 
@@ -154,9 +243,16 @@
         <relationship type="one" related="trade.importlc.ImportLetterOfCredit" short-alias="importLc">
             <key-map field-name="instrumentId"/>
         </relationship>
-        <relationship type="one" title="TradeSgStatus" related="moqui.basic.StatusItem" short-alias="status">
+        <relationship type="one" title="TradeGuaranteeStatus" related="moqui.basic.StatusItem" short-alias="status">
             <key-map field-name="sgStatusId" related="statusId"/>
         </relationship>
+        <seed-data>
+            <!-- TradeGuaranteeStatus -->
+            <moqui.basic.StatusType statusTypeId="TradeGuaranteeStatus" description="Shipping Guarantee Statuses"/>
+            <moqui.basic.StatusItem statusId="SG_DRAFT" statusTypeId="TradeGuaranteeStatus" description="Draft"/>
+            <moqui.basic.StatusItem statusId="SG_ISSUED" statusTypeId="TradeGuaranteeStatus" description="Issued"/>
+            <moqui.basic.StatusItem statusId="SG_RETURNED" statusTypeId="TradeGuaranteeStatus" description="Returned/Cancelled"/>
+        </seed-data>
     </entity>
 
     <entity entity-name="TradeDocumentPresentation" package="trade.importlc" short-alias="presentations">
@@ -178,7 +274,7 @@
             <key-map field-name="instrumentId"/>
         </relationship>
         <relationship type="one" title="TradePresentationStatus" related="moqui.basic.StatusItem" short-alias="status">
-            <key-map field-name="presentationStatusId"/>
+            <key-map field-name="presentationStatusId" related="statusId"/>
         </relationship>
         <relationship type="one" title="TradeBeneDecision" related="moqui.basic.Enumeration" short-alias="applicantDecision">
             <key-map field-name="applicantDecisionEnumId" related="enumId"/>
@@ -195,6 +291,23 @@
         <relationship type="many" related="trade.importlc.PresentationDiscrepancy" short-alias="discrepancies">
             <key-map field-name="presentationId"/>
         </relationship>
+        <seed-data>
+            <!-- TradePresentationStatus -->
+            <moqui.basic.StatusType statusTypeId="TradePresentationStatus" description="Document Presentation Statuses"/>
+            <moqui.basic.StatusItem statusId="PRES_DRAFT" statusTypeId="TradePresentationStatus" description="Draft"/>
+            <moqui.basic.StatusItem statusId="PRES_RECEIVED" statusTypeId="TradePresentationStatus" description="Documents Received"/>
+            <moqui.basic.StatusItem statusId="PRES_EXAMINING" statusTypeId="TradePresentationStatus" description="Examination in Progress"/>
+            <moqui.basic.StatusItem statusId="PRES_DISCREPANT" statusTypeId="TradePresentationStatus" description="Discrepant"/>
+            <moqui.basic.StatusItem statusId="PRES_COMPLIANT" statusTypeId="TradePresentationStatus" description="Compliant Presentation"/>
+            <moqui.basic.StatusItem statusId="PRES_EXAMINED" statusTypeId="TradePresentationStatus" description="Examination Completed"/>
+            <moqui.basic.StatusItem statusId="PRES_AUTHORIZED" statusTypeId="TradePresentationStatus" description="Authorized"/>
+            <moqui.basic.StatusItem statusId="PRES_REJECTED" statusTypeId="TradePresentationStatus" description="Rejected"/>
+            <moqui.basic.StatusItem statusId="PRES_SETTLED" statusTypeId="TradePresentationStatus" description="Settled"/>
+            <!-- DocumentDisposal -->
+            <moqui.basic.EnumerationType enumTypeId="DocumentDisposal" description="Document Disposal Options (Tag 77B)"/>
+            <moqui.basic.Enumeration enumId="HOLDING_DOCUMENTS" description="Holding Documents" enumTypeId="DocumentDisposal"/>
+            <moqui.basic.Enumeration enumId="RETURNING_DOCUMENTS" description="Returning Documents" enumTypeId="DocumentDisposal"/>
+        </seed-data>
     </entity>
 
     <entity entity-name="TradeDocumentPresentationItem" package="trade.importlc">
@@ -287,20 +400,20 @@
         <relationship type="one" title="TradeTenorType" related="moqui.basic.Enumeration" short-alias="newTenorType">
             <key-map field-name="newTenorTypeEnumId" related="enumId"/>
         </relationship>
-        <relationship type="one" title="TradeShipmentType" related="moqui.basic.Enumeration" short-alias="newPartialShipment">
+        <relationship type="one" title="TradeShipmentOption" related="moqui.basic.Enumeration" short-alias="newPartialShipment">
             <key-map field-name="newPartialShipmentEnumId" related="enumId"/>
         </relationship>
-        <relationship type="one" title="TradeShipmentType" related="moqui.basic.Enumeration" short-alias="newTranshipment">
+        <relationship type="one" title="TradeShipmentOption" related="moqui.basic.Enumeration" short-alias="newTranshipment">
             <key-map field-name="newTranshipmentEnumId" related="enumId"/>
         </relationship>
-        <relationship type="one" title="TradeConfirmationType" related="moqui.basic.Enumeration" short-alias="newConfirmation">
+        <relationship type="one" title="TradeConfirmation" related="moqui.basic.Enumeration" short-alias="newConfirmation">
             <key-map field-name="newConfirmationEnumId" related="enumId"/>
         </relationship>
-        <relationship type="one" title="TradeConsentStatus" related="moqui.basic.StatusItem" short-alias="consentStatus">
-            <key-map field-name="beneficiaryConsentStatusId"/>
+        <relationship type="one" title="BeneficiaryConsentStatus" related="moqui.basic.StatusItem" short-alias="consentStatus">
+            <key-map field-name="beneficiaryConsentStatusId" related="statusId"/>
         </relationship>
-        <relationship type="one" title="TradeLcBusinessState" related="moqui.basic.StatusItem" short-alias="businessState">
-            <key-map field-name="amendmentBusinessStateId"/>
+        <relationship type="one" title="TradeAmendmentBusinessState" related="moqui.basic.StatusItem" short-alias="businessState">
+            <key-map field-name="amendmentBusinessStateId" related="statusId"/>
         </relationship>
         <relationship type="one" title="TradeAmendmentType" related="moqui.basic.Enumeration" short-alias="amendmentType">
             <key-map field-name="amendmentTypeEnumId" related="enumId"/>
@@ -308,6 +421,52 @@
         <relationship type="one" title="TradeChargeAllocation" related="moqui.basic.Enumeration" short-alias="chargeAllocation">
             <key-map field-name="chargeAllocationEnumId" related="enumId"/>
         </relationship>
+        <relationship type="one-nofk" title="SpecialPaymentBeneAction" related="moqui.basic.Enumeration" short-alias="specialPaymentBeneAction">
+            <key-map field-name="specialPaymentBeneActionEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one-nofk" title="SpecialPaymentBankAction" related="moqui.basic.Enumeration" short-alias="specialPaymentBankAction">
+            <key-map field-name="specialPaymentBankActionEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one-nofk" title="AmendmentPaidBy" related="moqui.basic.Enumeration" short-alias="amendmentPaidBy">
+            <key-map field-name="amendmentPaidByEnumId" related="enumId"/>
+        </relationship>
+        <seed-data>
+            <!-- TradeAmendmentType -->
+            <moqui.basic.EnumerationType enumTypeId="TradeAmendmentType" description="Amendment Types"/>
+            <moqui.basic.Enumeration enumId="AMD_TYPE_DATE" enumTypeId="TradeAmendmentType" description="Date Amendment"/>
+            <moqui.basic.Enumeration enumId="AMEND_TYPE_AMOUNT" enumTypeId="TradeAmendmentType" description="Amount Amendment"/>
+            <moqui.basic.Enumeration enumId="AMD_TYPE_INTERNAL" enumTypeId="TradeAmendmentType" description="Internal Amendment"/>
+            <moqui.basic.Enumeration enumId="AMEND_EXTENSION" enumTypeId="TradeAmendmentType" description="Extension of Expiry"/>
+            <moqui.basic.Enumeration enumId="AMEND_OTHER" enumTypeId="TradeAmendmentType" description="Other Non-Financial Changes"/>
+            <moqui.basic.Enumeration enumId="AMEND_INCREASE" enumTypeId="TradeAmendmentType" description="Amount Increase"/>
+            <moqui.basic.Enumeration enumId="AMEND_DECREASE" enumTypeId="TradeAmendmentType" description="Amount Decrease"/>
+            <!-- TradeAmendmentAction -->
+            <moqui.basic.EnumerationType enumTypeId="TradeAmendmentAction" description="Amendment Action Types"/>
+            <moqui.basic.Enumeration enumId="AMA_ADD" enumTypeId="TradeAmendmentAction" description="ADD"/>
+            <moqui.basic.Enumeration enumId="AMA_DELETE" enumTypeId="TradeAmendmentAction" description="DELETE"/>
+            <moqui.basic.Enumeration enumId="AMA_REPLACE" enumTypeId="TradeAmendmentAction" description="REP"/>
+            <!-- TradeConfirmation: Consolidated into TradeFinanceSeedData.xml -->
+            <!-- TradeAmendmentBusinessState -->
+            <moqui.basic.StatusType statusTypeId="TradeAmendmentBusinessState" description="Import LC Amendment Business States"/>
+            <moqui.basic.StatusItem statusId="AMEND_DRAFT" statusTypeId="TradeAmendmentBusinessState" description="Draft"/>
+            <moqui.basic.StatusItem statusId="AMEND_PENDING_APPROVAL" statusTypeId="TradeAmendmentBusinessState" description="Pending Approval"/>
+            <moqui.basic.StatusItem statusId="AMEND_APPROVED" statusTypeId="TradeAmendmentBusinessState" description="Approved"/>
+            <moqui.basic.StatusItem statusId="AMEND_REJECTED" statusTypeId="TradeAmendmentBusinessState" description="Rejected"/>
+            <moqui.basic.StatusItem statusId="AMEND_COMMITTED" statusTypeId="TradeAmendmentBusinessState" description="Committed to LC"/>
+            <!-- BeneficiaryConsentStatus -->
+            <moqui.basic.StatusType statusTypeId="BeneficiaryConsentStatus" description="Beneficiary Consent Statuses"/>
+            <moqui.basic.StatusItem statusId="BENE_PENDING" statusTypeId="BeneficiaryConsentStatus" description="Pending"/>
+            <moqui.basic.StatusItem statusId="PENDING" statusTypeId="BeneficiaryConsentStatus" description="Pending"/>
+            <moqui.basic.StatusItem statusId="BENE_ACCEPTED" statusTypeId="BeneficiaryConsentStatus" description="Accepted"/>
+            <moqui.basic.StatusItem statusId="ACCEPTED" statusTypeId="BeneficiaryConsentStatus" description="Accepted"/>
+            <moqui.basic.StatusItem statusId="BENE_REJECTED" statusTypeId="BeneficiaryConsentStatus" description="Rejected"/>
+            <moqui.basic.StatusItem statusId="REJECTED" statusTypeId="BeneficiaryConsentStatus" description="Rejected"/>
+            <!-- Amendment StatusFlow -->
+            <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="AMEND_DRAFT" toStatusId="AMEND_PENDING_APPROVAL" transitionName="Submit for Approval"/>
+            <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="AMEND_PENDING_APPROVAL" toStatusId="AMEND_APPROVED" transitionName="Approve Amendment"/>
+            <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="AMEND_PENDING_APPROVAL" toStatusId="AMEND_REJECTED" transitionName="Reject Amendment"/>
+            <moqui.basic.StatusFlowTransition statusFlowId="ImportLcDefault" statusId="AMEND_APPROVED" toStatusId="AMEND_COMMITTED" transitionName="Commit to LC"/>
+        </seed-data>
     </entity>
 
     <entity entity-name="ImportLcInternalAmendment" package="trade.importlc">
@@ -378,6 +537,18 @@
         <relationship type="one" title="TradeSettlementStatus" related="moqui.basic.StatusItem" short-alias="status">
             <key-map field-name="settlementStatusId"/>
         </relationship>
+        <seed-data>
+            <!-- TradeSettlementType -->
+            <moqui.basic.EnumerationType enumTypeId="TradeSettlementType" description="Settlement Types"/>
+            <moqui.basic.Enumeration enumId="SIGHT_PAYMENT" enumTypeId="TradeSettlementType" description="Sight Payment"/>
+            <moqui.basic.Enumeration enumId="DEFERRED_PAYMENT" enumTypeId="TradeSettlementType" description="Deferred Payment"/>
+            <moqui.basic.Enumeration enumId="ACCEPTANCE" enumTypeId="TradeSettlementType" description="Acceptance"/>
+            <!-- TradeSettlementStatus -->
+            <moqui.basic.StatusType statusTypeId="TradeSettlementStatus" description="Settlement Processing Statuses"/>
+            <moqui.basic.StatusItem statusId="SETTLE_PENDING" statusTypeId="TradeSettlementStatus" description="Pending"/>
+            <moqui.basic.StatusItem statusId="SETTLE_EXECUTED" statusTypeId="TradeSettlementStatus" description="Executed"/>
+            <moqui.basic.StatusItem statusId="SETTLE_FAILED" statusTypeId="TradeSettlementStatus" description="Failed"/>
+        </seed-data>
     </entity>
 
     <entity entity-name="NostroReconciliation" package="trade.importlc" short-alias="nostroReconciliations">
@@ -409,6 +580,14 @@
         <relationship type="one-nofk" title="MatchedBy" related="moqui.security.UserAccount" short-alias="matchedBy">
             <key-map field-name="matchedByUserId" related="userId"/>
         </relationship>
+        <seed-data>
+            <!-- TradeReconStatus -->
+            <moqui.basic.EnumerationType enumTypeId="TradeReconStatus" description="Nostro Reconciliation Match Statuses"/>
+            <moqui.basic.Enumeration enumId="RECON_PENDING" enumTypeId="TradeReconStatus" description="Pending Reconciliation"/>
+            <moqui.basic.Enumeration enumId="RECON_MATCHED" enumTypeId="TradeReconStatus" description="Matched"/>
+            <moqui.basic.Enumeration enumId="RECON_PARTIAL" enumTypeId="TradeReconStatus" description="Partially Matched"/>
+            <moqui.basic.Enumeration enumId="RECON_UNMATCHED" enumTypeId="TradeReconStatus" description="Unmatched"/>
+        </seed-data>
     </entity>
 
     <view-entity entity-name="ImportLetterOfCreditView" package="trade.importlc">

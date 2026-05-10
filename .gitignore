@@ -12,6 +12,8 @@ build
 *.log
 test*.txt
 scratch
+playwright-report
+test-results
 
 # ignore moqui framework
 /framework

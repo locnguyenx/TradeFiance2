@@ -64,7 +64,8 @@
                     transactionDate: ec.user.nowTimestamp,
                     makerUserId: ec.user.userId,
                     makerTimestamp: ec.user.nowTimestamp,
-                    priorityEnumId: priorityEnumId ?: 'NORMAL',
+                    amount: claimAmount,
+                    priorityEnumId: priorityEnumId ?: 'PRIO_NORMAL',
                     versionNumber: 1,
                     relatedRecordId: presentationId,
                     relatedRecordType: 'PRESENTATION'
@@ -204,7 +205,7 @@
                     transactionDate: ec.user.nowTimestamp,
                     makerUserId: ec.user.userId,
                     makerTimestamp: ec.user.nowTimestamp,
-                    priorityEnumId: priorityEnumId ?: 'NORMAL',
+                    priorityEnumId: priorityEnumId ?: 'PRIO_NORMAL',
                     versionNumber: 1,
                     relatedRecordId: guaranteeId,
                     relatedRecordType: 'SHIPPING_GUARANTEE'
@@ -625,10 +626,11 @@
         <in-parameters>
             <auto-parameters entity-name="trade.TradeParty" include="nonpk"/>
             <parameter name="partyId"/>
+            <parameter name="roleEnumId"/>
             <!-- Bank-specific fields -->
             <parameter name="swiftBic"/>
             <parameter name="clearingCode"/>
-            <parameter name="hasActiveRMA" type="Boolean" default="false"/>
+            <parameter name="hasActiveRMA" type="Boolean"/>
             <parameter name="nostroAccountRef"/>
             <parameter name="fiLimitAvailable" type="BigDecimal"/>
             <parameter name="fiLimitCurrencyUomId"/>
@@ -642,7 +644,8 @@
         </out-parameters>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
-            <log message="Ensuring TradeParty exists for ID: ${partyId}"/>
+            <log message="DEBUG_CREATE_PARTY: context=${context}"/>
+            <log message="create#TradeParty: partyId=${partyId}, roleEnumId=${roleEnumId}, partyTypeEnumId=${partyTypeEnumId}"/>
             
             <!-- Validate SWIFT X-charset for partyName -->
             <if condition="partyName">
@@ -653,45 +656,104 @@
                 </script>
                 <check-errors/>
             </if>
-            
-            <!-- 1. Check if TradeParty already exists -->
-            <entity-find-one entity-name="trade.TradeParty" value-field="existingTradeParty"/>
-            <if condition="existingTradeParty != null">
-                <log message="TradeParty ${partyId} already exists, skipping creation."/>
-                <return/>
-            </if>
- 
-            <!-- 2. Create mantle.party.Party if it doesn't exist -->
-            <entity-find-one entity-name="mantle.party.Party" value-field="existingParty"/>
-            <if condition="existingParty == null">
-                <log message="Creating mantle.party.Party for ${partyId}"/>
-                <service-call name="create#mantle.party.Party" in-map="[partyId:partyId, partyTypeEnumId:'PtyOrganization']"/>
-            </if>
- 
-            <!-- 3. Infer partyTypeEnumId from roleEnumId if missing -->
-            <if condition="!partyTypeEnumId &amp;&amp; roleEnumId">
-                <if condition="['TP_ISSUING_BANK', 'TP_APPLICANT_BANK', 'TP_ADVISING_BANK', 'TP_ADVISE_THROUGH_BANK', 'TP_CONFIRMING_BANK', 'TP_NEGOTIATING_BANK', 'TP_REIMBURSING_BANK', 'TP_PRESENTING_BANK'].contains(roleEnumId)">
-                    <set field="partyTypeEnumId" value="PARTY_BANK"/>
-                </if>
-                <else-if condition="['TP_APPLICANT', 'TP_BENEFICIARY'].contains(roleEnumId)">
-                    <set field="partyTypeEnumId" value="PARTY_COMMERCIAL"/>
-                </else-if>
-            </if>
-            
-            <!-- 4. Create trade.TradeParty -->
-            <log message="Creating TradeParty with context: ${context}"/>
-            <service-call name="create#trade.TradeParty" in-map="context" out-map="partyOut"/>
-            <set field="partyId" from="partyOut.partyId"/>
-            
-            <!-- 4. Handle Bank Extension -->
-            <if condition="partyTypeEnumId == 'PARTY_BANK'">
-                <entity-find-one entity-name="trade.TradePartyBank" value-field="existingBank"/>
-                <if condition="existingBank == null">
-                    <log message="Creating Bank Extension for ${partyId}"/>
-                    <service-call name="create#trade.TradePartyBank" 
-                                  in-map="context + [partyId: partyId, hasActiveRMA: hasActiveRMA ? 'Y' : 'N']"/>
-                </if>
-            </if>
+
+            <script><![CDATA[
+                import org.moqui.service.ServiceException
+                
+                // 1. Initial Logging
+                ec.logger.info("DEBUG_CREATE_PARTY: partyId=${partyId}, roleEnumId=${roleEnumId}, partyTypeEnumId=${partyTypeEnumId}")
+
+                // 2. Resolve Party Type from Role if not provided
+                if (!context.partyTypeEnumId && context.roleEnumId) {
+                    if (['TP_ISSUING_BANK', 'TP_APPLICANT_BANK', 'TP_ADVISING_BANK', 
+                         'TP_ADVISE_THROUGH_BANK', 'TP_CONFIRMING_BANK', 'TP_REIMBURSING_BANK', 
+                         'TP_NEGOTIATING_BANK', 'TP_DRAWEE_BANK', 'TP_PRESENTING_BANK',
+                         'TP_INTERMEDIARY_BANK', 'TP_SENDERS_CORRESPONDENT', 'TP_RECEIVERS_CORRESPONDENT'].contains(context.roleEnumId)) {
+                        context.partyTypeEnumId = 'PTY_BANK'
+                    } else if (['TP_APPLICANT', 'TP_BENEFICIARY'].contains(context.roleEnumId)) {
+                        context.partyTypeEnumId = 'PTY_COMMERCIAL'
+                    }
+                    ec.logger.info("INFERRED_TYPE: role=${context.roleEnumId} -> type=${context.partyTypeEnumId}")
+                }
+
+                // 3. Handle trade.TradeParty
+                def existingTradeParty = ec.entity.find("trade.TradeParty").condition("partyId", context.partyId).one()
+                if (existingTradeParty != null) {
+                    ec.logger.info("FOUND_TRADE_PARTY: ${context.partyId}")
+                    boolean changed = false
+                    if (context.partyTypeEnumId && existingTradeParty.partyTypeEnumId != context.partyTypeEnumId) {
+                        existingTradeParty.partyTypeEnumId = context.partyTypeEnumId
+                        changed = true
+                    }
+                    if (context.kycStatus && existingTradeParty.kycStatus != context.kycStatus) {
+                        existingTradeParty.kycStatus = context.kycStatus
+                        changed = true
+                    }
+                    if (context.partyName && existingTradeParty.partyName != context.partyName) {
+                        existingTradeParty.partyName = context.partyName
+                        changed = true
+                    }
+                    if (context.registeredAddress && existingTradeParty.registeredAddress != context.registeredAddress) {
+                        existingTradeParty.registeredAddress = context.registeredAddress
+                        changed = true
+                    }
+                    if (context.accountNumber && existingTradeParty.accountNumber != context.accountNumber) {
+                        existingTradeParty.accountNumber = context.accountNumber
+                        changed = true
+                    }
+                    if (changed) existingTradeParty.update()
+                } else {
+                    ec.logger.info("CREATING_TRADE_PARTY: ${context.partyId}")
+                    
+                    // 3a. Ensure mantle.party.Party exists
+                    def existingParty = ec.entity.find("mantle.party.Party").condition("partyId", context.partyId).one()
+                    if (existingParty == null) {
+                        ec.service.sync().name("create#mantle.party.Party")
+                            .parameters([partyId: context.partyId, partyTypeEnumId: 'PtyOrganization']).call()
+                    }
+                    
+                    // 3b. Create trade.TradeParty
+                    def newTradeParty = ec.entity.makeValue("trade.TradeParty")
+                    newTradeParty.partyId = context.partyId
+                    newTradeParty.partyTypeEnumId = context.partyTypeEnumId
+                    newTradeParty.partyName = context.partyName
+                    newTradeParty.registeredAddress = context.registeredAddress
+                    newTradeParty.accountNumber = context.accountNumber
+                    newTradeParty.kycStatus = context.kycStatus ?: 'KYC_ACTIVE'
+                    newTradeParty.kycExpiryDate = context.kycExpiryDate
+                    newTradeParty.sanctionsStatus = context.sanctionsStatus
+                    newTradeParty.countryOfRisk = context.countryOfRisk
+                    newTradeParty.create()
+                }
+
+                // 4. Handle Bank Extension
+                if (context.partyTypeEnumId?.toString() == 'PTY_BANK') {
+                    def existingBank = ec.entity.find("trade.TradePartyBank").condition("partyId", context.partyId).one()
+                    if (existingBank == null) {
+                        ec.logger.info("CREATING_BANK_EXTENSION: ${context.partyId}")
+                        def newBank = ec.entity.makeValue("trade.TradePartyBank")
+                        newBank.partyId = context.partyId
+                        newBank.swiftBic = context.swiftBic
+                        newBank.clearingCode = context.clearingCode
+                        newBank.hasActiveRMA = (context.hasActiveRMA ? 'Y' : 'N')
+                        newBank.nostroAccountRef = context.nostroAccountRef
+                        newBank.fiLimitAvailable = context.fiLimitAvailable
+                        newBank.fiLimitCurrencyUomId = context.fiLimitCurrencyUomId
+                        newBank.create()
+                    } else {
+                        ec.logger.info("UPDATING_BANK_EXTENSION: ${context.partyId}")
+                        boolean changed = false
+                        if (context.swiftBic != null && existingBank.swiftBic != context.swiftBic) { existingBank.swiftBic = context.swiftBic; changed = true }
+                        if (context.clearingCode != null && existingBank.clearingCode != context.clearingCode) { existingBank.clearingCode = context.clearingCode; changed = true }
+                        String rmaVal = (context.hasActiveRMA ? 'Y' : 'N')
+                        if (context.hasActiveRMA != null && existingBank.hasActiveRMA != rmaVal) { existingBank.hasActiveRMA = rmaVal; changed = true }
+                        if (context.nostroAccountRef != null && existingBank.nostroAccountRef != context.nostroAccountRef) { existingBank.nostroAccountRef = context.nostroAccountRef; changed = true }
+                        if (context.fiLimitAvailable != null && existingBank.fiLimitAvailable != context.fiLimitAvailable) { existingBank.fiLimitAvailable = context.fiLimitAvailable; changed = true }
+                        if (context.fiLimitCurrencyUomId != null && existingBank.fiLimitCurrencyUomId != context.fiLimitCurrencyUomId) { existingBank.fiLimitCurrencyUomId = context.fiLimitCurrencyUomId; changed = true }
+                        if (changed) existingBank.update()
+                    }
+                }
+            ]]></script>
         </actions>
     </service>
  
@@ -706,26 +768,26 @@
             <log message="Assigning Party ${partyId} to Instrument ${instrumentId} as ${roleEnumId}"/>
             
             <!-- 1. Resolve Party and Type -->
-            <entity-find-one entity-name="trade.TradeParty" value-field="party"/>
+            <entity-find-one entity-name="trade.TradeParty" value-field="party" use-cache="false"/>
             <if condition="party == null">
                 <log level="error" message="Party ${partyId} not found in trade.TradeParty during assign#InstrumentParty"/>
                 <return error="true" message="Party ${partyId} not found"/>
             </if>
             
-            <log level="trace" message="DEBUG_ASSIGN: Party ${partyId} has type: ${party.partyTypeEnumId}, Role: ${roleEnumId}"/>
+            <log level="info" message="DEBUG_ASSIGN: Party ${partyId} has type: ${party.partyTypeEnumId}, Role: ${roleEnumId}"/>
 
             <if condition="['TP_ISSUING_BANK', 'TP_APPLICANT_BANK', 'TP_ADVISING_BANK', 
                 'TP_ADVISE_THROUGH_BANK', 'TP_CONFIRMING_BANK', 'TP_REIMBURSING_BANK', 
                 'TP_NEGOTIATING_BANK', 'TP_DRAWEE_BANK', 'TP_PRESENTING_BANK',
-                'TP_INTERMEDIARY_BANK', 'TP_SENDERS_CORRESPONDENT', 'TP_RECEIVERS_CORRESPONDENT'].contains(roleEnumId) &amp;&amp; party.partyTypeEnumId != 'PARTY_BANK'">
+                'TP_INTERMEDIARY_BANK', 'TP_SENDERS_CORRESPONDENT', 'TP_RECEIVERS_CORRESPONDENT'].contains(roleEnumId) &amp;&amp; party.partyTypeEnumId != 'PTY_BANK'">
                 <return error="true" message="Role ${roleEnumId} requires a Bank party."/>
             </if>
-            <if condition="['TP_APPLICANT', 'TP_BENEFICIARY'].contains(roleEnumId) &amp;&amp; party.partyTypeEnumId != 'PARTY_COMMERCIAL'">
+            <if condition="['TP_APPLICANT', 'TP_BENEFICIARY'].contains(roleEnumId) &amp;&amp; party.partyTypeEnumId != 'PTY_COMMERCIAL'">
                 <return error="true" message="Role ${roleEnumId} requires a Commercial party."/>
             </if>
             
             <!-- KYC Check -->
-            <if condition="party.kycStatus != 'Active'">
+            <if condition="party.kycStatus != 'KYC_ACTIVE'">
                 <return error="true" message="Party ${party.partyName} has no active KYC (Status: ${party.kycStatus ?: 'None'})"/>
             </if>
             <if condition="party.kycExpiryDate &amp;&amp; party.kycExpiryDate &lt; ec.user.nowTimestamp">
@@ -734,7 +796,7 @@
             
             <!-- 2. Eligibility Checks for Banks -->
             <log message="Party Type: ${party.partyTypeEnumId}"/>
-            <if condition="party.partyTypeEnumId == 'PARTY_BANK'">
+            <if condition="party.partyTypeEnumId == 'PTY_BANK'">
                 <entity-find-one entity-name="trade.TradePartyBank" value-field="bank"/>
                 
                 <!-- RMA Check (Required for Advising/Confirming/Negotiating — NOT Advise Through Bank per UCP 600) -->
@@ -807,7 +869,7 @@
             <set field="party" from="party.setAll(context)"/>
             <entity-update value-field="party"/>
             
-            <if condition="party.partyTypeEnumId == 'PARTY_BANK'">
+            <if condition="party.partyTypeEnumId == 'PTY_BANK'">
                 <entity-find-one entity-name="trade.TradePartyBank" value-field="bank"/>
                 <if condition="bank != null">
                     <set field="bank" from="bank.setAll(context)"/>

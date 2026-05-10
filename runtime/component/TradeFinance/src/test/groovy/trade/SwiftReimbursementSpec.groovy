@@ -17,32 +17,33 @@ class SwiftReimbursementSpec extends Specification {
         ec = Moqui.getExecutionContext()
         ec.user.loginUser("john.doe", "moqui")
         ec.artifactExecution.disableAuthz()
-        testId = System.currentTimeMillis().toString()
+        testId = (System.currentTimeMillis() % 1000000000L).toString()
 
         // Create test instrument with reimbursing bank
-        ec.service.sync().name("create#trade.TradeInstrument").parameters([
+        def instRes = ec.service.sync().name("create#trade.TradeInstrument").parameters([
             instrumentId: "REIMB_" + testId, instrumentRef: "RTEST" + testId,
             instrumentTypeEnumId: "IMPORT_LC", amount: 100000.00,
             currencyUomId: "USD", issueDate: new java.sql.Date(System.currentTimeMillis()),
             expiryDate: java.sql.Date.valueOf("2026-09-30")
         ]).call()
+        if (ec.message.hasError()) println "INST CREATE ERROR: " + ec.message.errorsString
+        assert !ec.message.hasError()
 
-        ec.service.sync().name("create#trade.importlc.ImportLetterOfCredit").parameters([
+        def lcRes = ec.service.sync().name("create#trade.importlc.ImportLetterOfCredit").parameters([
             instrumentId: "REIMB_" + testId, businessStateId: "LC_ISSUED",
             tolerancePositive: 0.10, toleranceNegative: 0.10,
-            availableWithEnumId: "AVAIL_ANY_BANK",
+            availableWithEnumId: "AW_ANY_BANK",
             authExpiryDate: java.sql.Date.valueOf("2026-10-30"),
-            reimbursingChargesEnumId: "REIMB_OUR",
+            reimbursingChargesEnumId: "RMB_OUR",
             applicableReimbRulesText: "URR LATEST VERSION"
         ]).call()
+        if (ec.message.hasError()) println "LC CREATE ERROR: " + ec.message.errorsString
+        assert !ec.message.hasError()
 
         // Create reimbursing bank party
-        ec.service.sync().name("create#trade.TradeParty").parameters([
+        ec.service.sync().name("trade.TradeCommonServices.create#TradeParty").parameters([
             partyId: "RBANK_" + testId, partyName: "CITIBANK NEW YORK " + testId,
-            partyTypeEnumId: "PARTY_BANK"
-        ]).call()
-        ec.service.sync().name("create#trade.TradePartyBank").parameters([
-            partyId: "RBANK_" + testId, swiftBic: "CITIUS33",
+            partyTypeEnumId: "PTY_BANK", swiftBic: "CITIUS33",
             nostroAccountRef: "36112345"
         ]).call()
         ec.service.sync().name("create#trade.TradeInstrumentParty").parameters([
@@ -51,26 +52,25 @@ class SwiftReimbursementSpec extends Specification {
         ]).call()
 
         // Create advising bank, beneficiary (required for MT 740 tags)
-        ec.service.sync().name("create#trade.TradeParty").parameters([
+        ec.service.sync().name("trade.TradeCommonServices.create#TradeParty").parameters([
             partyId: "ADVBANK_" + testId, partyName: "HSBC HONG KONG " + testId,
-            partyTypeEnumId: "PARTY_BANK"
-        ]).call()
-        ec.service.sync().name("create#trade.TradePartyBank").parameters([
-            partyId: "ADVBANK_" + testId, swiftBic: "HSBCHKHH"
+            partyTypeEnumId: "PTY_BANK", swiftBic: "HSBCHKHH"
         ]).call()
         ec.service.sync().name("create#trade.TradeInstrumentParty").parameters([
             instrumentId: "REIMB_" + testId, partyId: "ADVBANK_" + testId,
             roleEnumId: "TP_ADVISING_BANK"
         ]).call()
 
-        ec.service.sync().name("create#trade.TradeParty").parameters([
+        ec.service.sync().name("trade.TradeCommonServices.create#TradeParty").parameters([
             partyId: "BEN_" + testId, partyName: "ACME EXPORTS LTD " + testId,
-            partyTypeEnumId: "TP_TYPE_COMMERCIAL"
+            partyTypeEnumId: "PTY_COMMERCIAL"
         ]).call()
         ec.service.sync().name("create#trade.TradeInstrumentParty").parameters([
             instrumentId: "REIMB_" + testId, partyId: "BEN_" + testId,
             roleEnumId: "TP_BENEFICIARY"
         ]).call()
+        if (ec.message.hasError()) println "SETUP ERROR: " + ec.message.errorsString
+        assert !ec.message.hasError()
     }
 
     def cleanupSpec() {
@@ -111,8 +111,10 @@ class SwiftReimbursementSpec extends Specification {
 
     def "NostroReconciliation record created when MT740 generated"() {
         when:
-        ec.service.sync().name("trade.SwiftGenerationServices.generate#Mt740")
+        def res = ec.service.sync().name("trade.SwiftGenerationServices.generate#Mt740")
             .parameters([instrumentId: "REIMB_" + testId]).call()
+        if (ec.message.hasError()) println "REIMB ERROR: " + ec.message.errorsString
+        assert !ec.message.hasError()
         def reconList = ec.entity.find("trade.importlc.NostroReconciliation")
             .condition("instrumentId", "REIMB_" + testId).list()
 

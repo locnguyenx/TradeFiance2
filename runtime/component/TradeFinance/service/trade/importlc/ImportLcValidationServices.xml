@@ -203,7 +203,7 @@
                         if (!lc.confirmationEnumId) addError("confirmationEnumId", "Required (SWIFT Tag 49)", "MANDATORY")
 
                         // Tag 41a/d: Available With specific bank validation
-                        if (lc.availableWithEnumId == 'AVAIL_SPECIFIC_BANK') {
+                        if (lc.availableWithEnumId == 'AW_SPECIFIC_BANK') {
                             def bankBic = negotiatingBank.bic ?: advisingBank.bic
                             if (!bankBic) {
                                 addError("availableWithEnumId", "Negotiating Bank BIC is required for SPECIFIC_BANK (Tag 41A)", "MANDATORY")
@@ -221,13 +221,13 @@
                         }
                         
                         // Conditional: Usance fields
-                        if (lc.tenorTypeId == 'USANCE' && (!lc.usanceDays || !lc.usanceBaseDate)) {
+                        if (lc.tenorTypeId == 'LCT_USANCE' && (!lc.usanceDays || !lc.usanceBaseDate)) {
                             if (!lc.usanceDays) addError("usanceDays", "Required for USANCE tenor", "CONDITIONAL")
                             if (!lc.usanceBaseDate) addError("usanceBaseDate", "Required for USANCE tenor", "CONDITIONAL")
                         }
                         
                         // SRG 2024: Tag 40E Applicable Rules
-                        if (lc.applicableRulesEnumId == 'APPL_OTHER' && !lc.applicableRulesText) {
+                        if (lc.applicableRulesEnumId == 'APR_OTHER' && !lc.applicableRulesText) {
                             addError("applicableRulesText", "Rules Description required when OTHER selected (Tag 40E)", "CONDITIONAL")
                         }
 

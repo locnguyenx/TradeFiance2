@@ -13,7 +13,7 @@ class NostroApiSpec extends Specification {
         ec = Moqui.getExecutionContext()
         ec.user.loginUser("john.doe", "moqui")
         ec.artifactExecution.disableAuthz()
-        testId = System.currentTimeMillis().toString()
+        testId = (System.currentTimeMillis() % 1000000000L).toString()
         // Create parent records
         ec.service.sync().name("create#trade.TradeInstrument").parameters([
             instrumentId: "INST_" + testId, instrumentRef: "ITEST" + testId,
@@ -24,6 +24,14 @@ class NostroApiSpec extends Specification {
         ec.service.sync().name("create#trade.importlc.ImportLetterOfCredit").parameters([
             instrumentId: "INST_" + testId, businessStateId: "LC_ISSUED"
         ]).call()
+
+        def cpRes = ec.service.sync().name("trade.TradeCommonServices.create#TradeParty").parameters([
+            partyId: "RBANK_" + testId, partyName: "Reimbursing Bank " + testId,
+            partyTypeEnumId: 'PTY_BANK', kycStatus: 'Active'
+        ]).call()
+        if (ec.message.hasError()) println "PARTY CREATE ERROR: " + ec.message.errorsString
+        assert !ec.message.hasError()
+        assert ec.entity.find("trade.TradeParty").condition("partyId", "RBANK_" + testId).one() != null
 
         // Create a test reconciliation record
         ec.entity.makeValue("trade.importlc.NostroReconciliation").setAll([
