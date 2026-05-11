@@ -8,7 +8,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.sql.Timestamp
 
-/*
+/**
  * ABOUTME: UserAccountServicesSpec tests the authentication and profile services for trade users.
  */
 class UserAccountServicesSpec extends Specification {
@@ -21,23 +21,25 @@ class UserAccountServicesSpec extends Specification {
 
     def setupSpec() {
         ec = Moqui.getExecutionContext()
-        ec.artifactExecution.disableAuthz()
-        ec.message.clearAll()
-        
-        long ts = System.currentTimeMillis()
-        testUsername = "test.user." + ts
-        testEmail = "test." + ts + "@example.com"
-        Timestamp pastDate = new Timestamp(ec.l10n.parseTimestamp("2020-01-01 00:00:00", null).getTime())
+        ec.transaction.runUseOrBegin(null, null) {
+            ec.artifactExecution.disableAuthz()
+            ec.message.clearAll()
+            
+            long ts = System.currentTimeMillis()
+            testUsername = "test.user." + ts
+            testEmail = "test." + ts + "@example.com"
+            Timestamp pastDate = new Timestamp(ec.l10n.parseTimestamp("2020-01-01 00:00:00", null).getTime())
 
-        boolean begun = ec.transaction.begin(null)
-        try {
+            // Set isolated ID generation ranges - use 4900000
+            ec.entity.tempSetSequencedIdPrimary("moqui.security.UserAccount", 48000000, 1000)
+            ec.entity.tempSetSequencedIdPrimary("trade.UserAuthorityProfile", 48000000, 1000)
+
             // Ensure UserGroup exists
             def group = ec.entity.find("moqui.security.UserGroup").condition("userGroupId", "TRADE_MAKER").one()
             if (!group) {
-                def newGroup = ec.entity.makeValue("moqui.security.UserGroup")
-                newGroup.set("userGroupId", "TRADE_MAKER")
-                newGroup.set("description", "Trade Maker")
-                newGroup.create()
+                ec.entity.makeValue("moqui.security.UserGroup")
+                    .setAll([userGroupId: "TRADE_MAKER", description: "Trade Maker"])
+                    .create()
             }
 
             // Create UserAccount (generates system userId)
@@ -49,57 +51,39 @@ class UserAccountServicesSpec extends Specification {
             testUserId = uaResult.userId
 
             // Ensure Party & Person linked to generated userId
-            def party = ec.entity.find("mantle.party.Party").condition("partyId", testUserId).one()
-            if (!party) {
-                party = ec.entity.makeValue("mantle.party.Party")
-                party.set("partyId", testUserId)
-                party.set("partyTypeEnumId", "PtyPerson")
-                party.create()
-            }
-            def person = ec.entity.find("mantle.party.Person").condition("partyId", testUserId).one()
-            if (!person) {
-                person = ec.entity.makeValue("mantle.party.Person")
-                person.set("partyId", testUserId)
-                person.set("firstName", "Test")
-                person.set("lastName", "User")
-                person.create()
-            }
+            ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+                .parameters([partyId: testUserId, partyTypeEnumId: 'PTY_PERSON', partyName: 'Test User', kycStatus: 'KYC_ACTIVE']).call()
+            
+            ec.entity.makeValue("mantle.party.Person")
+                .setAll([partyId: testUserId, firstName: "Test", lastName: "User"])
+                .createOrUpdate()
 
             // Assign Roles
-            def ugm = ec.entity.makeValue("moqui.security.UserGroupMember")
-            ugm.set("userId", testUserId)
-            ugm.set("userGroupId", "TRADE_MAKER")
-            ugm.set("fromDate", pastDate)
-            ugm.create()
+            ec.entity.makeValue("moqui.security.UserGroupMember")
+                .setAll([userId: testUserId, userGroupId: "TRADE_MAKER", fromDate: pastDate])
+                .create()
 
             // Create Authority Profile
-            def profile = ec.entity.makeValue("trade.UserAuthorityProfile")
-            profile.set("userAuthorityId", testUserId)
-            profile.set("userId", testUserId)
-            profile.set("delegationTierId", "TIER_1")
-            profile.set("customLimit", 50000.0)
-            profile.set("currencyUomId", "USD")
-            profile.create()
+            ec.entity.makeValue("trade.UserAuthorityProfile")
+                .setAll([userId: testUserId, delegationTierId: "TIER_1", customLimit: 50000.0, currencyUomId: "USD"])
+                .setSequencedIdPrimary().create()
             
-            ec.transaction.commit(begun)
-        } catch (Exception e) {
-            ec.transaction.rollback(begun, "Failed to setup test user", e)
-            throw e
+            ec.artifactExecution.enableAuthz()
         }
-        
-        ec.artifactExecution.enableAuthz()
     }
 
     def cleanupSpec() {
         if (ec) {
             ec.artifactExecution.disableAuthz()
             ec.user.logoutUser()
+            ec.entity.tempResetSequencedIdPrimary("moqui.security.UserAccount")
+            ec.entity.tempResetSequencedIdPrimary("trade.UserAuthorityProfile")
             ec.destroy()
         }
     }
 
     def setup() {
-        if (!ec) ec = Moqui.getExecutionContext()
+        if (ec.transaction.isTransactionInPlace()) ec.transaction.rollback("Cleanup", null)
         ec.user.logoutUser()
         ec.message.clearAll()
     }

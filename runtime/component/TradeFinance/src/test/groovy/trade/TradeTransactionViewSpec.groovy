@@ -10,48 +10,31 @@ import org.moqui.entity.EntityCondition
 // ABOUTME: Ensures consistency between list-view data sources and detail-view entities.
 
 class TradeTransactionViewSpec extends Specification {
-    @Shared ExecutionContext ec
+    @Shared protected ExecutionContext ec
     @Shared String testPrefix
 
     def setupSpec() {
         ec = Moqui.getExecutionContext()
         ec.artifactExecution.disableAuthz()
         ec.user.loginUser("trade.admin", "trade123")
-        testPrefix = "TX-VW-" + System.currentTimeMillis()
-        cleanData()
+        testPrefix = "TX-VW-SPEC-" + System.currentTimeMillis()
+
+        // Set isolated ID generation ranges
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrument", 51000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.importlc.ImportLetterOfCredit", 51000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeTransaction", 51000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeParty", 51000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrumentParty", 51000000, 1000)
     }
 
     def cleanupSpec() {
-        try {
-            if (ec != null) cleanData()
-        } finally {
-            if (ec != null) ec.destroy()
-        }
-    }
-
-    private void cleanData() {
-        boolean begun = ec.transaction.begin(60)
-        try {
-            ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").updateAll([latestTransactionId: null])
-            ec.entity.find("trade.importlc.ImportLcInternalAmendment").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.importlc.ImportLcAmendment").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.importlc.ImportLcSettlement").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.importlc.ImportLcShippingGuarantee").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeTransaction").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            
-            ec.entity.find("trade.TradePartyBank").condition("partyId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeParty").condition("partyId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            
-            ec.transaction.commit(begun)
-        } catch (Exception e) {
-            ec.transaction.rollback(begun, "Error in cleanData", e)
+        if (ec != null) {
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeInstrument")
+            ec.entity.tempResetSequencedIdPrimary("trade.importlc.ImportLetterOfCredit")
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeTransaction")
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeParty")
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeInstrumentParty")
+            ec.destroy()
         }
     }
 

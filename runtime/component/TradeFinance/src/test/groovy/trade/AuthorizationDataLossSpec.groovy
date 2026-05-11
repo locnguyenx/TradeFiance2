@@ -8,47 +8,41 @@ import spock.lang.Specification
 import spock.lang.Shared
 import org.moqui.entity.EntityCondition
 
-// ABOUTME: AuthorizationDataLossSpec verifies that narrative fields are preserved during instrument authorization.
-// ABOUTME: Ensures that authorization triggers do not inadvertently overwrite instrument fields with null values.
-
+/**
+ * ABOUTME: AuthorizationDataLossSpec verifies that narrative fields are preserved during instrument authorization.
+ * Ensures that authorization triggers do not inadvertently overwrite instrument fields with null values.
+ */
 class AuthorizationDataLossSpec extends Specification {
     @Shared protected ExecutionContext ec
     @Shared String testPrefix
 
     def setupSpec() {
         ec = Moqui.getExecutionContext()
-        ec.artifactExecution.disableAuthz()
-        ec.user.loginUser("trade.admin", "trade123")
-        testPrefix = "TEST-AUTH-" + System.currentTimeMillis()
-        cleanData()
-    }
+        ec.transaction.runUseOrBegin(null, null) {
+            ec.artifactExecution.disableAuthz()
+            ec.user.loginUser("trade.admin", "trade123")
+            testPrefix = "TEST-AUTH-" + System.currentTimeMillis()
 
-    def cleanupSpec() {
-        try {
-            if (ec != null) cleanData()
-        } finally {
-            if (ec != null) ec.destroy()
+        // Set isolated ID generation ranges - use 4400000
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrument", 38000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.importlc.ImportLetterOfCredit", 38000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeTransaction", 38000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrumentParty", 38000000, 1000)
         }
     }
 
-    private void cleanData() {
-        boolean begun = ec.transaction.begin(60)
-        try {
-            ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").updateAll([latestTransactionId: null])
-            ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeTransaction").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.transaction.commit(begun)
-        } catch (Exception e) {
-            ec.transaction.rollback(begun, "Error in cleanData", e)
+    def cleanupSpec() {
+        if (ec != null) {
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeInstrument")
+            ec.entity.tempResetSequencedIdPrimary("trade.importlc.ImportLetterOfCredit")
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeTransaction")
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeInstrumentParty")
+            ec.destroy()
         }
     }
 
     def setup() {
+        if (ec.transaction.isTransactionInPlace()) ec.transaction.rollback("Cleanup from previous state", null)
         ec.message.clearAll()
         ec.artifactExecution.disableAuthz()
     }
@@ -59,12 +53,18 @@ class AuthorizationDataLossSpec extends Specification {
 
     def "Verify Narrative Field Preservation during Authorization"() {
         given:
-        def instrumentId = testPrefix + "_ID"
         def uniqueRef = testPrefix + "_REF"
         
+        // 0. Ensure Parties exist with RMA if bank
+        ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+            .parameters([partyId: testPrefix + "_APP", partyName: "Applicant", partyTypeEnumId: "PTY_COMMERCIAL", kycStatus: "KYC_ACTIVE"]).call()
+        ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+            .parameters([partyId: testPrefix + "_BEN", partyName: "Beneficiary", partyTypeEnumId: "PTY_COMMERCIAL", kycStatus: "KYC_ACTIVE"]).call()
+        ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+            .parameters([partyId: testPrefix + "_ADVBANK", partyName: "Advising Bank", partyTypeEnumId: "PTY_BANK", kycStatus: "KYC_ACTIVE", hasActiveRMA: "Y"]).call()
+
         // 1. Create LC with narrative data
         Map createRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
-            instrumentId: instrumentId,
             lcAmount: 10000.0,
             lcCurrencyUomId: "USD",
             expiryDate: new java.sql.Timestamp(System.currentTimeMillis() + 86400000 * 30),
@@ -72,12 +72,13 @@ class AuthorizationDataLossSpec extends Specification {
             documentsRequired: "INITIAL DOCUMENTS",
             instrumentRef: uniqueRef,
             instrumentParties: [
-                [roleEnumId: "TP_APPLICANT", partyId: "ACME_CORP_001"],
-                [roleEnumId: "TP_BENEFICIARY", partyId: "GLOBAL_EXP_002"],
-                [roleEnumId: "TP_ADVISING_BANK", partyId: "ADVISING_BANK_001"]
+                [roleEnumId: "TP_APPLICANT", partyId: testPrefix + "_APP"],
+                [roleEnumId: "TP_BENEFICIARY", partyId: testPrefix + "_BEN"],
+                [roleEnumId: "TP_ADVISING_BANK", partyId: testPrefix + "_ADVBANK"]
             ]
         ]).call()
         assert !ec.message.hasError()
+        String instrumentId = createRes.instrumentId
         String transactionId = createRes.transactionId
 
         // Verify initial state

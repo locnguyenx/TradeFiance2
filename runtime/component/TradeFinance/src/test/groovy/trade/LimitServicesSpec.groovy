@@ -2,55 +2,83 @@ package trade
 
 
 import spock.lang.Specification
+import spock.lang.Shared
 import org.moqui.Moqui
 import org.moqui.context.ExecutionContext
 
 // ABOUTME: LimitServicesSpec verifies the facility earmarking logic and insufficient limit enforcement.
 
 class LimitServicesSpec extends Specification {
-    protected ExecutionContext ec
+    @Shared protected ExecutionContext ec
+    @Shared String testPrefix
     
-    def setup() {
+    def setupSpec() {
         ec = Moqui.getExecutionContext()
-        ec.user.internalLoginUser("trade.maker")
+        ec.transaction.runUseOrBegin(null, null) {
+            println "DEBUG: setupSpec LimitServicesSpec starting"
+            ec.user.loginUser("trade.maker", "trade123")
+            ec.artifactExecution.disableAuthz()
+        testPrefix = "LIM-SPEC-" + System.currentTimeMillis()
+
+        // Set isolated ID generation ranges - use 2500000
+        ec.entity.tempSetSequencedIdPrimary("trade.CustomerFacility", 42000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeParty", 42000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeTransaction", 42000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrument", 42000000, 1000)
+        }
+        println "DEBUG: setupSpec LimitServicesSpec complete"
+    }
+    
+    def cleanupSpec() {
+        if (ec != null) {
+            ec.entity.tempResetSequencedIdPrimary("trade.CustomerFacility")
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeParty")
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeTransaction")
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeInstrument")
+            ec.destroy()
+        }
+    }
+
+    def setup() {
+        ec.message.clearAll()
         ec.artifactExecution.disableAuthz()
     }
     
-    def cleanup() {
-        ec.destroy()
-    }
-    
     def "Test CREATE CustomerFacility validates base limits"() {
-        when:
-        ec.entity.makeValue("trade.CustomerFacility")
-            .setAll([facilityId:"FAC-1", totalApprovedLimit: 1000.0, utilizedAmount: 0.0]).create()
+        given:
+        def facRes = ec.entity.makeValue("trade.CustomerFacility")
+            .setAll([totalApprovedLimit: 1000.0, utilizedAmount: 0.0])
+        facRes.setSequencedIdPrimary()
+        facRes.create()
+        def facId = facRes.facilityId
             
+        when:
+        def res = ec.service.sync().name("trade.LimitServices.calculate#Earmark").parameters([facilityId: facId, amount: 500.0]).call()
+
         then:
-        ec.service.sync().name("trade.LimitServices.calculate#Earmark").parameters([facilityId:"FAC-1", amount: 500.0]).call().isAllowed == true
-        
-        cleanup:
-        ec.entity.find("trade.CustomerFacility").condition("facilityId", "FAC-1").deleteAll()
+        res.isAllowed == true
     }
 
     def "Test GET CustomerFacilities returns list for owner"() {
-        setup:
-        ec.entity.makeValue("trade.TradeParty").setAll([partyId: "PARTY-1", partyName: "Test Party", partyTypeEnumId: "PTY_COMMERCIAL"]).create()
-        ec.entity.makeValue("trade.CustomerFacility")
-            .setAll([facilityId:"FAC-OWN-1", ownerPartyId: "PARTY-1", totalApprovedLimit: 5000.0, utilizedAmount: 1000.0]).create()
+        given:
+        def partyRes = ec.entity.makeValue("trade.TradeParty").setAll([partyName: "Limit Test Party", partyTypeEnumId: "PTY_COMMERCIAL"])
+        partyRes.setSequencedIdPrimary()
+        partyRes.create()
+        def partyId = partyRes.partyId
+        def facRes = ec.entity.makeValue("trade.CustomerFacility")
+            .setAll([ownerPartyId: partyId, totalApprovedLimit: 5000.0, utilizedAmount: 1000.0])
+        facRes.setSequencedIdPrimary()
+        facRes.create()
+        def facId = facRes.facilityId
             
         when:
-        def res = ec.service.sync().name("trade.LimitServices.get#CustomerFacilities").parameters([partyId: "PARTY-1"]).call()
-        println "DEBUG: res.facilityList = ${res.facilityList}"
+        def res = ec.service.sync().name("trade.LimitServices.get#CustomerFacilities").parameters([partyId: partyId]).call()
         
         then:
         res.facilityList != null
         res.facilityList.size() >= 1
-        def fac = res.facilityList.find { it.facilityId == "FAC-OWN-1" }
+        def fac = res.facilityList.find { it.facilityId == facId }
         fac.limitAmount == 5000.0
         fac.available == 4000.0
-        
-        cleanup:
-        ec.entity.find("trade.CustomerFacility").condition("facilityId", "FAC-OWN-1").deleteAll()
-        ec.entity.find("trade.TradeParty").condition("partyId", "PARTY-1").deleteAll()
     }
 }

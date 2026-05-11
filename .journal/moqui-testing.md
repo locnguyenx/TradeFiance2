@@ -101,9 +101,46 @@ def "should render list screen"() {
 
 ## 4. Data Setup
 
-### Sequence Safety (Auto-increment PKs)
+### Sequence Safety (ID Isolation & Parallelism)
+Moqui's `tempSetSequencedIdPrimary` is critical for preventing `JdbcSQLIntegrityConstraintViolationException` (PK collisions) when running a test suite.
+
+#### 1. Assigned Range Isolation
+Assign each `.groovy` spec file a unique, non-overlapping range (e.g., 500k increments) in `setupSpec`.
 ```groovy
-ec.entity.tempSetSequencedIdPrimary("moqui.example.Example", 960000, 100)
+def setupSpec() {
+    ec = Moqui.getExecutionContext()
+    // Range: 8,000,000 - 8,499,999
+    ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrument", 8000000, 1000)
+    ec.entity.tempSetSequencedIdPrimary("trade.TradeTransaction", 8000000, 1000)
+}
+```
+
+#### 2. Mandatory Cleanup
+Always reset the sequences in `cleanupSpec` to avoid leaking sequences into subsequent tests or suite runs.
+```groovy
+def cleanupSpec() {
+    if (ec != null) {
+        ec.entity.tempResetSequencedIdPrimary("trade.TradeInstrument")
+        ec.entity.tempResetSequencedIdPrimary("trade.TradeTransaction")
+        ec.destroy()
+    }
+}
+```
+
+#### 3. Dynamic ID Capture (No Hardcoding)
+Never hardcode IDs (e.g., `9000000`) in service parameters. Let the system generate them and capture the result from the response map.
+```groovy
+// BAD: instrumentId: "9000001"
+// GOOD:
+def res = ec.service.sync().name("...create#...").parameters(params).call()
+def instrumentId = res.instrumentId
+```
+
+#### 4. testPrefix with Timestamps
+For non-sequenced fields (Usernames, Party IDs), use a `testPrefix` combined with `System.currentTimeMillis()` to ensure uniqueness across suite runs.
+```groovy
+@Shared String testPrefix = "SPEC-" + System.currentTimeMillis()
+// Result: SPEC-1715340000000-APP
 ```
 
 ### Authorization Bypass (Setup Only)

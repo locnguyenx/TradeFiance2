@@ -14,60 +14,60 @@ class TradeListServicesSpec extends Specification {
     @Shared protected ExecutionContext ec
     @Shared String testPrefix
     @Shared List<String> refs
+    
+    @Shared String applicantId
+    @Shared String beneficiaryId
+    @Shared String facilityId
 
     def setupSpec() {
         ec = Moqui.getExecutionContext()
+        println "DEBUG: setupSpec TradeListServicesSpec starting"
         ec.artifactExecution.disableAuthz()
-        ec.user.loginUser("trade.admin", "trade123")
+        ec.user.loginUser("trade.maker", "trade123")
         
-        // Ensure test facility exists
-        ec.entity.makeValue("trade.CustomerFacility")
-            .setAll([facilityId: 'FAC_LIST_01', ownerPartyId: 'ACME_CORP_001', totalApprovedLimit: 2000000.0, utilizedAmount: 0.0, currencyUomId: "USD", statusId: "FAC_ACTIVE"])
-            .createOrUpdate()
-
         testPrefix = "LIST-SRV-" + System.currentTimeMillis()
+        applicantId = testPrefix + "-APP"
+        beneficiaryId = testPrefix + "-BEN"
+        facilityId = testPrefix + "-FAC"
+
+        // Ensure test parties exist
+        ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+            .parameters([partyId: applicantId, partyTypeEnumId: 'PTY_COMMERCIAL', partyName: 'List ACME Corp', kycStatus: 'KYC_ACTIVE']).call()
+        ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+            .parameters([partyId: beneficiaryId, partyTypeEnumId: 'PTY_COMMERCIAL', partyName: 'List Global Exports', kycStatus: 'KYC_ACTIVE']).call()
+
+        ec.entity.makeValue("trade.CustomerFacility")
+            .setAll([facilityId: facilityId, ownerPartyId: applicantId, totalApprovedLimit: 2000000.0, utilizedAmount: 0.0, currencyUomId: "USD", statusId: "FAC_ACTIVE"])
+            .create()
+
+        // Set isolated ID generation ranges - use 26500000
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrument", 26500000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.importlc.ImportLetterOfCredit", 26500000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.importlc.ImportLcAmendment", 26500000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.importlc.TradeDocumentPresentation", 26500000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.importlc.ImportLcSettlement", 26500000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.importlc.ImportLcShippingGuarantee", 26500000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.importlc.ImportLcInternalAmendment", 26500000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeTransaction", 26500000, 1000)
+
         refs = ["01", "02", "AMD-01", "PRES-01", "SETL-01", "SG-01", "INT-01"].collect { testPrefix + "-" + it }
-        
-        cleanData()
         
         // Ensure test data exists with unique refs to avoid collision
         refs.each { createLc(it) }
+        println "DEBUG: setupSpec TradeListServicesSpec complete"
     }
 
     def cleanupSpec() {
-        try {
-            if (ec != null) cleanData()
-        } finally {
-            if (ec != null) ec.destroy()
-        }
-    }
-
-    private void cleanData() {
-        boolean begun = ec.transaction.begin(60)
-        try {
-            ec.entity.find("trade.TradeInstrument").condition("instrumentRef", EntityCondition.LIKE, testPrefix + "%").updateAll([latestTransactionId: null])
-            
-            // Get all instrumentIds created by this test prefix
-            def instIds = ec.entity.find("trade.TradeInstrument").condition("instrumentRef", EntityCondition.LIKE, testPrefix + "%").selectField("instrumentId").list().collect { it.instrumentId }
-            
-            if (instIds) {
-                ec.entity.find("trade.importlc.ImportLcInternalAmendment").condition("instrumentId", EntityCondition.IN, instIds).deleteAll()
-                ec.entity.find("trade.importlc.ImportLcAmendment").condition("instrumentId", EntityCondition.IN, instIds).deleteAll()
-                ec.entity.find("trade.importlc.ImportLcSettlement").condition("instrumentId", EntityCondition.IN, instIds).deleteAll()
-                ec.entity.find("trade.importlc.ImportLcShippingGuarantee").condition("instrumentId", EntityCondition.IN, instIds).deleteAll()
-                ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", EntityCondition.IN, instIds).deleteAll()
-                ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.IN, instIds).deleteAll()
-                ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", EntityCondition.IN, instIds).deleteAll()
-                ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", EntityCondition.IN, instIds).deleteAll()
-                ec.entity.find("trade.TradeTransaction").condition("instrumentId", EntityCondition.IN, instIds).deleteAll()
-                ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", EntityCondition.IN, instIds).deleteAll()
-                ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", EntityCondition.IN, instIds).deleteAll()
-                ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.IN, instIds).deleteAll()
-            }
-            
-            ec.transaction.commit(begun)
-        } catch (Exception e) {
-            ec.transaction.rollback(begun, "Error in cleanData", e)
+        if (ec != null) {
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeInstrument")
+            ec.entity.tempResetSequencedIdPrimary("trade.importlc.ImportLetterOfCredit")
+            ec.entity.tempResetSequencedIdPrimary("trade.importlc.ImportLcAmendment")
+            ec.entity.tempResetSequencedIdPrimary("trade.importlc.TradeDocumentPresentation")
+            ec.entity.tempResetSequencedIdPrimary("trade.importlc.ImportLcSettlement")
+            ec.entity.tempResetSequencedIdPrimary("trade.importlc.ImportLcShippingGuarantee")
+            ec.entity.tempResetSequencedIdPrimary("trade.importlc.ImportLcInternalAmendment")
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeTransaction")
+            ec.destroy()
         }
     }
 
@@ -75,11 +75,11 @@ class TradeListServicesSpec extends Specification {
         def result = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
             instrumentRef: ref,
             instrumentParties: [
-                [roleEnumId: 'TP_APPLICANT', partyId: "ACME_CORP_001"],
-                [roleEnumId: 'TP_BENEFICIARY', partyId: "GLOBAL_EXP_002"]
+                [roleEnumId: 'TP_APPLICANT', partyId: applicantId],
+                [roleEnumId: 'TP_BENEFICIARY', partyId: beneficiaryId]
             ],
             lcAmount: 100000.0, lcCurrencyUomId: "USD",
-            customerFacilityId: "FAC_LIST_01",
+            customerFacilityId: facilityId,
             businessStateId: "LC_ISSUED"
         ]).call()
         
@@ -224,7 +224,7 @@ class TradeListServicesSpec extends Specification {
         
         // Create IA
         ec.service.sync().name("trade.importlc.ImportLcServices.create#InternalAmendment").parameters([
-            instrumentId: inst.instrumentId, newFacilityId: "FAC-NEW-01"
+            instrumentId: inst.instrumentId, newFacilityId: testPrefix + "-FAC-NEW-01"
         ]).call()
 
         when:

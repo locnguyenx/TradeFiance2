@@ -4,65 +4,58 @@ import org.moqui.context.ExecutionContext
 import org.moqui.Moqui
 import spock.lang.Specification
 import spock.lang.Shared
+import org.moqui.entity.EntityCondition
 
-/*
-ABOUTME: ComplianceServicesSpec verifies the manual hold and release workflows for trade instruments.
-It ensures that compliance holds prevent all business state transitions until explicitly released.
-*/
+/**
+ * ABOUTME: ComplianceServicesSpec verifies the manual hold and release workflows for trade instruments.
+ * It ensures that compliance holds prevent all business state transitions until explicitly released.
+ */
 class ComplianceServicesSpec extends Specification {
-    ExecutionContext ec
-    String testPrefix
+    @Shared protected ExecutionContext ec
+    @Shared String testPrefix
 
-    def setup() {
+    def setupSpec() {
         ec = Moqui.getExecutionContext()
-        ec.user.internalLoginUser("trade.maker")
+        ec.user.loginUser("trade.maker", "trade123")
         ec.artifactExecution.disableAuthz()
         testPrefix = "COMP-SPEC-" + System.currentTimeMillis()
-        
-        // Load mandatory seed data for priority enums and hold actions
-        ec.entity.makeDataLoader().location("component://TradeFinance/data/TradeFinanceSeedData.xml").load()
-        ec.entity.makeDataLoader().location("component://TradeFinance/entity/TradeCommonEntities.xml").load()
-        ec.entity.makeDataLoader().location("component://TradeFinance/entity/ImportLcEntities.xml").load()
-        
-        // Clean up before each test
-        cleanData()
+
+        // Set isolated ID generation ranges - use 4100000
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrument", 35000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.importlc.ImportLetterOfCredit", 35000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeTransaction", 35000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrumentParty", 35000000, 1000)
     }
 
-    def cleanup() {
+    def cleanupSpec() {
         if (ec != null) {
-            cleanData()
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeInstrument")
+            ec.entity.tempResetSequencedIdPrimary("trade.importlc.ImportLetterOfCredit")
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeTransaction")
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeInstrumentParty")
             ec.destroy()
         }
     }
 
-    private void cleanData() {
-        boolean begun = ec.transaction.begin(60)
-        try {
-            ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").updateAll([latestTransactionId: null])
-            ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeTransaction").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.transaction.commit(begun)
-        } catch (Exception e) {
-            ec.transaction.rollback(begun, "Error in cleanData", e)
-        }
+    def setup() {
+        if (ec.transaction.isTransactionInPlace()) ec.transaction.rollback("Cleanup from previous state", null)
+        ec.user.loginUser("trade.maker", "trade123")
+        ec.message.clearAll()
+        ec.artifactExecution.disableAuthz()
     }
 
     def "BDD-CMN-AUTH-04: Compliance Hold blocks LC lifecycle"() {
         given:
-        String lcId = testPrefix + "-LC-01"
         // Create instrument via service
-        ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-                .parameters([instrumentId: lcId, lcAmount: 10000, lcCurrencyUomId: 'USD',
+        def createRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
+                .parameters([lcAmount: 10000, lcCurrencyUomId: 'USD',
                              instrumentParties: [
-                                 [roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
-                                 [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']
+                                 [roleEnumId: 'TP_APPLICANT', partyId: testPrefix + '_APP'],
+                                 [roleEnumId: 'TP_BENEFICIARY', partyId: testPrefix + '_BEN']
                              ]])
                 .call()
+        String lcId = createRes.instrumentId
+
         // Move to ISSUED state for testing hold on active LC
         ec.service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit")
                 .parameters([instrumentId: lcId, businessStateId: 'LC_ISSUED']).call()
@@ -72,9 +65,9 @@ class ComplianceServicesSpec extends Specification {
         ec.service.sync().name("trade.AuthorizationServices.authorize#Instrument")
             .parameters([transactionId: txIss.transactionId, skipFourEyes: true]).call()
         
-        def txHoldId = testPrefix + "-TX-HOLD-01"
+        // Create a draft transaction
         ec.service.sync().name("create#trade.TradeTransaction")
-                .parameters([transactionId: txHoldId, instrumentId: lcId, 
+                .parameters([instrumentId: lcId, 
                              transactionTypeEnumId: 'IMP_AMENDMENT',
                              transactionStatusId: 'TX_DRAFT', versionNumber: 1]).call()
 

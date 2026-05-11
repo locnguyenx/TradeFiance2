@@ -148,6 +148,10 @@
                         <!-- Update Facility Utilization for New LC -->
                         <if condition="inst.customerFacilityId">
                             <set field="liabilityAmount" from="targetAmount * (1 + (lc?.tolerancePositive ?: 0))"/>
+                            <!-- Facility Limit Check -->
+                            <service-call name="trade.LimitServices.calculate#Earmark" 
+                                          in-map="[facilityId: inst.customerFacilityId, amount: liabilityAmount]"/>
+                            
                             <service-call name="trade.LimitServices.update#Utilization" 
                                           in-map="[facilityId: inst.customerFacilityId, amountDelta: liabilityAmount]"/>
                         </if>

@@ -47,12 +47,17 @@
             
             <set field="isDiscrepant" from="false"/>
             
-            <!-- Check 1: Expiry date -->
-            <if condition="instrument?.expiryDate &amp;&amp; ec.user.nowTimestamp.after(instrument.expiryDate)">
-                <set field="isDiscrepant" from="true"/>
-                <set field="discrepancyMessage" value="Presentation after LC Expiry Date"/>
-                <script>ec.message.addError("Presentation date is after LC expiry date ${instrument.expiryDate} for LC ${instrumentId}")</script>
-            </if>
+            <!-- Check 1: Expiry date (Inclusive per UCP 600) -->
+            <script><![CDATA[
+                if (instrument?.expiryDate) {
+                    def now = new java.sql.Date(ec.user.nowTimestamp.time)
+                    if (now.after(instrument.expiryDate)) {
+                        context.isDiscrepant = true
+                        context.discrepancyMessage = "Presentation after LC Expiry Date"
+                        ec.message.addError("Presentation date ${now} is after LC expiry date ${instrument.expiryDate} for LC ${instrumentId}")
+                    }
+                }
+            ]]></script>
             
             <!-- Check 2: Drawing amount vs Limit -->
             <service-call name="trade.importlc.ImportLcValidationServices.evaluate#Drawing" 

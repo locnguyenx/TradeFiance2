@@ -1,59 +1,85 @@
 package trade
 
 import spock.lang.Specification
+import spock.lang.Shared
 import org.moqui.Moqui
 import org.moqui.context.ExecutionContext
 
-// ABOUTME: EndToEndImportLcSpec verifies the complete lifecycle of an Import LC from creation to SWIFT generation.
-// ABOUTME: Covers Instrument creation, Limit updates, and MT700 block presence.
-
+/**
+ * ABOUTME: EndToEndImportLcSpec verifies the complete lifecycle of an Import LC from creation to SWIFT generation.
+ * Covers Instrument creation, Limit updates, and MT700 block presence.
+ */
 class EndToEndImportLcSpec extends Specification {
-    protected ExecutionContext ec
+    @Shared protected ExecutionContext ec
+    @Shared String testPrefix
     
-    // Test constants to avoid hardcoding
-    static final String TEST_MAKER = "trade.maker"
-    static final String TEST_FACILITY_ID = "E2E-FAC-1"
-    static final String TEST_TRANS_REF = "TF-E2E-001"
-    
-    def setup() {
+    @Shared String applicantId
+    @Shared String beneficiaryId
+    @Shared String advisingBankId
+
+    def setupSpec() {
         ec = Moqui.getExecutionContext()
-        ec.user.internalLoginUser(TEST_MAKER)
+        ec.user.loginUser("trade.maker", "trade123")
         ec.artifactExecution.disableAuthz()
+        testPrefix = "E2E-SPEC-" + System.currentTimeMillis()
         
-        if (ec.entity.find("moqui.security.UserAccount").condition("username", TEST_MAKER).count() == 0) {
-            ec.entity.makeValue("moqui.security.UserAccount")
-                .setAll([userId: TEST_MAKER, username: TEST_MAKER, currentPassword: "trade123", firstName: "Trade", lastName: "Maker"])
-                .create()
-        }
-        if (ec.entity.find("trade.UserAuthorityProfile").condition("userId", TEST_MAKER).count() == 0) {
-            ec.entity.makeValue("trade.UserAuthorityProfile")
-                .setAll([userAuthorityId: "T1-E2E", userId: TEST_MAKER, delegationTierId: "TIER_1", customLimit: 1000000.00, currencyUomId: "USD", makerCheckerFlag: "MAKER_CHECKER"])
-                .create()
-        }
+        applicantId = testPrefix + "-APP"
+        beneficiaryId = testPrefix + "-BEN"
+        advisingBankId = testPrefix + "-ADV-BANK"
+
+        // Set isolated ID generation ranges - use 5600000
+        ec.entity.tempSetSequencedIdPrimary("trade.CustomerFacility", 36000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrument", 36000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.importlc.ImportLetterOfCredit", 36000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.importlc.SwiftMessage", 36000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeTransaction", 36000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrumentParty", 36000000, 1000)
+
+        ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+            .parameters([partyId: applicantId, partyTypeEnumId: 'PTY_COMMERCIAL', partyName: 'App E2E', kycStatus: 'KYC_ACTIVE']).call()
+        ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+            .parameters([partyId: beneficiaryId, partyTypeEnumId: 'PTY_COMMERCIAL', partyName: 'Ben E2E', kycStatus: 'KYC_ACTIVE']).call()
+        ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+            .parameters([partyId: advisingBankId, partyTypeEnumId: 'PTY_BANK', partyName: 'Adv Bank E2E', kycStatus: 'KYC_ACTIVE', hasActiveRMA: 'Y']).call()
     }
     
-    def cleanup() {
-        ec.destroy()
+    def cleanupSpec() {
+        if (ec != null) {
+            ec.entity.tempResetSequencedIdPrimary("trade.CustomerFacility")
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeInstrument")
+            ec.entity.tempResetSequencedIdPrimary("trade.importlc.ImportLetterOfCredit")
+            ec.entity.tempResetSequencedIdPrimary("trade.importlc.SwiftMessage")
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeTransaction")
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeInstrumentParty")
+            ec.destroy()
+        }
+    }
+
+    def setup() {
+        if (ec.transaction.isTransactionInPlace()) ec.transaction.rollback("Cleanup", null)
+        ec.message.clearAll()
+        ec.artifactExecution.disableAuthz()
     }
     
     def "Full Flow: Create LC -> Update Limit -> Generate SWIFT"() {
-        setup: "Initialize Facility"
-        ec.entity.makeValue("trade.CustomerFacility")
-            .setAll([facilityId: TEST_FACILITY_ID, totalApprovedLimit: 100000.0, utilizedAmount: 0.0]).create()
+        given: "Initialize Facility"
+        def facRes = ec.entity.makeValue("trade.CustomerFacility")
+            .setAll([totalApprovedLimit: 100000.0, utilizedAmount: 0.0, currencyUomId: 'USD', statusId: 'FAC_ACTIVE']).setSequencedIdPrimary().create()
+        def facId = facRes.facilityId
+        def transRef = testPrefix + "-REF-001"
             
         when: "1. Create Import LC"
         def createResult = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
-            instrumentRef: TEST_TRANS_REF,
+            instrumentRef: transRef,
             lcAmount: 50000.0,
             lcCurrencyUomId: "USD",
-            customerFacilityId: TEST_FACILITY_ID,
+            customerFacilityId: facId,
             instrumentParties: [
-                [roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
-                [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002'],
-                [roleEnumId: 'TP_ADVISING_BANK', partyId: 'ADVISING_BANK_001']
+                [roleEnumId: 'TP_APPLICANT', partyId: applicantId],
+                [roleEnumId: 'TP_BENEFICIARY', partyId: beneficiaryId],
+                [roleEnumId: 'TP_ADVISING_BANK', partyId: advisingBankId]
             ],
-            lcTypeEnumId: 'LCT_IRREVOCABLE', availableByEnumId: 'AVB_BY_NEGOTIATION', confirmationEnumId: 'CONF_WITHOUT',
-            businessStateId: "LC_DRAFT"
+            lcTypeEnumId: 'LCT_IRREVOCABLE', availableByEnumId: 'AVB_BY_NEGOTIATION', confirmationEnumId: 'CONF_WITHOUT'
         ]).call()
         def instrumentId = createResult.instrumentId
         
@@ -62,10 +88,10 @@ class EndToEndImportLcSpec extends Specification {
         ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).one() != null
         
         when: "2. Update Limit Utilization"
-        ec.service.sync().name("trade.LimitServices.update#Utilization").parameters([facilityId: TEST_FACILITY_ID, amountDelta: 50000.0]).call()
+        ec.service.sync().name("trade.LimitServices.update#Utilization").parameters([facilityId: facId, amountDelta: 50000.0]).call()
         
         then: "Facility utilization is updated"
-        ec.entity.find("trade.CustomerFacility").condition("facilityId", TEST_FACILITY_ID).one().utilizedAmount == 50000.0
+        ec.entity.find("trade.CustomerFacility").condition("facilityId", facId).one().utilizedAmount == 50000.0
         
         when: "3. Generate SWIFT MT700"
         def swiftResult = ec.service.sync().name("trade.SwiftGenerationServices.generate#Mt700").parameters([instrumentId: instrumentId]).call()
@@ -73,19 +99,7 @@ class EndToEndImportLcSpec extends Specification {
         then: "SWIFT message is created with correct content"
         swiftResult.swiftMessageId != null
         def message = ec.entity.find("trade.importlc.SwiftMessage").condition("swiftMessageId", swiftResult.swiftMessageId).one()
-        message.messageContent.contains(TEST_TRANS_REF)
+        message.messageContent.contains(transRef)
         message.messageType == "MT700"
-        
-        cleanup:
-        if (instrumentId) {
-            ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).updateAll([latestTransactionId: null])
-            ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", instrumentId).deleteAll()
-            ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", instrumentId).deleteAll()
-            ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).deleteAll()
-            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", instrumentId).deleteAll()
-            ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).deleteAll()
-            ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).deleteAll()
-        }
-        ec.entity.find("trade.CustomerFacility").condition("facilityId", TEST_FACILITY_ID).deleteAll()
     }
 }

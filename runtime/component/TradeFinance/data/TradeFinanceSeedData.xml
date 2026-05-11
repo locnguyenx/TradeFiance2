@@ -57,6 +57,7 @@
     <moqui.basic.EnumerationType enumTypeId="TradePartyType" description="Trade Party Types"/>
     <moqui.basic.Enumeration enumId="PTY_COMMERCIAL" enumTypeId="TradePartyType" description="Commercial Party"/>
     <moqui.basic.Enumeration enumId="PTY_BANK" enumTypeId="TradePartyType" description="Bank Party"/>
+    <moqui.basic.Enumeration enumId="PTY_PERSON" enumTypeId="TradePartyType" description="Individual Person"/>
 
     <!-- TradePartyKycStatus -->
     <moqui.basic.StatusType statusTypeId="TradePartyKycStatus" description="Party KYC Statuses"/>

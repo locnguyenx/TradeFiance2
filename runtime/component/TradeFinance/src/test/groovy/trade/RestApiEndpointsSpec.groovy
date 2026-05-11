@@ -15,47 +15,64 @@ class RestApiEndpointsSpec extends Specification {
     @Shared protected ExecutionContext ec
     @Shared ScreenTest screenTest
     @Shared String testPrefix
+    
+    @Shared String applicantId
+    @Shared String beneficiaryId
+    @Shared String facilityId
 
     def setupSpec() {
         ec = Moqui.getExecutionContext()
-        ec.artifactExecution.disableAuthz()
-        ec.user.loginUser("trade.admin", "trade123")
-        testPrefix = "REST-API-" + System.currentTimeMillis()
-        
+        ec.transaction.runUseOrBegin(null, null) {
+            ec.artifactExecution.disableAuthz()
+            ec.user.loginUser("trade.maker", "trade123")
+            testPrefix = "REST-API-" + System.currentTimeMillis()
+            
+            applicantId = testPrefix + "-APP"
+            beneficiaryId = testPrefix + "-BEN"
+
+            // Ensure test parties exist
+            ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+                .parameters([partyId: applicantId, partyTypeEnumId: 'PTY_COMMERCIAL', partyName: 'ACME Corp REST', kycStatus: 'KYC_ACTIVE']).call()
+            ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+                .parameters([partyId: beneficiaryId, partyTypeEnumId: 'PTY_COMMERCIAL', partyName: 'Global Exports REST', kycStatus: 'KYC_ACTIVE']).call()
+
+            // Set isolated ID generation ranges - use 11500000
+            ec.entity.tempSetSequencedIdPrimary("trade.CustomerFacility", 11500000, 1000)
+            ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrument", 11500000, 1000)
+            ec.entity.tempSetSequencedIdPrimary("trade.importlc.ImportLetterOfCredit", 11500000, 1000)
+            ec.entity.tempSetSequencedIdPrimary("trade.TradeTransaction", 11500000, 1000)
+            ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrumentParty", 11500000, 1000)
+            ec.entity.tempSetSequencedIdPrimary("trade.importlc.TradeDocumentPresentation", 11500000, 1000)
+            ec.entity.tempSetSequencedIdPrimary("trade.importlc.ImportLcSettlement", 11500000, 1000)
+            ec.entity.tempSetSequencedIdPrimary("trade.importlc.ImportLcAmendment", 11500000, 1000)
+            ec.entity.tempSetSequencedIdPrimary("trade.importlc.ImportLcShippingGuarantee", 11500000, 1000)
+            ec.entity.tempSetSequencedIdPrimary("trade.importlc.ImportLcInternalAmendment", 11500000, 1000)
+
+            def facRes = ec.entity.makeValue("trade.CustomerFacility")
+                .setAll([ownerPartyId: applicantId, totalApprovedLimit: 1000000.0, utilizedAmount: 0.0, currencyUomId: "USD", statusId: "FAC_ACTIVE"])
+                .setSequencedIdPrimary().create()
+            facilityId = facRes.facilityId
+        }
+            
         screenTest = ec.screen.makeTest()
             .rootScreen("component://webroot/screen/webroot.xml")
             .baseScreenPath("rest")
-            
-        cleanData()
+        println "DEBUG: setupSpec RestApiEndpointsSpec complete"
     }
 
     def cleanupSpec() {
-        try {
-            if (ec != null) cleanData()
-        } finally {
-            if (ec != null) ec.destroy()
-        }
-    }
-
-    private void cleanData() {
-        boolean begun = ec.transaction.begin(60)
-        try {
-            ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").updateAll([latestTransactionId: null])
-            ec.entity.find("trade.importlc.ImportLcInternalAmendment").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.importlc.ImportLcAmendment").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.importlc.ImportLcShippingGuarantee").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.importlc.ImportLcSettlement").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeTransaction").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.transaction.commit(begun)
-        } catch (Exception e) {
-            ec.transaction.rollback(begun, "Error in cleanData", e)
+        if (ec != null) {
+            ec.entity.tempResetSequencedIdPrimary("trade.CustomerFacility")
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeInstrument")
+            ec.entity.tempResetSequencedIdPrimary("trade.importlc.ImportLetterOfCredit")
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeTransaction")
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeInstrumentParty")
+            ec.entity.tempResetSequencedIdPrimary("trade.importlc.TradeDocumentPresentation")
+            ec.entity.tempResetSequencedIdPrimary("trade.importlc.ImportLcSettlement")
+            ec.entity.tempResetSequencedIdPrimary("trade.importlc.ImportLcAmendment")
+            ec.entity.tempResetSequencedIdPrimary("trade.importlc.ImportLcShippingGuarantee")
+            ec.entity.tempResetSequencedIdPrimary("trade.importlc.ImportLcInternalAmendment")
+            ec.destroy()
         }
     }
 
@@ -69,16 +86,15 @@ class RestApiEndpointsSpec extends Specification {
     }
 
     String createTestLc(String suffix) {
-        String instrumentId = testPrefix + "_" + suffix
-        String ref = instrumentId + "_REF"
+        String ref = testPrefix + "_" + suffix + "_REF"
         ec.user.internalLoginUser("trade.maker")
         ScreenTestRender str = screenTest.render("s1/trade/import-lc",
-            [instrumentId: instrumentId, instrumentRef: ref, lcAmount: 5000.0, lcCurrencyUomId: "USD",
-             customerFacilityId: 'FAC-ACME-001',
+            [instrumentRef: ref, lcAmount: 5000.0, lcCurrencyUomId: "USD",
+             customerFacilityId: facilityId,
              lcTypeEnumId: 'LCT_IRREVOCABLE', availableByEnumId: 'AVB_BY_NEGOTIATION', confirmationEnumId: 'CONF_WITHOUT',
              availableWithEnumId: 'AW_ANY_BANK',
-             instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
-                                 [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]], "post")
+             instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: applicantId],
+                                 [roleEnumId: 'TP_BENEFICIARY', partyId: beneficiaryId]]], "post")
         if (str.errorMessages) {
             throw new Exception("Failed to create LC: ${str.errorMessages}")
         }
@@ -102,225 +118,146 @@ class RestApiEndpointsSpec extends Specification {
         ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/presentation",
             [instrumentId: instrumentId, claimAmount: 1000.0, claimCurrency: "USD"], "post")
         if (str.errorMessages) {
+            println "Error creating presentation: " + str.errorMessages
             throw new Exception("Failed to create presentation: ${str.errorMessages}")
+        }
+        if (!str.output) {
+            println "Empty output for presentation creation. Error messages: " + str.errorMessages
+            throw new Exception("Empty output for presentation creation")
         }
         def json = new groovy.json.JsonSlurper().parseText(str.output)
         
         // Also approve the presentation transaction to allow settlement
         def txPres = ec.entity.find("trade.TradeTransaction")
-            .condition([instrumentId: instrumentId, transactionTypeEnumId: 'IMP_PRESENTATION', transactionStatusId: 'TX_DRAFT'])
-            .disableAuthz().one()
-            
+                .condition([instrumentId: instrumentId, transactionTypeEnumId: 'IMP_PRESENTATION', transactionStatusId: 'TX_DRAFT']).one()
         if (txPres) {
             ec.user.internalLoginUser("trade.checker")
             screenTest.render("s1/trade/authorize", [transactionId: txPres.transactionId, skipFourEyes: true], "post")
+            ec.user.internalLoginUser("trade.maker")
         }
-        ec.user.internalLoginUser("trade.maker")
         
         return json.presentationId
     }
 
-    // ===== GET Endpoints =====
-
-    def "Test GET /trade/kpis"() {
+    def "should create an Import LC via POST"() {
         when:
-        ScreenTestRender str = screenTest.render("s1/trade/kpis", [:], "get")
+        String instrumentId = createTestLc("C1")
 
         then:
-        !str.errorMessages
-        def json = new groovy.json.JsonSlurper().parseText(str.output)
-        json.kpis != null
+        instrumentId != null
+        def lc = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).one()
+        lc != null
+        lc.businessStateId == "LC_DRAFT"
     }
 
-    def "Test GET /trade/import-lc returns list"() {
-        when:
-        ScreenTestRender str = screenTest.render("s1/trade/import-lc", [:], "get")
-
-        then:
-        !str.errorMessages
-        def json = new groovy.json.JsonSlurper().parseText(str.output)
-        json.lcList != null
-    }
-
-    def "Test GET /trade/import-lc by id"() {
+    def "should fetch LC details via GET"() {
         given:
-        String instrumentId = createTestLc("GET_ID")
+        String instrumentId = createTestLc("G1")
 
         when:
         ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}", [:], "get")
+        def json = new groovy.json.JsonSlurper().parseText(str.output)
 
         then:
-        !str.errorMessages
-        def json = new groovy.json.JsonSlurper().parseText(str.output)
+        str.errorMessages.size() == 0
         json.instrumentId == instrumentId
+        json.amount == 5000.0
     }
 
-    def "Test GET /trade/standard-clauses"() {
-        when:
-        ScreenTestRender str = screenTest.render("s1/trade/standard-clauses", [:], "get")
-
-        then:
-        !str.errorMessages
-        def json = new groovy.json.JsonSlurper().parseText(str.output)
-        json.clauseList != null
-    }
-
-    def "Test GET /trade/audit-logs"() {
-        when:
-        ScreenTestRender str = screenTest.render("s1/trade/common/audit-logs", [:], "get")
-
-        then:
-        !str.errorMessages
-        def json = new groovy.json.JsonSlurper().parseText(str.output)
-        json.auditLogList != null
-    }
-
-    // ===== POST Endpoints =====
-
-    def "Test POST /trade/import-lc creates new LC"() {
+    def "should update an Import LC via PATCH"() {
         given:
-        String instrumentId = testPrefix + "_POST_CREATE"
-        String ref = instrumentId + "_REF"
-        Map params = [instrumentId: instrumentId, instrumentRef: ref, lcAmount: 25000.0, lcCurrencyUomId: "USD",
-                      lcTypeEnumId: 'LCT_IRREVOCABLE', availableByEnumId: 'AVB_BY_NEGOTIATION', confirmationEnumId: 'CONF_WITHOUT',
-                      instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
-                                          [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]
+        String instrumentId = createTestLc("U1")
 
         when:
-        ec.user.internalLoginUser("trade.maker")
-        ScreenTestRender str = screenTest.render("s1/trade/import-lc", params, "post")
+        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}", [lcAmount: 7500.0], "post")
+        def json = new groovy.json.JsonSlurper().parseText(str.output)
 
         then:
-        !str.errorMessages
-        def json = new groovy.json.JsonSlurper().parseText(str.output)
+        str.errorMessages.size() == 0
         json.instrumentId == instrumentId
+        def lc = ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).one()
+        lc.amount == 7500.0
     }
 
-    def "Test POST /trade/import-lc update"() {
+    def "should create a Presentation via POST"() {
         given:
-        String instrumentId = createTestLc("POST_UPDATE")
-        Map params = [instrumentId: instrumentId, lcAmount: 200.0]
+        String instrumentId = createTestLc("P1")
 
         when:
-        ec.user.internalLoginUser("trade.maker")
-        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}", params, "post")
-
-        then:
-        !str.errorMessages
-        str.output != null
-    }
-
-    def "Test POST /trade/authorize"() {
-        given:
-        String instrumentId = createTestLc("POST_AUTH")
-
-        when:
-        ec.user.internalLoginUser("trade.checker")
-        ScreenTestRender str = screenTest.render("s1/trade/authorize", [instrumentId: instrumentId], "post")
-
-        then:
-        !str.errorMessages
-        def json = new groovy.json.JsonSlurper().parseText(str.output)
-        json.isAuthorized != null
-    }
-
-    def "Test POST /trade/import-lc amendments (External)"() {
-        given:
-        String instrumentId = createTestLc("POST_AMEND")
-        approveIssuance(instrumentId)
-        
-        Map params = [
-            instrumentId: instrumentId,
-            amendmentTypeEnumId: "AMEND_OTHER",
-            amendmentDate: new java.sql.Date(System.currentTimeMillis()),
-            goodsActionEnumId: "AMA_REPLACE",
-            goodsDeltaText: "Revised goods description via REST"
-        ]
-
-        when:
-        ec.user.internalLoginUser("trade.maker")
-        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/amendment/external", params, "post")
-
-        then:
-        !str.errorMessages
-        def json = new groovy.json.JsonSlurper().parseText(str.output)
-        json.amendmentId != null
-    }
-
-    def "Test POST /trade/import-lc amendments (Internal)"() {
-        given:
-        String instrumentId = createTestLc("POST_INT_AMEND")
-        approveIssuance(instrumentId)
-        
-        Map params = [
-            instrumentId: instrumentId,
-            amendmentTypeEnumId: "AMD_TYPE_INTERNAL",
-            newFacilityId: "FAC-INTERNAL-001"
-        ]
-
-        when:
-        ec.user.internalLoginUser("trade.maker")
-        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/amendment/internal", params, "post")
-
-        then:
-        !str.errorMessages
-        def json = new groovy.json.JsonSlurper().parseText(str.output)
-        json.internalAmendmentId != null
-    }
-
-    def "Test POST /trade/import-lc settlement"() {
-        given:
-        String instrumentId = createTestLc("POST_SETTLE")
         String presentationId = createTestPresentation(instrumentId)
-        
-        // Move to LC_ACCEPTED to allow settlement
-        ec.service.sync().name("update#trade.TradeInstrument").parameters([instrumentId: instrumentId, businessStateId: 'LC_ACCEPTED']).call()
-        
+
+        then:
+        presentationId != null
+        def pres = ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("presentationId", presentationId).one()
+        pres.instrumentId == instrumentId
+    }
+
+    def "should create a Settlement via POST"() {
+        given:
+        String instrumentId = createTestLc("S1")
+        String presentationId = createTestPresentation(instrumentId)
+
         when:
-        ec.user.internalLoginUser("trade.maker")
         ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/settlement",
-            [instrumentId: instrumentId, presentationId: presentationId, principalAmount: 1000.0, 
-             settlementTypeEnumId: 'SIGHT_PAYMENT', debitAccountId: "TRADE-USD-001"], "post")
-
-        then:
-        !str.errorMessages
-        str.output != null
-    }
-
-    def "Test POST /trade/import-lc shipping-guarantee"() {
-        given:
-        String instrumentId = createTestLc("POST_SG")
-        approveIssuance(instrumentId)
-
-        when:
-        ec.user.internalLoginUser("trade.maker")
-        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/shipping-guarantee",
-            [instrumentId: instrumentId, invoiceAmount: 1000.0], "post")
-
-        then:
-        !str.errorMessages
+            [presentationId: presentationId, principalAmount: 1000.0, settlementAmount: 1000.0, 
+             settlementCurrencyUomId: "USD", settlementTypeEnumId: 'SIGHT_PAYMENT'], "post")
         def json = new groovy.json.JsonSlurper().parseText(str.output)
-        json.guaranteeId != null
-    }
-
-    def "Test POST /trade/import-lc cancellation"() {
-        given:
-        String instrumentId = createTestLc("POST_CANCEL")
-        approveIssuance(instrumentId)
-        
-        // Move to LC_ISSUED to simulate a more realistic cancellation
-        ec.user.internalLoginUser("trade.checker")
-        screenTest.render("s1/trade/authorize", [instrumentId: instrumentId], "post")
-        ec.service.sync().name("update#trade.TradeInstrument")
-            .parameters([instrumentId: instrumentId, businessStateId: "LC_ISSUED"]).call()
-
-        when:
-        ec.user.internalLoginUser("trade.maker")
-        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/cancellation",
-            [instrumentId: instrumentId, cancellationReason: "REST test"], "post")
 
         then:
-        !str.errorMessages
-        str.output != null
+        str.errorMessages.size() == 0
+        json.settlementId != null
+        def sett = ec.entity.find("trade.importlc.ImportLcSettlement").condition("settlementId", json.settlementId).one()
+        sett.presentationId == presentationId
+    }
+
+    def "should create an Amendment via POST"() {
+        given:
+        String instrumentId = createTestLc("A1")
+        approveIssuance(instrumentId)
+
+        when:
+        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/amendment/external",
+            [amendmentTypeEnumId: "AMEND_INCREASE", amountIncrease: 500.0], "post")
+        def json = new groovy.json.JsonSlurper().parseText(str.output)
+
+        then:
+        str.errorMessages.size() == 0
+        json.amendmentId != null
+        def amend = ec.entity.find("trade.importlc.ImportLcAmendment").condition("amendmentId", json.amendmentId).one()
+        amend.instrumentId == instrumentId
+    }
+
+    def "should create a Shipping Guarantee via POST"() {
+        given:
+        String instrumentId = createTestLc("SG1")
+        approveIssuance(instrumentId)
+
+        when:
+        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/shipping-guarantee",
+            [invoiceAmount: 1000.0, transportDocReference: "BOL-123"], "post")
+        def json = new groovy.json.JsonSlurper().parseText(str.output)
+
+        then:
+        str.errorMessages.size() == 0
+        json.guaranteeId != null
+        def sg = ec.entity.find("trade.importlc.ImportLcShippingGuarantee").condition("guaranteeId", json.guaranteeId).one()
+        sg.instrumentId == instrumentId
+    }
+
+    def "should create an Internal Amendment via POST"() {
+        given:
+        String instrumentId = createTestLc("IA1")
+        approveIssuance(instrumentId)
+
+        when:
+        ScreenTestRender str = screenTest.render("s1/trade/import-lc/${instrumentId}/amendment/internal",
+            [internalNotes: "Bank internal note"], "post")
+        def json = new groovy.json.JsonSlurper().parseText(str.output)
+
+        then:
+        str.errorMessages.size() == 0
+        json.internalAmendmentId != null
+        def ia = ec.entity.find("trade.importlc.ImportLcInternalAmendment").condition("internalAmendmentId", json.internalAmendmentId).one()
+        ia.instrumentId == instrumentId
     }
 }

@@ -1,23 +1,38 @@
 package trade
 
 import spock.lang.Specification
+import spock.lang.Shared
 import org.moqui.Moqui
 import org.moqui.context.ExecutionContext
 
 // ABOUTME: TradeTransactionSpec validates the separation of transaction processing from instrument data.
 
 class TradeTransactionSpec extends Specification {
-    protected ExecutionContext ec
-    protected String testPrefix
+    @Shared protected ExecutionContext ec
+    @Shared protected String testPrefix
     
-    def setup() {
+    def setupSpec() {
         ec = Moqui.getExecutionContext()
         ec.artifactExecution.disableAuthz()
         testPrefix = "TX-SPEC-" + System.currentTimeMillis()
+
+        // Set isolated ID generation ranges
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrument", 50000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeTransaction", 50000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeTransactionAudit", 50000000, 1000)
     }
     
-    def cleanup() {
-        ec.destroy()
+    def setup() {
+        ec.artifactExecution.disableAuthz()
+    }
+    
+    def cleanupSpec() {
+        if (ec != null) {
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeInstrument")
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeTransaction")
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeTransactionAudit")
+            ec.destroy()
+        }
     }
     
     def "Test create TradeTransaction linked to TradeInstrument"() {
@@ -56,14 +71,7 @@ class TradeTransactionSpec extends Specification {
         tx.transactionTypeEnumId == "IMP_NEW"
         tx.transactionStatusId == "TX_DRAFT"
         
-        cleanup:
-        if (ec != null) {
-            ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId)
-                .updateAll([latestTransactionId: null])
-            ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).deleteAll()
-            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", instrumentId).deleteAll()
-            ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).deleteAll()
-        }
+
     }
 
     def "TradeTransactionAudit should include transactionId"() {
@@ -95,13 +103,7 @@ class TradeTransactionSpec extends Specification {
         audit != null
         audit.transactionId == transactionId
         
-        cleanup:
-        if (ec != null) {
-            ec.entity.find("trade.TradeTransactionAudit")
-                .condition("instrumentId", instrumentId).deleteAll()
-            ec.entity.find("trade.TradeTransaction").condition("instrumentId", instrumentId).deleteAll()
-            ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).deleteAll()
-        }
+
     }
     def "TradeTransaction persists transactionRef"() {
         given:
@@ -132,13 +134,7 @@ class TradeTransactionSpec extends Specification {
         tx != null
         tx.transactionRef == testPrefix + "-TF-TXN-0001"
 
-        cleanup:
-        if (ec != null) {
-            ec.entity.find("trade.TradeInstrument").condition("instrumentId", testInstId)
-                .updateAll([latestTransactionId: null])
-            ec.entity.find("trade.TradeTransaction").condition("instrumentId", testInstId).deleteAll()
-            ec.entity.find("trade.TradeInstrument").condition("instrumentId", testInstId).deleteAll()
-        }
+
     }
 }
 

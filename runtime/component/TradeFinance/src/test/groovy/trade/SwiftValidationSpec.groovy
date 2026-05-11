@@ -9,80 +9,63 @@ import org.moqui.Moqui
 // ABOUTME: Covers character sets, slash rules, BIC, line format, mutual exclusion, and conditional rules.
 
 class SwiftValidationSpec extends Specification {
-    protected ExecutionContext ec
+    @Shared protected ExecutionContext ec
+    @Shared String testPrefix
+    
+    @Shared String applicantId
+    @Shared String beneficiaryId
+    @Shared String advisingBankId
 
     def setupSpec() {
-        ExecutionContext ec = Moqui.getExecutionContext()
-        ec.user.loginUser("john.doe", "moqui")
+        ec = Moqui.getExecutionContext()
+        ec.transaction.runUseOrBegin(null, null) {
+            println "DEBUG: setupSpec SwiftValidationSpec starting"
+            ec.user.loginUser("trade.maker", "trade123")
+        println "DEBUG: setupSpec logged in"
         ec.artifactExecution.disableAuthz()
-        try {
-            cleanDataInternal(ec)
-            ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrument", 9000000, 1000)
-            ec.entity.tempSetSequencedIdPrimary("trade.importlc.ImportLetterOfCredit", 9000000, 1000)
-            
-            // Ensure mandatory parties exist with correct types and status
-            ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
-                .parameters([partyId: "ACME_CORP_001", partyTypeEnumId: "PTY_COMMERCIAL", 
-                             partyName: "Acme Corporation Ltd", kycStatus: "KYC_ACTIVE"]).call()
-            ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
-                .parameters([partyId: "GLOBAL_EXP_002", partyTypeEnumId: "PTY_COMMERCIAL", 
-                             partyName: "Global Exports Inc", kycStatus: "KYC_ACTIVE"]).call()
-            ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
-                .parameters([partyId: "ADVISING_BANK_001", partyTypeEnumId: "PTY_BANK", 
-                             partyName: "Overseas Banking Corp", kycStatus: "KYC_ACTIVE",
-                             swiftBic: "OBCSGSGX", hasActiveRMA: true]).call()
-        } finally {
-            ec.artifactExecution.enableAuthz()
+        testPrefix = "SWV-SPEC-" + System.currentTimeMillis()
+        println "DEBUG: testPrefix: " + testPrefix
+        
+        applicantId = testPrefix + "-APP"
+        beneficiaryId = testPrefix + "-BEN"
+        advisingBankId = testPrefix + "-ADV-BANK"
+
+        ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+            .parameters([partyId: applicantId, partyTypeEnumId: 'PTY_COMMERCIAL', partyName: 'Acme Corporation Ltd', kycStatus: 'KYC_ACTIVE']).call()
+        println "DEBUG: setupSpec created applicant"
+        ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+            .parameters([partyId: beneficiaryId, partyTypeEnumId: 'PTY_COMMERCIAL', partyName: 'Global Exports Inc', kycStatus: 'KYC_ACTIVE']).call()
+        println "DEBUG: setupSpec created beneficiary"
+        ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
+            .parameters([partyId: advisingBankId, partyTypeEnumId: 'PTY_BANK', partyName: 'Overseas Banking Corp', 
+                         swiftBic: 'OBCSGSGX', hasActiveRMA: true, kycStatus: 'KYC_ACTIVE']).call()
+        println "DEBUG: setupSpec created advising bank"
+
+        // Set isolated ID generation ranges - use 7000000 to avoid conflicts with 9000000
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrument", 31000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.importlc.ImportLetterOfCredit", 31000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeTransaction", 31000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrumentParty", 31000000, 1000)
+        }
+        println "DEBUG: setupSpec SwiftValidationSpec complete"
+    }
+
+    def cleanupSpec() {
+        if (ec != null) {
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeInstrument")
+            ec.entity.tempResetSequencedIdPrimary("trade.importlc.ImportLetterOfCredit")
             ec.destroy()
         }
     }
 
     def setup() {
-        ec = Moqui.getExecutionContext()
-        ec.user.loginUser("john.doe", "moqui")
-        ec.artifactExecution.disableAuthz()
         ec.message.clearAll()
+        ec.user.loginUser("trade.admin", "trade123")
+        ec.artifactExecution.disableAuthz()
     }
 
     def cleanup() {
-        ec.artifactExecution.disableAuthz()
-        ec.user.popUser()
         ec.message.clearAll()
-    }
-
-    def cleanupSpec() {
-        ExecutionContext ec = Moqui.getExecutionContext()
-        ec.user.loginUser("john.doe", "moqui")
-        ec.artifactExecution.disableAuthz()
-        try {
-            cleanDataInternal(ec)
-        } finally {
-            ec.artifactExecution.enableAuthz()
-            ec.destroy()
-        }
-    }
-
-    private static void cleanDataInternal(ExecutionContext ec) {
-        def condition = ec.entity.conditionFactory.makeCondition("instrumentId", EntityCondition.LIKE, "9000%")
-        // Nullify circular reference first
-        ec.entity.find("trade.TradeInstrument").condition(condition).updateAll([latestTransactionId: null])
-
-        ec.entity.find("trade.importlc.ImportLcSettlement").condition(condition).deleteAll()
-        ec.entity.find("trade.importlc.ImportLcAmendment").condition(condition).deleteAll()
-        ec.entity.find("trade.importlc.ImportLcInternalAmendment").condition(condition).deleteAll()
-        ec.entity.find("trade.importlc.ImportLcShippingGuarantee").condition(condition).deleteAll()
-        
-        def presIds = ec.entity.find("trade.importlc.TradeDocumentPresentation").condition(condition).list().collect { it.presentationId }
-        if (presIds) ec.entity.find("trade.importlc.PresentationDiscrepancy").condition("presentationId", EntityCondition.IN, presIds).deleteAll()
-        
-        ec.entity.find("trade.importlc.TradeDocumentPresentation").condition(condition).deleteAll()
-        ec.entity.find("trade.importlc.SwiftMessage").condition(condition).deleteAll()
-        ec.entity.find("trade.importlc.ImportLetterOfCredit").condition(condition).deleteAll()
-        ec.entity.find("trade.TradeInstrumentParty").condition(condition).deleteAll()
-        ec.entity.find("trade.TradeApprovalRecord").condition(condition).deleteAll()
-        ec.entity.find("trade.TradeTransactionAudit").condition(condition).deleteAll()
-        ec.entity.find("trade.TradeTransaction").condition(condition).deleteAll()
-        ec.entity.find("trade.TradeInstrument").condition(condition).deleteAll()
     }
 
     // BDD-SWV-XCS-01: X Character Set — Invalid Characters Blocked
@@ -93,8 +76,8 @@ class SwiftValidationSpec extends Specification {
             .parameters([instrumentRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
                          goodsDescription: "STEEL PIPES @100MM & FITTINGS",
                          portOfLoading: "HO CHI MINH CITY #1 PORT",
-                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
-                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']],
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: applicantId],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: beneficiaryId]],
                          availableWithEnumId: 'AW_ANY_BANK']).call()
         assert res.instrumentId != null
 
@@ -115,8 +98,8 @@ class SwiftValidationSpec extends Specification {
         def ref = "TF-AMD-" + System.currentTimeMillis()
         def lcRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([instrumentRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
-                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
-                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']],
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: applicantId],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: beneficiaryId]],
                          availableWithEnumId: 'AW_ANY_BANK']).call()
         
         // Approve issuance to allow amendment
@@ -152,8 +135,8 @@ class SwiftValidationSpec extends Specification {
         def longRef = "TF-REF-TOO-LONG-REFERENCE-12345"
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([instrumentRef: longRef, lcAmount: 1000.0, lcCurrencyUomId: "USD",
-                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
-                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']],
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: applicantId],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: beneficiaryId]],
                          availableWithEnumId: 'AW_ANY_BANK']).call()
 
         when: "validate#SwiftFields is called"
@@ -171,11 +154,11 @@ class SwiftValidationSpec extends Specification {
         def ref = "TF-BIC2-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([instrumentRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
-                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
-                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002'],
-                                   [roleEnumId: 'TP_ADVISING_BANK', partyId: 'ADVISING_BANK_001']]]).call()
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: applicantId],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: beneficiaryId],
+                                   [roleEnumId: 'TP_ADVISING_BANK', partyId: advisingBankId]]]).call()
         // Override BIC to test length validation on the extension
-        ec.entity.find("trade.TradePartyBank").condition("partyId", "ADVISING_BANK_001").one().set("swiftBic", "BAN1").update()
+        ec.entity.find("trade.TradePartyBank").condition("partyId", advisingBankId).one().set("swiftBic", "BAN1").update()
 
         when: "validate#SwiftFields is called"
         def result = ec.service.sync().name("trade.importlc.ImportLcValidationServices.validate#SwiftFields")
@@ -186,7 +169,7 @@ class SwiftValidationSpec extends Specification {
         result.errors.any { it.fieldName == "advisingBankBic" && it.message.contains("8 or 11") }
 
         cleanup: "Revert the BIC back to original"
-        ec.entity.find("trade.TradePartyBank").condition("partyId", "ADVISING_BANK_001").one().set("swiftBic", "OBCSGSGX").update()
+        ec.entity.find("trade.TradePartyBank").condition("partyId", advisingBankId).one().set("swiftBic", "OBCSGSGX").update()
     }
 
     // BDD-SWV-LIN-02: Multiline format violation for Name field
@@ -196,11 +179,11 @@ class SwiftValidationSpec extends Specification {
         def ref = "TF-LIN2-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([instrumentRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
-                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
-                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']],
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: applicantId],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: beneficiaryId]],
                          availableWithEnumId: 'AW_ANY_BANK']).call()
         // Update applicant name on TradeParty entity for line count test
-        ec.entity.find("trade.TradeParty").condition("partyId", "ACME_CORP_001").one().set("partyName", longName).update()
+        ec.entity.find("trade.TradeParty").condition("partyId", applicantId).one().set("partyName", longName).update()
 
         when: "validate#SwiftFields is called"
         def result = ec.service.sync().name("trade.importlc.ImportLcValidationServices.validate#SwiftFields")
@@ -211,7 +194,7 @@ class SwiftValidationSpec extends Specification {
         result.errors.any { it.fieldName == "applicantName" && it.message.contains("maximum 4 lines") }
 
         cleanup:
-        ec.entity.find("trade.TradeParty").condition("partyId", "ACME_CORP_001").one().set("partyName", "Acme Corporation Ltd").update()
+        ec.entity.find("trade.TradeParty").condition("partyId", applicantId).one().set("partyName", "Acme Corporation Ltd").update()
     }
 
     // Existing test cases preserved and hardened...
@@ -222,8 +205,8 @@ class SwiftValidationSpec extends Specification {
             .parameters([instrumentRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
                          goodsDescription: "STEEL PIPES 100MM, GRADE A (STANDARD)",
                          portOfLoading: "HO CHI MINH CITY",
-                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
-                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']],
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: applicantId],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: beneficiaryId]],
                          availableWithEnumId: 'AW_ANY_BANK']).call()
         assert res.instrumentId != null
 
@@ -241,8 +224,8 @@ class SwiftValidationSpec extends Specification {
         def ref = "/TF-REF-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([instrumentRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
-                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
-                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']],
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: applicantId],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: beneficiaryId]],
                          availableWithEnumId: 'AW_ANY_BANK']).call()
 
         when: "validate#SwiftFields is called on the TradeInstrument"
@@ -255,15 +238,18 @@ class SwiftValidationSpec extends Specification {
     }
 
     def "MEX-01: Mutual exclusion - tolerance vs max credit amount"() {
-        given: "An LC with both tolerance and maxCreditAmountFlag set"
+        given: "An LC with both tolerance and max credit amount flag"
         def ref = "TF-MEX-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([instrumentRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
-                         tolerancePositive: 0.10, toleranceNegative: 0.05,
-                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
-                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']],
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: applicantId],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: beneficiaryId]],
+                         tolerancePositive: 10,
                          availableWithEnumId: 'AW_ANY_BANK']).call()
         
+        if (ec.message.hasError()) {
+            println "CREATE ERROR (MEX-01): " + ec.message.getMessages().join(", ")
+        }
         def lc = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", res.instrumentId).one()
         lc.set("maxCreditAmountFlag", "Y").update()
 
@@ -281,10 +267,13 @@ class SwiftValidationSpec extends Specification {
         def ref = "TF-CND-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([instrumentRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
-                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
-                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']],
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: applicantId],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: beneficiaryId]],
                          availableWithEnumId: 'AW_ANY_BANK']).call()
         
+        if (ec.message.hasError()) {
+            println "CREATE ERROR (CND-01): " + ec.message.getMessages().join(", ")
+        }
         def lc = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", res.instrumentId).one()
         lc.setAll([tenorTypeId: "LCT_USANCE", usanceDays: null, usanceBaseDate: null]).update()
 
@@ -304,8 +293,8 @@ class SwiftValidationSpec extends Specification {
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([instrumentRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
                          goodsDescription: "PIPES @100MM",
-                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
-                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']],
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: applicantId],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: beneficiaryId]],
                          availableWithEnumId: 'AW_ANY_BANK']).call()
         
         def lcEntity = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", res.instrumentId).one()
@@ -333,8 +322,8 @@ class SwiftValidationSpec extends Specification {
                          lcTypeEnumId: "LCT_IRREVOCABLE",
                          availableByEnumId: "AVB_BY_SIGHT_PAYMENT",
                          confirmationEnumId: "CONF_WITHOUT",
-                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
-                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']],
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: applicantId],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: beneficiaryId]],
                          availableWithEnumId: 'AW_ANY_BANK']).call()
 
         when: "validate#SwiftFields is called"
@@ -350,8 +339,8 @@ class SwiftValidationSpec extends Specification {
         def ref = "TF-MAND-" + System.currentTimeMillis()
         def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([instrumentRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
-                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
-                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']],
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: applicantId],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: beneficiaryId]],
                          availableWithEnumId: 'AW_ANY_BANK']).call()
         
         def lc = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", res.instrumentId).one()
@@ -375,8 +364,8 @@ class SwiftValidationSpec extends Specification {
             .parameters([instrumentRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
                          latestShipmentDate: "2026-12-31", shipmentPeriodText: "DURING DECEMBER",
                          lcTypeEnumId: "LCT_IRREVOCABLE", availableByEnumId: "AVB_BY_SIGHT_PAYMENT", confirmationEnumId: "CONF_WITHOUT",
-                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
-                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']],
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: applicantId],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: beneficiaryId]],
                          availableWithEnumId: 'AW_ANY_BANK']).call()
 
         when: "validate#SwiftFields is called"
@@ -394,8 +383,8 @@ class SwiftValidationSpec extends Specification {
         def lcRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([instrumentRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
                          lcTypeEnumId: "LCT_IRREVOCABLE", availableByEnumId: "AVB_BY_SIGHT_PAYMENT", confirmationEnumId: "CONF_WITHOUT",
-                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
-                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']],
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: applicantId],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: beneficiaryId]],
                          availableWithEnumId: 'AW_ANY_BANK']).call()
         
         // Authorize LC
@@ -420,9 +409,6 @@ class SwiftValidationSpec extends Specification {
         then: "Error for exceeding 6 lines"
         result.errors != null
         result.errors.any { it.fieldName == "chargesDeducted" && it.message.contains("6 lines") }
-
-        cleanup:
-        ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("presentationId", presId).deleteAll()
     }
 
     def "LIN-04: Presentation senderToReceiverPresentationInfo exceeds 6 lines (Tag 72Z)"() {
@@ -431,15 +417,15 @@ class SwiftValidationSpec extends Specification {
         def lcRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([instrumentRef: ref, lcAmount: 1000.0, lcCurrencyUomId: "USD",
                          lcTypeEnumId: "LCT_IRREVOCABLE", availableByEnumId: "AVB_BY_SIGHT_PAYMENT", confirmationEnumId: "CONF_WITHOUT",
-                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
-                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']],
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: applicantId],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: beneficiaryId]],
                          availableWithEnumId: 'AW_ANY_BANK']).call()
 
         // Authorize LC
         def txIss = ec.entity.find("trade.TradeTransaction")
                 .condition([instrumentId: lcRes.instrumentId.toString(), transactionTypeEnumId: 'IMP_NEW']).disableAuthz().one()
         ec.service.sync().name("trade.AuthorizationServices.authorize#Instrument")
-                .parameters([transactionId: txIss.transactionId, skipFourEyes: true]).call()
+            .parameters([transactionId: txIss.transactionId, skipFourEyes: true]).call()
         ec.artifactExecution.disableAuthz()
         ec.entity.find("trade.importlc.ImportLetterOfCredit")
                 .condition("instrumentId", lcRes.instrumentId).updateAll([businessStateId: "LC_ISSUED"])
@@ -457,8 +443,5 @@ class SwiftValidationSpec extends Specification {
         then: "Error for exceeding 6 lines"
         result.errors != null
         result.errors.any { it.fieldName == "senderToReceiverPresentationInfo" && it.message.contains("6 lines") }
-
-        cleanup:
-        ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("presentationId", presId).deleteAll()
     }
 }

@@ -6,9 +6,10 @@ import spock.lang.Specification
 import spock.lang.Shared
 import org.moqui.entity.EntityCondition
 
-// ABOUTME: InstrumentDataIntegritySpec verifies that instrument-level data retrieval is correctly isolated.
-// ABOUTME: Specifically validates that party records from different instruments do not leak into each other.
-
+/**
+ * ABOUTME: InstrumentDataIntegritySpec verifies that instrument-level data retrieval is correctly isolated.
+ * Specifically validates that party records from different instruments do not leak into each other.
+ */
 class InstrumentDataIntegritySpec extends Specification {
     @Shared protected ExecutionContext ec
     @Shared String testPrefix
@@ -17,32 +18,27 @@ class InstrumentDataIntegritySpec extends Specification {
         ec = Moqui.getExecutionContext()
         ec.artifactExecution.disableAuthz()
         ec.user.loginUser("trade.admin", "trade123")
-        testPrefix = "INST-INT-" + System.currentTimeMillis()
-        cleanData()
+        testPrefix = "IDI-" + System.currentTimeMillis()
+
+        // Set isolated ID generation ranges - use 12500000
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrument", 12500000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.importlc.ImportLetterOfCredit", 12500000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeTransaction", 12500000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrumentParty", 12500000, 1000)
     }
 
     def cleanupSpec() {
-        try {
-            if (ec != null) cleanData()
-        } finally {
-            if (ec != null) ec.destroy()
-        }
-    }
-
-    private void cleanData() {
-        boolean begun = ec.transaction.begin(60)
-        try {
-            ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").updateAll([latestTransactionId: null])
-            ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.transaction.commit(begun)
-        } catch (Exception e) {
-            ec.transaction.rollback(begun, "Error in cleanData", e)
+        if (ec != null) {
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeInstrument")
+            ec.entity.tempResetSequencedIdPrimary("trade.importlc.ImportLetterOfCredit")
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeTransaction")
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeInstrumentParty")
+            ec.destroy()
         }
     }
 
     def setup() {
+        if (ec.transaction.isTransactionInPlace()) ec.transaction.rollback("Cleanup", null)
         ec.message.clearAll()
         ec.artifactExecution.disableAuthz()
     }
@@ -53,22 +49,21 @@ class InstrumentDataIntegritySpec extends Specification {
 
     def "Verify Party Record Isolation between Instruments"() {
         given:
-        def idA = testPrefix + "_ID_A"
-        def idB = testPrefix + "_ID_B"
-
         // 1. Create Instrument A with both mandatory parties
-        ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([instrumentId: idA, instrumentRef: idA + "_REF", lcAmount: 1000.0, lcCurrencyUomId: "USD",
-                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
-                                             [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
+        def resA = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
+            .parameters([instrumentRef: testPrefix + "_REF_A", lcAmount: 1000.0, lcCurrencyUomId: "USD",
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: testPrefix + '_APP_A'],
+                                             [roleEnumId: 'TP_BENEFICIARY', partyId: testPrefix + '_BEN_A']]]).call()
         assert !ec.message.hasError()
+        String idA = resA.instrumentId
 
         // 2. Create Instrument B with different parties
-        ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([instrumentId: idB, instrumentRef: idB + "_REF", lcAmount: 2000.0, lcCurrencyUomId: "USD",
-                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'GLOBAL_EXP_002'],
-                                             [roleEnumId: 'TP_BENEFICIARY', partyId: 'ACME_CORP_001']]]).call()
+        def resB = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
+            .parameters([instrumentRef: testPrefix + "_REF_B", lcAmount: 2000.0, lcCurrencyUomId: "USD",
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: testPrefix + '_APP_B'],
+                                             [roleEnumId: 'TP_BENEFICIARY', partyId: testPrefix + '_BEN_B']]]).call()
         assert !ec.message.hasError()
+        String idB = resB.instrumentId
 
         when:
         // 3. Fetch Instrument A
@@ -82,13 +77,13 @@ class InstrumentDataIntegritySpec extends Specification {
         then:
         // Instrument A should ONLY have its own parties
         outA.parties.size() == 2
-        outA.parties.any { it.roleEnumId == 'TP_APPLICANT' && it.partyId == 'ACME_CORP_001' }
-        outA.parties.any { it.roleEnumId == 'TP_BENEFICIARY' && it.partyId == 'GLOBAL_EXP_002' }
+        outA.parties.any { it.roleEnumId == 'TP_APPLICANT' && it.partyId == testPrefix + '_APP_A' }
+        outA.parties.any { it.roleEnumId == 'TP_BENEFICIARY' && it.partyId == testPrefix + '_BEN_A' }
 
         // Instrument B should ONLY have its own parties
         outB.parties.size() == 2
-        outB.parties.any { it.roleEnumId == 'TP_APPLICANT' && it.partyId == 'GLOBAL_EXP_002' }
-        outB.parties.any { it.roleEnumId == 'TP_BENEFICIARY' && it.partyId == 'ACME_CORP_001' }
+        outB.parties.any { it.roleEnumId == 'TP_APPLICANT' && it.partyId == testPrefix + '_APP_B' }
+        outB.parties.any { it.roleEnumId == 'TP_BENEFICIARY' && it.partyId == testPrefix + '_BEN_B' }
     }
 
     def "Verify Instrument View handles Alphanumeric IDs"() {
@@ -96,8 +91,8 @@ class InstrumentDataIntegritySpec extends Specification {
         String testId = testPrefix + "_ALPHA_123"
         ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([instrumentId: testId, instrumentRef: testPrefix + "_ALPHA_REF", lcAmount: 5000.0, lcCurrencyUomId: "USD",
-                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
-                                             [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: testPrefix + '_APP_ALPHA'],
+                                             [roleEnumId: 'TP_BENEFICIARY', partyId: testPrefix + '_BEN_ALPHA']]]).call()
         assert !ec.message.hasError()
 
         when:

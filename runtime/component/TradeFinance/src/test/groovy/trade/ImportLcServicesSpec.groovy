@@ -14,70 +14,66 @@ class ImportLcServicesSpec extends Specification {
     @Shared protected ExecutionContext ec
     @Shared String testPrefix
     
-    @Shared static final String APPLICANT_ID = 'ACME_CORP_001'
-    @Shared static final String BENEFICIARY_ID = 'GLOBAL_EXP_002'
-    @Shared static final String ISSUING_BANK_ID = 'UTB_SG_001'
+    @Shared String applicantId
+    @Shared String beneficiaryId
+    @Shared String facilityId1
+    @Shared String facilityId2
 
     def setupSpec() {
         ec = Moqui.getExecutionContext()
-        ec.artifactExecution.disableAuthz()
-        ec.user.loginUser("trade.admin", "trade123")
+        ec.transaction.runUseOrBegin(null, null) {
+            println "DEBUG: setupSpec ImportLcServicesSpec starting"
+            ec.artifactExecution.disableAuthz()
+            ec.user.loginUser("trade.maker", "trade123")
         testPrefix = "IMP-SRV-" + System.currentTimeMillis()
         
+        applicantId = testPrefix + "-APP"
+        beneficiaryId = testPrefix + "-BEN"
+        facilityId1 = testPrefix + "-FAC-1"
+        facilityId2 = testPrefix + "-FAC-2"
+
         // Ensure test parties and facilities exist
         ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
-            .parameters([partyId: APPLICANT_ID, partyTypeEnumId: 'PTY_COMMERCIAL', partyName: 'ACME Corp', kycStatus: 'KYC_ACTIVE']).call()
+            .parameters([partyId: applicantId, partyTypeEnumId: 'PTY_COMMERCIAL', partyName: 'ACME Corp', kycStatus: 'KYC_ACTIVE']).call()
         ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
-            .parameters([partyId: BENEFICIARY_ID, partyTypeEnumId: 'PTY_COMMERCIAL', partyName: 'Global Exports', kycStatus: 'KYC_ACTIVE']).call()
+            .parameters([partyId: beneficiaryId, partyTypeEnumId: 'PTY_COMMERCIAL', partyName: 'Global Exports', kycStatus: 'KYC_ACTIVE']).call()
 
         ec.entity.makeValue("trade.CustomerFacility")
-            .setAll([facilityId: 'FAC_001', ownerPartyId: APPLICANT_ID, totalApprovedLimit: 1000000.0, utilizedAmount: 0.0, currencyUomId: "USD", statusId: "FAC_ACTIVE"])
-            .createOrUpdate()
+            .setAll([facilityId: facilityId1, ownerPartyId: applicantId, totalApprovedLimit: 1000000.0, utilizedAmount: 0.0, currencyUomId: "USD", statusId: "FAC_ACTIVE"])
+            .create()
         ec.entity.makeValue("trade.CustomerFacility")
-            .setAll([facilityId: 'FAC_002', ownerPartyId: APPLICANT_ID, totalApprovedLimit: 1000000.0, utilizedAmount: 0.0, currencyUomId: "USD", statusId: "FAC_ACTIVE"])
-            .createOrUpdate()
-            
-        cleanData()
+            .setAll([facilityId: facilityId2, ownerPartyId: applicantId, totalApprovedLimit: 1000000.0, utilizedAmount: 0.0, currencyUomId: "USD", statusId: "FAC_ACTIVE"])
+            .create()
+
+        // Set isolated ID generation ranges - use 8500000
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrument", 40000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.importlc.ImportLetterOfCredit", 40000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.importlc.ImportLcAmendment", 40000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.importlc.ImportLcInternalAmendment", 40000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.importlc.TradeDocumentPresentation", 40000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeTransaction", 40000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrumentParty", 40000000, 1000)
+        }
+        println "DEBUG: setupSpec ImportLcServicesSpec complete"
     }
 
     def cleanupSpec() {
-        try {
-            if (ec != null) {
-                ec.artifactExecution.disableAuthz()
-                cleanData()
-            }
-        } finally {
-            if (ec != null) ec.destroy()
-        }
-    }
-
-    private void cleanData() {
-        boolean begun = ec.transaction.begin(60)
-        try {
-            ec.artifactExecution.disableAuthz()
-            ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").updateAll([latestTransactionId: null])
-            ec.entity.find("trade.importlc.ImportLcInternalAmendment").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.importlc.ImportLcAmendment").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.importlc.ImportLcShippingGuarantee").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.importlc.ImportLcSettlement").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeTransaction").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.transaction.commit(begun)
-        } catch (Exception e) {
-            ec.transaction.rollback(begun, "Error in cleanData", e)
+        if (ec != null) {
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeInstrument")
+            ec.entity.tempResetSequencedIdPrimary("trade.importlc.ImportLetterOfCredit")
+            ec.entity.tempResetSequencedIdPrimary("trade.importlc.ImportLcAmendment")
+            ec.entity.tempResetSequencedIdPrimary("trade.importlc.ImportLcInternalAmendment")
+            ec.entity.tempResetSequencedIdPrimary("trade.importlc.TradeDocumentPresentation")
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeTransaction")
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeInstrumentParty")
+            ec.destroy()
         }
     }
 
     def setup() {
         ec.message.clearAll()
-        ec.artifactExecution.disableAuthz()
         ec.user.loginUser("trade.admin", "trade123")
+        ec.artifactExecution.disableAuthz()
     }
 
     def cleanup() {
@@ -85,36 +81,33 @@ class ImportLcServicesSpec extends Specification {
     }
 
     def "should create Import Letter of Credit in DRAFT status"() {
-        given:
-        def instrumentId = testPrefix + "_DRAFT_01"
-        
         when:
         def result = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
-            instrumentId: instrumentId, instrumentRef: instrumentId + "_REF",
-            instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: APPLICANT_ID], [roleEnumId: 'TP_BENEFICIARY', partyId: BENEFICIARY_ID]],
+            instrumentRef: testPrefix + "_REF_01",
+            instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: applicantId], [roleEnumId: 'TP_BENEFICIARY', partyId: beneficiaryId]],
             lcAmount: 100000.0, lcCurrencyUomId: "USD",
             lcTypeEnumId: 'LCT_IRREVOCABLE', availableByEnumId: 'AVB_BY_NEGOTIATION', confirmationEnumId: 'CONF_WITHOUT',
             businessStateId: "LC_DRAFT"
         ]).call()
+        def instrumentId = result.instrumentId
 
         then:
         !ec.message.hasError()
-        result.instrumentId != null
-        ec.artifactExecution.disableAuthz() || true
-        def lcLookup = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", result.instrumentId).one()
+        instrumentId != null
+        def lcLookup = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).one()
         lcLookup.businessStateId == "LC_DRAFT"
     }
 
     def "should transition Import LC to ISSUED upon approval"() {
         given:
-        def instrumentId = testPrefix + "_APPROVE_01"
-        ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
-            instrumentId: instrumentId, instrumentRef: instrumentId + "_REF",
-            instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: APPLICANT_ID], [roleEnumId: 'TP_BENEFICIARY', partyId: BENEFICIARY_ID]],
+        def createRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
+            instrumentRef: testPrefix + "_REF_02",
+            instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: applicantId], [roleEnumId: 'TP_BENEFICIARY', partyId: beneficiaryId]],
             lcAmount: 200000.0, lcCurrencyUomId: "USD",
             lcTypeEnumId: 'LCT_IRREVOCABLE', availableByEnumId: 'AVB_BY_NEGOTIATION', confirmationEnumId: 'CONF_WITHOUT',
             businessStateId: "LC_DRAFT"
         ]).call()
+        def instrumentId = createRes.instrumentId
 
         when:
         ec.service.sync().name("trade.importlc.ImportLcServices.approve#ImportLetterOfCredit")
@@ -122,21 +115,21 @@ class ImportLcServicesSpec extends Specification {
 
         then:
         !ec.message.hasError()
-        ec.artifactExecution.disableAuthz() || true
         def lcLookup = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).one()
         lcLookup.businessStateId == "LC_ISSUED"
     }
 
     def "should authorize Import LC and create approval record"() {
         given:
-        def instrumentId = testPrefix + "_AUTH_01"
-        ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
-            instrumentId: instrumentId, instrumentRef: instrumentId + "_REF",
-            instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: APPLICANT_ID], [roleEnumId: 'TP_BENEFICIARY', partyId: BENEFICIARY_ID]],
+        def createRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
+            instrumentRef: testPrefix + "_REF_03",
+            instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: applicantId], [roleEnumId: 'TP_BENEFICIARY', partyId: beneficiaryId]],
             lcAmount: 300000.0, lcCurrencyUomId: "USD",
             lcTypeEnumId: 'LCT_IRREVOCABLE', availableByEnumId: 'AVB_BY_NEGOTIATION', confirmationEnumId: 'CONF_WITHOUT',
             businessStateId: "LC_DRAFT"
         ]).call()
+        def instrumentId = createRes.instrumentId
+        
         ec.artifactExecution.disableAuthz()
         def txIss = ec.entity.find("trade.TradeTransaction").condition([instrumentId: instrumentId, transactionTypeEnumId: 'IMP_NEW']).one()
 
@@ -146,7 +139,6 @@ class ImportLcServicesSpec extends Specification {
 
         then:
         !ec.message.hasError()
-        ec.artifactExecution.disableAuthz() || true
         def txLookup = ec.entity.find("trade.TradeTransaction").condition("transactionId", txIss.transactionId).one()
         txLookup.transactionStatusId == "TX_APPROVED"
         def approvalRecord = ec.entity.find("trade.TradeApprovalRecord").condition("transactionId", txIss.transactionId).one()
@@ -155,14 +147,14 @@ class ImportLcServicesSpec extends Specification {
 
     def "should create Amendment draft"() {
         given:
-        def instrumentId = testPrefix + "_AMD_01"
-        ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
-            instrumentId: instrumentId, instrumentRef: instrumentId + "_REF",
-            instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: APPLICANT_ID], [roleEnumId: 'TP_BENEFICIARY', partyId: BENEFICIARY_ID]],
+        def createRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
+            instrumentRef: testPrefix + "_REF_04",
+            instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: applicantId], [roleEnumId: 'TP_BENEFICIARY', partyId: beneficiaryId]],
             lcAmount: 500000.0, lcCurrencyUomId: "USD",
             lcTypeEnumId: 'LCT_IRREVOCABLE', availableByEnumId: 'AVB_BY_NEGOTIATION', confirmationEnumId: 'CONF_WITHOUT',
             businessStateId: "LC_DRAFT"
         ]).call()
+        def instrumentId = createRes.instrumentId
 
         ec.artifactExecution.disableAuthz()
         def txIss = ec.entity.find("trade.TradeTransaction").condition([instrumentId: instrumentId, transactionTypeEnumId: 'IMP_NEW']).one()
@@ -179,7 +171,6 @@ class ImportLcServicesSpec extends Specification {
         then:
         !ec.message.hasError()
         amendmentId != null
-        ec.artifactExecution.disableAuthz() || true
         def amdLookup = ec.entity.find("trade.importlc.ImportLcAmendment").condition("amendmentId", amendmentId).one()
         amdLookup.goodsActionEnumId == 'AMA_ADD'
         amdLookup.amountIncrease == 50000.0
@@ -188,14 +179,14 @@ class ImportLcServicesSpec extends Specification {
 
     def "should create Internal Amendment"() {
         given:
-        def instrumentId = testPrefix + "_IA_01"
-        ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
-            instrumentId: instrumentId, instrumentRef: instrumentId + "_REF",
-            instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: APPLICANT_ID], [roleEnumId: 'TP_BENEFICIARY', partyId: BENEFICIARY_ID]],
+        def createRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
+            instrumentRef: testPrefix + "_REF_05",
+            instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: applicantId], [roleEnumId: 'TP_BENEFICIARY', partyId: beneficiaryId]],
             lcAmount: 500000.0, lcCurrencyUomId: "USD",
             lcTypeEnumId: 'LCT_IRREVOCABLE', availableByEnumId: 'AVB_BY_NEGOTIATION', confirmationEnumId: 'CONF_WITHOUT',
             businessStateId: "LC_DRAFT"
         ]).call()
+        def instrumentId = createRes.instrumentId
 
         ec.artifactExecution.disableAuthz()
         def txIss = ec.entity.find("trade.TradeTransaction").condition([instrumentId: instrumentId, transactionTypeEnumId: 'IMP_NEW']).one()
@@ -204,16 +195,15 @@ class ImportLcServicesSpec extends Specification {
 
         when:
         def amdResult = ec.service.sync().name("trade.importlc.ImportLcServices.create#InternalAmendment").parameters([
-            instrumentId: instrumentId, newFeeDebitAccountId: 'ACC_INT_001', newFacilityId: 'FAC_001'
+            instrumentId: instrumentId, newFeeDebitAccountId: testPrefix + '_ACC_INT_001', newFacilityId: facilityId1
         ]).call()
         def internalAmendmentId = amdResult?.internalAmendmentId
 
         then:
         !ec.message.hasError()
         internalAmendmentId != null
-        ec.artifactExecution.disableAuthz() || true
         def iaLookup = ec.entity.find("trade.importlc.ImportLcInternalAmendment").condition("internalAmendmentId", internalAmendmentId).one()
-        iaLookup.newFeeDebitAccountId == 'ACC_INT_001'
+        iaLookup.newFeeDebitAccountId == testPrefix + '_ACC_INT_001'
         // Internal Amendment status is tracked in TradeTransaction
         def txAmd = ec.entity.find("trade.TradeTransaction").condition([relatedRecordId: internalAmendmentId, transactionTypeEnumId: 'IMP_AMENDMENT']).one()
         txAmd.transactionStatusId == "TX_DRAFT"
@@ -221,14 +211,14 @@ class ImportLcServicesSpec extends Specification {
 
     def "should settle Presentation and drawdown effective outstanding"() {
         given:
-        def instrumentId = testPrefix + "_SETTLE_01"
-        ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
-            instrumentId: instrumentId, instrumentRef: instrumentId + "_REF",
-            instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: APPLICANT_ID], [roleEnumId: 'TP_BENEFICIARY', partyId: BENEFICIARY_ID]],
+        def createRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
+            instrumentRef: testPrefix + "_REF_06",
+            instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: applicantId], [roleEnumId: 'TP_BENEFICIARY', partyId: beneficiaryId]],
             lcAmount: 100000.0, lcCurrencyUomId: "USD",
             lcTypeEnumId: 'LCT_IRREVOCABLE', availableByEnumId: 'AVB_BY_NEGOTIATION', confirmationEnumId: 'CONF_WITHOUT',
             businessStateId: "LC_DRAFT"
         ]).call()
+        def instrumentId = createRes.instrumentId
         
         ec.artifactExecution.disableAuthz()
         def txIss = ec.entity.find("trade.TradeTransaction").condition([instrumentId: instrumentId, transactionTypeEnumId: 'IMP_NEW']).one()
@@ -249,7 +239,6 @@ class ImportLcServicesSpec extends Specification {
 
         then:
         !ec.message.hasError()
-        ec.artifactExecution.disableAuthz() || true
         def lcLookup = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).one()
         Math.abs(lcLookup.effectiveOutstandingAmount - 60000.0) < 0.001
         Math.abs(lcLookup.cumulativeDrawnAmount - 40000.0) < 0.001
@@ -257,12 +246,12 @@ class ImportLcServicesSpec extends Specification {
 
     def "should enforce Maker/Checker on Amendment authorization"() {
         setup:
-        def instrumentId = testPrefix + "_MC_01"
-        ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
-            instrumentId: instrumentId, instrumentRef: instrumentId + "_REF",
+        def createRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
+            instrumentRef: testPrefix + "_REF_07",
             lcAmount: 100000.0, lcCurrencyUomId: 'USD',
-            instrumentParties: [[partyId: APPLICANT_ID, roleEnumId: 'TP_APPLICANT'], [partyId: BENEFICIARY_ID, roleEnumId: 'TP_BENEFICIARY']]
+            instrumentParties: [[partyId: applicantId, roleEnumId: 'TP_APPLICANT'], [partyId: beneficiaryId, roleEnumId: 'TP_BENEFICIARY']]
         ]).call()
+        def instrumentId = createRes.instrumentId
         
         ec.artifactExecution.disableAuthz()
         def txIss = ec.entity.find("trade.TradeTransaction").condition([instrumentId: instrumentId, transactionTypeEnumId: 'IMP_NEW']).one()
@@ -287,12 +276,12 @@ class ImportLcServicesSpec extends Specification {
 
     def "should allow Checker to authorize Amendment"() {
         setup:
-        def instrumentId = testPrefix + "_MC_02"
-        ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
-            instrumentId: instrumentId, instrumentRef: instrumentId + "_REF",
+        def createRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
+            instrumentRef: testPrefix + "_REF_08",
             lcAmount: 100000.0, lcCurrencyUomId: 'USD',
-            instrumentParties: [[partyId: APPLICANT_ID, roleEnumId: 'TP_APPLICANT'], [partyId: BENEFICIARY_ID, roleEnumId: 'TP_BENEFICIARY']]
+            instrumentParties: [[partyId: applicantId, roleEnumId: 'TP_APPLICANT'], [partyId: beneficiaryId, roleEnumId: 'TP_BENEFICIARY']]
         ]).call()
+        def instrumentId = createRes.instrumentId
         
         ec.artifactExecution.disableAuthz()
         def txIss = ec.entity.find("trade.TradeTransaction").condition([instrumentId: instrumentId, transactionTypeEnumId: 'IMP_NEW']).one()
@@ -314,21 +303,20 @@ class ImportLcServicesSpec extends Specification {
 
         then:
         !ec.message.hasError()
-        ec.artifactExecution.disableAuthz() || true
         def amdLookup = ec.entity.find("trade.importlc.ImportLcAmendment").condition("amendmentId", amendmentId).one()
         amdLookup.amendmentBusinessStateId == "AMEND_APPROVED"
     }
 
     def "should authorize Internal Amendment and immediately update Master LC (Scenario 3)"() {
         given:
-        def instrumentId = testPrefix + "_IA_SC3"
-        ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
-            instrumentId: instrumentId, instrumentRef: instrumentId + "_REF",
-            instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: APPLICANT_ID], [roleEnumId: 'TP_BENEFICIARY', partyId: BENEFICIARY_ID]],
+        def createRes = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit").parameters([
+            instrumentRef: testPrefix + "_REF_09",
+            instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: applicantId], [roleEnumId: 'TP_BENEFICIARY', partyId: beneficiaryId]],
             lcAmount: 500000.0, lcCurrencyUomId: "USD",
             lcTypeEnumId: 'LCT_IRREVOCABLE', availableByEnumId: 'AVB_BY_NEGOTIATION', confirmationEnumId: 'CONF_WITHOUT',
             businessStateId: "LC_DRAFT"
         ]).call()
+        def instrumentId = createRes.instrumentId
 
         ec.artifactExecution.disableAuthz()
         def txIss = ec.entity.find("trade.TradeTransaction").condition([instrumentId: instrumentId, transactionTypeEnumId: 'IMP_NEW']).one()
@@ -336,7 +324,7 @@ class ImportLcServicesSpec extends Specification {
         ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).updateAll([businessStateId: "LC_ISSUED"])
 
         def iaResult = ec.service.sync().name("trade.importlc.ImportLcServices.create#InternalAmendment").parameters([
-            instrumentId: instrumentId, newFeeDebitAccountId: 'ACC_INT_002', newFacilityId: 'FAC_002'
+            instrumentId: instrumentId, newFeeDebitAccountId: testPrefix + '_ACC_INT_002', newFacilityId: facilityId2
         ]).call()
         def internalAmendmentId = iaResult?.internalAmendmentId
 
@@ -346,10 +334,9 @@ class ImportLcServicesSpec extends Specification {
 
         then:
         !ec.message.hasError()
-        ec.artifactExecution.disableAuthz() || true
         def lcLookup = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).one()
-        lcLookup.feeDebitAccountId == 'ACC_INT_002'
+        lcLookup.feeDebitAccountId == testPrefix + '_ACC_INT_002'
         def instLookup = ec.entity.find("trade.TradeInstrument").condition("instrumentId", instrumentId).one()
-        instLookup.customerFacilityId == 'FAC_002'
+        instLookup.customerFacilityId == facilityId2
     }
 }

@@ -125,6 +125,9 @@
                 if (lc.tolerancePositive != null || lc.toleranceNegative != null) {
                     int pos = (int)((lc.tolerancePositive ?: 0.0) * 100)
                     int neg = (int)((lc.toleranceNegative ?: 0.0) * 100)
+                    // SRG 2024: Ensure symmetric tolerance is explicit if one side is missing
+                    if (pos > 0 && neg == 0) neg = pos
+                    if (neg > 0 && pos == 0) pos = neg
                     fields["39A"] = "${pos}/${neg}"
                 } else if (lc.maxCreditAmountFlag == "Y") {
                     fields["39B"] = "MAXIMUM"
@@ -350,6 +353,9 @@
                 if (amendment.newTolerancePositive != null || amendment.newToleranceNegative != null) {
                     int pos = (int)((amendment.newTolerancePositive ?: 0.0) * 100)
                     int neg = (int)((amendment.newToleranceNegative ?: 0.0) * 100)
+                    // SRG 2024: Ensure symmetric tolerance is explicit if one side is missing
+                    if (pos > 0 && neg == 0) neg = pos
+                    if (neg > 0 && pos == 0) pos = neg
                     fields["39A"] = "${pos}/${neg}"
                 }
 

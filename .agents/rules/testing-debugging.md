@@ -59,6 +59,9 @@ YOU MUST follow this debugging framework for ANY technical issue:
 ## The Knowledge Base Pointer (CRITICAL)
 * Before writing or modifying any test assertions, UI screen tests, or mock data setups, you MUST read the exact testing patterns and traps defined in `.agents/knowledge/moqui-testing.md`.
 * Pay special attention to the rules regarding **Type Coercion Traps**, **Resilient Assertions** (avoiding exact size checks), and **Sequence Collisions** documented in that file.
+* **ID Isolation (MANDATORY)**: Every spec MUST use `ec.entity.tempSetSequencedIdPrimary()` to assign itself a unique, non-overlapping range (500k increments) for auto-generated IDs to prevent suite-wide collisions.
+* **No Hardcoded IDs**: YOU MUST NEVER hardcode IDs in test service calls. Always capture system-generated IDs from service responses.
+* **Dynamic testPrefix**: Always use `testPrefix = "..." + System.currentTimeMillis()` for shared entities like Parties or Users.
 
 
 ---

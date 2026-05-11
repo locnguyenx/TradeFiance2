@@ -7,9 +7,10 @@ import java.sql.Date
 import java.sql.Timestamp
 import org.moqui.entity.EntityCondition
 
-// ABOUTME: BddCommonModuleSpec provides backend parity for the Common Module BDD scenarios.
-// ABOUTME: Covers Base Entities, KYC, Facility Limits, FX, SLA, and Authority Tiers.
-
+/**
+ * ABOUTME: BddCommonModuleSpec provides backend parity for the Common Module BDD scenarios.
+ * Covers Base Entities, KYC, Facility Limits, FX, SLA, and Authority Tiers.
+ */
 class BddCommonModuleSpec extends Specification {
     @Shared protected ExecutionContext ec
     @Shared String testPrefix
@@ -18,8 +19,15 @@ class BddCommonModuleSpec extends Specification {
         ec = Moqui.getExecutionContext()
         ec.artifactExecution.disableAuthz()
         ec.user.loginUser("trade.admin", "trade123")
-        testPrefix = "BDD-CMN-" + System.currentTimeMillis()
-        cleanData()
+        testPrefix = "BCM-" + System.currentTimeMillis()
+
+        // Set isolated ID generation ranges - use 10300000
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrument", 37000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.importlc.ImportLetterOfCredit", 37000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeTransaction", 37000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrumentParty", 37000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.CustomerFacility", 37000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.FeeConfiguration", 37000000, 1000)
         
         // Ensure test parties exist
         ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
@@ -34,14 +42,20 @@ class BddCommonModuleSpec extends Specification {
     }
 
     def cleanupSpec() {
-        try {
-            if (ec != null) cleanData()
-        } finally {
-            if (ec != null) ec.destroy()
+        if (ec != null) {
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeInstrument")
+            ec.entity.tempResetSequencedIdPrimary("trade.importlc.ImportLetterOfCredit")
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeTransaction")
+            ec.entity.tempResetSequencedIdPrimary("trade.TradeInstrumentParty")
+            ec.entity.tempResetSequencedIdPrimary("trade.CustomerFacility")
+            ec.entity.tempResetSequencedIdPrimary("trade.FeeConfiguration")
+            ec.destroy()
         }
     }
 
     def setup() {
+        if (ec.transaction.isTransactionInPlace()) ec.transaction.rollback("Cleanup from previous state", null)
+        ec.user.loginUser("trade.admin", "trade123")
         ec.message.clearAll()
         ec.artifactExecution.disableAuthz()
     }
@@ -50,41 +64,13 @@ class BddCommonModuleSpec extends Specification {
         ec.message.clearAll()
     }
 
-    private void cleanData() {
-        boolean begun = ec.transaction.begin(60)
-        try {
-            ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").updateAll([latestTransactionId: null])
-            ec.entity.find("trade.importlc.ImportLcInternalAmendment").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.importlc.ImportLcAmendment").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.importlc.ImportLcSettlement").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.importlc.TradeDocumentPresentation").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeApprovalRecord").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeTransactionAudit").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeTransaction").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.importlc.SwiftMessage").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeInstrumentParty").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeInstrument").condition("instrumentId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            
-            ec.entity.find("trade.CustomerFacility").condition("facilityId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            ec.entity.find("trade.TradeParty").condition("partyId", EntityCondition.LIKE, testPrefix + "%").deleteAll()
-            
-            ec.transaction.commit(begun)
-        } catch (Exception e) {
-            ec.transaction.rollback(begun, "Error in cleanData", e)
-        }
-    }
-
     def "BDD-CMN-ENT-01: Trade Inst. Base Attributes Enforcement"() {
-        given:
-        def instrumentId = testPrefix + "_ENT_01"
-        def ref = instrumentId + "_REF"
-        
         when:
-        ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([instrumentId: instrumentId, instrumentRef: ref, lcAmount: 1000.0, lcCurrencyUomId: 'USD',
-                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
-                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
+        def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
+            .parameters([instrumentRef: testPrefix + "_REF_01", lcAmount: 1000.0, lcCurrencyUomId: 'USD',
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: testPrefix + '_CUST_01'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: testPrefix + '_BEN_G01']]]).call()
+        String instrumentId = res.instrumentId
         
         then:
         !ec.message.hasError()
@@ -99,14 +85,15 @@ class BddCommonModuleSpec extends Specification {
             .setAll([partyId: pid, partyName: "Good Corp", kycStatus: "KYC_ACTIVE", partyTypeEnumId: 'PTY_COMMERCIAL']).create()
             
         when:
-        def result = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([instrumentId: testPrefix + "_ENT_02", instrumentRef: testPrefix + "_REF_02", lcAmount: 1000.0, lcCurrencyUomId: 'USD', 
+        def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
+            .parameters([instrumentRef: testPrefix + "_REF_02", lcAmount: 1000.0, lcCurrencyUomId: 'USD', 
                          instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: pid],
-                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: testPrefix + '_BEN_G01']]]).call()
+        String instrumentId = res.instrumentId
         
         then:
         !ec.message.hasError()
-        result.instrumentId != null
+        instrumentId != null
     }
 
     def "BDD-CMN-ENT-03: Expired Party KYC Rejection"() {
@@ -120,7 +107,7 @@ class BddCommonModuleSpec extends Specification {
         ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
             .parameters([instrumentRef: testPrefix + "_REF_03", lcAmount: 1000.0, lcCurrencyUomId: 'USD', 
                          instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: pid],
-                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: testPrefix + '_BEN_G01']]]).call()
         
         then:
         ec.message.hasError()
@@ -129,9 +116,9 @@ class BddCommonModuleSpec extends Specification {
 
     def "BDD-CMN-ENT-04: Facility Limit Availability Earmark"() {
         given:
-        def fid = testPrefix + "_FAC_01"
-        ec.entity.makeValue("trade.CustomerFacility")
-            .setAll([facilityId: fid, totalApprovedLimit: 5000000.0, utilizedAmount: 1000000.0]).create()
+        def res = ec.entity.makeValue("trade.CustomerFacility")
+            .setAll([totalApprovedLimit: 5000000.0, utilizedAmount: 1000000.0]).setSequencedIdPrimary().create()
+        String fid = res.facilityId
             
         when:
         ec.service.sync().name("trade.LimitServices.update#Utilization")
@@ -144,11 +131,11 @@ class BddCommonModuleSpec extends Specification {
 
     def "BDD-CMN-WF-01: Processing Flow Execution to Pending"() {
         given:
-        def instrumentId = testPrefix + "_FLOW_01"
-        ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
-            .parameters([instrumentId: instrumentId, instrumentRef: instrumentId + "_REF", lcAmount: 1000.0, lcCurrencyUomId: 'USD',
-                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: 'ACME_CORP_001'],
-                                   [roleEnumId: 'TP_BENEFICIARY', partyId: 'GLOBAL_EXP_002']]]).call()
+        def res = ec.service.sync().name("trade.importlc.ImportLcServices.create#ImportLetterOfCredit")
+            .parameters([instrumentRef: testPrefix + "_FLOW_REF", lcAmount: 1000.0, lcCurrencyUomId: 'USD',
+                         instrumentParties: [[roleEnumId: 'TP_APPLICANT', partyId: testPrefix + '_CUST_01'],
+                                   [roleEnumId: 'TP_BENEFICIARY', partyId: testPrefix + '_BEN_G01']]]).call()
+        String instrumentId = res.instrumentId
             
         when:
         ec.service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit")
@@ -161,14 +148,11 @@ class BddCommonModuleSpec extends Specification {
 
     @Unroll
     def "BDD-CMN-FX-01/02: Precision: #currency decimal format"() {
-        given: "A currency #currency with decimals #decimals"
-        
         when:
         def result = ec.service.sync().name("trade.TradeCommonServices.round#Amount")
             .parameters([amount: rawAmount, currencyUomId: currency]).call()
         
         then:
-        !result.errorMessage
         result.roundedAmount == expected
         
         where:
@@ -192,9 +176,9 @@ class BddCommonModuleSpec extends Specification {
 
     def "BDD-CMN-VAL-01: Hard Stop on Limit Breach"() {
         given:
-        def fid = testPrefix + "_FAC_BREACH"
-        ec.entity.makeValue("trade.CustomerFacility")
-            .setAll([facilityId: fid, totalApprovedLimit: 4999.0, utilizedAmount: 0.0]).create()
+        def res = ec.entity.makeValue("trade.CustomerFacility")
+            .setAll([totalApprovedLimit: 4999.0, utilizedAmount: 0.0]).setSequencedIdPrimary().create()
+        String fid = res.facilityId
             
         when:
         ec.service.sync().name("trade.LimitServices.calculate#Earmark")

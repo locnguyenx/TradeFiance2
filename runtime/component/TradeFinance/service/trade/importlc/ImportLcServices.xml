@@ -38,10 +38,10 @@
             <service-call name="trade.TradeCommonServices.get#NextNumber" in-map="[sequenceId:'SEQ_TXN', instrumentType:'TXN']" out-map="txnNumOut"/>
             <set field="transactionRef" from="txnNumOut.nextNumberFormatted"/>
 
-            <!-- Date Sequence Validation (REQ-COM-VAL-03) -->
             <if condition="issueDate != null &amp;&amp; expiryDate != null &amp;&amp; expiryDate.before(issueDate)">
                 <return error="true" message="Expiry Date must be greater than or equal to Issue Date"/>
             </if>
+            <log level="info" message="DEBUG: create#ImportLetterOfCredit starting for ref ${instrumentRef}"/>
 
             <!-- 1. Create TradeInstrument -->
             <service-call name="create#trade.TradeInstrument" out-map="createInstOut"
@@ -76,6 +76,7 @@
                     versionNumber: 1
                 ]"/>
             <set field="transactionId" from="txOut.transactionId"/>
+            <log level="info" message="DEBUG: Created transaction ${transactionId} for ${instrumentId}"/>
 
             <!-- Update latestTransactionId on instrument -->
             <service-call name="update#trade.TradeInstrument" in-map="[instrumentId: instrumentId, latestTransactionId: transactionId]"/>
@@ -197,7 +198,7 @@
             <!-- FR-LIF-35: Immutability Guard for Issued Instruments -->
             <if condition="lc?.businessStateId == 'LC_ISSUED' &amp;&amp; !skipImmutabilityGuard">
                 <if condition="(lcAmount != null &amp;&amp; lcAmount != lc.effectiveAmount) || (expiryDate != null &amp;&amp; expiryDate != lc.effectiveExpiryDate) || (amount != null &amp;&amp; amount != instrument.amount) || (currencyUomId != null &amp;&amp; currencyUomId != instrument.currencyUomId)">
-                    <return message="Cannot modify financial terms of an Issued LC via update. Use Amendment workflow."/>
+                    <return error="true" message="Cannot modify financial terms of an Issued LC via update. Use Amendment workflow."/>
                 </if>
             </if>
             

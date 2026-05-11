@@ -1,16 +1,17 @@
-# Progress - Import LC Stabilization
-**Last Update:** 2026-05-08
+# Progress - Trade Finance Test Suite Stabilization
+**Last Update:** 2026-05-10
 
 ## Milestones Completed
-- [x] **Audit Hardening (2026-05-06)**: Dual-status, liability calculations, SWIFT Z-set.
+- [x] **Suite Cleanup (2026-05-10)**: Implemented multi-range ID isolation strategy. Reduced failures from 89 to 26.
+- [x] **Swift 2024 Compliance (2026-05-09)**: mt740/mt747 automation and MT 707 smart delta fixes.
 - [x] **Amendment Stabilization (2026-05-07)**: Fixed data loss bug, narrative propagation, and authorization idempotency.
-- [x] **Trade Finance Suite Pass (2026-05-08)**: 100% pass rate in Spock and Playwright suites.
+- [x] **Trade Finance Suite Pass (2026-05-08)**: Initial 100% pass rate achieved before PK collisions surfaced.
 
 ## Current Work Stream
-Stabilization complete. Ready for next phase.
+Refactoring the remaining test specifications to ensure 100% collision-free suite execution.
 
 ## Key Findings
-- **Lifecycle Enforcement**: Automated tests MUST use the authorization facade (`authorize#Instrument`) to advance business states in Maker/Checker environments.
-- **Post-Auth Context**: `ec.artifactExecution.disableAuthz()` is required after authorization in tests to allow subsequent service calls (like settlement) to access locked records.
-- **UI/Test Sync**: Upgrading to Portfolio-style views requires updating E2E expectations for header visibility.
-- **Resilience**: Frontend API retries are effective at mitigating transient backend errors during high-concurrency test runs.
+- **Sequence Isolation**: `tempSetSequencedIdPrimary` is essential for parallel test execution in Moqui. Non-overlapping ranges (500k increments) should be assigned per spec file.
+- **Dynamic IDs**: Tests relying on hardcoded IDs are brittle and prone to failure in shared environments. Captured IDs from response maps are the only stable way to reference entities.
+- **testPrefix Hygiene**: Unique prefixes with high-resolution timestamps (`System.currentTimeMillis()`) prevent "duplicate record" errors for non-sequenced fields (Usernames, Party IDs).
+- **Reset Requirement**: `tempResetSequencedIdPrimary` must be called in `cleanupSpec` to prevent sequence leakage across suite runs.
