@@ -70,4 +70,53 @@
     <moqui.basic.StatusItem statusId="SNC_CLEAR" statusTypeId="TradePartySanctionsStatus" description="Clear"/>
     <moqui.basic.StatusItem statusId="SNC_PENDING" statusTypeId="TradePartySanctionsStatus" description="Pending"/>
     <moqui.basic.StatusItem statusId="SNC_BLOCKED" statusTypeId="TradePartySanctionsStatus" description="Blocked"/>
+
+    <!-- TradeLcType -->
+    <moqui.basic.EnumerationType enumTypeId="TradeLcType" description="LC Types"/>
+    <moqui.basic.Enumeration enumId="LCT_IRREVOCABLE" enumTypeId="TradeLcType" description="IRREVOCABLE"/>
+    <moqui.basic.Enumeration enumId="LCT_REVOCABLE" enumTypeId="TradeLcType" description="REVOCABLE"/>
+    <moqui.basic.Enumeration enumId="LCT_STANDBY" enumTypeId="TradeLcType" description="STANDBY"/>
+    <moqui.basic.Enumeration enumId="LCT_IRREVOCABLE_TRANSFERABLE" enumTypeId="TradeLcType" description="IRREVOCABLE TRANSFERABLE"/>
+    <moqui.basic.Enumeration enumId="LCT_REVOCABLE_TRANSFERABLE" enumTypeId="TradeLcType" description="REVOCABLE TRANSFERABLE"/>
+    <moqui.basic.Enumeration enumId="LCT_SIGHT" enumTypeId="TradeLcType" description="SIGHT"/>
+    <moqui.basic.Enumeration enumId="LCT_USANCE" enumTypeId="TradeLcType" description="USANCE"/>
+
+    <!-- TradeChargeAllocation -->
+    <moqui.basic.EnumerationType enumTypeId="TradeChargeAllocation" description="Charge Allocation Options"/>
+    <moqui.basic.Enumeration enumId="CHG_SHARED" enumTypeId="TradeChargeAllocation" description="Shared (Applicant and Beneficiary)"/>
+    <moqui.basic.Enumeration enumId="CHG_APPLICANT" enumTypeId="TradeChargeAllocation" description="All Charges on Applicant"/>
+    <moqui.basic.Enumeration enumId="CHG_BENEFICIARY" enumTypeId="TradeChargeAllocation" description="All Charges on Beneficiary"/>
+
+    <!-- TradeAvailableBy -->
+    <moqui.basic.EnumerationType enumTypeId="TradeAvailableBy" description="LC Availability Methods (Tag 41a)"/>
+    <moqui.basic.Enumeration enumId="AVB_BY_PAYMENT" enumTypeId="TradeAvailableBy" description="BY PAYMENT"/>
+    <moqui.basic.Enumeration enumId="AVB_BY_ACCEPTANCE" enumTypeId="TradeAvailableBy" description="BY ACCEPTANCE"/>
+    <moqui.basic.Enumeration enumId="AVB_BY_NEGOTIATION" enumTypeId="TradeAvailableBy" description="BY NEGOTIATION"/>
+    <moqui.basic.Enumeration enumId="AVB_BY_DEF_PAYMENT" enumTypeId="TradeAvailableBy" description="BY DEF PAYMENT"/>
+    <moqui.basic.Enumeration enumId="AVB_BY_MIXED_PAYMENT" enumTypeId="TradeAvailableBy" description="BY MIXED PAYMENT"/>
+    <moqui.basic.Enumeration enumId="AVB_BY_SIGHT_PAYMENT" enumTypeId="TradeAvailableBy" description="BY SIGHT PAYMENT"/>
+
+    <!-- TradeLcAvailWith -->
+    <moqui.basic.EnumerationType enumTypeId="TradeLcAvailWith" description="Available With Bank Types"/>
+    <moqui.basic.Enumeration enumId="AW_ANY_BANK" enumTypeId="TradeLcAvailWith" description="Any Bank"/>
+    <moqui.basic.Enumeration enumId="AW_SPECIFIC_BANK" enumTypeId="TradeLcAvailWith" description="Specific Bank"/>
+
+    <!-- ApplicableRules -->
+    <moqui.basic.EnumerationType enumTypeId="ApplicableRules" description="Applicable Rules (Tag 40E/40F)"/>
+    <moqui.basic.Enumeration enumId="APR_UCP_LATEST" enumTypeId="ApplicableRules" description="UCP LATEST VERSION"/>
+    <moqui.basic.Enumeration enumId="APR_EUCP_LATEST" enumTypeId="ApplicableRules" description="EUCP LATEST VERSION"/>
+    <moqui.basic.Enumeration enumId="APR_UCPDC_600" enumTypeId="ApplicableRules" description="UCP 600"/>
+    <moqui.basic.Enumeration enumId="APR_ISP_LATEST" enumTypeId="ApplicableRules" description="ISP LATEST VERSION"/>
+    <moqui.basic.Enumeration enumId="APR_OTHER" enumTypeId="ApplicableRules" description="OTHER"/>
+
+    <!-- ReimbursingCharges -->
+    <moqui.basic.EnumerationType enumTypeId="TradeReimbCharges" description="Reimbursement Charge Options"/>
+    <moqui.basic.Enumeration enumId="RMB_OUR" enumTypeId="TradeReimbCharges" description="OUR"/>
+    <moqui.basic.Enumeration enumId="RMB_BEN" enumTypeId="TradeReimbCharges" description="BEN"/>
+
+    <!-- TradeMarginType -->
+    <moqui.basic.EnumerationType enumTypeId="TradeMarginType" description="Margin Requirement Types"/>
+    <moqui.basic.Enumeration enumId="MARG_NONE" enumTypeId="TradeMarginType" description="None"/>
+    <moqui.basic.Enumeration enumId="MARG_CASH" enumTypeId="TradeMarginType" description="Cash Margin"/>
+    <moqui.basic.Enumeration enumId="MARG_LOMBARD" enumTypeId="TradeMarginType" description="Lombard / Pledged Assets"/>
 </entity-facade-xml>

@@ -160,7 +160,7 @@ export const PartyDirectory: React.FC = () => {
                                 <h3>Organization Details</h3>
                                 <div className="detail-row">
                                     <span className="label">Role Type</span>
-                                    <span className="value">{selectedParty.partyTypeEnumId?.replace('PARTY_', '') || 'COMMERCIAL'}</span>
+                                    <span className="value">{selectedParty.partyTypeEnumId?.replace('PTY_', '') || 'COMMERCIAL'}</span>
                                 </div>
                                 <div className="detail-row">
                                     <span className="label">Country of Risk</span>
@@ -176,7 +176,7 @@ export const PartyDirectory: React.FC = () => {
                                 </div>
                             </section>
 
-                            {selectedParty.partyTypeEnumId === 'PARTY_BANK' && (
+                            {selectedParty.partyTypeEnumId === 'PTY_BANK' && (
                                 <section className="info-section bank-details">
                                     <h3>Banking & Connectivity</h3>
                                     <div className="detail-row">

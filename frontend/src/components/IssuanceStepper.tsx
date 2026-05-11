@@ -53,24 +53,24 @@ export const IssuanceStepper: React.FC = () => {
         applicantPartyId: '',
         beneficiaryPartyId: '',
         customerFacilityId: '',
-        chargeAllocationEnumId: 'APPLICANT',
+        chargeAllocationEnumId: 'CHG_APPLICANT',
         confirmationEnumId: 'WITHOUT',
         latestShipmentDate: '',
-        lcTypeEnumId: 'SIGHT',
+        lcTypeEnumId: 'LCT_SIGHT',
         usanceDays: 0,
         usanceBaseDate: '',
         expiryPlace: '',
         partialShipmentEnumId: 'ALLOWED',
         transhipmentEnumId: 'ALLOWED',
-        availableByEnumId: 'SIGHT',
-        availableWithEnumId: 'AVAIL_ANY_BANK',
+        availableByEnumId: 'AVB_BY_SIGHT_PAYMENT',
+        availableWithEnumId: 'AW_ANY_BANK',
         shipmentPeriodText: '',
         advisingBankPartyId: '',
         advisingThroughBankPartyId: '',
         negotiatingBankPartyId: '',
         draweeBankPartyId: '',
         issuingBankBic: '',
-        marginType: 'None',
+        marginType: 'MARG_NONE',
         marginPercentage: '100',
         marginAmount: '0',
         marginDebitAccount: '',
@@ -80,9 +80,9 @@ export const IssuanceStepper: React.FC = () => {
         reimbursingBankPartyId: '',
         paymentCondBeneText: '',
         paymentCondBankText: '',
-        applicableRulesEnumId: 'UCP_LATEST',
+        applicableRulesEnumId: 'APR_UCP_LATEST',
         authExpiryDate: '',
-        reimbursingChargesEnumId: 'REIMB_OUR',
+        reimbursingChargesEnumId: 'RMB_OUR',
         instrumentId: ''
     });
 
@@ -128,23 +128,23 @@ export const IssuanceStepper: React.FC = () => {
                     documentsRequired: lc.documentsRequired || '',
                     additionalConditions: lc.additionalConditions || '',
                     customerFacilityId: lc.customerFacilityId || '',
-                    chargeAllocationEnumId: lc.chargeAllocationEnumId || 'APPLICANT',
+                    chargeAllocationEnumId: lc.chargeAllocationEnumId || 'CHG_APPLICANT',
                     confirmationEnumId: lc.confirmationEnumId || 'WITHOUT',
                     latestShipmentDate: lc.latestShipmentDate || '',
-                    lcTypeEnumId: lc.lcTypeEnumId || 'SIGHT',
+                    lcTypeEnumId: lc.lcTypeEnumId || 'LCT_SIGHT',
                     usanceDays: lc.usanceDays || 0,
                     expiryPlace: lc.expiryPlace || '',
                     partialShipmentEnumId: lc.partialShipmentEnumId || 'ALLOWED',
                     transhipmentEnumId: lc.transhipmentEnumId || 'ALLOWED',
-                    marginType: lc.marginType || 'None',
+                    marginType: lc.marginType || 'MARG_NONE',
                     marginPercentage: lc.marginPercentage || '100',
                     marginAmount: lc.marginAmount || '0',
                     marginDebitAccount: lc.marginDebitAccount || '',
-                    availableByEnumId: lc.availableByEnumId || 'SIGHT',
+                    availableByEnumId: lc.availableByEnumId || 'AVB_BY_SIGHT_PAYMENT',
                     shipmentPeriodText: lc.shipmentPeriodText || '',
                     
                     // Junction-based Party Fields mapping
-                    availableWithEnumId: lc.availableWithEnumId || 'AVAIL_ANY_BANK',
+                    availableWithEnumId: lc.availableWithEnumId || 'AW_ANY_BANK',
                     applicantPartyId: lc.parties?.find((p: any) => p.roleEnumId === 'TP_APPLICANT')?.partyId || lc.applicantPartyId || '',
                     beneficiaryPartyId: lc.parties?.find((p: any) => p.roleEnumId === 'TP_BENEFICIARY')?.partyId || lc.beneficiaryPartyId || '',
                     advisingBankPartyId: lc.parties?.find((p: any) => p.roleEnumId === 'TP_ADVISING_BANK')?.partyId || '',
@@ -154,9 +154,9 @@ export const IssuanceStepper: React.FC = () => {
                     reimbursingBankPartyId: lc.parties?.find((p: any) => p.roleEnumId === 'TP_REIMBURSING_BANK')?.partyId || lc.reimbursingBankPartyId || '',
                     paymentCondBeneText: lc.paymentCondBeneText || '',
                     paymentCondBankText: lc.paymentCondBankText || '',
-                    applicableRulesEnumId: lc.applicableRulesEnumId || 'UCP_LATEST',
+                    applicableRulesEnumId: lc.applicableRulesEnumId || 'APR_UCP_LATEST',
                     authExpiryDate: lc.authExpiryDate || '',
-                    reimbursingChargesEnumId: lc.reimbursingChargesEnumId || 'REIMB_OUR'
+                    reimbursingChargesEnumId: lc.reimbursingChargesEnumId || 'RMB_OUR'
                 }));
 
                 setLoading(false);
@@ -362,7 +362,7 @@ export const IssuanceStepper: React.FC = () => {
         if (formData.advisingThroughBankPartyId) result.push({ roleEnumId: 'TP_ADVISE_THROUGH_BANK', partyId: formData.advisingThroughBankPartyId });
         if (formData.advisingBankPartyId) result.push({ roleEnumId: 'TP_ADVISING_BANK', partyId: formData.advisingBankPartyId });
         if (formData.draweeBankPartyId) result.push({ roleEnumId: 'TP_DRAWEE_BANK', partyId: formData.draweeBankPartyId });
-        if (formData.availableWithEnumId === 'AVAIL_SPECIFIC_BANK' && formData.negotiatingBankPartyId) {
+        if (formData.availableWithEnumId === 'AW_SPECIFIC_BANK' && formData.negotiatingBankPartyId) {
             result.push({ roleEnumId: 'TP_NEGOTIATING_BANK', partyId: formData.negotiatingBankPartyId });
         }
         if (formData.reimbursingBankPartyId) {
@@ -516,8 +516,8 @@ export const IssuanceStepper: React.FC = () => {
         }
     };
 
-    const commercialParties = parties.filter(p => p.partyTypeEnumId === 'PARTY_COMMERCIAL' || !p.partyTypeEnumId);
-    const bankParties = parties.filter(p => p.partyTypeEnumId === 'PARTY_BANK');
+    const commercialParties = parties.filter(p => p.partyTypeEnumId === 'PTY_COMMERCIAL' || !p.partyTypeEnumId);
+    const bankParties = parties.filter(p => p.partyTypeEnumId === 'PTY_BANK');
 
     return (
         <div className="stepper-layout premium-card">
@@ -736,8 +736,8 @@ export const IssuanceStepper: React.FC = () => {
                                         onChange={e => setFormData({...formData, lcTypeEnumId: e.target.value})}
                                         className={swiftErrors.lcTypeEnumId ? 'is-invalid' : ''}
                                     >
-                                        <option value="SIGHT">Sight LC</option>
-                                        <option value="USANCE">Usance LC</option>
+                                        <option value="LCT_SIGHT">Sight LC</option>
+                                        <option value="LCT_USANCE">Usance LC</option>
                                     </select>
                                     {swiftErrors.lcTypeEnumId && <p className="error-text text-xs mt-1">{swiftErrors.lcTypeEnumId}</p>}
                                 </div>
@@ -760,10 +760,10 @@ export const IssuanceStepper: React.FC = () => {
                                     <label htmlFor="applicableRulesEnumId">Applicable Rules (Tag 40E)</label>
                                     <select id="applicableRulesEnumId" value={formData.applicableRulesEnumId}
                                         onChange={e => setFormData({...formData, applicableRulesEnumId: e.target.value})}>
-                                        <option value="UCP_LATEST">UCP LATEST VERSION</option>
-                                        <option value="EUCP_LATEST">EUCP LATEST VERSION</option>
-                                        <option value="UCPDC_600">UCP 600</option>
-                                        <option value="ISP_LATEST">ISP LATEST VERSION</option>
+                                        <option value="APR_UCP_LATEST">UCP LATEST VERSION</option>
+                                        <option value="APR_EUCP_LATEST">EUCP LATEST VERSION</option>
+                                        <option value="APR_UCPDC_600">UCP 600</option>
+                                        <option value="APR_ISP_LATEST">ISP LATEST VERSION</option>
                                     </select>
                                 </div>
                                 <div className="field-group">
@@ -884,11 +884,11 @@ export const IssuanceStepper: React.FC = () => {
                                         value={formData.availableByEnumId}
                                         onChange={e => setFormData({...formData, availableByEnumId: e.target.value})}
                                     >
-                                        <option value="SIGHT">By Sight</option>
-                                        <option value="ACCEPTANCE">By Acceptance</option>
-                                        <option value="NEGOTIATION">By Negotiation</option>
-                                        <option value="DEF_PAYMENT">By Deferred Payment</option>
-                                        <option value="MIXED_PAYMENT">By Mixed Payment</option>
+                                        <option value="AVB_BY_SIGHT_PAYMENT">By Sight</option>
+                                        <option value="AVB_BY_ACCEPTANCE">By Acceptance</option>
+                                        <option value="AVB_BY_NEGOTIATION">By Negotiation</option>
+                                        <option value="AVB_BY_DEF_PAYMENT">By Deferred Payment</option>
+                                        <option value="AVB_BY_MIXED_PAYMENT">By Mixed Payment</option>
                                     </select>
                                     {swiftErrors.availableByEnumId && <p className="error-text text-xs mt-1">{swiftErrors.availableByEnumId}</p>}
                                 </div>
@@ -896,13 +896,13 @@ export const IssuanceStepper: React.FC = () => {
                                     <label>Available With (Tag 41A/D)</label>
                                     <div className="radio-group">
                                         <label>
-                                            <input type="radio" checked={formData.availableWithEnumId === 'AVAIL_ANY_BANK'} onChange={() => setFormData({...formData, availableWithEnumId: 'AVAIL_ANY_BANK'})} /> Any Bank
+                                            <input type="radio" checked={formData.availableWithEnumId === 'AW_ANY_BANK'} onChange={() => setFormData({...formData, availableWithEnumId: 'AW_ANY_BANK'})} /> Any Bank
                                         </label>
                                         <label>
-                                            <input type="radio" checked={formData.availableWithEnumId === 'AVAIL_SPECIFIC_BANK'} onChange={() => setFormData({...formData, availableWithEnumId: 'AVAIL_SPECIFIC_BANK'})} /> Specific Bank
+                                            <input type="radio" checked={formData.availableWithEnumId === 'AW_SPECIFIC_BANK'} onChange={() => setFormData({...formData, availableWithEnumId: 'AW_SPECIFIC_BANK'})} /> Specific Bank
                                         </label>
                                     </div>
-                                    {formData.availableWithEnumId === 'AVAIL_SPECIFIC_BANK' && (
+                                    {formData.availableWithEnumId === 'AW_SPECIFIC_BANK' && (
                                         <select 
                                             id="negotiatingBankPartyId"
                                             className={(swiftErrors.availableWithBic || fieldErrors.negotiatingBankPartyId) ? 'is-invalid' : ''}
@@ -1030,9 +1030,9 @@ export const IssuanceStepper: React.FC = () => {
                                     <div className="field-group">
                                         <label>Margin Type</label>
                                         <select value={formData.marginType} onChange={e => setFormData({...formData, marginType: e.target.value})}>
-                                            <option>None</option>
-                                            <option>Cash</option>
-                                            <option>Lombard</option>
+                                            <option value="MARG_NONE">None</option>
+                                            <option value="MARG_CASH">Cash</option>
+                                            <option value="MARG_LOMBARD">Lombard</option>
                                         </select>
                                     </div>
                                     <div className="field-group">
@@ -1050,9 +1050,9 @@ export const IssuanceStepper: React.FC = () => {
                                         value={formData.chargeAllocationEnumId}
                                         onChange={e => setFormData({...formData, chargeAllocationEnumId: e.target.value})}
                                     >
-                                        <option value="APPLICANT">Applicant Account</option>
-                                        <option value="BENEFICIARY">Beneficiary (Deduct from proceeds)</option>
-                                        <option value="SHARED">Shared (70/30)</option>
+                                        <option value="CHG_APPLICANT">Applicant Account</option>
+                                        <option value="CHG_BENEFICIARY">Beneficiary (Deduct from proceeds)</option>
+                                        <option value="CHG_SHARED">Shared (70/30)</option>
                                     </select>
                                 </div>
 

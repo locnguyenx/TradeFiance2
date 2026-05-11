@@ -36,14 +36,12 @@ describe('ImportLcDashboard (REQ-UI-IMP-02)', () => {
 
     it('Renders all standard KPI cards (REQ-UI-IMP-02)', async () => {
         render(<ImportLcDashboard />);
-        await waitFor(() => {
-            expect(screen.getByText(/Drafts Awaiting My Submission/i)).toBeInTheDocument();
-            expect(screen.getByText('5')).toBeInTheDocument();
-            expect(screen.getByText(/LCs Expiring within 7 Days/i)).toBeInTheDocument();
-            expect(screen.getByText('2')).toBeInTheDocument();
-            expect(screen.getByText(/Discrepant Presentations/i)).toBeInTheDocument();
-            expect(screen.getByText('1')).toBeInTheDocument();
-        });
+        expect(await screen.findByText(/Drafts Awaiting My Submission/i)).toBeInTheDocument();
+        expect(screen.getAllByText('5').some(el => el.className.includes('kpi-value'))).toBeTruthy();
+        expect(await screen.findByText(/LCs Expiring within 7 Days/i)).toBeInTheDocument();
+        expect(screen.getAllByText('2').some(el => el.className.includes('kpi-value'))).toBeTruthy();
+        expect(await screen.findByText(/Discrepant Presentations/i)).toBeInTheDocument();
+        expect(screen.getAllByText('1').some(el => el.className.includes('kpi-value'))).toBeTruthy();
     });
 
     it('Data table displays all mandatory columns including SLA Timer (REQ-UI-IMP-02)', async () => {
@@ -96,9 +94,9 @@ describe('ImportLcDashboard (REQ-UI-IMP-02)', () => {
         render(<ImportLcDashboard />);
         
         await waitFor(() => {
-            expect(screen.getByText('120,000')).toBeInTheDocument();
-            expect(screen.getByText('2026-07-15')).toBeInTheDocument();
-            expect(screen.getByText(/Amended/i)).toBeInTheDocument();
+            expect(screen.getByText(/120,000/)).toBeInTheDocument();
+            expect(screen.getByText(/2026-07-15/)).toBeInTheDocument();
+            expect(screen.getAllByText(/Amended/i).length).toBeGreaterThan(0);
         });
     });
 
@@ -155,7 +153,11 @@ describe('ImportLcDashboard (REQ-UI-IMP-02)', () => {
         fireEvent.change(filter, { target: { value: 'LC_ISSUED' } });
 
         await waitFor(() => {
-            expect(tradeApi.getImportLcs).toHaveBeenCalledWith({ businessStateId: 'LC_ISSUED' });
+            expect(tradeApi.getImportLcs).toHaveBeenLastCalledWith({ 
+                businessStateId: 'LC_ISSUED',
+                pageIndex: 0,
+                pageSize: 20
+            });
         });
     });
 });

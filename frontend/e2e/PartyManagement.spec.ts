@@ -19,7 +19,7 @@ test.describe('Party & KYC Management', () => {
     const partyId = `TEST_CORP_${Date.now()}`;
     await page.locator('input[name="partyId"]').fill(partyId);
     await page.locator('input[name="partyName"]').fill('Test Corporation Ltd');
-    await page.locator('select[name="partyTypeEnumId"]').selectOption('PARTY_COMMERCIAL');
+    await page.locator('select[name="partyTypeEnumId"]').selectOption('PTY_COMMERCIAL');
     await page.locator('textarea[name="registeredAddress"]').fill('123 Test Street, Singapore');
     await page.locator('input[name="accountNumber"]').fill('SG123456789');
     
@@ -52,7 +52,7 @@ test.describe('Party & KYC Management', () => {
     
     await page.locator('input[name="partyId"]').fill(bankId);
     await page.locator('input[name="partyName"]').fill('Test Global Bank');
-    await page.locator('select[name="partyTypeEnumId"]').selectOption('PARTY_BANK');
+    await page.locator('select[name="partyTypeEnumId"]').selectOption('PTY_BANK');
     
     // Verify bank-specific fields appear
     await expect(page.getByText('Bank Specific Details')).toBeVisible();

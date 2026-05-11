@@ -191,9 +191,9 @@ export const InstrumentDetails: React.FC<Props> = ({ instrument, transaction }) 
                 <div className="row-divider">Availability (Tag 41a)</div>
                 <DataField 
                   label="Available with Bank" 
-                  value={instrument.availableWithEnumId === 'AVAIL_ANY_BANK' ? 'ANY BANK' : (getBankBic('TP_NEGOTIATING_BANK') !== '---' ? getBankBic('TP_NEGOTIATING_BANK') : getBankBic('TP_ADVISING_BANK'))} 
+                  value={instrument.availableWithEnumId === 'AW_ANY_BANK' ? 'ANY BANK' : (getBankBic('TP_NEGOTIATING_BANK') !== '---' ? getBankBic('TP_NEGOTIATING_BANK') : getBankBic('TP_ADVISING_BANK'))} 
                 />
-                <DataField label="Available By" value={instrument.availableByEnumId?.replace('BY_', '') || '---'} />
+                <DataField label="Available By" value={instrument.availableByEnumId?.replace('AVB_BY_', '')?.replace('BY_', '') || '---'} />
                 <DataField label="Drawee Bank (Tag 42A)" value={getBankBic('TP_DRAWEE_BANK')} />
               </div>
             </section>
@@ -254,7 +254,7 @@ export const InstrumentDetails: React.FC<Props> = ({ instrument, transaction }) 
                 <DataField label="Charges Narrative (Tag 71B)" value={instrument.chargeAllocationText} />
                 <DataField label="Sender to Receiver (Tag 72Z)" value={instrument.bankToBankInstructions || instrument.senderToReceiverInfo} />
                 <div className="row-divider">SRG 2024 compliance</div>
-                <DataField label="Applicable Rules (Tag 40E)" value={instrument.applicableRulesEnumId?.replace('APPL_', '').replace('_', ' ') || '---'} highlight />
+                <DataField label="Applicable Rules (Tag 40E)" value={instrument.applicableRulesEnumId?.replace('APR_', '').replace('APPL_', '').replace('_', ' ') || '---'} highlight />
                 {instrument.applicableRulesEnumId === 'APPL_OTHER' && (
                   <DataField label="Rules Description" value={instrument.applicableRulesText} />
                 )}
@@ -299,7 +299,7 @@ export const InstrumentDetails: React.FC<Props> = ({ instrument, transaction }) 
               <div className="data-table">
                 <DataField label="Reimbursing Bank" value={getBankBic('TP_REIMBURSING_BANK')} highlight />
                 <DataField label="Auth Expiry Date (Tag 31D)" value={formatDate(instrument.authExpiryDate)} />
-                <DataField label="Reimbursing Charges (Tag 71D)" value={instrument.reimbursingChargesEnumId?.replace('REIMB_', '') || '---'} />
+                <DataField label="Reimbursing Charges (Tag 71D)" value={instrument.reimbursingChargesEnumId?.replace('RMB_', '').replace('REIMB_', '') || '---'} />
                 <DataField label="Applicable Rules (Tag 40F)" value={instrument.applicableReimbRulesText || 'URR LATEST VERSION'} />
               </div>
             </section>

@@ -176,6 +176,11 @@
             <moqui.basic.EnumerationType enumTypeId="TradeReimbCharges" description="Reimbursement Charge Options"/>
             <moqui.basic.Enumeration enumId="RMB_OUR" enumTypeId="TradeReimbCharges" description="OUR"/>
             <moqui.basic.Enumeration enumId="RMB_BEN" enumTypeId="TradeReimbCharges" description="BEN"/>
+            <!-- TradeMarginType -->
+            <moqui.basic.EnumerationType enumTypeId="TradeMarginType" description="Margin Requirement Types"/>
+            <moqui.basic.Enumeration enumId="MARG_NONE" enumTypeId="TradeMarginType" description="None"/>
+            <moqui.basic.Enumeration enumId="MARG_CASH" enumTypeId="TradeMarginType" description="Cash Margin"/>
+            <moqui.basic.Enumeration enumId="MARG_LOMBARD" enumTypeId="TradeMarginType" description="Lombard / Pledged Assets"/>
             <!-- TradeLcBusinessState -->
             <moqui.basic.StatusType statusTypeId="TradeLcBusinessState" description="Import LC Business Lifecycle States"/>
             <moqui.basic.StatusItem statusId="LC_DRAFT" statusTypeId="TradeLcBusinessState" description="Draft"/>

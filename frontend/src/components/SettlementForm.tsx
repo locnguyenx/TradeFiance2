@@ -62,7 +62,7 @@ export const SettlementForm: React.FC<SettlementFormProps> = ({ instrumentId, pr
                 principalAmount: settlementAmount,
                 settlementDate,
                 currencyUomId: lc.currencyUomId,
-                settlementTypeEnumId: 'SIGHT' // Default for now
+                settlementTypeEnumId: 'SIGHT_PAYMENT' // Default for now
             });
 
             if (createRes.errors || createRes.error) {

@@ -13,7 +13,7 @@ const mockParties: TradeParty[] = [
   {
     partyId: 'CORP_BETA',
     partyName: 'Beta Corp Ltd',
-    partyTypeEnumId: 'PARTY_COMMERCIAL',
+    partyTypeEnumId: 'PTY_COMMERCIAL',
     kycStatus: 'Active',
     sanctionsStatus: 'SANCTION_CLEAR',
     lastKycUpdate: '2026-01-15',

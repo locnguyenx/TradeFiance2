@@ -62,7 +62,7 @@ export const ImportLcDashboard: React.FC = () => {
         ])
             .then(([lcData, kpiData, authData]) => {
                 setLcs(lcData?.lcList || []);
-                setTotalCount(lcData?.lcCount || 0);
+                setTotalCount(lcData?.lcListCount || 0);
                 setKpis(kpiData || null);
                 
                 const uniqueMakers = Array.from(new Set(authData.profileList.map(p => p.userId)));

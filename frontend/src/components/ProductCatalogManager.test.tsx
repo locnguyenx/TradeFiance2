@@ -14,7 +14,7 @@ const mockProducts: TradeProductCatalog[] = [
     productId: 'IMP_LC_SIGHT',
     productName: 'Sight Import LC',
     isActive: 'Y',
-    allowedTenorEnumId: 'SIGHT',
+    allowedTenorEnumId: 'LCT_SIGHT',
     maxToleranceLimit: 10,
     allowRevolving: 'N',
     allowAdvancePayment: 'N',

@@ -28,8 +28,8 @@ jest.mock('../api/tradeApi', () => ({
         }),
         getParties: jest.fn().mockResolvedValue({
             partyList: [
-                { partyId: 'GLOBAL_CORP', partyName: 'Global Corp', partyTypeEnumId: 'PARTY_COMMERCIAL' },
-                { partyId: 'ADVISING_BANK', partyName: 'Advising Bank', partyTypeEnumId: 'PARTY_BANK', swiftBic: 'ADVBUK22' }
+                { partyId: 'GLOBAL_CORP', partyName: 'Global Corp', partyTypeEnumId: 'PTY_COMMERCIAL' },
+                { partyId: 'ADVISING_BANK', partyName: 'Advising Bank', partyTypeEnumId: 'PTY_BANK', swiftBic: 'ADVBUK22' }
             ]
         }),
         getCustomerFacilities: jest.fn().mockResolvedValue({
@@ -79,7 +79,7 @@ describe('IssuanceStepper v3.0 (BDD-IMP-FLOW-01, BDD-CMN-VAL-05)', () => {
     };
 
     const completeStep2 = async () => {
-        fireEvent.change(screen.getByLabelText(/Charge Allocation/i), { target: { value: 'BENEFICIARY' } });
+        fireEvent.change(screen.getByLabelText(/Charge Allocation/i), { target: { value: 'CHG_BENEFICIARY' } });
     };
 
     it('renders product catalog dropdown on Step 1', async () => {

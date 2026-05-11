@@ -24,7 +24,7 @@ export const PartyModal: React.FC<Props> = ({ party, onClose, onSuccess }) => {
   const [formData, setFormData] = useState<any>({
     partyId: '',
     partyName: '',
-    partyTypeEnumId: 'PARTY_COMMERCIAL',
+    partyTypeEnumId: 'PTY_COMMERCIAL',
     registeredAddress: '',
     accountNumber: '',
     countryOfRisk: '',
@@ -88,7 +88,7 @@ export const PartyModal: React.FC<Props> = ({ party, onClose, onSuccess }) => {
     }
 
     // Validate BIC format
-    if (formData.partyTypeEnumId === 'PARTY_BANK' && formData.swiftBic) {
+    if (formData.partyTypeEnumId === 'PTY_BANK' && formData.swiftBic) {
       if (!validateBic(formData.swiftBic)) {
         newFieldErrors.swiftBic = 'Invalid BIC format (must be 8 or 11 uppercase alphanumeric characters)';
       }
@@ -164,8 +164,8 @@ export const PartyModal: React.FC<Props> = ({ party, onClose, onSuccess }) => {
                 <div className="input-group">
                   <label>Party Type</label>
                   <select name="partyTypeEnumId" value={formData.partyTypeEnumId} onChange={handleChange} disabled={isEdit}>
-                    <option value="PARTY_COMMERCIAL">Commercial Entity</option>
-                    <option value="PARTY_BANK">Financial Institution (Bank)</option>
+                    <option value="PTY_COMMERCIAL">Commercial Entity</option>
+                    <option value="PTY_BANK">Financial Institution (Bank)</option>
                   </select>
                 </div>
               </section>
@@ -227,7 +227,7 @@ export const PartyModal: React.FC<Props> = ({ party, onClose, onSuccess }) => {
                 </div>
               </section>
 
-              {formData.partyTypeEnumId === 'PARTY_BANK' && (
+              {formData.partyTypeEnumId === 'PTY_BANK' && (
                 <section className="form-section full-width bank-section">
                   <h3>Bank Specific Details</h3>
                   <div className="bank-grid">
