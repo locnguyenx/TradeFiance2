@@ -508,3 +508,19 @@ When defining or auditing an entity, verify:
 - [ ] `type="many"` reverse relationships from parent to children
 - [ ] `master` definition on key master entities for API graph expansion
 - [ ] Seed data in `<seed-data>` or separate seed data files for all EnumerationType/StatusType values
+
+## 12. Frontend-Backend Enum Synchronization Pattern
+
+### Problem
+Referential integrity violations (`23506`) occurring during REST API calls (e.g., `update#ImportLetterOfCredit`) because the frontend submits enum IDs that either use incorrect prefixes or are missing from the backend `Enumeration` table.
+
+### Solution
+1. **Frontend Standardization**: All hardcoded enum constants in React components MUST use the prefixes defined in the backend seed data.
+2. **Relationship Title Matching**: Ensure the `<relationship title="...">` in the entity definition matches the `enumTypeId` in the seed data.
+3. **Seed Data Integrity**: Any new enum values added to the UI MUST be explicitly declared in `TradeFinanceSeedData.xml` (or inline `<seed-data>`).
+
+### Checklist
+- [ ] Frontend constants use correct prefixes (e.g., `LCT_`, `CHG_`, `AVB_`, `AW_`, `APR_`, `RMB_`, `MARG_`).
+- [ ] Backend `moqui.basic.Enumeration` records exist for all UI-visible options.
+- [ ] UI dropdown labels are derived from the same source of truth as the backend `description` fields where possible.
+- [ ] Use `reloadSave` or `loadData` to synchronize the database after XML changes.

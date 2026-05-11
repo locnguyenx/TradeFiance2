@@ -1,7 +1,8 @@
 # Progress - Trade Finance Test Suite Stabilization
-**Last Update:** 2026-05-10
+**Last Update:** 2026-05-11
 
 ## Milestones Completed
+- [x] **Enum Synchronization (2026-05-11)**: Resolved 400 integrity errors by aligning frontend enums with backend seed data and supplementing missing `MARG_NONE` definitions.
 - [x] **Suite Cleanup (2026-05-10)**: Implemented multi-range ID isolation strategy. Reduced failures from 89 to 26.
 - [x] **Swift 2024 Compliance (2026-05-09)**: mt740/mt747 automation and MT 707 smart delta fixes.
 - [x] **Amendment Stabilization (2026-05-07)**: Fixed data loss bug, narrative propagation, and authorization idempotency.

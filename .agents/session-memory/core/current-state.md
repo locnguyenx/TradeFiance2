@@ -1,24 +1,23 @@
-# Current State - Trade Finance Suite Stabilization (Phase 2)
-**Last Update:** 2026-05-10
+# Current State - Trade Finance Enum Synchronization
+**Last Update:** 2026-05-11
 
 ## Goal
-Achieve a 100% pass rate in the TradeFinanceMoquiSuite by eliminating systemic ID collisions and ensuring concurrency-safe test execution across all specs.
+Resolve persistent 400 "record does not exist [23506]" referential integrity errors in the LC issuance workflow by synchronizing frontend enumeration constants with Moqui backend seed data.
 
 ## Approach
-1.  **Multi-Range ID Isolation**: Assign unique, non-overlapping `tempSetSequencedIdPrimary` ranges to each test specification to prevent PK violations during parallel or sequential suite execution.
-2.  **Dynamic ID Capture**: Refactor legacy tests to remove hardcoded IDs and instead capture system-generated IDs from service responses.
-3.  **Dynamic testPrefix**: Standardize the use of `testPrefix` (timestamp-based) for all shared entities like Parties, User Accounts, and Facility IDs.
-4.  **Sequence Cleanup**: Ensure all specs call `tempResetSequencedIdPrimary` in `cleanupSpec` to leave the environment clean for other tests.
+1.  **Enum Standardization**: Audit and refactor all frontend components (`IssuanceStepper.tsx`, `InstrumentDetails.tsx`, `SettlementForm.tsx`) to utilize correctly prefixed enum IDs as defined in the backend (e.g., `LCT_`, `CHG_`, `AVB_`, `AW_`, `APR_`, `RMB_`, `MARG_`).
+2.  **Seed Data Enrichment**: Supplement missing enumeration definitions in `TradeFinanceSeedData.xml` (e.g., `MARG_NONE`) to ensure the backend can validate all valid frontend options.
+3.  **Backend Synchronization**: Force-load updated seed data and restart Moqui to ensure the database state matches the code definitions.
+4.  **E2E Validation**: Use Playwright (`IssuanceFlow.spec.ts`) to confirm successful end-to-end record persistence and submission.
 
 ## Steps Completed
-- [x] Implemented isolation ranges for 17 high-impact specs (SwiftGeneration, TradeList, ImportLcServices, etc.).
-- [x] Standardized `testPrefix` across refactored files.
-- [x] Eliminated widespread `JdbcSQLIntegrityConstraintViolationException` errors.
-- [x] Reduced full suite failures from 89 down to 26.
-- [x] Verified 100% standalone pass rate for refactored specs.
+- [x] Standardized all major LC field enums in frontend components.
+- [x] Updated unit tests (`IssuanceStepper.test.tsx`, `ProductCatalogManager.test.tsx`) to align with new mappings.
+- [x] Identified and added missing `MARG_NONE` and other `TradeMarginType` enums to backend seed data.
+- [x] Verified full issuance lifecycle with 100% pass rate in Playwright E2E.
 
 ## Current Status
-The core of the `TradeFinanceMoquiSuite` is now stable. 17 out of ~35 specs have been refactored with the new isolation pattern. Widespread PK collisions are resolved, and remaining failures are largely logic-specific or secondary collisions in minor specs.
+The LC issuance workflow is now stable and fully synchronized with the Moqui backend's referential integrity requirements. The 400 errors during draft saving and submission have been resolved.
 
 ## Next Failure to Work On
-Stabilizing the remaining ~15 specs (ComplianceServicesSpec, NostroApiSpec, etc.) and addressing logic-specific failures in `TransactionIssuanceBugSpec`.
+Resuming the broader `TradeFinanceMoquiSuite` stabilization if any logic-specific failures remain in backend Spock tests.

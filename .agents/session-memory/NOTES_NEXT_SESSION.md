@@ -1,16 +1,16 @@
 # Notes for Next Session
-**Date:** 2026-05-10
+**Date:** 2026-05-11
 
 ## Context
-We are mid-way through a comprehensive stabilization of the `TradeFinanceMoquiSuite`. Widespread PK collisions have been mitigated by assigning unique sequence ranges to 17 major specs.
+We have successfully resolved the 400 Referential Integrity errors in the LC issuance workflow. The frontend and backend are now fully synchronized regarding enumeration constants.
 
 ## Next Steps
-1.  **Migrate Remaining Specs**: Continue refactoring the ~15 remaining specs in `trade.TradeFinanceMoquiSuite` to use the `tempSetSequencedIdPrimary` range pattern.
-    -   Target files: `ComplianceServicesSpec`, `NostroApiSpec`, `AuthorizationDataLossSpec`, `InstrumentDataIntegritySpec`, etc.
-    -   Use non-overlapping ranges (e.g., 4,500,000, 4,000,000, etc. - check existing ranges to avoid overlaps).
-2.  **Fix NPE in TransactionIssuanceBugSpec**: Resolve the `NullPointerException` at line 103 identified in the last suite run.
-3.  **Final Verification**: Run `./gradlew reloadSave :runtime:component:TradeFinance:test --tests trade.TradeFinanceMoquiSuite` and aim for 0 failures.
+1.  **Monitor E2E Tests**: Ensure no new regressions surface in `IssuanceFlow.spec.ts` as more features are added.
+2.  **Backend Spec Stabilization**: Resume the refactoring of the remaining ~15 backend specs to ensure a 100% pass rate in `TradeFinanceMoquiSuite`.
+    -   Target: `ComplianceServicesSpec`, `NostroApiSpec`, etc.
+    -   Address the NPE in `TransactionIssuanceBugSpec`.
+3.  **UI Polish**: The `InstrumentDetails.tsx` display logic now handles prefixed enums, but consider adding a generic utility for enum-to-label transformation if more types are added.
 
 ## Open Issues
-- `TransactionIssuanceBugSpec` is failing with NPE after refactoring.
-- Minor specs still cause secondary collisions because they share the global ID sequence.
+- `TransactionIssuanceBugSpec` still has an NPE at line 103.
+- Backend suite still has logic-specific failures unrelated to ID collisions.
