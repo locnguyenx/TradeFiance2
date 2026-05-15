@@ -8,8 +8,14 @@
         <field name="rawContent" type="text-very-long" comment="Full SWIFT block content (Block 1-5)."/>
         <field name="receivedTimestamp" type="date-time" default="ec.user.nowTimestamp"/>
         <field name="contentHash" type="text-medium" comment="SHA-256 hash for deduplication."/>
+        <field name="swiftHeaderKey" type="text-medium" comment="Composite key (Sender|Type|Tag20|Time) for header-based dedup."/>
+        <field name="messageType" type="text-short"/>
+        <field name="parseStatusEnumId" type="id" default="'PARSE_PENDING'"/>
+        <field name="parseErrorText" type="text-long"/>
         <field name="fileName" type="text-medium" comment="Original file name if from directory polling."/>
+        <field name="sourceChannel" type="id"/>
         <index name="INB_RAW_HASH_IDX" unique="true"><index-field name="contentHash"/></index>
+        <index name="INB_RAW_HDR_IDX" unique="true"><index-field name="swiftHeaderKey"/></index>
     </entity>
 
     <entity entity-name="TradeInboxItem" package="trade.swift" short-alias="inboxItems">

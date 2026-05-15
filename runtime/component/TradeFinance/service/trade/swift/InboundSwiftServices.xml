@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ABOUTME: InboundSwiftServices handles the technical ingestion, parsing, and initial correlation of received messages. -->
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.0.xsd">
+
+    <service verb="ingest" noun="SwiftMessage" authenticate="false">
+        <in-parameters>
+            <parameter name="rawContent" type="String" required="true"/>
+            <parameter name="sourceChannel" default="'SRC_MANUAL'"/>
+            <parameter name="sourceFileName"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="rawMessageId"/>
+            <parameter name="isDuplicate" type="Boolean"/>
+            <parameter name="parseSuccess" type="Boolean"/>
+        </out-parameters>
+        <actions>
+            <script><![CDATA[
+                ec.artifactExecution.disableAuthz()
+                import java.security.MessageDigest
+                import com.prowidesoftware.swift.model.SwiftMessage as ProwideSwiftMessage
+
+                // 1. Generate SHA-256 Hash for deduplication
+                def digest = MessageDigest.getInstance("SHA-256")
+                def hashBytes = digest.digest(rawContent.getBytes("UTF-8"))
+                String contentHash = hashBytes.collect { String.format("%02x", it) }.join()
+
+                // 2. Dedup Check (Hash-based)
+                def existing = ec.entity.find("trade.swift.InboundSwiftRaw").condition("contentHash", contentHash).one()
+                if (existing) {
+                    context.rawMessageId = existing.rawMessageId
+                    context.isDuplicate = true
+                    context.parseSuccess = (existing.parseStatusEnumId == 'PARSE_SUCCESS')
+                    return
+                }
+
+                // 3. Parse and extract metadata
+                String messageType = null
+                String swiftHeaderKey = null
+                String parseStatusEnumId = 'PARSE_SUCCESS'
+                String parseErrorText = null
+                String senderBic = null
+                String tag20 = null
+
+                try {
+                    ProwideSwiftMessage sm = ProwideSwiftMessage.parse(rawContent)
+                    messageType = sm.getType()
+                    senderBic = sm.getSender()
+                    tag20 = sm.getBlock4()?.getTagValue("20")
+                    
+                    // Build composite header key for secondary dedup (Sender|Type|Tag20|Timestamp-approx)
+                    String block2Time = sm.getBlock2()?.getValue() ?: ""
+                    swiftHeaderKey = "${senderBic}|${messageType}|${tag20 ?: ''}|${block2Time}"
+                    
+                    // Secondary Dedup check by header key
+                    if (swiftHeaderKey && swiftHeaderKey.length() > 10) {
+                        def existingByKey = ec.entity.find("trade.swift.InboundSwiftRaw").condition("swiftHeaderKey", swiftHeaderKey).one()
+                        if (existingByKey) {
+                            context.rawMessageId = existingByKey.rawMessageId
+                            context.isDuplicate = true
+                            context.parseSuccess = true
+                            return
+                        }
+                    }
+                } catch (Exception e) {
+                    parseStatusEnumId = 'PARSE_FAILED'
+                    parseErrorText = e.message
+                }
+
+                // 4. Persist Raw Message
+                def createRawResult = ec.service.sync().name("create#trade.swift.InboundSwiftRaw").parameters([
+                    rawContent: rawContent,
+                    contentHash: contentHash,
+                    swiftHeaderKey: swiftHeaderKey,
+                    messageType: messageType,
+                    parseStatusEnumId: parseStatusEnumId,
+                    parseErrorText: parseErrorText,
+                    fileName: sourceFileName,
+                    sourceChannel: sourceChannel
+                ]).call()
+                context.rawMessageId = createRawResult.rawMessageId
+                context.parseSuccess = (parseStatusEnumId == 'PARSE_SUCCESS')
+                context.isDuplicate = false
+
+                // 5. Create Inbox Item
+                ec.service.sync().name("create#trade.swift.TradeInboxItem").parameters([
+                    rawMessageId: context.rawMessageId,
+                    messageType: messageType,
+                    inboxStatusEnumId: 'INBOX_UNREAD',
+                    correlationStatusEnumId: 'INBOX_ORPHANED'
+                ]).call()
+
+                // 6. Attempt Auto-Correlation (Task 3 Placeholder)
+                if (context.parseSuccess) {
+                    ec.service.async().name("trade.swift.InboundSwiftServices.correlate#InboxItem").parameter("rawMessageId", context.rawMessageId).call()
+                }
+            ]]></script>
+        </actions>
+    </service>
+
+    <service verb="correlate" noun="InboxItem">
+        <in-parameters><parameter name="rawMessageId" required="true"/></in-parameters>
+        <actions>
+            <log level="info" message="Attempting correlation for rawMessageId ${rawMessageId}"/>
+            <!-- To be implemented in Task 3 -->
+        </actions>
+    </service>
+
+    <service verb="poll" noun="Directory" authenticate="false">
+        <in-parameters>
+            <parameter name="inboxPath" default="'runtime/inbox/swift'"/>
+        </in-parameters>
+        <actions>
+            <script><![CDATA[
+                ec.artifactExecution.disableAuthz()
+                File rootDir = new File(System.getProperty("moqui.runtime") ?: "runtime")
+                File inboxDir = new File(rootDir, inboxPath)
+                if (!inboxDir.exists()) inboxDir.mkdirs()
+                
+                inboxDir.listFiles().each { file ->
+                    if (file.isFile() && !file.name.startsWith(".")) {
+                        try {
+                            String content = file.getText("UTF-8")
+                            ec.service.sync().name("trade.swift.InboundSwiftServices.ingest#SwiftMessage").parameters([
+                                rawContent: content,
+                                sourceChannel: 'SRC_POLLING',
+                                sourceFileName: file.name
+                            ]).call()
+                            
+                            // Move to archive
+                            File archiveDir = new File(inboxDir, "archive")
+                            if (!archiveDir.exists()) archiveDir.mkdirs()
+                            file.renameTo(new File(archiveDir, file.name))
+                        } catch (Exception e) {
+                            ec.logger.error("Failed to ingest file ${file.name}: ${e.message}")
+                        }
+                    }
+                }
+            ]]></script>
+        </actions>
+    </service>
+
+    <service-job jobName="InboundSwiftPoll" serviceName="trade.swift.InboundSwiftServices.poll#Directory"
+                 cron="0 0/5 * * * ?" paused="false" description="Polls the inbox directory for new SWIFT messages every 5 minutes."/>
+
+</services>

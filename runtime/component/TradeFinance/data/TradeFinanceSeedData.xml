@@ -132,4 +132,10 @@
     <moqui.basic.Enumeration enumId="INBOX_AUTO_MATCH" enumTypeId="CorrelationStatus" description="Auto-Matched"/>
     <moqui.basic.Enumeration enumId="INBOX_MANUAL_MATCH" enumTypeId="CorrelationStatus" description="Manual Match"/>
     <moqui.basic.Enumeration enumId="INBOX_ORPHANED" enumTypeId="CorrelationStatus" description="Orphaned"/>
+
+    <!-- Inbound SWIFT: Parse Status -->
+    <moqui.basic.EnumerationType enumTypeId="ParseStatus" description="Inbound SWIFT Parsing Statuses"/>
+    <moqui.basic.Enumeration enumId="PARSE_PENDING" enumTypeId="ParseStatus" description="Pending Parse"/>
+    <moqui.basic.Enumeration enumId="PARSE_SUCCESS" enumTypeId="ParseStatus" description="Parse Success"/>
+    <moqui.basic.Enumeration enumId="PARSE_FAILED" enumTypeId="ParseStatus" description="Parse Failed"/>
 </entity-facade-xml>
