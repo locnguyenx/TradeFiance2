@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ABOUTME: InboundSwiftEntities defines the technical storage and correlation inbox for received SWIFT messages. -->
+<entities xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/entity-definition-3.0.xsd">
+
+    <entity entity-name="InboundSwiftRaw" package="trade.swift" short-alias="inboundRaws">
+        <field name="rawMessageId" type="id" is-pk="true"/>
+        <field name="rawContent" type="text-very-long" comment="Full SWIFT block content (Block 1-5)."/>
+        <field name="receivedTimestamp" type="date-time" default="ec.user.nowTimestamp"/>
+        <field name="contentHash" type="text-medium" comment="SHA-256 hash for deduplication."/>
+        <field name="fileName" type="text-medium" comment="Original file name if from directory polling."/>
+        <index name="INB_RAW_HASH_IDX" unique="true"><index-field name="contentHash"/></index>
+    </entity>
+
+    <entity entity-name="TradeInboxItem" package="trade.swift" short-alias="inboxItems">
+        <field name="inboxItemId" type="id" is-pk="true"/>
+        <field name="rawMessageId" type="id"/>
+        <field name="messageType" type="text-short"/>
+        <field name="instrumentId" type="id" comment="Correlated instrument (LC/etc)"/>
+        <field name="amendmentId" type="id" comment="Optional: sub-correlation to specific amendment"/>
+        <field name="presentationId" type="id" comment="Optional: sub-correlation to specific presentation"/>
+        
+        <field name="inboxStatusEnumId" type="id" default="'INBOX_UNREAD'"/>
+        <field name="actionTaken" type="text-medium" comment="Summary of action taken (e.g., ADVISE_DELIVERED, DISCREPANCY_CREATED)"/>
+        <field name="processedByUserId" type="id"/>
+        <field name="processedTimestamp" type="date-time"/>
+        
+        <field name="correlationStatusEnumId" type="id" comment="INBOX_AUTO_MATCH, INBOX_MANUAL_MATCH, or INBOX_ORPHANED"/>
+        <field name="securityWarningFlag" type="text-indicator" default="'N'" comment="Y if MT 999 or non-standard message requires caution."/>
+
+        <relationship type="one" related="trade.swift.InboundSwiftRaw" short-alias="raw">
+            <key-map field-name="rawMessageId"/>
+        </relationship>
+        <relationship type="one" related="trade.TradeInstrument" short-alias="instrument">
+            <key-map field-name="instrumentId"/>
+        </relationship>
+        <relationship type="one" related="trade.importlc.ImportLcAmendment" short-alias="amendment">
+            <key-map field-name="amendmentId"/>
+        </relationship>
+        <relationship type="one" related="moqui.security.UserAccount" short-alias="processedByUser">
+            <key-map field-name="processedByUserId" related="userId"/>
+        </relationship>
+        <relationship type="one" title="InboxStatus" related="moqui.basic.Enumeration" short-alias="status">
+            <key-map field-name="inboxStatusEnumId" related="enumId"/>
+        </relationship>
+        <relationship type="one" title="CorrelationStatus" related="moqui.basic.Enumeration" short-alias="correlation">
+            <key-map field-name="correlationStatusEnumId" related="enumId"/>
+        </relationship>
+    </entity>
+
+    <view-entity entity-name="TradeInboxItemView" package="trade.swift">
+        <member-entity entity-alias="ITEM" entity-name="trade.swift.TradeInboxItem"/>
+        <member-entity entity-alias="RAW" entity-name="trade.swift.InboundSwiftRaw" join-from-alias="ITEM">
+            <key-map field-name="rawMessageId"/>
+        </member-entity>
+        <member-entity entity-alias="INST" entity-name="trade.TradeInstrument" join-from-alias="ITEM" join-optional="true">
+            <key-map field-name="instrumentId"/>
+        </member-entity>
+        
+        <alias-all entity-alias="ITEM"/>
+        <alias-all entity-alias="RAW"/>
+        <alias name="instrumentRef" entity-alias="INST"/>
+        <alias name="instrumentTypeEnumId" entity-alias="INST"/>
+    </view-entity>
+
+</entities>

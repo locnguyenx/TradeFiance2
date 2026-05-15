@@ -68,6 +68,12 @@
         <field name="marginDebitAccount" type="text-medium"/>
         <field name="feeDebitAccountId" type="text-medium"/>
 
+        <!-- Inbound SWIFT tracking fields -->
+        <field name="isAdvised" type="text-indicator" comment="Y when MT 730 confirms issuance delivery to advising bank."/>
+        <field name="advisedDate" type="date" comment="Date from MT 730 Tag 30 for issuance."/>
+        <field name="isAdvisedToBeneficiary" type="text-indicator" comment="Y when MT 730 confirms issuance delivery to beneficiary."/>
+        <field name="advisedToBeneficiaryDate" type="date" comment="Date from MT 730 Tag 30 for issuance."/>
+
         <relationship type="one" related="trade.TradeInstrument" short-alias="instrument">
             <key-map field-name="instrumentId"/>
         </relationship>
@@ -224,6 +230,8 @@
         <field name="messageContent" type="text-very-long"/>
         <field name="generatedDate" type="date-time" default="ec.user.nowTimestamp"/>
         <field name="messageStatusId" type="id"/> <!-- SWIFT_MSG_DRAFT or SWIFT_MSG_ACTIVE -->
+        <field name="messageDirection" type="text-short" default="'OUTBOUND'"
+               comment="OUTBOUND (generated) or INBOUND (received). Existing records default to OUTBOUND."/>
         
         <relationship type="one" related="trade.TradeInstrument" short-alias="instrument">
             <key-map field-name="instrumentId"/>
@@ -274,6 +282,8 @@
         <field name="documentDisposalEnumId" type="id"/> <!-- Tag 77B: HOLDING_DOCUMENTS or RETURNING_DOCUMENTS -->
         <field name="chargesDeducted" type="text-long"/> <!-- Tag 73 -->
         <field name="senderToReceiverPresentationInfo" type="text-long"/> <!-- Tag 72Z -->
+        <field name="sourceChannel" type="id"
+               comment="INBOUND if auto-created from inbound SWIFT. Used to bypass validation SECA for MT 750/754."/>
         
         <relationship type="one" related="trade.importlc.ImportLetterOfCredit" short-alias="importLc">
             <key-map field-name="instrumentId"/>
@@ -378,6 +388,12 @@
         <field name="amendmentBusinessStateId" type="id" enable-audit-log="true"/>
         <field name="amendmentTypeEnumId" type="id"/>
         <field name="amendmentNumber" type="number-integer"/>
+
+        <!-- Inbound SWIFT tracking fields -->
+        <field name="isAdvised" type="text-indicator" comment="Y when MT 730 confirms amendment delivery to advising bank."/>
+        <field name="advisedDate" type="date" comment="Date from MT 730 Tag 30 for amendment."/>
+        <field name="isAdvisedToBeneficiary" type="text-indicator" comment="Y when MT 730 confirms amendment delivery to beneficiary."/>
+        <field name="advisedToBeneficiaryDate" type="date" comment="Date from MT 730 Tag 30 for amendment."/>
         <field name="newTolerance" type="number-decimal"/>
         <field name="chargeAllocationEnumId" type="id"/>
         

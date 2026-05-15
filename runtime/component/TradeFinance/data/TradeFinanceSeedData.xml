@@ -119,4 +119,17 @@
     <moqui.basic.Enumeration enumId="MARG_NONE" enumTypeId="TradeMarginType" description="None"/>
     <moqui.basic.Enumeration enumId="MARG_CASH" enumTypeId="TradeMarginType" description="Cash Margin"/>
     <moqui.basic.Enumeration enumId="MARG_LOMBARD" enumTypeId="TradeMarginType" description="Lombard / Pledged Assets"/>
+
+    <!-- Inbound SWIFT: Inbox Status -->
+    <moqui.basic.EnumerationType enumTypeId="InboxStatus" description="Inbound SWIFT Inbox Statuses"/>
+    <moqui.basic.Enumeration enumId="INBOX_UNREAD" enumTypeId="InboxStatus" description="Unread"/>
+    <moqui.basic.Enumeration enumId="INBOX_IN_PROGRESS" enumTypeId="InboxStatus" description="In Progress"/>
+    <moqui.basic.Enumeration enumId="INBOX_PROCESSED" enumTypeId="InboxStatus" description="Processed"/>
+    <moqui.basic.Enumeration enumId="INBOX_ORPHANED" enumTypeId="InboxStatus" description="Orphaned"/>
+
+    <!-- Inbound SWIFT: Correlation Status -->
+    <moqui.basic.EnumerationType enumTypeId="CorrelationStatus" description="Inbound SWIFT Correlation Statuses"/>
+    <moqui.basic.Enumeration enumId="INBOX_AUTO_MATCH" enumTypeId="CorrelationStatus" description="Auto-Matched"/>
+    <moqui.basic.Enumeration enumId="INBOX_MANUAL_MATCH" enumTypeId="CorrelationStatus" description="Manual Match"/>
+    <moqui.basic.Enumeration enumId="INBOX_ORPHANED" enumTypeId="CorrelationStatus" description="Orphaned"/>
 </entity-facade-xml>

@@ -32,7 +32,11 @@ import org.moqui.Moqui
     RestApiIntegrationSpec.class,
     
     // Regression / E2E
-    EndToEndImportLcSpec.class
+    EndToEndImportLcSpec.class,
+    
+    // Module 7: Inbound SWIFT
+    InboundSwiftSpec.class,
+    InboundActionSpec.class
 ])
 class TradeFinanceMoquiSuite {
     @AfterAll
