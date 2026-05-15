@@ -37,11 +37,30 @@
             <service-call name="trade.SwiftGenerationServices.generate#Mt700" in-map="[instrumentId: instrumentId]"/>
             <service-call name="trade.SwiftGenerationServices.generate#Mt740" in-map="[instrumentId: instrumentId]"/>
         </actions>
-
     </seca>
-    <!-- Keep DRAFT updated on changes -->
+    <!-- Trigger MT700 regeneration on any LC update when in DRAFT or PENDING state -->
     <seca service="update#trade.importlc.ImportLetterOfCredit" when="post-service">
-        <condition><expression>businessStateId in ['LC_DRAFT', 'LC_PENDING']</expression></condition>
+        <condition>
+            <script><![CDATA[
+                import org.moqui.entity.EntityValue
+                EntityValue instrument = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).one()
+                return instrument != null && (instrument.businessStateId == 'LC_DRAFT' || instrument.businessStateId == 'LC_PENDING')
+            ]]></script>
+        </condition>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <service-call name="trade.SwiftGenerationServices.generate#Mt700" in-map="[instrumentId: instrumentId, forceRegenerate: true]"/>
+        </actions>
+    </seca>
+
+    <seca service="trade.importlc.ImportLcServices.update#ImportLetterOfCredit" when="post-service">
+        <condition>
+            <script><![CDATA[
+                import org.moqui.entity.EntityValue
+                EntityValue instrument = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", instrumentId).one()
+                return instrument != null && (instrument.businessStateId == 'LC_DRAFT' || instrument.businessStateId == 'LC_PENDING')
+            ]]></script>
+        </condition>
         <actions>
             <script>ec.artifactExecution.disableAuthz()</script>
             <service-call name="trade.SwiftGenerationServices.generate#Mt700" in-map="[instrumentId: instrumentId, forceRegenerate: true]"/>

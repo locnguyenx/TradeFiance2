@@ -50,7 +50,6 @@
                 <order-by field-name="-makerTimestamp"/>
             </entity-find>
             <set field="transaction" from="transactionList ? transactionList[0] : null"/>
-            <log level="info" message="In generate#Mt700 for ${instrumentId}, found transaction: ${transaction?.transactionId}, status: ${transaction?.transactionStatusId}, type: ${transaction?.transactionTypeEnumId}"/>
             
             <!-- If draft exists and not approved, return existing unless forced -->
             <if condition="draftMsg &amp;&amp; !forceRegenerate &amp;&amp; transaction?.transactionStatusId != 'TX_APPROVED'">
@@ -61,7 +60,6 @@
 
             <!-- Determine Status: ACTIVE if instrument is approved, else DRAFT -->
             <set field="messageStatusId" from="transaction?.transactionStatusId == 'TX_APPROVED' ? 'SWIFT_MSG_ACTIVE' : 'SWIFT_MSG_DRAFT'"/>
-            <log level="info" message="In generate#Mt700 for ${instrumentId}, determined messageStatusId: ${messageStatusId}"/>
             
             <entity-find-one entity-name="trade.common.TradeConfig" value-field="bicConfig">
                 <field-map field-name="configId" value="ISSUING_BANK_BIC"/>

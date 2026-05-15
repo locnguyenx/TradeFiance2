@@ -278,6 +278,9 @@
             <if condition="marginPercentage != null"><set field="lcUpdateMap.marginPercentage" from="marginPercentage"/></if>
             <if condition="marginAmount != null"><set field="lcUpdateMap.marginAmount" from="marginAmount"/></if>
             <if condition="marginDebitAccount != null"><set field="lcUpdateMap.marginDebitAccount" from="marginDebitAccount"/></if>
+            <if condition="paymentCondBeneText != null"><set field="lcUpdateMap.paymentCondBeneText" from="paymentCondBeneText"/></if>
+            <if condition="paymentCondBankText != null"><set field="lcUpdateMap.paymentCondBankText" from="paymentCondBankText"/></if>
+            <if condition="applicableRulesEnumId != null"><set field="lcUpdateMap.applicableRulesEnumId" from="applicableRulesEnumId"/></if>
 
             <entity-set value-field="lc" map="lcUpdateMap"/>
             <entity-update value-field="lc"/>

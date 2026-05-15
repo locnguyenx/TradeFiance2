@@ -5,41 +5,34 @@ import org.junit.platform.suite.api.SelectClasses
 import org.junit.platform.suite.api.Suite
 import org.moqui.Moqui
 
+/**
+ * ABOUTME: TradeFinanceMoquiSuite aggregates all consolidated Trade Finance test specifications.
+ * Organized by BRD modules: Common, Lifecycle, Drawing, SWIFT, and Security.
+ */
 @Suite
 @SelectClasses([
-    SwiftValidationSpec.class,
-    SwiftGenerationSpec.class,
-    SwiftPartyGenerationSpec.class,
-    SwiftReimbursementSpec.class,
-    ComplianceServicesSpec.class,
-    DualApprovalSpec.class,
-    EndToEndImportLcSpec.class,
-    BddImportLcModuleSpec.class,
-    BddCommonModuleSpec.class,
-    AuthorizationServicesSpec.class,
-    AuthorizationDataLossSpec.class,
-    DraftLcSpec.class,
-    ImportLcEntitiesSpec.class,
-    ImportLcServicesSpec.class,
-    ImportLcValidationServicesSpec.class,
-    LimitServicesSpec.class,
-    NostroApiSpec.class,
-    RestApiEndpointsSpec.class,
-    ShippingGuaranteeSpec.class,
-    TradePartySpec.class,
-    TradePartyLcIntegrationSpec.class,
-    TradeCommonEntitiesSpec.class,
-    TradeSeedDataSpec.class,
-    UserAccountServicesSpec.class,
-    InstrumentDataIntegritySpec.class,
-    TradeFinanceHardeningSpec.class,
-    TradeSwiftTriggerSpec.class,
-    TradeSwiftAutoTriggerSpec.class,
-    TradeTransactionSpec.class,
-    TradeTransactionViewSpec.class,
-    TradeSearchSpec.class,
-    TransactionIssuanceBugSpec.class,
-    TradeListServicesSpec.class
+    // Module 1: Common & Entities
+    TradeCommonSpec.class,
+    CommonEntitiesSpec.class,
+    
+    // Module 2: Issuance & Amendment (Lifecycle)
+    ImportLcLifecycleSpec.class,
+    PortfolioServicesSpec.class,
+    
+    // Module 3: Drawing & Settlement
+    TradeDrawingSpec.class,
+    
+    // Module 4: SWIFT & Compliance
+    SwiftComplianceSpec.class,
+    
+    // Module 5: Security & Integrity
+    SecurityIntegritySpec.class,
+    
+    // Module 6: API & Integration
+    RestApiIntegrationSpec.class,
+    
+    // Regression / E2E
+    EndToEndImportLcSpec.class
 ])
 class TradeFinanceMoquiSuite {
     @AfterAll

@@ -27,13 +27,13 @@ class EndToEndImportLcSpec extends Specification {
         beneficiaryId = testPrefix + "-BEN"
         advisingBankId = testPrefix + "-ADV-BANK"
 
-        // Set isolated ID generation ranges - use 5600000
-        ec.entity.tempSetSequencedIdPrimary("trade.CustomerFacility", 36000000, 1000)
-        ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrument", 36000000, 1000)
-        ec.entity.tempSetSequencedIdPrimary("trade.importlc.ImportLetterOfCredit", 36000000, 1000)
-        ec.entity.tempSetSequencedIdPrimary("trade.importlc.SwiftMessage", 36000000, 1000)
-        ec.entity.tempSetSequencedIdPrimary("trade.TradeTransaction", 36000000, 1000)
-        ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrumentParty", 36000000, 1000)
+        // Set isolated ID generation ranges - use 98000000
+        ec.entity.tempSetSequencedIdPrimary("trade.CustomerFacility", 98000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrument", 98000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.importlc.ImportLetterOfCredit", 98000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.importlc.SwiftMessage", 98000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeTransaction", 98000000, 1000)
+        ec.entity.tempSetSequencedIdPrimary("trade.TradeInstrumentParty", 98000000, 1000)
 
         ec.service.sync().name("trade.TradeCommonServices.create#TradeParty")
             .parameters([partyId: applicantId, partyTypeEnumId: 'PTY_COMMERCIAL', partyName: 'App E2E', kycStatus: 'KYC_ACTIVE']).call()
@@ -63,9 +63,9 @@ class EndToEndImportLcSpec extends Specification {
     
     def "Full Flow: Create LC -> Update Limit -> Generate SWIFT"() {
         given: "Initialize Facility"
-        def facRes = ec.entity.makeValue("trade.CustomerFacility")
-            .setAll([totalApprovedLimit: 100000.0, utilizedAmount: 0.0, currencyUomId: 'USD', statusId: 'FAC_ACTIVE']).setSequencedIdPrimary().create()
-        def facId = facRes.facilityId
+        def facId = testPrefix + "-FAC"
+        ec.entity.makeValue("trade.CustomerFacility")
+            .setAll([facilityId: facId, totalApprovedLimit: 100000.0, utilizedAmount: 0.0, currencyUomId: 'USD', statusId: 'FAC_ACTIVE']).create()
         def transRef = testPrefix + "-REF-001"
             
         when: "1. Create Import LC"
@@ -81,7 +81,8 @@ class EndToEndImportLcSpec extends Specification {
             ],
             lcTypeEnumId: 'LCT_IRREVOCABLE', availableByEnumId: 'AVB_BY_NEGOTIATION', confirmationEnumId: 'CONF_WITHOUT'
         ]).call()
-        def instrumentId = createResult.instrumentId
+        if (ec.message.hasError()) println "DEBUG: create#ImportLetterOfCredit errors: " + ec.message.errorsString
+        def instrumentId = createResult?.instrumentId
         
         then: "Instrument exists"
         instrumentId != null
