@@ -72,7 +72,7 @@ The frontend uses a provider-based architecture for core services:
 
 ---
 
-## 3. Regression Suite
+## 4. Regression Suite
 The backend suite is unified under `trade.TradeFinanceMoquiSuite`.
 The frontend suite uses Playwright (frontend/e2e) and Vitest for unit tests.
 
@@ -98,7 +98,7 @@ cd frontend && npx playwright test
 
 ---
 
-## 4. SWIFT Character Sets & Mappings
+## 5. SWIFT Character Sets & Mappings
 The platform validates input strictly against SWIFT MT7xx standards:
 - **X-Charset**: `A-Z a-z 0-9 / - ? : ( ) . , ' + space`. (Standard narratives: 45A, 46A).
 - **Z-Charset**: Extended set (`@ # = ! " % & * ; < > _`) allowed in Tag 73, 72Z, and 77A. Implemented via the `trade.SwiftGenerationServices.format#ZCharacter` service.
@@ -107,7 +107,7 @@ The platform validates input strictly against SWIFT MT7xx standards:
 
 ---
 
-## 5. Troubleshooting & Maintenance
+## 6. Troubleshooting & Maintenance
 - **Data Seeding**: Use `./gradlew load` to refresh master data.
 - **Log Analysis**: Business rule failures are logged with `[TRADE-AUTH]` or `[TRADE-VAL]` prefixes.
 - **UI Stabilization**: When UI labels change, update the "Blue Premium" tokens and verify navigation integrity.

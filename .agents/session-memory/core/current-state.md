@@ -1,23 +1,26 @@
-# Current State - Trade Finance Enum Synchronization
-**Last Update:** 2026-05-11
+# Current State - Inbound SWIFT Processing Engine
+**Last Update:** 2026-05-16
 
 ## Goal
-Resolve persistent 400 "record does not exist [23506]" referential integrity errors in the LC issuance workflow by synchronizing frontend enumeration constants with Moqui backend seed data.
+Finalize the Inbound SWIFT Processing Engine for production readiness by resolving test failures, integrating automated workflows, and verifying system-wide logic separation.
 
 ## Approach
-1.  **Enum Standardization**: Audit and refactor all frontend components (`IssuanceStepper.tsx`, `InstrumentDetails.tsx`, `SettlementForm.tsx`) to utilize correctly prefixed enum IDs as defined in the backend (e.g., `LCT_`, `CHG_`, `AVB_`, `AW_`, `APR_`, `RMB_`, `MARG_`).
-2.  **Seed Data Enrichment**: Supplement missing enumeration definitions in `TradeFinanceSeedData.xml` (e.g., `MARG_NONE`) to ensure the backend can validate all valid frontend options.
-3.  **Backend Synchronization**: Force-load updated seed data and restart Moqui to ensure the database state matches the code definitions.
-4.  **E2E Validation**: Use Playwright (`IssuanceFlow.spec.ts`) to confirm successful end-to-end record persistence and submission.
+1.  **Architecture Refactoring**: Decoupled `InboundCorrelationServices.xml` from inline business logic by redirecting message triggers (MT730, MT799, MT750, MT754, MT742) to specialized `<service-call>`s in `InboundActionServices.xml`.
+2.  **Archiving vs Deletion**: Rewrote `InboundSwiftServices.xml` polling logic to utilize `TradeConfig` and archive SWIFT files instead of deleting them `file.delete()`, ensuring SOX compliance.
+3.  **Test Migration**: Migrated the functional assertions from `InboundSwiftSpec.groovy` to the new `InboundActionSpec.groovy` and adjusted `sourceChannel` to test manual and batch ingestion.
+4.  **Debugging MT 730 Failure**: Resolved the intermittent `[23506]` referential integrity test failure. Diagnosed that Moqui silently rolled back the `TradeInstrument` insertion because the `advisingBank` mock lacked an active RMA. Added `hasActiveRMA: true` to the test setup.
+5.  **Documentation**: Updated the `docs/tcd/TestCoverageMatrix.md` and `docs/user-guide/EnduserGuide.md` to reflect new operations.
 
 ## Steps Completed
-- [x] Standardized all major LC field enums in frontend components.
-- [x] Updated unit tests (`IssuanceStepper.test.tsx`, `ProductCatalogManager.test.tsx`) to align with new mappings.
-- [x] Identified and added missing `MARG_NONE` and other `TradeMarginType` enums to backend seed data.
-- [x] Verified full issuance lifecycle with 100% pass rate in Playwright E2E.
+- [x] Refactored `InboundCorrelationServices.xml` and `InboundActionServices.xml`.
+- [x] Updated polling/archiving in `InboundSwiftServices.xml`.
+- [x] Debugged and fixed `InboundActionSpec.groovy`.
+- [x] Full `TradeFinanceMoquiSuite` suite passed.
+- [x] Created `TestCoverageMatrix.md` and documented missing UI elements (`DbResourceFile`).
+- [x] Updated user guides to include automated workflows.
 
 ## Current Status
-The LC issuance workflow is now stable and fully synchronized with the Moqui backend's referential integrity requirements. The 400 errors during draft saving and submission have been resolved.
+The Inbound SWIFT Processing Engine is now fully stable, verified against all edge cases, and documentation has been updated to reflect the new automated processing paradigms.
 
 ## Next Failure to Work On
-Resuming the broader `TradeFinanceMoquiSuite` stabilization if any logic-specific failures remain in backend Spock tests.
+No current failure. Feature branch `feature/inbound-swift` is complete and ready to be merged.

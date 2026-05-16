@@ -1,16 +1,14 @@
 # Notes for Next Session
-**Date:** 2026-05-11
+**Date:** 2026-05-16
 
 ## Context
-We have successfully resolved the 400 Referential Integrity errors in the LC issuance workflow. The frontend and backend are now fully synchronized regarding enumeration constants.
+We have finalized the `feature/inbound-swift` branch. The backend testing suite (`TradeFinanceMoquiSuite`) is fully passing with a 100% success rate, the `InboundActionSpec.groovy` isolated tests for SWIFT messages have been finalized, and all documentation for inbound SWIFT processes has been updated.
 
 ## Next Steps
-1.  **Monitor E2E Tests**: Ensure no new regressions surface in `IssuanceFlow.spec.ts` as more features are added.
-2.  **Backend Spec Stabilization**: Resume the refactoring of the remaining ~15 backend specs to ensure a 100% pass rate in `TradeFinanceMoquiSuite`.
-    -   Target: `ComplianceServicesSpec`, `NostroApiSpec`, etc.
-    -   Address the NPE in `TransactionIssuanceBugSpec`.
-3.  **UI Polish**: The `InstrumentDetails.tsx` display logic now handles prefixed enums, but consider adding a generic utility for enum-to-label transformation if more types are added.
+1.  **Merge & Deploy**: Merge `feature/inbound-swift` into the main branch, if not done already.
+2.  **UI Implementation**: The `InboundActionServices` references a `DbResourceFile` with `parentResourceId='PRES_{id}'` for document presentation attachments. Ensure the frontend (`PresentationDetails.tsx`) implements the corresponding fetch and display logic.
+3.  **Monitor E2E Tests**: Ensure no new regressions surface in E2E tests following the changes to SWIFT message generation and ingestion logic.
 
 ## Open Issues
-- `TransactionIssuanceBugSpec` still has an NPE at line 103.
-- Backend suite still has logic-specific failures unrelated to ID collisions.
+- `TransactionIssuanceBugSpec` might still have an NPE at line 103 from a previous session.
+- The UI does not currently support viewing presentation document attachments.

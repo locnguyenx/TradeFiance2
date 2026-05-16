@@ -110,76 +110,28 @@
 
                 // Auto-trigger actions for AUTO_MATCH
                 if (correlationStatus == "CORR_AUTO_MATCH" && inboxItemId) {
-                    ec.artifactExecution.disableAuthz()
-                    def item = ec.entity.find("trade.swift.TradeInboxItem").condition("inboxItemId", inboxItemId).one()
-                    ec.logger.info("DEBUG_PRINT: Auto-triggering action for ${msgType} on inboxItem ${inboxItemId}")
-                    try {
-                        if (msgType == "730") {
-                            def sm30 = ProwideSwiftMessage.parse(raw.rawContent)
-                            def tag20_30 = sm30.getBlock4()?.getTagValue("20")?.trim()
-                            def tag30_30 = sm30.getBlock4()?.getTagValue("30")?.trim()
-                            def advisedDate = null
-                            if (tag30_30) {
-                                def localDate = java.time.LocalDate.parse(tag30_30, java.time.format.DateTimeFormatter.ofPattern("yyMMdd"))
-                                advisedDate = java.sql.Date.valueOf(localDate)
-                            }
-                            if (item.amendmentId) {
-                                def amendment = ec.entity.find("trade.importlc.ImportLcAmendment").condition("amendmentId", item.amendmentId).one()
-                                amendment.isAdvisedToBeneficiary = 'Y'; amendment.advisedToBeneficiaryDate = advisedDate; amendment.update()
-                            } else if (item.instrumentId) {
-                                def lc = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", item.instrumentId).one()
-                                lc.isAdvised = 'Y'; lc.advisedDate = advisedDate; lc.advisingBankReference = tag20_30; lc.update()
-                            }
-                            item.actionTaken = 'LC_DELIVERY_CONFIRMED'; item.inboxStatusEnumId = 'INBOX_PROCESSED'; item.processedTimestamp = ec.user.nowTimestamp; item.update()
-                        }
-                        
-                        if (msgType == "799") {
-                            if (item.amendmentId && (raw.rawContent.toUpperCase().contains('ACKNOWLEDGE') || raw.rawContent.toUpperCase().contains('ACCEPT'))) {
-                                ec.service.sync().name("trade.importlc.ImportLcServices.accept#Amendment").parameter("amendmentId", item.amendmentId).call()
-                                item.actionTaken = 'AMENDMENT_AUTO_ACCEPTED_799'; item.inboxStatusEnumId = 'INBOX_PROCESSED'; item.processedTimestamp = ec.user.nowTimestamp; item.update()
-                            }
-                        }
-                        
-                        if (msgType == "750") {
-                            def presResult = ec.service.sync().name("trade.TradeCommonServices.create#Presentation").parameters([
-                                instrumentId: item.instrumentId, claimAmount: item.claimAmount, claimCurrency: item.claimCurrency,
-                                presentingBankRef: item.senderReference, isDiscrepant: 'Y', applicantDecisionEnumId: 'PENDING',
-                                presentationStatusId: 'PRES_RECEIVED', sourceChannel: 'INBOUND']).call()
-                            ec.service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit").parameters([instrumentId: item.instrumentId, businessStateId: 'LC_DOC_RECEIVED']).call()
-                            item.presentationId = presResult.presentationId; item.actionTaken = 'SPAWN_PRESENTATION_750'; item.inboxStatusEnumId = 'INBOX_PROCESSED'; item.processedTimestamp = ec.user.nowTimestamp; item.update()
-                        }
-                        
-                        if (msgType == "754") {
-                            def presResult = ec.service.sync().name("trade.TradeCommonServices.create#Presentation").parameters([
-                                instrumentId: item.instrumentId, claimAmount: item.claimAmount, claimCurrency: item.claimCurrency,
-                                presentingBankRef: item.senderReference, isDiscrepant: 'N', applicantDecisionEnumId: 'WAIVED',
-                                presentationStatusId: 'PRES_COMPLIANT', sourceChannel: 'INBOUND']).call()
-                            ec.service.sync().name("trade.importlc.ImportLcServices.update#ImportLetterOfCredit").parameters([instrumentId: item.instrumentId, businessStateId: 'LC_ACCEPTED']).call()
-                            item.presentationId = presResult.presentationId; item.actionTaken = 'PRESENTATION_AUTO_SPAWNED_754'; item.inboxStatusEnumId = 'INBOX_PROCESSED'; item.processedTimestamp = ec.user.nowTimestamp; item.update()
-                        }
-                        
-                        if (msgType == "742") {
-                            def recons = ec.entity.find("trade.importlc.NostroReconciliation").condition([instrumentId: item.instrumentId, matchStatusEnumId: 'RECON_PENDING']).list()
-                            if (recons) {
-                                def recon = recons[0]
-                                if (item.claimAmount <= recon.expectedAmount) {
-                                    recon.matchStatusEnumId = 'RECON_MATCHED'; recon.matchedAmount = item.claimAmount; recon.update()
-                                    item.actionTaken = 'REIMBURSEMENT_AUTO_MATCHED'
-                                } else {
-                                    recon.matchStatusEnumId = 'RECON_EXCEPTION'; recon.update()
-                                    item.actionTaken = 'REIMBURSEMENT_EXCEPTION_OVER_LIMIT'
-                                }
-                                item.inboxStatusEnumId = 'INBOX_PROCESSED'; item.processedTimestamp = ec.user.nowTimestamp; item.update()
-                            } else {
-                                item.inboxStatusEnumId = 'INBOX_ORPHANED'; item.orphanReason = 'NO_PENDING_RECON'; item.update()
-                            }
-                        }
-                    } catch (Throwable t) {
-                        ec.logger.error("!!! BOMB in action trigger for ${msgType}: " + t.getMessage(), t)
-                        throw t
-                    }
+                    context.autoTriggerMessageId = inboxItemId
+                    context.autoTriggerMessageType = msgType
                 }
             ]]></script>
+
+            <if condition="autoTriggerMessageId">
+                <if condition="autoTriggerMessageType == '730'">
+                    <service-call name="trade.swift.InboundActionServices.acknowledge#Mt730" in-map="[inboxItemId: autoTriggerMessageId]"/>
+                <else-if condition="autoTriggerMessageType == '799'">
+                    <service-call name="trade.swift.InboundActionServices.resolve#AmendmentConsent" in-map="[inboxItemId: autoTriggerMessageId]"/>
+                </else-if>
+                <else-if condition="autoTriggerMessageType == '750'">
+                    <service-call name="trade.swift.InboundActionServices.spawn#Presentation750" in-map="[inboxItemId: autoTriggerMessageId]"/>
+                </else-if>
+                <else-if condition="autoTriggerMessageType == '754'">
+                    <service-call name="trade.swift.InboundActionServices.process#Mt754" in-map="[inboxItemId: autoTriggerMessageId]"/>
+                </else-if>
+                <else-if condition="autoTriggerMessageType == '742'">
+                    <service-call name="trade.swift.InboundActionServices.reconcile#Mt742" in-map="[inboxItemId: autoTriggerMessageId]"/>
+                </else-if>
+                </if>
+            </if>
         </actions>
     </service>
 

@@ -211,6 +211,11 @@ str.assertContains("Expected UI Text")
 ./gradlew cleanAll loadSave
 ```
 
+### Silent Transaction Rollbacks (Constraint Violations Masked)
+* **Trap**: If a Moqui service call (`ec.service.sync().call()`) fails due to a nested validation error (e.g., Party missing an Active RMA), it may silently rollback the transaction but NOT throw a hard exception in Spock depending on the artifact configuration. The test continues to execute the next line!
+* **Symptom**: Subsequent `entity.create` or `service.call` attempts fail with `JdbcSQLIntegrityConstraintViolationException: referential integrity (foreign key)` because the parent record they rely on was rolled back and never committed. 
+* **Diagnosis**: Check the `moqui.log` for `Set rollback only location` and `Error running service ... (message)` warnings *prior* to the constraint violation to find the actual root cause.
+
 ## 8. Debugging
 
 ### Log Variables

@@ -21,7 +21,8 @@ import {
     History,
     Globe,
     Search,
-    LogOut
+    LogOut,
+    Mail
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -87,8 +88,9 @@ export const GlobalShell: React.FC<{ children: ReactNode }> = ({ children }) => 
             { id: 'documents', label: 'Document Examination', icon: <FileSearch size={18} />, path: '/import-lc/documents' },
         ]},
         { group: 'IMPORT LC', items: [
-            { id: 'dashboard', label: 'Import LC Dashboard', icon: <Globe size={18} />, path: '/import-lc' },
-            { id: 'issuance', label: 'New LC Issuance', icon: <PlusCircle size={18} />, path: '/issuance' },
+            { id: 'import-lc', label: 'Import LC', icon: <FileText size={18} />, path: '/import-lc' },
+            { id: 'inbox', label: 'Trade Inbox', icon: <Mail size={18} />, path: '/import-lc/inbox' },
+            { id: 'issuance', label: 'New Issuance', icon: <PlusCircle size={18} />, path: '/issuance' },
             { id: 'external-amendments', label: 'External Amendments', icon: <FileEdit size={18} />, path: '/import-lc/amendments/external' },
             { id: 'internal-amendments', label: 'Internal Amendments', icon: <FileText size={18} />, path: '/import-lc/amendments/internal' },
             { id: 'presentations', label: 'Presentations', icon: <FileText size={18} />, path: '/import-lc/presentations' },

@@ -65,7 +65,8 @@ export const tradeApi = {
             res = await fetch(url, { 
                 ...init, 
                 headers,
-                credentials: 'include' 
+                credentials: 'include',
+                cache: 'no-store'
             });
 
             // If success or expected 4xx, return
@@ -125,9 +126,9 @@ export const tradeApi = {
         console.log(`DEBUG: fetch ${init?.method || 'GET'} ${url} -> ${res.status} (no json body)`);
       }
     } else {
-      // Standard minimal logging
-      console.log(`API: ${init?.method || 'GET'} ${url} -> ${res.status}`);
+      console.log(`fetch ${init?.method || 'GET'} ${url} -> ${res.status}`);
     }
+
     return res;
   },
 
@@ -177,7 +178,8 @@ export const tradeApi = {
 
   async getImportLc(id: string): Promise<TradeInstrument & ImportLetterOfCredit> {
     const res = await this._fetch(`${API_BASE}/import-lc/${id}`);
-    return res.json();
+    const data = await res.json();
+    return data;
   },
 
   async getAmendment(lcId: string, amendmentId: string): Promise<any> {

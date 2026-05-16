@@ -130,6 +130,10 @@ export interface ImportLetterOfCredit {
   authExpiryDate?: string;
   reimbursingChargesEnumId?: string;
   applicableReimbRulesText?: string;
+  isAdvised?: string;
+  advisedDate?: string;
+  isAdvisedToBeneficiary?: string;
+  advisedToBeneficiaryDate?: string;
 }
 
 

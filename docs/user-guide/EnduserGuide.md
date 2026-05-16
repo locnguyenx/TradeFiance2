@@ -116,16 +116,6 @@ The **Workspace Actions** sidebar card provides contextual buttons:
 1.  **Continue Editing Draft**: Only visible for instruments in `LC_DRAFT`.
 2.  **Export Audit Document**: Generates a high-fidelity print-ready report of the transaction.
 3.  **Action Buttons**: For Issued LCs, buttons for **Amend**, **Present**, and **Settle** are located at the bottom or in the sidebar depending on screen size.
-### 5.5 Previewing SWIFT Messages (Maker Preview)
-The platform allows Makers to preview the exact SWIFT payload before the transaction is finalized.
-- **Message Lifecycle**:
-    - **DRAFT**: Messages for pending transactions (New LC, Amendment, etc.) are labeled as DRAFT. These represent the *proposed* message and can be updated by editing the transaction.
-    - **ACTIVE**: Once a Checker authorizes the transaction, the message status changes to ACTIVE, and it is officially released for transmission.
-- **How to Preview**:
-    1.  Navigate to the **SWIFT Messages** tab within the workspace.
-    2.  Click any row with status **DRAFT** to expand the raw message content.
-    3.  Verify that all tags (e.g., 45A, 46A) are correctly formatted and fit within SWIFT line limits.
-    4.  If errors are found, click **Edit Draft** to correct the source data.
 
 ---
 
@@ -135,19 +125,20 @@ Before finalizing any transaction, follow these steps to ensure data integrity:
 2.  **SWIFT Preview (MANDATORY)**: For all issued or amended LCs, navigate to the **SWIFT Messages** tab. **Ensure the status is DRAFT** and the content perfectly matches the intended terms.
 3.  **Verify Character Sets**: Ensure no forbidden characters (like `@`, `!`, `#`) have bypassed validation in narrative fields.
 4.  **Confirm Timeline**: Verify that the **Audit Narrative** correctly reflects the Maker's action and timestamp.
+
+## 6.1 The Approvals Queue (Checker Workflow)
 Users with the `TRADE_CHECKER` role can authorize transactions via the **My Tasks** section.
 
-### The Approvals Queue
 1.  **Priority Sorting**: Items are sorted by **Urgent**, **High**, **Medium**, and **Low** status based on transaction weight.
 2.  **SLA Alerts**: Items pending for >4 hours are flagged as **SLA Alerts**.
 3.  **Details Review**: Click the **Eye (👁️)** icon to open the **Checker Authorization Workspace**.
 
-### Authorizing an Instrument
+### 6.2 Authorizing an Instrument
 1.  Click **Authorize** to enter the high-fidelity workspace.
 2.  **Compare Proposed vs. Current**: The workspace displays the instrument data *as it will look* after the transaction (Proposed) alongside current recorded values. This is critical for verifyng Amendment deltas or Settlement amounts.
 3.  **Submit Decision**: Actions are performed against a unique **Transaction Ref** (e.g., `TF-TXN-26-0001`), ensuring atomicity. Once approved, the system promotes the "Proposed State" to the "Master Record" and updates the instrument's `businessStateId`.
 
-### Structured Party Review
+### 6.3 Structured Party Review
 When reviewing an LC, the Checker sees all assigned parties grouped by category:
 - **Commercial Parties**: Applicant (Obligor), Beneficiary (Payee) — with KYC status badge.
 - **Banking Parties**: Advising, Confirming, Reimbursing, Drawee banks — with BIC, RMA status, and FI Limit indicators.

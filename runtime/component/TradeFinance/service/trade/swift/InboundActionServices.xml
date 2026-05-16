@@ -27,19 +27,40 @@
                     advisedDate = java.sql.Date.valueOf(advisedDate)
                 }
                 
-                if (item.amendmentId) {
-                    def amendment = ec.entity.find("trade.importlc.ImportLcAmendment").condition("amendmentId", item.amendmentId).one()
-                    amendment.isAdvisedToBeneficiary = 'Y'
-                    amendment.advisedToBeneficiaryDate = advisedDate
-                    amendment.update()
-                } else if (item.instrumentId) {
-                    def lc = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", item.instrumentId).one()
-                    lc.isAdvised = 'Y'
-                    lc.advisedDate = advisedDate
-                    lc.advisingBankReference = tag20
-                    lc.update()
-                }
+                context.advisedDate = advisedDate
+                context.tag20 = tag20
             ]]></script>
+
+            <log level="info" message="acknowledge#Mt730: Checking item fields - instrumentId: ${item.instrumentId}, amendmentId: ${item.amendmentId}"/>
+            
+            <if condition="item.amendmentId">
+                <entity-find-one entity-name="trade.importlc.ImportLcAmendment" value-field="amendment">
+                    <field-map field-name="amendmentId" from="item.amendmentId"/>
+                </entity-find-one>
+                <log level="info" message="acknowledge#Mt730: Found Amendment ${item.amendmentId}: ${amendment != null}"/>
+                <if condition="amendment">
+                    <set field="amendment.isAdvisedToBeneficiary" value="Y"/>
+                    <set field="amendment.advisedToBeneficiaryDate" from="advisedDate ?: ec.user.nowTimestamp"/>
+                    <entity-update value-field="amendment"/>
+                    <log level="info" message="SUCCESS: acknowledge#Mt730 updated Amendment ${item.amendmentId}"/>
+                </if>
+            <else-if condition="item.instrumentId">
+                <entity-find-one entity-name="trade.importlc.ImportLetterOfCredit" value-field="lc">
+                    <field-map field-name="instrumentId" from="item.instrumentId"/>
+                </entity-find-one>
+                <log level="info" message="acknowledge#Mt730: Found LC ${item.instrumentId}: ${lc != null}"/>
+                <if condition="lc">
+                    <set field="lc.isAdvised" value="Y"/>
+                    <set field="lc.advisedDate" from="advisedDate ?: ec.user.nowTimestamp"/>
+                    <set field="lc.advisingBankReference" from="tag20 ?: item.senderReference"/>
+                    <entity-update value-field="lc"/>
+                    <log level="info" message="SUCCESS: acknowledge#Mt730 updated LC ${item.instrumentId} to Advised=Y"/>
+                </if>
+            </else-if>
+            <else>
+                <log level="warn" message="acknowledge#Mt730: No instrumentId or amendmentId found in item ${inboxItemId}"/>
+            </else>
+            </if>
 
             <service-call name="update#trade.swift.TradeInboxItem"
                           in-map="[inboxItemId: item.inboxItemId, actionTaken: 'LC_DELIVERY_CONFIRMED', 
@@ -172,6 +193,7 @@
             <script>ec.artifactExecution.disableAuthz()</script>
             <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="pres" for-update="true"/>
             
+            <!-- FIXME: This assumes attachments are stored directly in moqui.resource.DbResourceFile with parentResourceId='PRES_{id}'. Ensure this matches actual frontend attachment storage mechanics. -->
             <entity-find entity-name="moqui.resource.DbResourceFile" list="attachments">
                 <econdition field-name="parentResourceId" from="'PRES_' + presentationId"/>
             </entity-find>

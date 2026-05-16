@@ -175,6 +175,10 @@ export const InstrumentDetails: React.FC<Props> = ({ instrument, transaction }) 
                 <DataField label="Maker User ID" value={instrument.makerUserId} />
                 <DataField label="Pre-Advice Ref (Tag 23)" value={instrument.preAdviceRef} />
                 <DataField label="Data Version" value={instrument.versionNumber ? `v${instrument.versionNumber}` : 'v1'} />
+                <DataField label="Advised" value={instrument.isAdvised === 'Y' ? 'Yes' : 'No'} highlight />
+                {instrument.isAdvised === 'Y' && (
+                  <DataField label="Advised Date" value={instrument.advisedDate} />
+                )}
               </div>
             </section>
 

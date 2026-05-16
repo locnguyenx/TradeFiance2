@@ -31,30 +31,46 @@
                     return
                 }
 
+                import com.prowidesoftware.swift.model.SwiftMessage
+                ec.logger.info("INGEST_DEBUG: Attempting to parse SWIFT content (length: ${rawContent?.length()})")
                 try {
-                    def sm = com.prowidesoftware.swift.model.SwiftMessage.parse(rawContent)
+                    def sm = SwiftMessage.parse(rawContent)
                     context.messageType = sm.getType()
-                    def senderBic = sm.getBlock1()?.getLogicalTerminal()?.substring(0, 8)
-                    def tag20 = sm.getBlock4()?.getTagValue("20")
-                    def dateStr = sm.getBlock2()?.isOutput() ? sm.getBlock2().getReceiverOutputTime() : sm.getBlock2()?.getSenderInputTime() ?: ""
-                    context.swiftHeaderKey = "${senderBic}|${context.messageType}|${tag20 ?: ''}|${dateStr}"
-
-                    if (context.swiftHeaderKey) {
-                        def existingByKey = ec.entity.find("trade.swift.InboundSwiftRaw").condition("swiftHeaderKey", context.swiftHeaderKey).one()
-                        if (existingByKey) {
-                            context.isDuplicate = true
-                            context.rawMessageId = existingByKey.rawMessageId
-                            context.parseSuccess = true
-                            return
-                        }
+                    ec.logger.info("INGEST_DEBUG: Parsed message type: ${context.messageType}")
+                    def block1 = sm.getBlock1()
+                    ec.logger.info("INGEST_DEBUG: Block1: ${block1 != null}")
+                    def logicalTerminal = block1?.getLogicalTerminal()
+                    ec.logger.info("INGEST_DEBUG: LogicalTerminal: ${logicalTerminal}")
+                    def senderBic = logicalTerminal?.substring(0, 8) ?: "UNKNOWN"
+                    
+                    def block4 = sm.getBlock4()
+                    ec.logger.info("INGEST_DEBUG: Block4: ${block4 != null}")
+                    def tag20 = block4?.getTagValue("20")
+                    ec.logger.info("INGEST_DEBUG: Tag 20: ${tag20}")
+                    
+                    def block2 = sm.getBlock2()
+                    ec.logger.info("INGEST_DEBUG: Block2: ${block2 != null}")
+                    def dateStr = ""
+                    if (block2 != null) {
+                        try {
+                            if (block2.isOutput()) dateStr = block2.getReceiverOutputTime()
+                            else if (block2.isInput()) dateStr = "" // Input block 2 has no time
+                        } catch (Throwable t) { ec.logger.warn("Could not get time from block 2: ${t.message}") }
                     }
+                    ec.logger.info("INGEST_DEBUG: DateStr: ${dateStr}")
+                    
+                    context.swiftHeaderKey = "${senderBic}|${context.messageType}|${tag20 ?: ''}|${dateStr}"
+                    ec.logger.info("INGEST_DEBUG: SwiftHeaderKey: ${context.swiftHeaderKey}")
+
                     context.parseSuccess = true
-                } catch (Exception e) {
+                    ec.logger.info("INGEST_DEBUG: Parse process completed successfully")
+                } catch (Throwable e) {
                     context.parseSuccess = false
                     context.parseErrorText = e.getMessage()
                     ec.logger.error("INGEST_ERROR: Failed to parse SWIFT message: ${e.getMessage()}", e)
                 }
 
+                ec.logger.info("INGEST_DEBUG: Creating InboundSwiftRaw, success: ${context.parseSuccess}")
                 def rawOut = ec.service.sync().name("create#trade.swift.InboundSwiftRaw").parameters([
                     contentHash: context.contentHash, swiftHeaderKey: context.swiftHeaderKey,
                     messageType: context.messageType, rawContent: rawContent,
@@ -67,6 +83,7 @@
                 context.isDuplicate = false
 
                 if (context.parseSuccess && !skipCorrelation) {
+                    ec.logger.info("INGEST_DEBUG: Triggering async correlation for rawMessageId: ${context.rawMessageId}")
                     ec.service.async().name("trade.swift.InboundCorrelationServices.correlate#SwiftMessage").parameter("rawMessageId", context.rawMessageId).call()
                 }
             ]]></script>
@@ -74,22 +91,92 @@
     </service>
 
     <service verb="poll" noun="Directory" authenticate="false">
-        <in-parameters><parameter name="inboxPath" default="'runtime/inbox/swift'"/></in-parameters>
         <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find-one entity-name="trade.common.TradeConfig" value-field="inboundDirConfig">
+                <field-map field-name="configKey" value="SWIFT_INBOUND_DIR"/>
+            </entity-find-one>
+            <entity-find-one entity-name="trade.common.TradeConfig" value-field="archiveDirConfig">
+                <field-map field-name="configKey" value="SWIFT_ARCHIVE_DIR"/>
+            </entity-find-one>
+            <set field="inboundDir" from="inboundDirConfig?.configValue ?: 'runtime/swift/inbound'"/>
+            <set field="archiveDir" from="archiveDirConfig?.configValue ?: 'runtime/swift/archive'"/>
             <script><![CDATA[
-                ec.artifactExecution.disableAuthz()
-                File rootDir = new File(System.getProperty("moqui.runtime") ?: "runtime")
-                File inDir = new File(rootDir, inboxPath)
-                if (!inDir.exists()) { ec.logger.warn("Inbound dir not found: ${inDir.path}"); return }
-                
-                inDir.listFiles().each { file ->
-                    if (file.isDirectory() || !file.name.endsWith(".txt")) return
+                def inDir = new File(inboundDir)
+                if (!inDir.exists()) { ec.logger.warn("Inbound dir not found: ${inboundDir}"); return }
+
+                def processedDir = new File("${archiveDir}/processed")
+                def errorDir = new File("${archiveDir}/error")
+                def duplicateDir = new File("${archiveDir}/duplicate")
+                [processedDir, errorDir, duplicateDir].each { if (!it.exists()) it.mkdirs() }
+
+                inDir.listFiles({ f -> f.name.endsWith(".txt") } as FileFilter)?.each { file ->
+                    // Write-complete check: file size stable for 2 seconds
+                    long size1 = file.length()
+                    Thread.sleep(2000)
+                    if (file.length() != size1) {
+                        ec.logger.info("Skipping ${file.name} — still being written")
+                        return
+                    }
+
                     def content = file.text
-                    ec.service.sync().name("trade.swift.InboundSwiftServices.ingest#SwiftMessage")
-                        .parameters([rawContent: content, sourceChannel: 'SRC_DIRECTORY_POLL', sourceFileName: file.name]).call()
-                    file.delete()
+                    // Support batch files: split on {1: block starts
+                    def messages = content.contains("{1:") ?
+                        content.split("(?=\\{1:)").findAll { it.trim() } : [content]
+
+                    def hasSuccess = false
+                    def hasDup = false
+
+                    messages.each { msgContent ->
+                        def result = ec.service.sync()
+                            .name("trade.swift.InboundSwiftServices.ingest#SwiftMessage")
+                            .parameters([rawContent: msgContent.trim(),
+                                         sourceChannel: "SRC_DIRECTORY_POLL",
+                                         sourceFileName: file.name]).call()
+
+                        if (result.isDuplicate) {
+                            hasDup = true
+                        } else if (result.parseSuccess) {
+                            hasSuccess = true
+                        }
+                    }
+
+                    // Move file to processed (or error if all failed, or duplicate)
+                    def targetDir = processedDir
+                    if (!hasSuccess && hasDup) targetDir = duplicateDir
+                    else if (!hasSuccess && !hasDup) targetDir = errorDir
+                    
+                    file.renameTo(new File(targetDir, file.name))
                 }
             ]]></script>
+        </actions>
+    </service>
+
+    <service verb="get" noun="TradeInboxItems" authenticate="false">
+        <in-parameters>
+            <parameter name="inboxStatusEnumId"/>
+            <parameter name="messageType"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="inboxItems" type="List"><parameter name="item" type="Map"/></parameter>
+        </out-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find entity-name="trade.swift.TradeInboxItemView" list="inboxItems">
+                <search-form-inputs/>
+                <order-by field-name="-receivedTimestamp"/>
+            </entity-find>
+        </actions>
+    </service>
+
+    <service verb="get" noun="TradeInboxItem" authenticate="false">
+        <in-parameters><parameter name="inboxItemId" required="true"/></in-parameters>
+        <out-parameters><auto-parameters entity-name="trade.swift.TradeInboxItemView"/></out-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find-one entity-name="trade.swift.TradeInboxItemView" value-field="item"/>
+            <if condition="item == null"><return error="true" message="Inbox item ${inboxItemId} not found"/></if>
+            <script>context.putAll(item)</script>
         </actions>
     </service>
 
