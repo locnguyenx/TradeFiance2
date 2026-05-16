@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ABOUTME: Business actions triggered by inbound SWIFT messages. Strictly follows Task 4-8 of the plan. -->
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.0.xsd">
+
+    <!-- Task 4: MT 730 Acknowledge -->
+    <service verb="acknowledge" noun="Mt730" authenticate="false">
+        <in-parameters><parameter name="inboxItemId" required="true"/></in-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find-one entity-name="trade.swift.TradeInboxItem" value-field="item"/>
+            <log level="info" message="DEBUG: Executing acknowledge#Mt730 for inboxItemId: ${inboxItemId}, item found: ${item != null}"/>
+            <entity-find-one entity-name="trade.swift.InboundSwiftRaw" value-field="raw">
+                <field-map field-name="rawMessageId" from="item.rawMessageId"/>
+            </entity-find-one>
+
+            <script><![CDATA[
+                import com.prowidesoftware.swift.model.SwiftMessage as ProwideSwiftMessage
+                def sm = ProwideSwiftMessage.parse(raw.rawContent)
+                def tag20 = sm.getBlock4()?.getTagValue("20")?.trim()
+                def tag30 = sm.getBlock4()?.getTagValue("30")?.trim()
+
+                def advisedDate = null
+                if (tag30) {
+                    advisedDate = java.time.LocalDate.parse(tag30,
+                        java.time.format.DateTimeFormatter.ofPattern("yyMMdd"))
+                    advisedDate = java.sql.Date.valueOf(advisedDate)
+                }
+                
+                if (item.amendmentId) {
+                    def amendment = ec.entity.find("trade.importlc.ImportLcAmendment").condition("amendmentId", item.amendmentId).one()
+                    amendment.isAdvisedToBeneficiary = 'Y'
+                    amendment.advisedToBeneficiaryDate = advisedDate
+                    amendment.update()
+                } else if (item.instrumentId) {
+                    def lc = ec.entity.find("trade.importlc.ImportLetterOfCredit").condition("instrumentId", item.instrumentId).one()
+                    lc.isAdvised = 'Y'
+                    lc.advisedDate = advisedDate
+                    lc.advisingBankReference = tag20
+                    lc.update()
+                }
+            ]]></script>
+
+            <service-call name="update#trade.swift.TradeInboxItem"
+                          in-map="[inboxItemId: item.inboxItemId, actionTaken: 'LC_DELIVERY_CONFIRMED', 
+                                   inboxStatusEnumId: 'INBOX_PROCESSED', processedTimestamp: ec.user.nowTimestamp]"/>
+        </actions>
+    </service>
+
+    <!-- Task 5: MT 799 Amendment Consent -->
+    <service verb="resolve" noun="AmendmentConsent" authenticate="false">
+        <in-parameters><parameter name="inboxItemId" required="true"/></in-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find-one entity-name="trade.swift.TradeInboxItem" value-field="item"/>
+            <entity-find-one entity-name="trade.swift.InboundSwiftRaw" value-field="raw">
+                <field-map field-name="rawMessageId" from="item.rawMessageId"/>
+            </entity-find-one>
+
+            <if condition="item.amendmentId &amp;&amp; (raw.rawContent.toUpperCase().contains('ACKNOWLEDGE') || raw.rawContent.toUpperCase().contains('ACCEPT'))">
+                <service-call name="trade.importlc.ImportLcServices.accept#Amendment"
+                              in-map="[amendmentId: item.amendmentId]"/>
+                <service-call name="update#trade.swift.TradeInboxItem"
+                              in-map="[inboxItemId: item.inboxItemId, actionTaken: 'AMENDMENT_AUTO_ACCEPTED_799', 
+                                       inboxStatusEnumId: 'INBOX_PROCESSED', processedTimestamp: ec.user.nowTimestamp]"/>
+            </if>
+        </actions>
+    </service>
+
+    <!-- Task 6: MT 750 Auto-Spawn Presentation -->
+    <service verb="spawn" noun="Presentation750" authenticate="false">
+        <in-parameters><parameter name="inboxItemId" required="true"/></in-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find-one entity-name="trade.swift.TradeInboxItem" value-field="item"/>
+
+            <service-call name="trade.TradeCommonServices.create#Presentation"
+                          in-map="[instrumentId: item.instrumentId,
+                                   claimAmount: item.claimAmount,
+                                   claimCurrency: item.claimCurrency,
+                                   presentingBankRef: item.senderReference,
+                                   isDiscrepant: 'Y',
+                                   applicantDecisionEnumId: 'PENDING',
+                                   presentationStatusId: 'PRES_RECEIVED',
+                                   sourceChannel: 'INBOUND']"
+                          out-map="presResult"/>
+
+            <service-call name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit"
+                          in-map="[instrumentId: item.instrumentId, businessStateId: 'LC_DOC_RECEIVED']"/>
+
+            <service-call name="update#trade.swift.TradeInboxItem"
+                          in-map="[inboxItemId: item.inboxItemId, presentationId: presResult.presentationId,
+                                   actionTaken: 'SPAWN_PRESENTATION_750', 
+                                   inboxStatusEnumId: 'INBOX_PROCESSED', processedTimestamp: ec.user.nowTimestamp]"/>
+        </actions>
+    </service>
+
+    <!-- Task 7: MT 754 Clean Presentation -->
+    <service verb="process" noun="Mt754" authenticate="false">
+        <in-parameters><parameter name="inboxItemId" required="true"/></in-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find-one entity-name="trade.swift.TradeInboxItem" value-field="item"/>
+
+            <service-call name="trade.TradeCommonServices.create#Presentation"
+                          in-map="[instrumentId: item.instrumentId,
+                                   claimAmount: item.claimAmount,
+                                   claimCurrency: item.claimCurrency,
+                                   presentingBankRef: item.senderReference,
+                                   isDiscrepant: 'N',
+                                   applicantDecisionEnumId: 'WAIVED',
+                                   presentationStatusId: 'PRES_COMPLIANT',
+                                   sourceChannel: 'INBOUND']"
+                          out-map="presResult"/>
+
+            <service-call name="trade.importlc.ImportLcServices.update#ImportLetterOfCredit"
+                          in-map="[instrumentId: item.instrumentId, businessStateId: 'LC_ACCEPTED']"/>
+
+            <service-call name="update#trade.swift.TradeInboxItem"
+                          in-map="[inboxItemId: item.inboxItemId, presentationId: presResult.presentationId,
+                                   actionTaken: 'PRESENTATION_AUTO_SPAWNED_754', 
+                                   inboxStatusEnumId: 'INBOX_PROCESSED', processedTimestamp: ec.user.nowTimestamp]"/>
+        </actions>
+    </service>
+
+    <!-- Task 7: MT 742 Reimbursement Matching -->
+    <service verb="reconcile" noun="Mt742" authenticate="false">
+        <in-parameters><parameter name="inboxItemId" required="true"/></in-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find-one entity-name="trade.swift.TradeInboxItem" value-field="item"/>
+
+            <entity-find entity-name="trade.importlc.NostroReconciliation" list="recons">
+                <econdition field-name="instrumentId" from="item.instrumentId"/>
+                <econdition field-name="matchStatusEnumId" value="RECON_PENDING"/>
+            </entity-find>
+
+            <if condition="!recons">
+                <service-call name="update#trade.swift.TradeInboxItem"
+                              in-map="[inboxItemId: item.inboxItemId, inboxStatusEnumId: 'INBOX_ORPHANED', 
+                                       orphanReason: 'NO_PENDING_RECON']"/>
+                <return/>
+            </if>
+
+            <set field="recon" from="recons[0]"/>
+            <if condition="item.claimAmount &lt;= recon.expectedAmount">
+                <service-call name="update#trade.importlc.NostroReconciliation"
+                              in-map="[reconciliationId: recon.reconciliationId, matchStatusEnumId: 'RECON_MATCHED', 
+                                       matchedAmount: item.claimAmount]"/>
+                <set field="actionTaken" value="REIMBURSEMENT_AUTO_MATCHED"/>
+            <else>
+                <service-call name="update#trade.importlc.NostroReconciliation"
+                              in-map="[reconciliationId: recon.reconciliationId, matchStatusEnumId: 'RECON_EXCEPTION']"/>
+                <set field="actionTaken" value="REIMBURSEMENT_EXCEPTION_OVER_LIMIT"/>
+            </else>
+            </if>
+
+            <service-call name="update#trade.swift.TradeInboxItem"
+                          in-map="[inboxItemId: item.inboxItemId, actionTaken: actionTaken, 
+                                   inboxStatusEnumId: 'INBOX_PROCESSED', processedTimestamp: ec.user.nowTimestamp]"/>
+        </actions>
+    </service>
+
+    <!-- Task 8: Discrepancy Resolution -->
+    <service verb="resolve" noun="Discrepancy" authenticate="false">
+        <in-parameters>
+            <parameter name="presentationId" required="true"/>
+            <parameter name="decision" required="true"/>
+            <parameter name="documentDisposal"/>
+        </in-parameters>
+        <actions>
+            <script>ec.artifactExecution.disableAuthz()</script>
+            <entity-find-one entity-name="trade.importlc.TradeDocumentPresentation" value-field="pres" for-update="true"/>
+            
+            <entity-find entity-name="moqui.resource.DbResourceFile" list="attachments">
+                <econdition field-name="parentResourceId" from="'PRES_' + presentationId"/>
+            </entity-find>
+            <if condition="!attachments">
+                <return error="true" message="Applicant waiver/refusal document is mandatory before submission."/>
+            </if>
+
+            <if condition="decision == 'WAIVE'">
+                <set field="pres.applicantDecisionEnumId" value="WAIVED"/>
+            <else>
+                <set field="pres.applicantDecisionEnumId" value="REFUSED"/>
+                <set field="pres.documentDisposal" from="documentDisposal"/>
+            </else>
+            </if>
+            <set field="pres.presentationStatusId" value="PRES_EXAMINING"/>
+            <entity-update value-field="pres"/>
+        </actions>
+    </service>
+
+</services>

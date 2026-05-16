@@ -555,7 +555,7 @@
             <parameter name="amountAdjustment" type="BigDecimal"/>
             <parameter name="newLcAmount" type="BigDecimal"/>
             <parameter name="amendmentNarrative"/>
-            <parameter name="amendmentTypeEnumId" default="amendmentTypeEnumId ?: 'STANDARD_OUT'"/>
+            <parameter name="amendmentTypeEnumId" default="amendmentTypeEnumId ?: 'AMEND_OTHER'"/>
         </in-parameters>
         <out-parameters>
             <parameter name="amendmentId"/>
@@ -715,7 +715,7 @@
         </actions>
     </service>
 
-    <service verb="merge" noun="AmendmentDeltas">
+    <service verb="merge" noun="AmendmentDeltas" authenticate="false">
         <in-parameters><parameter name="amendmentId" required="true"/></in-parameters>
         <actions>
             <entity-find-one entity-name="trade.importlc.ImportLcAmendment" value-field="amendment"/>

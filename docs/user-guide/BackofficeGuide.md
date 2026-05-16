@@ -154,12 +154,18 @@ This guide provides exhaustive, step-by-step instructions for Administrative and
     - The dashboard shows all outstanding reimbursement authorizations.
 2.  **Matching Logic**:
     - **Expected**: Data derived from the authorized LC or Amendment (Amount, Currency, Reimbursing Bank).
-    - **Actual**: Data entered by the Backoffice user from the Nostro statement.
-3.  **Exception Management**:
-    - **Status: RECON_PENDING**: Awaiting bank statement.
-    - **Status: RECON_MATCHED**: Successfully matched with zero or negligible variance.
-    - **Status: RECON_UNMATCHED**: High variance or rejected by bank.
-4.  **Audit Trail**: Every match action logs the `matchedByUserId` and `matchedDate` for SOX compliance.
+    - **Actual**: Data derived either from automated inbound SWIFT processing (MT 742) or manual entry from a bank statement.
+3.  **Automated Matching (MT 742)**:
+    - Inbound MT 742 (Reimbursement Claim) messages are automatically ingested and correlated against pending reconciliation records.
+    - Matches within the authorized limit automatically transition to `RECON_MATCHED` with the matched amount recorded.
+    - Claims exceeding the authorized limit are flagged as `RECON_EXCEPTION` and require manual review.
+4.  **Exception Management**:
+    - **Status: RECON_PENDING**: Awaiting bank statement or MT 742.
+    - **Status: RECON_MATCHED**: Successfully matched via MT 742 or manual entry.
+    - **Status: RECON_EXCEPTION**: Over-limit MT 742 claim requiring review.
+    - **Status: RECON_UNMATCHED**: High variance or rejected manually.
+5.  **Audit Trail**: Every match action logs the `matchedByUserId` (or automated system user) and `matchedDate` for SOX compliance.
+
 
 ---
 

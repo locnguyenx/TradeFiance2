@@ -47,13 +47,15 @@
                 <return error="true" message="Document Presentations can only be lodged for Issued instruments (Current State: ${lc?.businessStateId ?: 'UNKNOWN'})"/>
             </if>
 
-            <service-call name="trade.importlc.ImportLcValidationServices.validate#Presentation" in-map="context" out-map="valOut"/>
-            <if condition="valOut.isDiscrepant">
-                <return error="true" message="Presentation blocked: ${valOut.discrepancyMessage}"/>
+            <if condition="sourceChannel != 'INBOUND'">
+                <service-call name="trade.importlc.ImportLcValidationServices.validate#Presentation" in-map="context" out-map="valOut"/>
+                <if condition="valOut.isDiscrepant">
+                    <return error="true" message="Presentation blocked: ${valOut.discrepancyMessage}"/>
+                </if>
             </if>
 
             <service-call name="create#trade.importlc.TradeDocumentPresentation" out-map="presOut" 
-                          in-map="context + [presentationStatusId: 'PRES_RECEIVED']"/>
+                          in-map="context + [presentationStatusId: presentationStatusId ?: 'PRES_RECEIVED']"/>
             <set field="presentationId" from="presOut.presentationId"/>
             
             <service-call name="create#trade.TradeTransaction" out-map="txOut"

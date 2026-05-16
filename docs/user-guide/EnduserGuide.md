@@ -245,10 +245,16 @@ The Profile page displays your **Active Authority Tier** and **Current Approval 
 | **Pres. Period** | 48 | Optional | **Numeric** | 1 | Days after shipment to present docs (Default 21). |
 | **Charges** | 71D | Optional | **X-Charset** | 6 | Define fee responsibility (e.g., All outside bank for Ben). |
 
+### 9.1 Delivery Acknowledgment (MT 730)
+Upon issuance of an LC or External Amendment, the Advising Bank may send an MT 730 (Acknowledgment). The Inbound SWIFT Engine automatically processes this message, sets the `isAdvised` flag on the LC or Amendment, and records the Advising Bank's Reference (Tag 20) for future communications.
+
 ---
 
-## 8. Document Presentation Lodgement
-Enforces strict 5-day UCP 600 examination rules.
+## 10. Document Presentation Lodgement
+Enforces strict 5-day UCP 600 examination rules. 
+
+> [!TIP]
+> **Automated Lodgement via Trade Inbox**: Presentations can now be automatically spawned from inbound MT 750 (Advice of Discrepancy) and MT 754 (Advice of Payment/Acceptance) messages. When auto-spawned, the LC status is fast-tracked and manual lodgement is bypassed.
 
 | Field | Tag | Requirement | Character Set | Max Lines | Validation Rule |
 |-------|-----|-------------|---------------|-----------|-----------------|
@@ -266,26 +272,27 @@ Enforces strict 5-day UCP 600 examination rules.
 
 ---
 
-## 9. Import LC Amendment (MT 707) - SRG 2024 Revised
+## 11. Import LC Amendment (MT 707) - SRG 2024 Revised
 The platform supports a dual-track amendment process aligned with SRG 2024 "Smart Delta" requirements, separating customer-facing (External) changes from operational (Internal) bank adjustments.
 
-### 9.1 Amendment Tracks
+### 11.1 Amendment Tracks
+
 1.  **External Amendment (MT 707)**: Used for changes requiring beneficiary consent (e.g., amount, expiry, narrative terms). Generates a SWIFT MT 707 message.
 2.  **Internal Amendment**: Used for bank-only adjustments (e.g., RM assignment, margin account change, fee debit account) that do not require beneficiary notification or consent.
 
-### 9.2 Structured Cancellation (Tag 23S)
+### 11.2 Structured Cancellation (Tag 23S)
 SRG 2024 introduces formal cancellation requests via Tag 23S in the MT 707:
 - **Toggle**: Use the "Request Full Cancellation" toggle in the Amendment Stepper.
 - **Mixed-Change Guard**: A cancellation request **cannot** be combined with any other changes (e.g., amount adjustment or expiry extension). Selecting cancellation will disable other financial fields.
 - **Outcome**: Generates an MT 707 with Tag 23S set to `CANCEL`.
 
-### 9.3 Smart Delta Narrative Updates
+### 11.3 Smart Delta Narrative Updates
 To prevent data loss and ensure precise audit trails, narrative fields (Goods, Documents, Conditions) are updated using structured **Delta Actions**:
 -   **REPLACE**: Overwrites the entire existing field with new text.
 -   **ADD**: Appends new text to the end of the existing narrative.
 -   **DELETE**: Marks specific text for removal (captured in the delta log).
 
-### 9.3 Amendment Workflow (Maker/Checker)
+### 11.4 Amendment Workflow (Maker/Checker)
 | Field | Tag | Requirement | Character Set | Input Guideline / Validation Rule |
 |-------|-----|-------------|---------------|-----------------------------------|
 | **Amendment Type**| - | **Mandatory** | - | Select `AMD_TYPE_GEN` (External) or `AMD_TYPE_INTERNAL`. |
@@ -296,14 +303,14 @@ To prevent data loss and ensure precise audit trails, narrative fields (Goods, D
 | **Docs Delta** | 46B | Optional | **X-Charset** | Structured update to Documents Required. |
 | **Beneficiary Consent**| - | **Mandatory** | **Boolean** | Required for all External Amendments. |
 
-### 9.4 Beneficiary Consent (MT 730)
+### 11.5 Beneficiary Consent (MT 799)
 1.  **Draft/Pending**: Upon authorization, an External Amendment enters `AMEND_DRAFT` (Pending Consent). The Master LC is **not updated** yet.
-2.  **Recording Consent**: When the beneficiary's decision (MT 730) is received:
+2.  **Recording Consent**: When the beneficiary's decision (via MT 799) is received and processed by the Trade Inbox:
     -   **Accepted**: The system automatically merges the Smart Delta changes into the Master LC and updates the `businessStateId` to `LC_AMENDED`.
     -   **Rejected**: The amendment is archived as `REJECTED`, and the Master LC remains unchanged.
 3.  **Historical Traceability**: The **Amendment Portfolio** maintains the full history of every proposed delta, regardless of consent outcome.
 
-### 9.5 Browsing and Viewing Amendments
+### 11.6 Browsing and Viewing Amendments
 Due to the distinct operational and regulatory nature of amendments, **External** and **Internal** amendments are managed in separate portfolios:
 
 1.  **Access**: Use the sidebar navigation under the `IMPORT LC` section:
@@ -316,7 +323,7 @@ Due to the distinct operational and regulatory nature of amendments, **External*
 
 ---
 
-## 10. Settlement & Drawings
+## 12. Settlement & Drawings
 Captures payment release and liability reduction. To ensure audit integrity, settlements follow the **Maker-Checker** pattern:
 1.  **Initiation (Maker)**: Select an LC in `DOC_RECEIVED` or `LC_ISSUED` status and initiate settlement.
 2.  **Validation**: The system validates that the **Drawing Amount** does not exceed the current **Outstanding Amount** (including tolerance).
@@ -335,7 +342,7 @@ Captures payment release and liability reduction. To ensure audit integrity, set
 
 ---
 
-## 11. Character Set Quick-Reference
+## 13. Character Set Quick-Reference
 
 ### X-Character Set (The "Strict" Set)
 Forbidden symbols: `@`, `!`, `#`, `$`, `%`, `^`, `&`, `*`, `_`, `=`, `<`, `>`, `;`, `"`.
@@ -343,6 +350,7 @@ Allowed: `A-Z a-z 0-9 / - ? : ( ) . , ' + space`
 
 ### Z-Character Set (The "Extended" Set)
 Allowed in **Narratives** (Tags 73, 72Z, 77A):
+
 ### SWIFT Formatting Constraints
 To ensure 100% STP (Straight Through Processing), all narrative and address fields are subject to:
 - **Character Set Validation**: Automatic rejection of non-compliant symbols during the Maker phase.
@@ -351,14 +359,14 @@ To ensure 100% STP (Straight Through Processing), all narrative and address fiel
 
 ---
 
-## 12. Nostro Reconciliation (MT 740/747)
+## 14. Nostro Reconciliation (MT 740/747)
 The system automates the tracking of reimbursement expectations to comply with SRG 2024 standards.
 
-### 12.1 Auto-Generation
+### 14.1 Auto-Generation
 - **MT 740**: Automatically generated when an LC is issued with a Reimbursing Bank assigned.
 - **MT 747**: Automatically generated when a financial amendment increases or decreases the LC amount on an instrument with an active reimbursement authorization.
 
-### 12.2 Manual Matching Workflow
+### 14.2 Manual Matching Workflow
 1.  Navigate to **IMPORT LC > Nostro Reconciliation**.
 2.  **Portfolio View**: Review the list of "Pending" reconciliation records. Each record represents an MT 740/747 message sent to a reimbursing bank.
 3.  **Manual Match**: Click **Manual Match** on a pending record when the actual bank debit statement is received.
@@ -367,5 +375,32 @@ The system automates the tracking of reimbursement expectations to comply with S
     - **Debit Amount**: The actual amount debited by the bank.
     - **Statement Ref**: The bank's statement reference number.
 5.  **Amount Mismatch Guard**: If the `Debit Amount` differs from the `Expected Amount`, the system will display a high-visibility warning. You must provide a reason in the **Remarks** field before confirming the match.
+
+### 14.3 Automated Inbound Matching (MT 742)
+With the Inbound SWIFT Engine, MT 742 (Reimbursement Claim) messages are automatically ingested and correlated against pending Nostro Reconciliation records.
+- If the claimed amount matches or is less than the expected amount, the system automatically marks the record as `RECON_MATCHED` and updates the `matchedAmount`.
+- If the claimed amount exceeds the limit, it is flagged as an exception (`RECON_EXCEPTION`) for manual review.
+
+---
+
+## 15. Trade Inbox & Inbound SWIFT Processing
+The platform features an automated ingestion engine for inbound SWIFT messages (MT 730, 799, 750, 754, 742), routing them into the **Trade Inbox** for operator review and workflow automation.
+
+### 15.1 Message Correlation & Status
+1. **Auto-Match (`CORR_AUTO_MATCH`)**: The system parses Tag 21 (Related Reference) or Tag 20 and automatically links the incoming message to the correct Master LC or Amendment.
+2. **Orphaned (`CORR_ORPHANED`)**: If a matching instrument cannot be found, the message is placed in the Orphan Queue. Operators can review the Tag 21 reference and **Manually Link** the message to the correct instrument.
+
+### 15.2 Automated Workflows by Message Type
+When a message is successfully correlated, the system performs targeted actions based on the SWIFT message type:
+- **MT 730 (Acknowledgment)**: Confirms delivery. The system automatically sets the `isAdvised` flag on the LC or `isAdvisedToBeneficiary` on the Amendment.
+- **MT 799 (Free Format Message)**: Used primarily for Beneficiary Consent. If the narrative contains acceptance language, the system can automatically trigger the amendment acceptance workflow.
+- **MT 750 (Advice of Discrepancy)**: Automatically spawns a new Document Presentation record flagged as `Discrepant`, setting the LC status to `DOC_RECEIVED`.
+- **MT 754 (Advice of Payment/Acceptance)**: Automatically spawns a "Clean" Document Presentation and fast-tracks the LC status to `LC_ACCEPTED`.
+- **MT 742 (Reimbursement Claim)**: Automatically matches pending Nostro Reconciliation records as described in Section 14.3.
+
+### 15.3 Inbox Actions
+- Operators can view the original raw SWIFT payload, including any security warnings (e.g., MT 999).
+- Once the automated action is complete, the Inbox Item status is updated to `INBOX_PROCESSED`.
+- Items requiring manual intervention (e.g., ambiguous references) will remain as `INBOX_UNREAD` or `INBOX_ORPHANED` until resolved.
 
 ---

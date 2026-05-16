@@ -26,14 +26,23 @@
         <field name="amendmentId" type="id" comment="Optional: sub-correlation to specific amendment"/>
         <field name="presentationId" type="id" comment="Optional: sub-correlation to specific presentation"/>
         
+        <field name="senderBic" type="text-short"/>
+        <field name="senderReference" type="text-medium"/>
+        <field name="relatedReference" type="text-medium"/>
+        <field name="narrativeText" type="text-very-long"/>
+        <field name="claimAmount" type="number-decimal"/>
+        <field name="claimCurrency" type="id"/>
+        <field name="receivedTimestamp" type="date-time" default="ec.user.nowTimestamp"/>
+        
         <field name="inboxStatusEnumId" type="id" default="'INBOX_UNREAD'"/>
         <field name="actionTaken" type="text-medium" comment="Summary of action taken (e.g., ADVISE_DELIVERED, DISCREPANCY_CREATED)"/>
         <field name="processedByUserId" type="id"/>
         <field name="processedTimestamp" type="date-time"/>
         
         <field name="correlationStatusEnumId" type="id" comment="INBOX_AUTO_MATCH, INBOX_MANUAL_MATCH, or INBOX_ORPHANED"/>
+        <field name="orphanReason" type="text-medium"/>
         <field name="securityWarningFlag" type="text-indicator" default="'N'" comment="Y if MT 999 or non-standard message requires caution."/>
-
+ 
         <relationship type="one" related="trade.swift.InboundSwiftRaw" short-alias="raw">
             <key-map field-name="rawMessageId"/>
         </relationship>
@@ -52,6 +61,40 @@
         <relationship type="one" title="CorrelationStatus" related="moqui.basic.Enumeration" short-alias="correlation">
             <key-map field-name="correlationStatusEnumId" related="enumId"/>
         </relationship>
+        <seed-data>
+            <!-- Seed data for inbound SWIFT processing. Enumerations for status and channels. -->
+            <!-- Inbound SWIFT: Inbox Status -->
+            <moqui.basic.EnumerationType enumTypeId="InboxStatus" description="Inbound SWIFT Inbox Status"/>
+            <moqui.basic.Enumeration enumId="INBOX_UNREAD" enumTypeId="InboxStatus" description="Unread"/>
+            <moqui.basic.Enumeration enumId="INBOX_IN_PROGRESS" enumTypeId="InboxStatus" description="In Progress"/>
+            <moqui.basic.Enumeration enumId="INBOX_PROCESSED" enumTypeId="InboxStatus" description="Processed"/>
+            <moqui.basic.Enumeration enumId="INBOX_ORPHANED" enumTypeId="InboxStatus" description="Orphaned"/>
+
+            <!-- Inbound SWIFT: Correlation Status -->
+            <moqui.basic.EnumerationType enumTypeId="CorrelationStatus" description="Inbound SWIFT Correlation Status"/>
+            <moqui.basic.Enumeration enumId="CORR_AUTO_MATCH" enumTypeId="CorrelationStatus" description="Auto Matched"/>
+            <moqui.basic.Enumeration enumId="CORR_MANUAL_MATCH" enumTypeId="CorrelationStatus" description="Manually Matched"/>
+            <moqui.basic.Enumeration enumId="CORR_ORPHANED" enumTypeId="CorrelationStatus" description="Orphaned"/>
+
+            <!-- Inbound SWIFT: Source Channel -->
+            <moqui.basic.EnumerationType enumTypeId="SourceChannel" description="Inbound SWIFT Source Channel"/>
+            <moqui.basic.Enumeration enumId="SRC_DIRECTORY_POLL" enumTypeId="SourceChannel" description="Directory Polling"/>
+            <moqui.basic.Enumeration enumId="SRC_MANUAL_UPLOAD" enumTypeId="SourceChannel" description="Manual Upload"/>
+
+            <!-- Inbound SWIFT: Parse Status -->
+            <moqui.basic.EnumerationType enumTypeId="ParseStatus" description="Inbound SWIFT Parse Status"/>
+            <moqui.basic.Enumeration enumId="PARSE_PENDING" enumTypeId="ParseStatus" description="Pending Parse"/>
+            <moqui.basic.Enumeration enumId="PARSE_SUCCESS" enumTypeId="ParseStatus" description="Parse Success"/>
+            <moqui.basic.Enumeration enumId="PARSE_FAILED" enumTypeId="ParseStatus" description="Parse Failed"/>
+
+            <!-- TradeBeneDecision (Enumerations for Presentation/Amendment) -->
+            <moqui.basic.EnumerationType enumTypeId="TradeBeneDecision" description="Beneficiary/Applicant Decision"/>
+            <moqui.basic.Enumeration enumId="PENDING" enumTypeId="TradeBeneDecision" description="Pending"/>
+            <moqui.basic.Enumeration enumId="ACCEPTED" enumTypeId="TradeBeneDecision" description="Accepted"/>
+            <moqui.basic.Enumeration enumId="REJECTED" enumTypeId="TradeBeneDecision" description="Rejected"/>
+            <moqui.basic.Enumeration enumId="WAIVED" enumTypeId="TradeBeneDecision" description="Waived"/>
+            <moqui.basic.Enumeration enumId="REFUSED" enumTypeId="TradeBeneDecision" description="Refused"/>
+        </seed-data>
     </entity>
 
     <view-entity entity-name="TradeInboxItemView" package="trade.swift">

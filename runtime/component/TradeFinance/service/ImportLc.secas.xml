@@ -26,6 +26,7 @@
 
     <!-- Presentation Validation -->
     <seca service="trade.TradeCommonServices.create#Presentation" when="pre-service">
+        <condition><expression>sourceChannel != 'INBOUND'</expression></condition>
         <service-call name="trade.importlc.ImportLcValidationServices.validate#Presentation" in-map="context"/>
     </seca>
     

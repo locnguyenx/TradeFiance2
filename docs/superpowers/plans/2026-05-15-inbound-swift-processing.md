@@ -43,15 +43,15 @@
 
 | Task | Component | BDD Scenarios | Depends On |
 |:---|:---|:---|:---|
-| 1 | [IN_PROGRESS] Entity definitions + seed data | — (foundation) | — |
-| 2 | Ingestion services (poll + upload + dedup) | ING-01..06 | Task 1 |
-| 3 | Correlation engine (Tag 21 + orphan) | COR-01..04 | Task 2 |
-| 4 | MT 730 acknowledge (flag-based) | 730-01, 730-02 | Task 3 |
-| 5 | MT 799 amendment consent (reuses accept/reject#Amendment) | 799-01..03 | Task 3 |
-| 6 | MT 750 discrepant presentation auto-spawn | 750-01, 750-02 | Task 3 |
-| 7 | MT 754 clean presentation + MT 742 reimbursement | 754-01, 742-01..02 | Task 6 |
-| 8 | Discrepancy resolution Maker/Checker | DSC-01..04 | Task 6 |
-| 9 | SECA wiring + integration test | All | Tasks 4-8 |
+| 1 | [x] Entity definitions + seed data | — (foundation) | — |
+| 2 | [x] Ingestion services (poll + upload + dedup) | ING-01..06 | Task 1 |
+| 3 | [x] Correlation engine (Tag 21 + orphan) | COR-01..04 | Task 2 |
+| 4 | [x] MT 730 acknowledge (flag-based) | 730-01, 730-02 | Task 3 |
+| 5 | [x] MT 799 amendment consent (reuses accept/reject#Amendment) | 799-01..03 | Task 3 |
+| 6 | [x] MT 750 discrepant presentation auto-spawn | 750-01, 750-02 | Task 3 |
+| 7 | [x] MT 754 clean presentation + MT 742 reimbursement | 754-01, 742-01..02 | Task 6 |
+| 8 | [x] Discrepancy resolution Maker/Checker | DSC-01..04 | Task 6 |
+| 9 | [x] SECA wiring + integration test | All | Tasks 4-8 |
 
 > **Self-Review Notes:**
 > - **BDD-INB-TIX-01/02** (Trade Inbox UI badge + MT 999 security banner) are **UI-only** scenarios. They require a frontend task (out of scope for this backend plan). The backend provides the data — `TradeInboxItemView` query for badge count and `securityWarningFlag` field for MT 999.
@@ -78,7 +78,7 @@
 - Modify: `entity/ImportLcEntities.xml` (add advised flags + messageDirection)
 - Modify: `data/TradeFinanceSeedData.xml` (add enumerations)
 
-- [ ] **Step 1: Create InboundSwiftEntities.xml with InboundSwiftRaw entity**
+- [x] **Step 1: Create InboundSwiftEntities.xml with InboundSwiftRaw entity**
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -171,7 +171,7 @@
 </entities>
 ```
 
-- [ ] **Step 2: Add advised flag fields to ImportLcEntities.xml**
+- [x] **Step 2: Add advised flag fields to ImportLcEntities.xml**
 
 Add to `ImportLetterOfCredit` entity (after existing fields):
 ```xml
@@ -199,7 +199,7 @@ Add to `TradeDocumentPresentation` entity (after existing fields):
        comment="INBOUND if auto-created from inbound SWIFT. Used to bypass validation SECA for MT 750/754."/>
 ```
 
-- [ ] **Step 3: Add seed data enumerations to TradeFinanceSeedData.xml**
+- [x] **Step 3: Add seed data enumerations to TradeFinanceSeedData.xml**
 
 ```xml
 <!-- Inbound SWIFT: Inbox Status -->
@@ -222,12 +222,12 @@ Add to `TradeDocumentPresentation` entity (after existing fields):
 <moqui.basic.Enumeration enumId="PARSE_FAILED" enumTypeId="ParseStatus" description="Parse Failed"/>
 ```
 
-- [ ] **Step 4: Build and verify entities load**
+- [x] **Step 4: Build and verify entities load**
 
 Run: `./gradlew :runtime:component:TradeFinance:test --tests "trade.CommonEntitiesSpec" -x jar`
 Expected: PASS — new entities recognized by Moqui entity facade.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add entity/InboundSwiftEntities.xml entity/ImportLcEntities.xml data/TradeFinanceSeedData.xml

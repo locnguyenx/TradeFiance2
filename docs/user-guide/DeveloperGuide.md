@@ -42,6 +42,7 @@ All state-changing services must adhere to the following guards:
 8.  **Smart Delta Architecture (SRG 2024)**: To support UCP 600 compliant amendments, the platform uses a structured delta model (`ImportLcAmendment` entity). Narratives are not overwritten; instead, `goodsDeltaText`, `docsDeltaText`, and `conditionsDeltaText` capture precise `ADD`, `DELETE`, or `REPLACE` actions. These deltas are merged into the Master LC only upon recorded **Beneficiary Consent** (ACCEPTED).
 9.  **Automated Reimbursement (SRG 2024)**: `trade.SwiftGenerationServices.generate#Mt740` and `generate#Mt747` are triggered by SECA hooks on issuance/amendment authorization. These services also auto-create `NostroReconciliation` records to ensure end-to-end tracking of bank debits.
 10. **Tag 77J Aggregate Validation**: `trade.importlc.ImportLcValidationServices.validate#Tag77JAggregateLimit` enforces a hard limit of 70 lines (at 50 characters each) for the total discrepancy text in MT 750/734 messages.
+11. **Inbound SWIFT Processing Engine**: Built with Prowide Core to parse inbound messages. The engine deduplicates via SHA-256 hash and performs Tag 21 correlation to route messages to the Trade Inbox, auto-spawning specific actions for MT 730, 799, 750, 754, and 742.
 
 ### SWIFT Generation Data Flow
 SWIFT message builders (MT700, MT707) read party data exclusively from the `TradeInstrumentParty` junction:
