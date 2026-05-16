@@ -586,5 +586,50 @@ export const tradeApi = {
     });
     return res.json();
   },
+  
+  // Trade Inbox Methods
+  async getInboxItems(params?: Record<string, any>): Promise<{ inboxItemList: TradeInboxItem[] }> {
+    const query = params ? '?' + new URLSearchParams(params).toString() : '';
+    const res = await this._fetch(`${API_BASE}/inbox${query}`);
+    return res.json();
+  },
+
+  async getInboxItem(inboxItemId: string): Promise<TradeInboxItem> {
+    const res = await this._fetch(`${API_BASE}/inbox/${inboxItemId}`);
+    return res.json();
+  },
+
+  async updateInboxItem(inboxItemId: string, data: Partial<TradeInboxItem>): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/inbox/${inboxItemId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+
+  async acknowledgeMt730(inboxItemId: string): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/inbox/${inboxItemId}/acknowledge`, { method: 'POST' });
+    return res.json();
+  },
+
+  async resolveAmendmentConsent(inboxItemId: string): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/inbox/${inboxItemId}/resolve-amendment`, { method: 'POST' });
+    return res.json();
+  },
+
+  async spawnPresentation750(inboxItemId: string): Promise<any> {
+    const res = await this._fetch(`${API_BASE}/inbox/${inboxItemId}/spawn-presentation`, { method: 'POST' });
+    return res.json();
+  },
+
+  async ingestSwiftMessage(rawContent: string, sourceChannel: string = 'SRC_MANUAL_UPLOAD'): Promise<{ rawMessageId: string; isDuplicate: boolean }> {
+    const res = await this._fetch(`${API_BASE}/inbound-swift/ingest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rawContent, sourceChannel }),
+    });
+    return res.json();
+  },
 };
 

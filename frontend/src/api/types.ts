@@ -290,3 +290,28 @@ export interface SwiftMessage {
   generatedDate: string;
 }
 
+export interface TradeInboxItem {
+  inboxItemId: string;
+  rawMessageId: string;
+  messageType: string;
+  instrumentId?: string;
+  instrumentRef?: string;
+  amendmentId?: string;
+  presentationId?: string;
+  senderBic?: string;
+  senderReference?: string;
+  relatedReference?: string;
+  narrativeText?: string;
+  claimAmount?: number;
+  claimCurrency?: string;
+  receivedTimestamp: string;
+  inboxStatusEnumId: string;
+  actionTaken?: string;
+  processedByUserId?: string;
+  processedTimestamp?: string;
+  correlationStatusEnumId?: string;
+  orphanReason?: string;
+  securityWarningFlag?: string;
+}
+
+

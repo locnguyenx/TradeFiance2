@@ -235,4 +235,21 @@
             </resource>
         </id>
     </resource>
+    <resource name="inbox">
+        <method type="get"><service name="trade.swift.InboundSwiftServices.get#TradeInboxItems"/></method>
+        <id name="inboxItemId">
+            <method type="get"><service name="trade.swift.InboundSwiftServices.get#TradeInboxItem"/></method>
+            <method type="patch"><service name="update#trade.swift.TradeInboxItem"/></method>
+            <resource name="acknowledge"><method type="post"><service name="trade.swift.InboundActionServices.acknowledge#Mt730"/></method></resource>
+            <resource name="resolve-amendment"><method type="post"><service name="trade.swift.InboundActionServices.resolve#AmendmentConsent"/></method></resource>
+            <resource name="spawn-presentation"><method type="post"><service name="trade.swift.InboundActionServices.spawn#Presentation750"/></method></resource>
+            <resource name="process-754"><method type="post"><service name="trade.swift.InboundActionServices.process#Mt754"/></method></resource>
+            <resource name="reconcile-742"><method type="post"><service name="trade.swift.InboundActionServices.reconcile#Mt742"/></method></resource>
+        </id>
+    </resource>
+    <resource name="inbound-swift">
+        <resource name="ingest">
+            <method type="post"><service name="trade.swift.InboundSwiftServices.ingest#SwiftMessage"/></method>
+        </resource>
+    </resource>
 </resource>
